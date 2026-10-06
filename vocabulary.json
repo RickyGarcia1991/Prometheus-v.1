@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "term": "utilize",
+      "preferred": "use",
+      "definition": "Prefer the simpler word use when it fits the sentence."
+    },
+    {
+      "term": "elucidate",
+      "preferred": "explain",
+      "definition": "Make something clear."
+    },
+    {
+      "term": "facilitate",
+      "preferred": "help",
+      "definition": "Make something easier; choose help when it preserves the meaning."
+    },
+    {
+      "term": "methodology",
+      "preferred": "method",
+      "definition": "A system of methods; use method for a single procedure."
+    },
+    {
+      "term": "vocabulary dictionary",
+      "aliases": [
+        "vocabulary",
+        "dictionary",
+        "glossary"
+      ],
+      "definition": "A collection of words or terms with meanings and usage guidance."
+    },
+    {
+      "term": "Prometheus",
+      "definition": "This local offline chat assistant; saved conversations provide context, not verified facts."
+    }
+  ]
+}

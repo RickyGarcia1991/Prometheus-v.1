@@ -1,0 +1,4 @@
+# Reserved for future typed TOML configuration.
+# v0.1 intentionally uses environment variables to keep the runtime dependency-free.
+[control]
+log_level = "INFO"

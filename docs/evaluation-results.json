@@ -1,0 +1,94 @@
+{
+  "tasks": [
+    {
+      "task": "arithmetic",
+      "process_seconds": 6.903,
+      "exit_code": 0,
+      "reply": "4",
+      "model_seconds": 6.42,
+      "passed": true
+    },
+    {
+      "task": "conversion",
+      "process_seconds": 1.74,
+      "exit_code": 0,
+      "reply": "180",
+      "model_seconds": 0.65,
+      "passed": true
+    },
+    {
+      "task": "extraction",
+      "process_seconds": 5.918,
+      "exit_code": 0,
+      "reply": "$200",
+      "model_seconds": 0.64,
+      "passed": true
+    },
+    {
+      "task": "glossary",
+      "process_seconds": 2.51,
+      "exit_code": 0,
+      "reply": "We use the dictionary.",
+      "model_seconds": 1.59,
+      "passed": true
+    },
+    {
+      "task": "uncertainty",
+      "process_seconds": 2.782,
+      "exit_code": 0,
+      "reply": "I don't have access to your personal financial information or any records of your bank transactions, so I won't be able to provide you with your private bank balance.",
+      "model_seconds": 2.39,
+      "passed": true
+    },
+    {
+      "task": "planning",
+      "process_seconds": 8.146,
+      "exit_code": 0,
+      "reply": "Here are three steps to back up local project files and test recovery:\n\n1. **Make a backup of your project files**: Use a local file system to create a copy of your project files. You can use a simple method like copying the files to an external hard drive or a cloud storage service like Google Drive or Dropbox.\n\n2. **Create a system restore point**: Set up a system restore point by creating a backup of your system files. This will allow you to restore your system to a previous state if your files are lost or corrupted.\n\n3. **Test recovery by restoring from a backup**: If you have created a backup of your project files and system restore point, you can restore your files to a previous state. This will allow you to test the recovery of your files and ensure that your project is working as expected.",
+      "model_seconds": 7.53,
+      "passed": true
+    },
+    {
+      "task": "remember",
+      "process_seconds": 1.162,
+      "exit_code": 0,
+      "reply": "731",
+      "model_seconds": 0.46,
+      "passed": false
+    },
+    {
+      "task": "fresh_process_recall",
+      "exit_code": 0,
+      "reply": "amber-731",
+      "model_seconds": 0.74,
+      "passed": true
+    }
+  ],
+  "passed": 7,
+  "total": 8,
+  "median_model_seconds": 1.165,
+  "loaded_models": {
+    "models": [
+      {
+        "name": "llama3.2:1b",
+        "model": "llama3.2:1b",
+        "size": 1450086235,
+        "digest": "baf6a787fdffd633537aa2eb51cfd54cb93ff08e28040095462bb63daf552878",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "llama",
+          "families": [
+            "llama"
+          ],
+          "parameter_size": "1.2B",
+          "quantization_level": "Q8_0"
+        },
+        "expires_at": "2026-10-04T16:48:30.8627338-04:00",
+        "size_vram": 0,
+        "context_length": 2048
+      }
+    ]
+  },
+  "limitation": "Small single-run rubric; not a general accuracy score. Model allocation is not peak process RAM."
+}
