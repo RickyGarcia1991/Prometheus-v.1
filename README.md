@@ -1,4 +1,4 @@
-# Prometheus — offline chat and Control Center
+# Prometheus v0.2.0 — offline chat and Control Center
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 

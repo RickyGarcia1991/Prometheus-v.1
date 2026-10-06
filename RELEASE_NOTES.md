@@ -1,4 +1,4 @@
-# Prometheus 0.2.0 — recovery and local document search
+# Prometheus v0.2.0 — recovery and local document search
 
 Local chat now ships with a portable Python runtime, verified conversation backup/restore,
 and local UTF-8 document search with exact file and line citations.
