@@ -15,6 +15,7 @@ from .ollama import DEFAULT_MODEL, LocalModelError, OllamaClient
 from .activity import ActivityLog
 from .orchestration import choose_route
 from .research import DisabledResearchProvider
+from .research_http import HttpJsonResearchProvider
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -33,6 +34,7 @@ def build_parser():
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Installed local model; no cloud models")
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
     parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
+    parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
     vocabulary = parser.add_mutually_exclusive_group()
     vocabulary.add_argument("--vocabulary", type=Path, help="Custom local glossary JSON file")
     vocabulary.add_argument("--no-vocabulary", action="store_true", help="Disable glossary guidance")
@@ -148,12 +150,17 @@ def main(argv=None):
                 activity.record("orchestration", "selected", decision.reason,
                                 route=decision.route.value, requires_network=decision.requires_network)
             if decision.requires_network:
+                provider = (HttpJsonResearchProvider(args.research_endpoint)
+                            if args.research_endpoint else DisabledResearchProvider())
                 try:
-                    DisabledResearchProvider().search(route_prompt)
+                    research = provider.search(route_prompt)
                 except RuntimeError as error:
                     if activity:
                         activity.record("research", "blocked", str(error), query=route_prompt)
                     raise ValueError(str(error)) from error
+                if activity:
+                    activity.record("research", "complete", "Online research completed with provenance.",
+                                    query=route_prompt, sources=len(research.sources))
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
