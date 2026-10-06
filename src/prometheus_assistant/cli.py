@@ -14,6 +14,7 @@ from .vocabulary import DEFAULT_VOCABULARY, Vocabulary
 from .ollama import DEFAULT_MODEL, LocalModelError, OllamaClient
 from .activity import ActivityLog
 from .orchestration import choose_route
+from .research import DisabledResearchProvider
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -147,7 +148,12 @@ def main(argv=None):
                 activity.record("orchestration", "selected", decision.reason,
                                 route=decision.route.value, requires_network=decision.requires_network)
             if decision.requires_network:
-                raise ValueError("Online research routing is enabled, but no research provider is configured yet.")
+                try:
+                    DisabledResearchProvider().search(route_prompt)
+                except RuntimeError as error:
+                    if activity:
+                        activity.record("research", "blocked", str(error), query=route_prompt)
+                    raise ValueError(str(error)) from error
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
