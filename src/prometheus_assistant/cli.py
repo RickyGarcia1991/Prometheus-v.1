@@ -12,6 +12,8 @@ from .recovery import backup_memory, restore_memory
 from .documents import search_documents
 from .vocabulary import DEFAULT_VOCABULARY, Vocabulary
 from .ollama import DEFAULT_MODEL, LocalModelError, OllamaClient
+from .activity import ActivityLog
+from .orchestration import choose_route
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -28,6 +30,8 @@ def build_parser():
     parser.add_argument("--memory", type=Path, default=default_memory_path(), help="Local SQLite history file")
     parser.add_argument("--base-url", default="http://127.0.0.1:11434", help="Loopback Ollama URL only")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Installed local model; no cloud models")
+    parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
+    parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
     vocabulary = parser.add_mutually_exclusive_group()
     vocabulary.add_argument("--vocabulary", type=Path, help="Custom local glossary JSON file")
     vocabulary.add_argument("--no-vocabulary", action="store_true", help="Disable glossary guidance")
@@ -134,7 +138,16 @@ def main(argv=None):
             stream.reconfigure(encoding="utf-8")
     args = build_parser().parse_args(argv)
     command = args.command or "chat"
+    activity = ActivityLog(args.activity_log) if args.activity_log else None
     try:
+        if command in {"ask", "chat"}:
+            route_prompt = args.prompt if command == "ask" else "interactive local chat"
+            decision = choose_route(route_prompt, online_enabled=args.online_research)
+            if activity:
+                activity.record("orchestration", "selected", decision.reason,
+                                route=decision.route.value, requires_network=decision.requires_network)
+            if decision.requires_network:
+                raise ValueError("Online research routing is enabled, but no research provider is configured yet.")
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
