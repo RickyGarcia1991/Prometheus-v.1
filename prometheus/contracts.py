@@ -1,0 +1,16 @@
+"""Stable interfaces between Prometheus and replaceable infrastructure."""
+from __future__ import annotations
+from typing import Protocol, Sequence
+
+class ModelBackend(Protocol):
+    def generate(self, messages: Sequence[dict[str, str]]) -> str: ...
+
+class MemoryBackend(Protocol):
+    def remember(self, text: str, *, metadata: dict | None = None) -> str: ...
+    def recall(self, query: str, *, limit: int = 5) -> list[str]: ...
+
+class SpeechToTextBackend(Protocol):
+    def transcribe(self, audio_path: str) -> str: ...
+
+class TextToSpeechBackend(Protocol):
+    def speak(self, text: str) -> None: ...
