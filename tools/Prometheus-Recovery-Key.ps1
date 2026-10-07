@@ -1,0 +1,37 @@
+param([ValidateSet('ui','status','verify','diagnose','stage','bootstrap','health','self-repair','eject')][string]$Action='ui',[string]$Drive)
+$ErrorActionPreference='Stop'
+function KeyDrive {if($Drive){return $Drive.TrimEnd('\')};$x=Get-CimInstance Win32_LogicalDisk|Where-Object {Test-Path ($_.DeviceID+'\Prometheus-Recovery-Key\PRK-STATUS.json')}|Select-Object -First 1;if(!$x){throw 'Prometheus Recovery Key not found.'};$x.DeviceID}
+function KeyRoot {$d=KeyDrive;return $d+'\Prometheus-Recovery-Key'}
+function Verify-Key {$root=KeyRoot;$m=Get-Content (Join-Path $root 'PRK-MANIFEST.json') -Raw|ConvertFrom-Json;$bad=@();foreach($f in $m.files){$p=Join-Path $root $f.path;if(!(Test-Path $p) -or (Get-FileHash $p -Algorithm SHA256).Hash -ne $f.sha256){$bad+=$f.path}};[pscustomobject]@{verified=($bad.Count -eq 0);files=$m.files.Count;bad=$bad}}
+function Diagnose {$d=KeyDrive;$out=Join-Path $env:LOCALAPPDATA 'Prometheus\Recovery\latest-diagnostic.json';New-Item -ItemType Directory -Force (Split-Path $out)|Out-Null;$vols=@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.DeviceID -ne $env:SystemDrive}|Select DeviceID,VolumeName,FileSystem,Size,FreeSpace,DriveType);$o=[ordered]@{timestamp=(Get-Date).ToString('o');recovery_key=$d;volumes=$vols;desktop_commander=@(Get-CimInstance Win32_Process|Where-Object {$_.CommandLine -match 'DesktopCommanderStartup|desktop-commander'}).Count -gt 0;supervisor=@(Get-CimInstance Win32_Process|Where-Object {$_.CommandLine -match 'Prometheus-USB-Supervisor\.ps1'}).Count -gt 0};$o|ConvertTo-Json -Depth 5|Set-Content -Encoding UTF8 $out;return $out}
+function Stage {
+ $root=KeyRoot
+ $verified=Verify-Key
+ if(!$verified.verified -or $verified.files -lt 1){throw 'Recovery source verification failed; staging refused.'}
+ $stage=Join-Path $env:LOCALAPPDATA 'Prometheus\Recovery\Staged-PRK'
+ $candidate=$stage+'.new-'+[guid]::NewGuid().ToString('N')
+ New-Item -ItemType Directory -Force $candidate|Out-Null
+ try {
+  Copy-Item (Join-Path $root '*') $candidate -Recurse -Force
+  $manifest=Get-Content (Join-Path $candidate 'PRK-MANIFEST.json') -Raw|ConvertFrom-Json
+  foreach($f in $manifest.files){if((Get-FileHash (Join-Path $candidate $f.path) -Algorithm SHA256).Hash -ne $f.sha256){throw ('Staging verification failed: '+$f.path)}}
+  if(Test-Path $stage){Move-Item $stage ($stage+'.previous-'+[guid]::NewGuid().ToString('N'))}
+  Move-Item $candidate $stage
+ }catch{if(Test-Path $candidate){Remove-Item $candidate -Recurse -Force};throw}
+ @{staged=(Get-Date).ToString('o');source=(KeyDrive);verified_files=$manifest.files.Count;next='Safely eject Recovery Key, then connect Prometheus SSD.'}|ConvertTo-Json|Set-Content -Encoding UTF8 (Join-Path $env:LOCALAPPDATA 'Prometheus\Recovery\pending-recovery.json')
+ return $stage
+}
+function Bootstrap {$stage=Stage;$sup=Join-Path $stage 'tools\Prometheus-USB-Supervisor.ps1';if(Test-Path $sup){Copy-Item $sup (Join-Path $env:LOCALAPPDATA 'Prometheus\Prometheus-USB-Supervisor.ps1') -Force};return $stage}
+if($Action -eq 'status'){[pscustomobject]@{drive=(KeyDrive);root=(KeyRoot);manifest=(Test-Path (Join-Path (KeyRoot) 'PRK-MANIFEST.json'))}|ConvertTo-Json;exit}
+if($Action -eq 'verify'){$v=Verify-Key;$v|ConvertTo-Json -Depth 4;if(!$v.verified -or $v.files -lt 1){exit 2};exit 0}
+if($Action -eq 'diagnose'){Diagnose;exit}
+if($Action -eq 'stage'){Stage;exit}
+if($Action -eq 'bootstrap'){Bootstrap;exit}
+if($Action -eq 'health'){$engine=Join-Path (KeyRoot) 'tools\Prometheus-PRK-SelfRepair.ps1';& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $engine -Action health -Drive (KeyDrive);exit}
+if($Action -eq 'self-repair'){$engine=Join-Path (KeyRoot) 'tools\Prometheus-PRK-SelfRepair.ps1';& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $engine -Action repair -Drive (KeyDrive);exit}
+if($Action -eq 'eject'){Stage|Out-Null;$h=Join-Path $env:LOCALAPPDATA 'Prometheus\Prometheus-Removable-Eject.ps1';Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$h,'-Drive',(KeyDrive) -WindowStyle Hidden;exit}
+Add-Type -AssemblyName PresentationFramework;$v=Verify-Key;$d=KeyDrive;$w=New-Object Windows.Window;$w.Title='Prometheus Recovery Key';$w.Width=620;$w.Height=650;$w.WindowStartupLocation='CenterScreen';$g=New-Object Windows.Controls.StackPanel;$g.Margin='28';$w.Content=$g
+function T($x,$s=15,$b='Normal'){$t=New-Object Windows.Controls.TextBlock;$t.Text=$x;$t.FontSize=$s;$t.FontWeight=$b;$t.Margin='0,5,0,5';$g.Children.Add($t)|Out-Null}
+T 'PROMETHEUS RECOVERY' 30 'Bold';T 'BOOTSTRAP KEY - PRK' 16 'Bold';T '';T ('RECOVERY KEY   '+$(if($v.verified){'HEALTHY / VERIFIED'}else{'ERROR'})) 19 'Bold';T ($d+' - '+$v.files+' protected files');T 'Designed for single-USB recovery: stage to Windows, eject key, connect SSD, recover.' 13
+foreach($z in @(@('DIAGNOSE PROMETHEUS','diagnose'),@('STAGE REPAIR / RECOVERY','stage'),@('BOOTSTRAP WINDOWS HOST','bootstrap'),@('VERIFY RECOVERY KEY','verify'),@('PREPARE KEY FOR EJECT','eject'))){$b=New-Object Windows.Controls.Button;$b.Content=$z[0];$b.Tag=$z[1];$b.Height=52;$b.Margin='0,8,0,0';$b.Add_Click({param($sender,$e)$a=[string]$sender.Tag;try{if($a -eq 'verify'){$r=Verify-Key;$msg=if($r.verified){'Recovery Key verification PASSED. '+$r.files+' protected files match the SHA-256 manifest.'}else{'Recovery Key verification FAILED. Mismatches: '+($r.bad -join ', ')};[System.Windows.MessageBox]::Show($msg,'Prometheus Recovery Key')|Out-Null}elseif($a -eq 'diagnose'){$p=Diagnose;[System.Windows.MessageBox]::Show('Diagnostics completed successfully and were saved to Windows at: '+$p,'Prometheus Recovery Key')|Out-Null}elseif($a -eq 'stage'){$p=Stage;[System.Windows.MessageBox]::Show('Recovery package staged successfully to Windows at: '+$p+'  You may now prepare the key for eject when ready.','Prometheus Recovery Key')|Out-Null}elseif($a -eq 'bootstrap'){$p=Bootstrap;[System.Windows.MessageBox]::Show('Windows recovery host bootstrap completed. Staged recovery: '+$p,'Prometheus Recovery Key')|Out-Null}elseif($a -eq 'eject'){$answer=[System.Windows.MessageBox]::Show('This will stage recovery, close this window and request safe removal from Windows. Continue?','Prepare Recovery Key for Eject','YesNo','Warning');if($answer -eq 'Yes'){Stage|Out-Null;$h=Join-Path $env:LOCALAPPDATA 'Prometheus\Prometheus-Removable-Eject.ps1';Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$h,'-Drive',$d -WindowStyle Hidden;$w.Close()}}}catch{[System.Windows.MessageBox]::Show($_.Exception.Message,'Prometheus Recovery Key - Error')|Out-Null}}.GetNewClosure());$g.Children.Add($b)|Out-Null}
+T '';T "No passwords, API keys, private memory, Ollama models, or Kiwix archives are stored on this key." 12;$w.ShowDialog()|Out-Null
