@@ -1,4 +1,4 @@
-param([ValidateSet('ui','status','verify','diagnose','stage','bootstrap','eject')][string]$Action='ui',[string]$Drive)
+param([ValidateSet('ui','status','verify','diagnose','stage','bootstrap','health','self-repair','eject')][string]$Action='ui',[string]$Drive)
 $ErrorActionPreference='Stop'
 function KeyDrive {if($Drive){return $Drive.TrimEnd('\')};$x=Get-CimInstance Win32_LogicalDisk|Where-Object {Test-Path ($_.DeviceID+'\Prometheus-Recovery-Key\PRK-STATUS.json')}|Select-Object -First 1;if(!$x){throw 'Prometheus Recovery Key not found.'};$x.DeviceID}
 function KeyRoot {$d=KeyDrive;return $d+'\Prometheus-Recovery-Key'}
@@ -11,6 +11,8 @@ if($Action -eq 'verify'){Verify-Key|ConvertTo-Json -Depth 4;exit}
 if($Action -eq 'diagnose'){Diagnose;exit}
 if($Action -eq 'stage'){Stage;exit}
 if($Action -eq 'bootstrap'){Bootstrap;exit}
+if($Action -eq 'health'){$engine=Join-Path (KeyRoot) 'tools\Prometheus-PRK-SelfRepair.ps1';& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $engine -Action health -Drive (KeyDrive);exit}
+if($Action -eq 'self-repair'){$engine=Join-Path (KeyRoot) 'tools\Prometheus-PRK-SelfRepair.ps1';& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $engine -Action repair -Drive (KeyDrive);exit}
 if($Action -eq 'eject'){Stage|Out-Null;$h=Join-Path $env:LOCALAPPDATA 'Prometheus\Prometheus-Removable-Eject.ps1';Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',$h,'-Drive',(KeyDrive) -WindowStyle Hidden;exit}
 Add-Type -AssemblyName PresentationFramework;$v=Verify-Key;$d=KeyDrive;$w=New-Object Windows.Window;$w.Title='Prometheus Recovery Key';$w.Width=620;$w.Height=650;$w.WindowStartupLocation='CenterScreen';$g=New-Object Windows.Controls.StackPanel;$g.Margin='28';$w.Content=$g
 function T($x,$s=15,$b='Normal'){$t=New-Object Windows.Controls.TextBlock;$t.Text=$x;$t.FontSize=$s;$t.FontWeight=$b;$t.Margin='0,5,0,5';$g.Children.Add($t)|Out-Null}

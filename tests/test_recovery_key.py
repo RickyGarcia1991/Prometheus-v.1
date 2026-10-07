@@ -23,3 +23,10 @@ def test_recovery_key_eject_stages_before_handoff():
     t=(TOOLS/"Prometheus-Recovery-Key.ps1").read_text(encoding="utf-8")
     line=[x for x in t.splitlines() if "if($Action -eq 'eject')" in x][0]
     assert line.index("Stage") < line.index("Prometheus-Removable-Eject.ps1")
+
+
+def test_recovery_key_exposes_real_health_and_self_repair_actions():
+    t=(TOOLS/"Prometheus-Recovery-Key.ps1").read_text(encoding="utf-8")
+    assert "'health','self-repair'" in t
+    assert "Prometheus-PRK-SelfRepair.ps1" in t
+    assert "-Action health" in t and "-Action repair" in t
