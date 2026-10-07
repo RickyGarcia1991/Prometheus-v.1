@@ -39,6 +39,16 @@ def test_handoff_logs_locally_and_disconnects_desktop_commander_last():
     assert "Diagnostics" in text and "eject-history.jsonl" in text
     assert "DesktopCommanderStartup|desktop-commander" in text
     assert "Prometheus-Drive-Watcher" in text
+    assert "ExecutablePath.StartsWith($drivePrefix" in text
+    assert "runner-paused.request" in text
+    assert "SSD-backed processes remain; refusing remote disconnect." in text
+
+def test_windows_side_supervisor_restores_commander_after_volume_disappears():
+    text=(ROOT/"Prometheus-USB-Reconnect-Supervisor.ps1").read_text(encoding="utf-8")
+    assert "runner-paused.request" in text
+    assert "Run-DesktopCommander.ps1" in text
+    assert "if(!$present)" in text
+    assert "Desktop Commander restart requested" in text
 
 def test_flash_drive_preparer_excludes_large_resources_by_default():
     text=(TOOLS/"PREPARE-FLASH-DRIVE.ps1").read_text(encoding="utf-8")
