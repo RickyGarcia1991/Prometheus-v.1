@@ -1,4 +1,4 @@
-# Prometheus v0.2.0 — offline chat and Control Center
+# Prometheus v0.3.0 — local AI orchestration and structured memory
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 
@@ -44,13 +44,13 @@ py -3 -m pytest -q
 
 Optional coverage tooling: coverage 7.16.0; run coverage run -m pytest -q, coverage combine, then coverage report. The supplied .coveragerc measures assistant subprocesses.
 
-Online research, source verification, voice, autonomous tools, semantic search, and model retraining are not implemented in this milestone. See docs/STATUS.md and docs/ai for scope and verification evidence.
+Opt-in online research routing with source provenance is implemented for configured HTTPS research providers. Structured schema-v2 knowledge storage is explicit and provenance-bearing; conversation text is not automatically promoted to trusted knowledge. Voice, autonomous tools, semantic search, and model retraining remain future work. See docs/STATUS.md and docs/ai for scope and verification evidence.
 
 ## Vocabulary guidance
 
 An editable local vocabulary.json supplies relevant definitions and preferred words to each question. See [docs/VOCABULARY.md](docs/VOCABULARY.md) for examples and limits. Restart chat after editing. The doctor command also checks SQLite integrity and glossary validity.
 
-## Release 0.2.0
+## Release 0.3.0
 
 The packaged Windows release includes Python and uses a stable app-data installation.
 Use backup-memory and restore-memory for verified history recovery, and search DIRECTORY QUERY
