@@ -14,6 +14,8 @@ def test_usb_supervisor_restarts_remote_after_ejected_drive_is_gone():
     assert "Remove-Item $pause" in t and "Remove-Item $eject" in t
     assert "Run-DesktopCommander.ps1" in t and "StartDC" in t
     assert "elseif(!(DCAlive)) {StartDC}" in t
+    assert "$_.DeviceID -ne $env:SystemDrive" in t
+    assert "$_.DriveType -in 2,3" in t
 
 def test_flash_kit_has_commander_fallback_bootstrap():
     t=(TOOLS/"PREPARE-FLASH-DRIVE.ps1").read_text(encoding="utf-8")

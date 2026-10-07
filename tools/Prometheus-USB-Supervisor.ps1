@@ -1,7 +1,7 @@
 $ErrorActionPreference='SilentlyContinue'
 $local=Join-Path $env:LOCALAPPDATA 'Prometheus';$state=Join-Path $local 'usb-supervisor.json';$eject=Join-Path $local 'eject-mode.json';$pause=Join-Path $env:LOCALAPPDATA 'DesktopCommanderStartup\runner-paused.request';$dcRunner=Join-Path $env:LOCALAPPDATA 'DesktopCommanderStartup\Run-DesktopCommander.ps1';$log=Join-Path $local 'Diagnostics\usb-supervisor.log'
 New-Item -ItemType Directory -Force (Split-Path $log)|Out-Null
-function UsbVolumes {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.DriveType -eq 2})}
+function UsbVolumes {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.DeviceID -ne $env:SystemDrive -and $_.DriveType -in 2,3})}
 function DCAlive {@(Get-CimInstance Win32_Process|Where-Object {$_.CommandLine -match 'DesktopCommanderStartup|desktop-commander'}).Count -gt 0}
 function StartDC {if(!(DCAlive) -and (Test-Path $dcRunner)){Start-Process powershell.exe -ArgumentList '-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-File',$dcRunner -WindowStyle Hidden}}
 while($true){
