@@ -15,6 +15,7 @@ from .vocabulary import DEFAULT_VOCABULARY, Vocabulary
 from .ollama import DEFAULT_MODEL, LocalModelError, OllamaClient
 from .activity import ActivityLog
 from .orchestration import choose_route
+from .intelligence import plan_context
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
@@ -267,8 +268,10 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             research_context = _research_context_for_prompt(
                 prompt, online_enabled=online_research,
                 research_endpoint=research_endpoint, activity=activity)
+            plan = plan_context(prompt, offline_available=offline_knowledge,
+                                online_enabled=online_research)
             offline_context = _offline_context_for_prompt(
-                prompt, enabled=offline_knowledge, activity=activity)
+                prompt, enabled=plan.use_offline, activity=activity)
             if offline_context:
                 research_context = "\n\n".join(x for x in (research_context, offline_context) if x)
             print("Thinking locally...", flush=True)
@@ -293,8 +296,10 @@ def main(argv=None):
             research_context = _research_context_for_prompt(
                 args.prompt, online_enabled=args.online_research,
                 research_endpoint=args.research_endpoint, activity=activity)
+            plan = plan_context(args.prompt, offline_available=args.offline_knowledge,
+                                online_enabled=args.online_research)
             offline_context = _offline_context_for_prompt(
-                args.prompt, enabled=args.offline_knowledge, activity=activity)
+                args.prompt, enabled=plan.use_offline, activity=activity)
             if offline_context:
                 research_context = "\n\n".join(x for x in (research_context, offline_context) if x)
         if command == "backup-memory":
