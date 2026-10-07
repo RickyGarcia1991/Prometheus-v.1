@@ -1,6 +1,14 @@
 $ErrorActionPreference='Stop'
 $seen=@{}
 while($true){
+ $ejectLock=Join-Path (Join-Path $env:LOCALAPPDATA 'Prometheus') 'eject-mode.json'
+ if(Test-Path $ejectLock){
+  $mounted=@(Get-CimInstance Win32_LogicalDisk | Where-Object {$_.VolumeName -eq 'Prometheus-2TB'})
+  if(!$mounted.Count){$seen.Clear();Start-Sleep 3;continue}
+  try{$lockData=Get-Content $ejectLock -Raw|ConvertFrom-Json;$age=((Get-Date)-[datetime]$lockData.started).TotalSeconds}catch{$age=0}
+  if($age -lt 15){Start-Sleep 3;continue}
+  Remove-Item $ejectLock -Force -ErrorAction SilentlyContinue
+ }
  foreach($d in @(Get-CimInstance Win32_LogicalDisk | Where-Object {$_.VolumeName -eq 'Prometheus-2TB'})){
   # Once a host-cached controller is alive, do not poll the removable volume.
   # This prevents the watcher itself from racing Windows Safely Remove.
