@@ -17,6 +17,7 @@ from .activity import ActivityLog
 from .orchestration import choose_route
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
+from .hardware import coding_agents, detect_hardware, resource_root, select_model
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -54,6 +55,8 @@ def build_parser():
     history.add_argument("--json", action="store_true")
     doctor = sub.add_parser("doctor", help="Check local model and local storage")
     doctor.add_argument("--json", action="store_true")
+    inspect_host = sub.add_parser("inspect-host", help="Report hardware, local models, and optional coding agents")
+    inspect_host.add_argument("--json", action="store_true")
     backup = sub.add_parser("backup-memory", help="Create a verified history backup without overwriting")
     backup.add_argument("destination", type=Path)
     restore = sub.add_parser("restore-memory", help="Verify and restore a backup to a NEW database")
@@ -265,6 +268,30 @@ def main(argv=None):
             if args.vocabulary is not None or path.exists():
                 vocabulary = Vocabulary.load(path)
         client = OllamaClient(args.base_url, args.model)
+        if command == "inspect-host":
+            models = client.local_models()
+            names = {row.get("name") for row in models if isinstance(row, dict) and isinstance(row.get("name"), str)}
+            hardware = detect_hardware()
+            recommended = select_model(names, hardware)
+            result = {
+                "hardware": {"ram_gib": hardware.ram_gib, "cpu_threads": hardware.cpu_threads, "system": hardware.system},
+                "installed_local_models": sorted(names),
+                "recommended_model": (recommended.model if recommended else None),
+                "recommended_context": (recommended.context if recommended else None),
+                "recommended_tier": (recommended.tier if recommended else None),
+                "coding_agents": coding_agents(),
+                "resource_root": resource_root(),
+                "automatic_model_switching": False,
+            }
+            if args.json:
+                emit_json(result)
+            else:
+                print(f"RAM: {hardware.ram_gib} GiB | CPU threads: {hardware.cpu_threads} | OS: {hardware.system}")
+                print("Local models: " + (", ".join(sorted(names)) or "none"))
+                print("Recommended model: " + (recommended.model if recommended else "none"))
+                print("Detected coding agents: " + (", ".join(sorted(result["coding_agents"])) or "none"))
+                print("Automatic model switching: disabled until validation completes")
+            return 0
         client.ensure_local_model()
         with MemoryStore(args.memory) as memory:
             if command == "doctor":

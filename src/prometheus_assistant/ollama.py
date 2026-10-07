@@ -56,10 +56,14 @@ class OllamaClient:
             raise LocalModelError("Ollama returned an invalid response object.")
         return result
 
-    def ensure_local_model(self):
+    def local_models(self):
         models = self._request("/api/tags").get("models")
         if not isinstance(models, list):
             raise LocalModelError("Ollama returned an invalid local model inventory.")
+        return models
+
+    def ensure_local_model(self):
+        models = self.local_models()
         selected = next((entry for entry in models if isinstance(entry, dict)
                          and entry.get("name") == self.model), None)
         if selected is None:
