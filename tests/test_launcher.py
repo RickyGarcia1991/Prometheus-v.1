@@ -37,3 +37,26 @@ def test_end_prometheus_uses_same_shutdown_request_as_launcher():
     assert marker in end
     assert "Prometheus stopped cleanly." in end
     assert "safe eject" in end
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows CMD launcher")
+def test_configured_runtime_with_spaces(tmp_path):
+    import sys
+    # Use a path containing spaces through a directory junction to the real runtime.
+    runtime = tmp_path / "portable python"
+    subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(runtime),
+                    str(Path(sys.executable).parent)], check=True, capture_output=True)
+    env = dict(os.environ, PROMETHEUS_PYTHON=str(runtime / Path(sys.executable).name))
+    result = subprocess.run(["cmd.exe", "/d", "/c", str(ROOT / "START_PROMETHEUS.cmd"), "--help"],
+                            env=env, cwd=tmp_path, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    assert "sessions" in result.stdout
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows CMD launcher")
+def test_missing_configured_runtime_fails(tmp_path):
+    env = dict(os.environ, PROMETHEUS_PYTHON=str(tmp_path / "missing.exe"))
+    result = subprocess.run(["cmd.exe", "/d", "/c", str(ROOT / "START_PROMETHEUS.cmd"), "--help"],
+                            env=env, capture_output=True, text=True, timeout=15)
+    assert result.returncode != 0
+    assert "runtime missing" in result.stdout
