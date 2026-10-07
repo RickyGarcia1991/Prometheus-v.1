@@ -1,0 +1,1 @@
+using System.Windows; namespace Prometheus.PRK.Controller; public partial class App:Application {}

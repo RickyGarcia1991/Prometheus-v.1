@@ -30,3 +30,16 @@ def test_recovery_key_exposes_real_health_and_self_repair_actions():
     assert "'health','self-repair'" in t
     assert "Prometheus-PRK-SelfRepair.ps1" in t
     assert "-Action health" in t and "-Action repair" in t
+
+
+def test_recovery_key_builder_packages_portable_live_controller():
+    t=(TOOLS/"BUILD-RECOVERY-KEY.ps1").read_text(encoding="utf-8")
+    assert "Prometheus.PRK.Controller.csproj" in t
+    assert "PRK-Controller" in t
+    assert "Prometheus.PRK.Controller.exe" in t
+
+def test_portable_controller_uses_real_health_and_repair_engine():
+    c=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml.cs").read_text(encoding="utf-8")
+    assert "Prometheus-PRK-SelfRepair.ps1" in c
+    assert 'Run("health")' in c and 'Run("repair")' in c
+    assert 'GetProperty("percent")' in c and 'GetProperty("state")' in c
