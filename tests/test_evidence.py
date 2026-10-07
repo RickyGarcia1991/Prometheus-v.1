@@ -24,3 +24,11 @@ def test_collection_filters_unrelated_memory(tmp_path,monkeypatch):
         m.remember("fact","paint","car blue",source_type="user",source_ref="t")
         rows=collect_evidence("robot actuator",memory=m,use_offline=True)
         assert len(rows)==1 and rows[0].source_type=="wikipedia"
+
+def test_offline_title_candidates_are_reranked(monkeypatch):
+    import prometheus_assistant.evidence as e
+    monkeypatch.setattr(e,"ARCHIVES",(("wiki","wikipedia",60),))
+    monkeypatch.setattr(e,"search_archive",lambda root,archive,q,n:["Unrelated poem","Robot actuator"])
+    monkeypatch.setattr(e,"read_article",lambda root,archive,title,n:title+" reference")
+    rows=offline_evidence("robot actuator",root="X")
+    assert rows[0].source_ref=="Robot actuator"

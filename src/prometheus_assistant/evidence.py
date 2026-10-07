@@ -4,6 +4,7 @@ from .context import Evidence
 from .hardware import resource_root
 from .kiwix import KiwixError, read_article, search_archive
 from .retrieval import rank_evidence
+from .semantic import semantic_overlap
 
 ARCHIVES=(
     ("wikipedia-en-all-nopic","wikipedia",60),
@@ -22,7 +23,9 @@ def offline_evidence(query, *, root=None, per_archive=1, max_chars=2200):
     found=[]
     for archive_id,source_type,priority in ARCHIVES:
         try:
-            for title in search_archive(root,archive_id,query,per_archive):
+            titles=search_archive(root,archive_id,query,max(per_archive*5,5))
+            titles.sort(key=lambda title: semantic_overlap(query,title),reverse=True)
+            for title in titles[:per_archive]:
                 text=read_article(root,archive_id,title,max_chars)
                 found.append(Evidence(source_type,title,text,priority))
         except KiwixError:
