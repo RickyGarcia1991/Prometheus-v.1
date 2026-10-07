@@ -18,6 +18,7 @@ from .orchestration import choose_route
 from .intelligence import plan_context
 from .context import Evidence, assemble_context
 from .retrieval import rank_evidence
+from .evidence import collect_evidence
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
@@ -129,9 +130,10 @@ def exchange(memory, client, session_id, prompt, vocabulary=None, research_conte
              memory_recall=True):
     prompt = validate_prompt(prompt)
     system = SYSTEM_PROMPT + (vocabulary.context(prompt) if vocabulary else '')
-    memory_context = _memory_context_for_prompt(memory, prompt, enabled=memory_recall)
-    if memory_context:
-        system += "\n\n" + memory_context
+    local_evidence = collect_evidence(prompt, memory=memory, use_memory=memory_recall)
+    if local_evidence:
+        local = assemble_context(local_evidence, max_chars=1800)
+        system += "\n\nLOCAL DURABLE MEMORY (context, not external evidence):\n" + local["context"]
     if research_context:
         evidence = rank_evidence(
             prompt,
