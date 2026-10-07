@@ -9,9 +9,9 @@ SOURCE_WEIGHT={"memory":30,"wikipedia":22,"wiktionary":16,"wikisource":12,"onlin
 def tokens(text):
     return set(_WORD.findall(text.lower()))
 
-def rank_evidence(query, items, limit=6):
-    if limit < 1:
-        raise ValueError("limit must be positive")
+def rank_evidence(query, items, limit=6, max_per_source=2):
+    if limit < 1 or max_per_source < 1:
+        raise ValueError("limits must be positive")
     wanted=tokens(query)
     ranked=[]
     for index,item in enumerate(items):
@@ -19,10 +19,19 @@ def rank_evidence(query, items, limit=6):
             continue
         hay=tokens(item.source_ref+" "+item.text)
         overlap=len(wanted & hay)
+        coverage=(overlap/len(wanted)) if wanted else 0
         phrase=1 if query.strip().lower() in item.text.lower() else 0
         if wanted and overlap == 0:
             continue
-        score=item.priority+SOURCE_WEIGHT.get(item.source_type,0)+(overlap*12)+(phrase*16)
+        score=item.priority+SOURCE_WEIGHT.get(item.source_type,0)+(overlap*12)+(coverage*20)+(phrase*16)
         ranked.append((score,-index,item))
     ranked.sort(key=lambda row:(row[0],row[1]),reverse=True)
-    return [item for _,_,item in ranked[:limit]]
+    selected=[]; counts={}
+    for _,_,item in ranked:
+        if counts.get(item.source_type,0) >= max_per_source:
+            continue
+        selected.append(item)
+        counts[item.source_type]=counts.get(item.source_type,0)+1
+        if len(selected)>=limit:
+            break
+    return selected
