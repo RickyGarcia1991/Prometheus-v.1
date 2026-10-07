@@ -59,9 +59,14 @@ function Get-Health {
  )
  [pscustomobject]@{timestamp=(Get-Date).ToString('o');drive=(Get-KeyDrive);protected_files=@($manifest.files).Count;source_verified=($integrity.state -eq 'ready');channels=$channels}
 }
+function Write-RepairLog($Record) {
+ $r=Roots;$logDir=Join-Path $r.local 'Recovery';New-Item -ItemType Directory -Force $logDir|Out-Null
+ $line=$Record|ConvertTo-Json -Depth 12 -Compress
+ Add-Content -Encoding UTF8 (Join-Path $logDir 'self-repair.log') $line
+}
 function Invoke-Repair {
  $before=Get-Health
- if(!$before.source_verified){return [pscustomobject]@{success=$false;state='blocked';message='Self-repair blocked because protected PRK source integrity failed.';before=$before;actions=@();after=$before}}
+ if(!$before.source_verified){$result=[pscustomobject]@{timestamp=(Get-Date).ToString('o');action='repair';success=$false;state='blocked';message='Self-repair blocked because protected PRK source integrity failed.';before=$before;actions=@();after=$before};Write-RepairLog $result;return $result}
  $r=Roots;$actions=@()
  $stageState=@($before.channels|Where-Object {$_.name -eq 'staging'})|Select-Object -First 1
  if(!$stageState -or $stageState.state -ne 'ready'){
@@ -84,7 +89,9 @@ function Invoke-Repair {
  }
  $after=Get-Health
  $failed=@($after.channels|Where-Object {$_.state -in @('error','blocked','repairable')})
- [pscustomobject]@{success=($failed.Count -eq 0);state=$(if($failed.Count){'error'}else{'ready'});message=$(if($actions.Count){'Bounded self-repair completed and re-verified.'}else{'No repair was required.'});actions=$actions;before=$before;after=$after}
+ $result=[pscustomobject]@{timestamp=(Get-Date).ToString('o');action='repair';success=($failed.Count -eq 0);state=$(if($failed.Count){'error'}else{'ready'});message=$(if($actions.Count){'Bounded self-repair completed and re-verified.'}else{'No repair was required.'});actions=$actions;before=$before;after=$after}
+ Write-RepairLog $result
+ return $result
 }
 if($Action -eq 'health'){Get-Health|ConvertTo-Json -Depth 8;exit}
 if($Action -eq 'repair'){Invoke-Repair|ConvertTo-Json -Depth 10;exit}

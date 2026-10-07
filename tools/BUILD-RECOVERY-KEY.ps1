@@ -13,7 +13,15 @@ $manifestFiles=@(Get-ChildItem $dest -File -Recurse|Where-Object {$_.Name -ne 'P
 @{created=(Get-Date).ToString('o');algorithm='SHA256';files=$manifestFiles}|ConvertTo-Json -Depth 4|Set-Content -Encoding UTF8 (Join-Path $dest 'PRK-MANIFEST.json')
 @'
 @echo off
-if exist "%~dp0Prometheus-Recovery-Key\PRK-Controller\Prometheus.PRK.Controller.exe" (start "" "%~dp0Prometheus-Recovery-Key\PRK-Controller\Prometheus.PRK.Controller.exe") else (powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Prometheus-Recovery-Key\tools\Prometheus-Recovery-Key.ps1" -Action ui -Drive "%~d0")
+setlocal
+set "CTL=%~dp0Prometheus-Recovery-Key\PRK-Controller\Prometheus.PRK.Controller.exe"
+set "FALLBACK=%~dp0Prometheus-Recovery-Key\tools\Prometheus-Recovery-Key.ps1"
+if exist "%CTL%" (
+  start /wait "" "%CTL%"
+  if not errorlevel 1 exit /b 0
+  echo Portable controller could not start. Opening PowerShell recovery interface...
+)
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%FALLBACK%" -Action ui -Drive "%~d0"
 '@|Set-Content -Encoding ASCII (Join-Path $root 'PROMETHEUS RECOVERY.cmd')
 @'
 @echo off

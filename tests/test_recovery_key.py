@@ -41,7 +41,7 @@ def test_recovery_key_builder_packages_portable_live_controller():
 def test_portable_controller_uses_real_health_and_repair_engine():
     c=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml.cs").read_text(encoding="utf-8")
     assert "Prometheus-PRK-SelfRepair.ps1" in c
-    assert 'Run("health")' in c and 'Run("repair")' in c
+    assert 'RunEngineAsync("health")' in c and 'RunEngineAsync("repair")' in c
     assert 'GetProperty("percent")' in c and 'GetProperty("state")' in c
 
 
@@ -49,9 +49,26 @@ def test_portable_controller_has_safe_eject_handoff():
     x=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml").read_text(encoding="utf-8")
     c=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml.cs").read_text(encoding="utf-8")
     assert "Prepare Key for Eject" in x and 'Click="Eject_Click"' in x
-    assert "STATUS: PREPARING FOR EJECT" in c
+    assert 'Busy("Preparing for eject")' in c
     assert "source_verified" in c
     assert "PRK-Eject-Handoff.ps1" in c
     assert "Prometheus-Removable-Eject.ps1" in c
-    assert "-Action stage" in c
+    assert 'RunRecoveryAsync("stage")' in c
     assert "Eject blocked: Recovery Key integrity verification failed." in c
+
+
+def test_prk_controller_live_state_and_runtime_fallback_contract():
+    x=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml").read_text(encoding="utf-8")
+    c=(TOOLS/"Prometheus.PRK.Controller"/"MainWindow.xaml.cs").read_text(encoding="utf-8")
+    b=(TOOLS/"BUILD-RECOVERY-KEY.ps1").read_text(encoding="utf-8")
+    assert "Last verified:" in c
+    assert 'GetProperty("state").GetString() is "error" or "blocked"' in c and 'GetProperty("state").GetString()=="repairable"' in c
+    assert "WaitForExitAsync" in c and "Busy(" in c
+    assert "MOUNTED / ACTIVE" in x and "Prepare Key for Eject" in x
+    assert "start /wait" in b and "PowerShell recovery interface" in b
+
+def test_self_repair_writes_audit_log():
+    t=(TOOLS/"Prometheus-PRK-SelfRepair.ps1").read_text(encoding="utf-8")
+    assert "self-repair.log" in t
+    assert "Write-RepairLog" in t
+    assert "timestamp=(Get-Date).ToString('o')" in t
