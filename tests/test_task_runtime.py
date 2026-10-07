@@ -31,3 +31,14 @@ def test_runtime_writes_audit_trail(tmp_path,monkeypatch):
     assert '"stage": "agent-plan"' in rows[0]
     assert '"stage": "agent-tool"' in rows[1]
     assert '"stage": "agent-run"' in rows[2]
+
+def test_runtime_exposes_ranked_tool_evidence(monkeypatch):
+    import prometheus_assistant.local_tools as lt
+    monkeypatch.setattr(lt,"resource_root",lambda:None)
+    out=execute_local_task("Show system status")
+    assert out.evidence
+    assert out.evidence[0].source_type=="tool"
+    assert out.evidence[0].source_ref=="system_status"
+
+def test_no_tool_task_has_no_evidence():
+    assert execute_local_task("hello there").evidence==()

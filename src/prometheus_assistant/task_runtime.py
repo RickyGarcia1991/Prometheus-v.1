@@ -5,12 +5,14 @@ from .agent_loop import RunResult,run_plan
 from .local_tools import default_local_registry
 from .task_planner import TaskPlan,plan_task
 from .activity import ActivityLog
+from .observations import observation_evidence
 
 @dataclass(frozen=True)
 class TaskRuntimeResult:
     plan: TaskPlan
     run: RunResult
     observations: tuple[dict,...]
+    evidence: tuple=()
 
 def execute_local_task(prompt, *, read_roots=(), approved_tools=(), activity_log=None):
     plan=plan_task(prompt)
@@ -27,4 +29,5 @@ def execute_local_task(prompt, *, read_roots=(), approved_tools=(), activity_log
         for item in observations:
             log.record("agent-tool",item["status"],item["tool"],reason=item["reason"])
         log.record("agent-run",run.status,"Bounded task run finished.",steps=len(run.observations))
-    return TaskRuntimeResult(plan,run,observations)
+    evidence=tuple(observation_evidence(prompt,observations))
+    return TaskRuntimeResult(plan,run,observations,evidence)
