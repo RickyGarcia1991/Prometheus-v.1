@@ -5,6 +5,8 @@ from .task_planner import plan_task
 from .model_planner import constrain_suggestions
 from .memory_policy import MemoryProposal,durable_memory_allowed
 from .observations import observation_evidence
+from .context import Evidence
+from .synthesis import synthesize_context
 
 @dataclass(frozen=True)
 class BenchmarkResult:
@@ -20,6 +22,7 @@ def run_acceptance_benchmark():
         ("model cannot add authority",constrain_suggestions("hello",["system_status"]).steps==()),
         ("assistant cannot self-write memory",not durable_memory_allowed(MemoryProposal("fact","x","y","assistant","bench"),explicit_user=True,verified=True)),
         ("failed tools cannot become evidence",observation_evidence("system",[{"tool":"system_status","status":"failed","result":{"system":"Windows"}}])==[]),
+        ("synthesis marks evidence untrusted","untrusted data" in synthesize_context("robot",[Evidence("tool","x","robot fact",50)]).system_suffix),
     ]
     failures=tuple(name for name,ok in checks if not ok)
     return BenchmarkResult(len(checks)-len(failures),len(failures),failures)
