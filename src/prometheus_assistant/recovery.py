@@ -13,10 +13,14 @@ def validate_database(path):
             raise ValueError('Database integrity check failed.')
         if db.execute('PRAGMA foreign_key_check').fetchone():
             raise ValueError('Database relationships are invalid.')
-        if db.execute('PRAGMA user_version').fetchone()[0] != 1:
+        version = db.execute('PRAGMA user_version').fetchone()[0]
+        if version not in (1, 2):
             raise ValueError('Unsupported history version.')
-        return {table: db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
-                for table in ('sessions', 'turns')}
+        tables = ('sessions', 'turns') if version == 1 else ('sessions', 'turns', 'knowledge')
+        return {'schema_version': version, **{
+            table: db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+            for table in tables
+        }}
 
 
 def backup_memory(source, destination, timeout_seconds=30):
@@ -50,6 +54,6 @@ def restore_memory(source, destination):
     if hashlib.sha256(source.read_bytes()).hexdigest() != metadata['sha256']:
         raise ValueError('Backup checksum mismatch.')
     counts = validate_database(source)
-    if any(counts[key] != metadata[key] for key in counts):
+    if any(counts[key] != metadata.get(key) for key in counts):
         raise ValueError('Backup record counts mismatch.')
     return backup_memory(source, destination)

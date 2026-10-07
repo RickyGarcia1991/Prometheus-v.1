@@ -29,7 +29,7 @@ class MemoryStore:
         self.db.row_factory = sqlite3.Row
         try:
             version = self.db.execute("PRAGMA user_version").fetchone()[0]
-            if version not in {0, 1}:
+            if version not in {0, 1, 2}:
                 raise ValueError("Unsupported memory database version; no migration attempted.")
             self.db.execute("PRAGMA foreign_keys = ON")
             self.db.executescript("""
@@ -46,8 +46,22 @@ class MemoryStore:
                     created_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS turns_by_session ON turns(session_id, id);
-                PRAGMA user_version = 1;
+                CREATE TABLE IF NOT EXISTS knowledge (
+                    id INTEGER PRIMARY KEY,
+                    kind TEXT NOT NULL CHECK (kind IN ('preference', 'decision', 'fact', 'instruction')),
+                    subject TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    source_type TEXT NOT NULL,
+                    source_ref TEXT NOT NULL,
+                    confidence REAL NOT NULL DEFAULT 1.0 CHECK (confidence >= 0 AND confidence <= 1),
+                    retention TEXT NOT NULL DEFAULT 'persistent' CHECK (retention IN ('session', 'persistent', 'until_replaced')),
+                    created_at TEXT NOT NULL,
+                    superseded_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS knowledge_active ON knowledge(kind, subject, superseded_at);
             """)
+            self.db.execute("PRAGMA user_version = 2")
+            self.db.commit()
         except Exception:
             self.db.close()
             raise
@@ -91,6 +105,50 @@ class MemoryStore:
                 "SELECT role, content, created_at FROM turns WHERE session_id = ? ORDER BY id DESC LIMIT ?",
                 (session_id, limit),
             ).fetchall()[::-1]
+        return [dict(row) for row in rows]
+
+    def remember(self, kind, subject, value, *, source_type, source_ref, confidence=1.0, retention="persistent"):
+        fields = (kind, subject, value, source_type, source_ref)
+        if not all(isinstance(item, str) and item.strip() for item in fields):
+            raise ValueError("Knowledge fields must be non-empty strings.")
+        if kind not in {"preference", "decision", "fact", "instruction"}:
+            raise ValueError("Unsupported knowledge kind.")
+        if retention not in {"session", "persistent", "until_replaced"}:
+            raise ValueError("Unsupported retention policy.")
+        confidence = float(confidence)
+        if not 0 <= confidence <= 1:
+            raise ValueError("Confidence must be between 0 and 1.")
+        now = utc_now()
+        subject = subject.strip()
+        with self.db:
+            if retention == "until_replaced":
+                self.db.execute(
+                    "UPDATE knowledge SET superseded_at = ? WHERE kind = ? AND subject = ? AND superseded_at IS NULL",
+                    (now, kind, subject),
+                )
+            cursor = self.db.execute(
+                """INSERT INTO knowledge
+                (kind, subject, value, source_type, source_ref, confidence, retention, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (kind, subject, value.strip(), source_type.strip(), source_ref.strip(),
+                 confidence, retention, now),
+            )
+        return cursor.lastrowid
+
+    def knowledge(self, *, kind=None, subject=None, include_superseded=False):
+        clauses, params = [], []
+        if not include_superseded:
+            clauses.append("superseded_at IS NULL")
+        if kind is not None:
+            clauses.append("kind = ?")
+            params.append(kind)
+        if subject is not None:
+            clauses.append("subject = ?")
+            params.append(subject)
+        where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = self.db.execute(
+            "SELECT * FROM knowledge" + where + " ORDER BY id", params
+        ).fetchall()
         return [dict(row) for row in rows]
 
     def sessions(self):

@@ -348,3 +348,75 @@ def test_doctor_reports_broken_history_relationships(tmp_path, ollama_stub):
         connection.execute("UPDATE turns SET session_id = 'missing'")
     failed = run_cli(db, "doctor", stub=ollama_stub)
     assert failed.returncode == 1 and "integrity check failed" in failed.stderr
+
+
+def test_memory_v1_migrates_to_v2_without_losing_history(tmp_path):
+    from prometheus_assistant.memory import MemoryStore
+    db = tmp_path / "memory.sqlite3"
+    with sqlite3.connect(db) as connection:
+        connection.executescript("""
+            CREATE TABLE sessions (session_id TEXT PRIMARY KEY, model TEXT NOT NULL, created_at TEXT NOT NULL);
+            CREATE TABLE turns (
+                id INTEGER PRIMARY KEY,
+                session_id TEXT NOT NULL REFERENCES sessions(session_id),
+                role TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            INSERT INTO sessions VALUES ('legacy', 'llama3.2:1b', '2026-01-01T00:00:00+00:00');
+            INSERT INTO turns (session_id, role, content, created_at)
+                VALUES ('legacy', 'user', 'preserve me', '2026-01-01T00:00:00+00:00');
+            PRAGMA user_version = 1;
+        """)
+    with MemoryStore(db) as memory:
+        assert memory.history("legacy")[0]["content"] == "preserve me"
+        memory.remember(
+            "preference", "response.detail", "step-by-step",
+            source_type="user_statement", source_ref="session:legacy",
+            retention="until_replaced",
+        )
+        rows = memory.knowledge(kind="preference")
+        assert rows[0]["value"] == "step-by-step"
+        assert rows[0]["source_type"] == "user_statement"
+    with sqlite3.connect(db) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+
+
+def test_until_replaced_knowledge_preserves_provenance_history(tmp_path):
+    from prometheus_assistant.memory import MemoryStore
+    with MemoryStore(tmp_path / "memory.sqlite3") as memory:
+        first = memory.remember(
+            "decision", "research.mode", "local-only",
+            source_type="user_statement", source_ref="turn:1",
+            retention="until_replaced",
+        )
+        second = memory.remember(
+            "decision", "research.mode", "online-when-requested",
+            source_type="user_statement", source_ref="turn:2",
+            retention="until_replaced",
+        )
+        active = memory.knowledge(kind="decision", subject="research.mode")
+        all_rows = memory.knowledge(
+            kind="decision", subject="research.mode", include_superseded=True
+        )
+        assert [row["id"] for row in active] == [second]
+        assert len(all_rows) == 2
+        assert all_rows[0]["id"] == first and all_rows[0]["superseded_at"] is not None
+
+
+@pytest.mark.parametrize("field,value", [
+    ("kind", "unknown"),
+    ("retention", "forever"),
+    ("confidence", 1.1),
+])
+def test_structured_knowledge_rejects_invalid_metadata(tmp_path, field, value):
+    from prometheus_assistant.memory import MemoryStore
+    kwargs = dict(
+        kind="fact", subject="project.name", value="Prometheus",
+        source_type="user_statement", source_ref="turn:1",
+        retention="persistent", confidence=1.0,
+    )
+    kwargs[field] = value
+    with MemoryStore(tmp_path / "memory.sqlite3") as memory:
+        with pytest.raises(ValueError):
+            memory.remember(**kwargs)

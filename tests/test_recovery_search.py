@@ -84,3 +84,22 @@ def test_search_excludes_hidden_documents_and_outside_links(tmp_path):
     except OSError:
         pass  # Link creation needs Windows privilege; hidden-directory check still runs.
     assert search_documents(docs, 'target')['results'] == []
+
+
+def test_backup_restore_preserves_structured_knowledge(tmp_path):
+    source, backup, restored = [tmp_path / name for name in ("live.db", "backup.db", "restored.db")]
+    with MemoryStore(source) as store:
+        store.remember(
+            "preference", "response.detail", "step-by-step",
+            source_type="user_statement", source_ref="turn:42",
+            retention="until_replaced",
+        )
+    metadata = backup_memory(source, backup)
+    assert metadata["schema_version"] == 2
+    assert metadata["knowledge"] == 1
+    restore_memory(backup, restored)
+    with MemoryStore(restored) as store:
+        rows = store.knowledge(kind="preference", subject="response.detail")
+        assert len(rows) == 1
+        assert rows[0]["value"] == "step-by-step"
+        assert rows[0]["source_ref"] == "turn:42"
