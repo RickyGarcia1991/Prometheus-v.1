@@ -21,6 +21,7 @@ from .hardware import coding_agents, detect_hardware, resource_root, select_mode
 from .integrations import available_local_workers, launch_integrations, ollama_executable
 from .resources import inventory
 from .source_catalog import source_catalog
+from .kiwix import KiwixError, read_article, search_archive
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -39,6 +40,7 @@ def build_parser():
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Installed local model; no cloud models")
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
     parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
+    parser.add_argument("--offline-knowledge", action="store_true", help="Ground chat/ask with the installed offline Wikipedia ZIM")
     parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
     parser.add_argument("--shutdown-request", type=Path, help="Optional local file whose presence requests a graceful interactive-chat exit")
     vocabulary = parser.add_mutually_exclusive_group()
@@ -73,6 +75,16 @@ def build_parser():
     resources.add_argument("--json", action="store_true")
     sources = sub.add_parser("sources", help="List ranked remote research sources")
     sources.add_argument("--json", action="store_true")
+    archive_search = sub.add_parser("archive-search", help="Search an installed offline Kiwix ZIM archive")
+    archive_search.add_argument("archive_id")
+    archive_search.add_argument("query")
+    archive_search.add_argument("--limit", type=int, default=10)
+    archive_search.add_argument("--json", action="store_true")
+    archive_read = sub.add_parser("archive-read", help="Read article text from an installed offline Kiwix ZIM archive")
+    archive_read.add_argument("archive_id")
+    archive_read.add_argument("title")
+    archive_read.add_argument("--max-chars", type=int, default=12000)
+    archive_read.add_argument("--json", action="store_true")
     return parser
 
 
@@ -186,8 +198,28 @@ def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpo
     return context
 
 
+def _offline_context_for_prompt(prompt, *, enabled=False, activity=None):
+    if not enabled:
+        return None
+    try:
+        titles = search_archive(resource_root(), "wikipedia-en-all-nopic", prompt, 1)
+        if not titles:
+            return None
+        title = titles[0]
+        text = read_article(resource_root(), "wikipedia-en-all-nopic", title, 3500)
+        if activity:
+            activity.record("offline_knowledge", "complete", "Offline Wikipedia evidence loaded.",
+                            title=title, context_chars=len(text))
+        return f"Offline Wikipedia article: {title}\n{text}"
+    except KiwixError as error:
+        if activity:
+            activity.record("offline_knowledge", "unavailable", str(error))
+        return None
+
+
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
-                     online_research=False, research_endpoint=None, activity=None):
+                     online_research=False, research_endpoint=None, activity=None,
+                     offline_knowledge=False):
     print("Prometheus local chat — no cloud fallback.")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
@@ -208,11 +240,15 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             research_context = _research_context_for_prompt(
                 prompt, online_enabled=online_research,
                 research_endpoint=research_endpoint, activity=activity)
+            offline_context = _offline_context_for_prompt(
+                prompt, enabled=offline_knowledge, activity=activity)
+            if offline_context:
+                research_context = "\n\n".join(x for x in (research_context, offline_context) if x)
             print("Thinking locally...", flush=True)
             result = exchange(memory, client, session_id, prompt, vocabulary, research_context)
             print(f"Prometheus> {result['reply']}")
             print(f"[{result['elapsed_seconds']}s; saved locally]", flush=True)
-        except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
+        except (LocalModelError, KiwixError, ValueError, OSError, sqlite3.Error) as error:
             print(f"ERROR: {error}", file=sys.stderr)
 
 
@@ -229,6 +265,10 @@ def main(argv=None):
             research_context = _research_context_for_prompt(
                 args.prompt, online_enabled=args.online_research,
                 research_endpoint=args.research_endpoint, activity=activity)
+            offline_context = _offline_context_for_prompt(
+                args.prompt, enabled=args.offline_knowledge, activity=activity)
+            if offline_context:
+                research_context = "\n\n".join(x for x in (research_context, offline_context) if x)
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
@@ -242,6 +282,17 @@ def main(argv=None):
             else:
                 for row in rows:
                     print(f"{row['authority']:3} {row['title']} — {', '.join(row['subjects'])} [{row['access']}]")
+            return 0
+        if command == "archive-search":
+            rows = search_archive(resource_root(), args.archive_id, args.query, args.limit)
+            if args.json: emit_json(rows)
+            else:
+                for row in rows: print(row)
+            return 0
+        if command == "archive-read":
+            article = read_article(resource_root(), args.archive_id, args.title, args.max_chars)
+            if args.json: emit_json({"archive_id": args.archive_id, "title": args.title, "text": article})
+            else: print(article)
             return 0
         if command == "resources":
             rows = inventory(resource_root())
@@ -364,8 +415,9 @@ def main(argv=None):
                 online_research=args.online_research,
                 research_endpoint=args.research_endpoint,
                 activity=activity,
+                offline_knowledge=args.offline_knowledge,
             )
-    except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
+    except (LocalModelError, KiwixError, ValueError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
