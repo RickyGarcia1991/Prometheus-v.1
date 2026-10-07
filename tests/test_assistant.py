@@ -223,6 +223,20 @@ def test_interactive_chat_can_exit_cleanly(tmp_path, ollama_stub):
     assert result.returncode == 0 and "Local reply: hello" in result.stdout
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows console shutdown polling")
+def test_interactive_chat_honors_existing_shutdown_request(tmp_path, ollama_stub):
+    shutdown_request = tmp_path / "shutdown.request"
+    shutdown_request.write_text("stop", encoding="utf-8")
+    result = run_cli(
+        tmp_path / "memory.sqlite3",
+        "--shutdown-request", str(shutdown_request),
+        "chat",
+        stub=ollama_stub,
+    )
+    assert result.returncode == 0
+    assert "Shutdown requested; closing chat cleanly." in result.stdout
+
+
 def test_doctor_confirms_local_model_and_storage(tmp_path, ollama_stub):
     result = successful_json(run_cli(tmp_path / "memory.sqlite3", "doctor", "--json",
                                     stub=ollama_stub))

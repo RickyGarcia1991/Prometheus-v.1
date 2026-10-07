@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sqlite3
 import sys
@@ -35,6 +36,7 @@ def build_parser():
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
     parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
     parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
+    parser.add_argument("--shutdown-request", type=Path, help="Optional local file whose presence requests a graceful interactive-chat exit")
     vocabulary = parser.add_mutually_exclusive_group()
     vocabulary.add_argument("--vocabulary", type=Path, help="Custom local glossary JSON file")
     vocabulary.add_argument("--no-vocabulary", action="store_true", help="Disable glossary guidance")
@@ -116,15 +118,53 @@ def exchange(memory, client, session_id, prompt, vocabulary=None, research_conte
             "context_turns": len(selected), "vocabulary_entries_used": (system.count('\n{'))}
 
 
-def interactive_chat(memory, client, session_id, vocabulary=None):
+def _console_input_or_shutdown(prompt, shutdown_request=None):
+    if os.name != "nt" or shutdown_request is None:
+        return input(prompt)
+    import msvcrt
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    chars = []
+    while True:
+        if shutdown_request.exists():
+            sys.stdout.write("\nShutdown requested; closing chat cleanly.\n")
+            sys.stdout.flush()
+            return None
+        if msvcrt.kbhit():
+            char = msvcrt.getwch()
+            if char in {"\r", "\n"}:
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+                return "".join(chars)
+            if char == "\003":
+                raise KeyboardInterrupt
+            if char == "\b":
+                if chars:
+                    chars.pop()
+                    sys.stdout.write("\b \b")
+                    sys.stdout.flush()
+                continue
+            if char in {"\x00", "\xe0"}:
+                msvcrt.getwch()
+                continue
+            chars.append(char)
+            sys.stdout.write(char)
+            sys.stdout.flush()
+        else:
+            time.sleep(0.1)
+
+
+def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None):
     print("Prometheus local chat — no cloud fallback.")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
     print("Type /exit to leave. Answers may be wrong; verify important facts.")
     while True:
         try:
-            prompt = input("You> ")
+            prompt = _console_input_or_shutdown("You> ", shutdown_request)
         except EOFError:
+            return 0
+        if prompt is None:
             return 0
         if prompt.strip().lower() in {"/exit", "/quit"}:
             return 0
@@ -243,7 +283,7 @@ def main(argv=None):
                     print(result["reply"])
                     print(f"\nSession: {session_id} | Saved locally | {result['elapsed_seconds']}s")
                 return 0
-            return interactive_chat(memory, client, session_id, vocabulary)
+            return interactive_chat(memory, client, session_id, vocabulary, args.shutdown_request)
     except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
