@@ -1,0 +1,22 @@
+param([ValidateSet('Install','Repair','Uninstall','Verify')][string]$Mode='Install',[switch]$Elevated)
+$ErrorActionPreference='Stop'
+$HostRoot=Join-Path $env:LOCALAPPDATA 'Prometheus';$Agent=Join-Path $HostRoot 'Prometheus-Host-Agent.ps1';$Watcher=Join-Path $HostRoot 'Prometheus-Volume-Watcher.ps1'
+$WatcherTask='Prometheus Volume Watcher';$Obsolete=@('Prometheus Host Agent','Prometheus Host Agent Logon','Prometheus Device Support')
+function Admin{$p=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent();$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)}
+function Elevate{if(Admin){return};if($Elevated){throw 'Elevation failed'};$a="-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Mode $Mode -Elevated";$p=Start-Process powershell.exe -Verb RunAs -ArgumentList $a -Wait -PassThru;exit $p.ExitCode}
+function SourceRoot{$candidate=Join-Path (Split-Path $PSCommandPath -Parent) 'Prometheus-Host-Agent-v0.6.0';if(Test-Path $candidate){return $candidate};return (Split-Path $PSCommandPath -Parent)}
+if($Mode -eq 'Verify'){& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Agent -Mode Verify;exit $LASTEXITCODE}
+Elevate
+if($Mode -eq 'Uninstall'){foreach($n in @($WatcherTask)+$Obsolete){$task=Get-ScheduledTask -TaskName $n -ErrorAction SilentlyContinue;if($task){Stop-ScheduledTask -TaskName $n -ErrorAction SilentlyContinue;Unregister-ScheduledTask -TaskName $n -Confirm:$false}};Remove-Item $Agent,$Watcher -Force -ErrorAction SilentlyContinue;Write-Output 'Prometheus Host Agent uninstalled.';exit 0}
+$src=SourceRoot;$srcAgent=Join-Path $src 'Prometheus-Host-Agent.ps1';$srcWatcher=Join-Path $src 'Prometheus-Volume-Watcher.ps1';if(!(Test-Path $srcAgent) -or !(Test-Path $srcWatcher)){throw 'Host Agent package is incomplete'}
+$manifest=Join-Path $src 'SHA256-MANIFEST.json';$sigPath=Join-Path $src 'SHA256-MANIFEST.sig';$certPath=Join-Path $src 'MANIFEST-PUBLIC.cer';if(!(Test-Path $manifest) -or !(Test-Path $sigPath) -or !(Test-Path $certPath)){throw 'Signed Host Agent package required'}
+$cert=New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath);if($cert.Thumbprint -ne '898F702114B0F889763589C4057DC19CF1657CD5'){throw 'Host Agent signing certificate is not trusted'};$rsa=[System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert);$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes($sigPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1);$rsa.Dispose();$cert.Dispose();if(!$ok){throw 'Host Agent manifest signature invalid'}
+foreach($e in (Get-Content $manifest -Raw|ConvertFrom-Json)){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Host Agent integrity failure: '+$e.path)}}
+$tokens=$null;$parseErrors=$null;[Management.Automation.Language.Parser]::ParseFile($srcAgent,[ref]$tokens,[ref]$parseErrors)|Out-Null;if($parseErrors.Count){throw 'Host Agent syntax validation failed'}
+$tokens=$null;$watchErrors=$null;[Management.Automation.Language.Parser]::ParseFile($srcWatcher,[ref]$tokens,[ref]$watchErrors)|Out-Null;if($watchErrors.Count){throw 'Volume Watcher syntax validation failed'}
+New-Item -ItemType Directory -Force $HostRoot|Out-Null;Copy-Item $srcAgent $Agent -Force;Copy-Item $srcWatcher $Watcher -Force
+foreach($n in @($WatcherTask)+$Obsolete){$task=Get-ScheduledTask -TaskName $n -ErrorAction SilentlyContinue;if($task){Stop-ScheduledTask -TaskName $n -ErrorAction SilentlyContinue;Unregister-ScheduledTask -TaskName $n -Confirm:$false}}
+$wr='powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "'+$Watcher+'"'
+schtasks /Create /TN $WatcherTask /SC ONLOGON /RL HIGHEST /TR $wr /F|Out-Null;schtasks /Run /TN $WatcherTask|Out-Null;Start-Sleep 1
+& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Agent -Mode Verify;if($LASTEXITCODE -ne 0){throw 'Installed Host Agent verification failed'}
+Write-Output ('Prometheus Host Agent '+$Mode.ToLowerInvariant()+' completed.')
