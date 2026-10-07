@@ -1,5 +1,6 @@
 param(
-  [Parameter(Mandatory=$true)][string]$DestinationRoot
+  [Parameter(Mandatory=$true)][string]$DestinationRoot,
+  [ValidatePattern('^v[0-9]+\.[0-9]+-dev$')][string]$ReleaseLabel='v0.7-dev'
 )
 $ErrorActionPreference='Stop'
 $repo=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -8,7 +9,7 @@ try {
   $full=(git rev-parse HEAD).Trim()
   if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve Git HEAD.' }
   $short=(git rev-parse --short HEAD).Trim()
-  $dest=Join-Path $DestinationRoot ("Prometheus-v0.6-dev-"+$short)
+  $dest=Join-Path $DestinationRoot ("Prometheus-"+$ReleaseLabel+"-"+$short)
   if (Test-Path $dest) { throw "Snapshot already exists: $dest" }
   New-Item -ItemType Directory -Path $dest | Out-Null
   $manifest=@()

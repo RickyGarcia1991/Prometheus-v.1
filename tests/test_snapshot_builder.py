@@ -12,3 +12,8 @@ def test_snapshot_builder_refuses_overwrite_and_cleans_failed_new_snapshot():
     text=(Path(__file__).parents[1]/"tools"/"BUILD-SOURCE-SNAPSHOT.ps1").read_text(encoding="utf-8")
     assert "Snapshot already exists" in text
     assert "Remove-Item -LiteralPath $dest -Recurse -Force" in text
+
+def test_snapshot_builder_uses_release_label():
+    text=(Path(__file__).parents[1]/"tools"/"BUILD-SOURCE-SNAPSHOT.ps1").read_text(encoding="utf-8")
+    assert "ReleaseLabel='v0.7-dev'" in text
+    assert '"Prometheus-"+$ReleaseLabel+"-"+$short' in text
