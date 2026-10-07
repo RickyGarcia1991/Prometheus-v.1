@@ -12,6 +12,7 @@ def test_watcher_stops_polling_mounted_ssd_after_controller_is_cached():
 def test_controller_pauses_refresh_after_verified_shutdown():
     text=(ROOT/"MainWindow.xaml.cs").read_text(encoding="utf-8")
     assert '_timer.Stop();Log("Shutdown verified; SSD polling paused.' in text
+    assert 'if(s.Phase=="green")_timer.Stop();' in text
     assert "_timer.Start();_operationActive=true" in text
 
 def test_exact_device_vetoes_are_not_filtered_by_process_location():
