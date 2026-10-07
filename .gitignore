@@ -20,3 +20,5 @@ runtime/
 .coverage
 .coverage.*
 coverage.xml
+tools/Prometheus.DriveController/bin/
+tools/Prometheus.DriveController/obj/

@@ -5,8 +5,8 @@ public static class ProgressPlan
     [
         new("Verify Prometheus SSD identity", 10), new("Validate portable runtime", 10),
         new("Start Ollama service", 15), new("Load configured model", 25),
-        new("Verify Knowledge Vault databases", 10), new("Verify resource sources", 10),
-        new("Verify local index", 10), new("Open chat runtime", 10)
+        new("Verify local memory database", 10), new("Verify portable model store", 10),
+        new("Verify Prometheus source tree", 10), new("Open chat runtime", 10)
     ];
     public static readonly ProgressStep[] Shutdown =
     [
