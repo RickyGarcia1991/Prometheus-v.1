@@ -5,7 +5,8 @@ function UsbVolumes {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.Device
 function DCAlive {@(Get-CimInstance Win32_Process|Where-Object {$_.CommandLine -match 'DesktopCommanderStartup|desktop-commander'}).Count -gt 0}
 function StartDC {if(!(DCAlive) -and (Test-Path $dcRunner)){Start-Process powershell.exe -ArgumentList '-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-File',$dcRunner -WindowStyle Hidden}}
 function RestartController {
- Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue
+ # Preserve the successful Windows-release confirmation in a live controller.
+ if(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue){return}
  $controllers=Join-Path $local 'Controllers'
  $exe=Get-ChildItem $controllers -Filter 'Prometheus.DriveController.exe' -File -Recurse -ErrorAction SilentlyContinue|Where-Object {$_.Directory.Name -match '^Prometheus-Controller-v[0-9.]+$'}|Sort-Object FullName -Descending|Select-Object -First 1
  if($exe){Start-Process $exe.FullName -WorkingDirectory $exe.DirectoryName}
