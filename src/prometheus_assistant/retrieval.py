@@ -2,6 +2,7 @@
 from __future__ import annotations
 import re
 from .context import Evidence
+from .semantic import semantic_overlap
 
 _WORD=re.compile(r"[a-z0-9]{3,}")
 SOURCE_WEIGHT={"memory":30,"wikipedia":22,"wiktionary":16,"wikisource":12,"online":20}
@@ -20,10 +21,11 @@ def rank_evidence(query, items, limit=6, max_per_source=2):
         hay=tokens(item.source_ref+" "+item.text)
         overlap=len(wanted & hay)
         coverage=(overlap/len(wanted)) if wanted else 0
+        semantic=semantic_overlap(query,item.source_ref+" "+item.text)
         phrase=1 if query.strip().lower() in item.text.lower() else 0
-        if wanted and overlap == 0:
+        if wanted and overlap == 0 and semantic == 0:
             continue
-        score=item.priority+SOURCE_WEIGHT.get(item.source_type,0)+(overlap*12)+(coverage*20)+(phrase*16)
+        score=item.priority+SOURCE_WEIGHT.get(item.source_type,0)+(overlap*12)+(coverage*20)+(semantic*18)+(phrase*16)
         ranked.append((score,-index,item))
     ranked.sort(key=lambda row:(row[0],row[1]),reverse=True)
     selected=[]; counts={}
