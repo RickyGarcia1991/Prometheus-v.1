@@ -21,7 +21,7 @@ class NoRedirect(HTTPRedirectHandler):
 class OllamaClient:
     """Local-only Ollama boundary; no proxy, redirects, tools, or cloud fallback."""
 
-    def __init__(self, base_url="http://127.0.0.1:11434", model=DEFAULT_MODEL, timeout=120):
+    def __init__(self, base_url="http://127.0.0.1:11434", model=DEFAULT_MODEL, timeout=120, num_ctx=2048):
         parsed = urlparse(base_url)
         if (parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
                 or parsed.username or parsed.password or parsed.query or parsed.fragment
@@ -33,7 +33,10 @@ class OllamaClient:
             raise ValueError("Cloud model selections are disabled; choose an installed local model.")
         self.base_url = base_url.rstrip("/")
         self.model = model
+        if not isinstance(num_ctx, int) or not 512 <= num_ctx <= 32768:
+            raise ValueError("Context size must be an integer from 512 to 32768.")
         self.timeout = timeout
+        self.num_ctx = num_ctx
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
 
     def _request(self, path, payload=None):
@@ -78,7 +81,7 @@ class OllamaClient:
             "messages": messages,
             "stream": False,
             "keep_alive": "5m",
-            "options": {"num_ctx": 2048, "num_predict": 256, "temperature": 0.2},
+            "options": {"num_ctx": self.num_ctx, "num_predict": 256, "temperature": 0.2},
         })
         message = result.get("message")
         if (result.get("done") is not True or not isinstance(message, dict)

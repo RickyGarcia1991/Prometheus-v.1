@@ -35,3 +35,10 @@ def test_resource_root_requires_existing_directory(monkeypatch,tmp_path):
     assert resource_root()==str(tmp_path.resolve())
     monkeypatch.setenv("PROMETHEUS_RESOURCE_ROOT",str(tmp_path/"missing"))
     assert resource_root() is None
+
+
+def test_16_gib_prefers_balanced_when_available():
+    installed={"gemma4:26b","llama3.2:1b-instruct-q4_K_M","llama3.2:1b"}
+    chosen=select_model(installed,HardwareProfile(16.0,8,"Windows"))
+    assert chosen.model=="llama3.2:1b-instruct-q4_K_M"
+    assert chosen.tier=="balanced"

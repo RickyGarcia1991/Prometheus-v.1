@@ -269,6 +269,17 @@ def main(argv=None):
             if args.vocabulary is not None or path.exists():
                 vocabulary = Vocabulary.load(path)
         client = OllamaClient(args.base_url, args.model)
+        if command not in {"inspect-host", "doctor"} and args.model == DEFAULT_MODEL:
+            models = client.local_models()
+            names = {row.get("name") for row in models if isinstance(row, dict) and isinstance(row.get("name"), str)}
+            recommended = select_model(names, detect_hardware())
+            if recommended and recommended.model != client.model:
+                candidate = OllamaClient(args.base_url, recommended.model, num_ctx=recommended.context)
+                try:
+                    candidate.ensure_local_model()
+                    client = candidate
+                except LocalModelError:
+                    pass
         if command == "inspect-host":
             models = client.local_models()
             names = {row.get("name") for row in models if isinstance(row, dict) and isinstance(row.get("name"), str)}
@@ -285,7 +296,7 @@ def main(argv=None):
                 "ollama_executable": ollama_executable(),
                 "ollama_launch_integrations": sorted(launch_integrations()),
                 "available_local_workers": available_local_workers(),
-                "automatic_model_switching": False,
+                "automatic_model_switching": True,
             }
             if args.json:
                 emit_json(result)
@@ -294,7 +305,7 @@ def main(argv=None):
                 print("Local models: " + (", ".join(sorted(names)) or "none"))
                 print("Recommended model: " + (recommended.model if recommended else "none"))
                 print("Detected coding agents: " + (", ".join(sorted(result["coding_agents"])) or "none"))
-                print("Automatic model switching: disabled until validation completes")
+                print("Automatic model switching: enabled with conservative hardware thresholds")
             return 0
         client.ensure_local_model()
         with MemoryStore(args.memory) as memory:
