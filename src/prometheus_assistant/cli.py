@@ -18,6 +18,7 @@ from .orchestration import choose_route
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
+from .integrations import available_local_workers, launch_integrations, ollama_executable
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -281,6 +282,9 @@ def main(argv=None):
                 "recommended_tier": (recommended.tier if recommended else None),
                 "coding_agents": coding_agents(),
                 "resource_root": resource_root(),
+                "ollama_executable": ollama_executable(),
+                "ollama_launch_integrations": sorted(launch_integrations()),
+                "available_local_workers": available_local_workers(),
                 "automatic_model_switching": False,
             }
             if args.json:
