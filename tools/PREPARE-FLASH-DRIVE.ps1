@@ -13,11 +13,16 @@ Copy-Item (Join-Path $repo 'tools') $dest -Recurse -Force
 Copy-Item (Join-Path $repo 'src') $dest -Recurse -Force
 Copy-Item (Join-Path $repo 'prometheus.py') $dest -Force
 Copy-Item (Join-Path $repo 'START_PROMETHEUS.cmd') $dest -Force
+Copy-Item (Join-Path $repo 'tools\Prometheus-Portable-Control.ps1') $dest -Force
 @'
 @echo off
 set "RUNNER=%LOCALAPPDATA%\DesktopCommanderStartup\Run-DesktopCommander.ps1"
 if exist "%RUNNER%" powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "%RUNNER%"
 '@ | Set-Content -Encoding ASCII (Join-Path $root 'START-DESKTOP-COMMANDER.cmd')
+@'
+@echo off
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Prometheus-Flash-Kit\Prometheus-Portable-Control.ps1" -Action ui -Drive "%~d0"
+'@ | Set-Content -Encoding ASCII (Join-Path $root 'START PROMETHEUS.cmd')
 @{
  created=(Get-Date).ToString('o');source='Prometheus portable core';resources_included=$false;
  note='Large Ollama/Kiwix resources are intentionally not copied. Attach or copy validated resources separately.'

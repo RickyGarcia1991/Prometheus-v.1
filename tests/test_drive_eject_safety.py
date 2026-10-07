@@ -54,3 +54,23 @@ def test_flash_drive_preparer_excludes_large_resources_by_default():
     text=(TOOLS/"PREPARE-FLASH-DRIVE.ps1").read_text(encoding="utf-8")
     assert "resources_included=$false" in text
     assert "Large Ollama/Kiwix resources are intentionally not copied" in text
+
+
+def test_flash_preparer_installs_unified_control_center():
+    text=(TOOLS/"PREPARE-FLASH-DRIVE.ps1").read_text(encoding="utf-8")
+    assert "START PROMETHEUS.cmd" in text
+    assert "Prometheus-Portable-Control.ps1" in text
+
+def test_portable_controller_has_capability_modes_and_lifecycle_actions():
+    text=(TOOLS/"Prometheus-Portable-Control.ps1").read_text(encoding="utf-8")
+    assert "FULL SYSTEM" in text and "PORTABLE SYSTEM" in text
+    assert "START PROMETHEUS" in text and "STOP PROMETHEUS" in text and "PREPARE FOR EJECT" in text
+    assert "SSD-only Ollama/Kiwix resources are not present" in text
+    assert "Prometheus-Removable-Eject.ps1" in text
+
+def test_generic_removable_handoff_disconnects_commander_only_after_drive_is_clear():
+    text=(TOOLS/"Prometheus-Removable-Eject.ps1").read_text(encoding="utf-8")
+    assert "ExecutablePath.StartsWith($prefix" in text
+    assert "if($remaining.Count)" in text
+    assert "runner-paused.request" in text
+    assert text.index("if($remaining.Count)") < text.index("Set-Content -Encoding ASCII $pause")
