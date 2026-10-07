@@ -1,4 +1,4 @@
-# Prometheus v0.3.0 — local AI orchestration and structured memory
+# Prometheus v0.4.0-dev — portable knowledge vault and federated research
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 
@@ -50,7 +50,11 @@ Opt-in online research routing with source provenance is implemented for configu
 
 An editable local vocabulary.json supplies relevant definitions and preferred words to each question. See [docs/VOCABULARY.md](docs/VOCABULARY.md) for examples and limits. Restart chat after editing. The doctor command also checks SQLite integrity and glossary validity.
 
-## Release 0.3.0
+## Release 0.4.0 development checkpoint
+
+The v0.4 line adds a portable Knowledge Vault inventory and ranked federated source catalog. `resources` reports offline/catalog resources under `PROMETHEUS_RESOURCE_ROOT`; `sources` reports remote research sources and authority tiers. Network use remains explicit and subject to host policy. Community sources are never treated as primary authority.
+
+## Previous release 0.3.0
 
 The packaged Windows release includes Python and uses a stable app-data installation.
 Use backup-memory and restore-memory for verified history recovery, and search DIRECTORY QUERY

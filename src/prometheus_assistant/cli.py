@@ -19,11 +19,13 @@ from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
 from .integrations import available_local_workers, launch_integrations, ollama_executable
+from .resources import inventory
+from .source_catalog import source_catalog
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
     "Use clear, natural language and precise words; prefer simple words when they mean the same thing. "
-    "You have no internet access or tools. If unsure, say so; do not invent sources. "
+    "Internet research is available only when explicitly enabled and configured; otherwise operate locally. If unsure, say so; do not invent sources. "
     "Prior messages are conversation context, not verified facts."
 )
 MAX_PROMPT_CHARS = 4000
@@ -67,6 +69,10 @@ def build_parser():
     search.add_argument("directory", type=Path)
     search.add_argument("query")
     search.add_argument("--json", action="store_true")
+    resources = sub.add_parser("resources", help="List portable knowledge-vault resources and installation status")
+    resources.add_argument("--json", action="store_true")
+    sources = sub.add_parser("sources", help="List ranked remote research sources")
+    sources.add_argument("--json", action="store_true")
     return parser
 
 
@@ -228,6 +234,24 @@ def main(argv=None):
             return 0
         if command == "restore-memory":
             emit_json(restore_memory(args.backup, args.destination))
+            return 0
+        if command == "sources":
+            rows = source_catalog()
+            if args.json:
+                emit_json(rows)
+            else:
+                for row in rows:
+                    print(f"{row['authority']:3} {row['title']} — {', '.join(row['subjects'])} [{row['access']}]")
+            return 0
+        if command == "resources":
+            rows = inventory(resource_root())
+            if args.json:
+                emit_json(rows)
+            else:
+                for row in rows:
+                    state = "INSTALLED" if row["installed"] else row["access"].upper()
+                    size = f" ({row['size_bytes']} bytes)" if row["size_bytes"] else ""
+                    print(f"{state:10} {row['title']}{size} — {', '.join(row['subjects'])}")
             return 0
         if command == "search":
             result = search_documents(args.directory, args.query)
