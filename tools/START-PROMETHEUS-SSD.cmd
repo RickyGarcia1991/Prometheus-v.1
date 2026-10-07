@@ -18,6 +18,8 @@ if not exist "%OLLAMA_MODELS%" (echo ERROR: SSD model library missing.& exit /b 
 if /I "%~1"=="resources" goto run_prometheus
 if /I "%~1"=="sources" goto run_prometheus
 if /I "%~1"=="search" goto run_prometheus
+if /I "%~1"=="archive-search" goto run_prometheus
+if /I "%~1"=="archive-read" goto run_prometheus
 if /I "%~1"=="sessions" goto run_prometheus
 if /I "%~1"=="history" goto run_prometheus
 if /I "%~1"=="backup-memory" goto run_prometheus
