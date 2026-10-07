@@ -33,6 +33,17 @@ function UaspWarnings {
 }
 function Status {
  if(!(Test-Path $root)){return Save "green" "Windows has released the Prometheus volume." "RELEASED / SAFE TO DISCONNECT." @("Volume no longer mounted")}
+ $auditFile=Join-Path $root "Prometheus-Resources\Knowledge\Kiwix\metadata\live-status.json"
+ if(Test-Path $auditFile){
+  try{
+   $audit=Get-Content $auditFile -Raw|ConvertFrom-Json
+   $fresh=((Get-Date)-(Get-Item $auditFile).LastWriteTime).TotalSeconds -lt 30
+   $worker=@(Get-CimInstance Win32_Process|Where-Object {$_.Name -match "^python" -and $_.CommandLine -match "verify_archives_live\.py"})
+   if($fresh -and $audit.phase -eq "verifying" -and $worker.Count){
+    return Save "yellow" "Archive checksum verification is active." ("VERIFYING: "+$audit.percent+"% of archive bytes. Do not eject.") @("Live audit worker and fresh progress report detected")
+   }
+  }catch{}
+ }
  $p=@(DriveProcesses);if($p.Count){$owned=@($p|Where-Object {$_.Name -match "^(ollama|llama-server)(\.exe)?$" -or ($_.Name -ieq "cmd.exe" -and $_.CommandLine -match "START-PROMETHEUS-SSD\.cmd") -or ($_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant")});$unknown=@($p|Where-Object {$owned.ProcessId -notcontains $_.ProcessId});if($unknown.Count){return Save "red" "An unexpected process is using the Prometheus drive." ("BLOCKED: "+(($unknown|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @() @("Unexpected drive-backed process remains")};return Save "yellow" "Prometheus is running." ("LIVE: "+(($owned|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")+". Do not eject.") @("Only recognized Prometheus processes reference the drive")}
  $e=ExactBlockers;$live=@();foreach($ev in $e){$m=[regex]::Match($ev.Message,"process id (\d+)",[System.Text.RegularExpressions.RegexOptions]::IgnoreCase);if($m.Success){$blockPid=[int]$m.Groups[1].Value;if($blockPid -eq 4){$live+=$ev;continue};$bp=Get-CimInstance Win32_Process -Filter ("ProcessId="+$blockPid);if($bp -and ($bp.ExecutablePath -like ($root+"*") -or $bp.CommandLine -match [regex]::Escape($root))){$live+=$ev}}}
  if($live.Count){$last=$live|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows reports an exact-device eject blocker." ("BLOCKED: "+(($last.Message -split "[\r\n]")[0])) @() @("Fresh Windows Kernel-PnP Event 225")}

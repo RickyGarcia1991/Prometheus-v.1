@@ -37,8 +37,11 @@ foreach($row in $sourceManifest){
 $launcher=Join-Path $Root 'START-PROMETHEUS-SSD.cmd'
 $backup=$launcher+'.before-'+(Get-Date -Format yyyyMMdd-HHmmss)+'.bak'
 Copy-Item $launcher $backup
-$text=[IO.File]::ReadAllText($launcher)
-$text=$text.Replace('Prometheus-v0.4.0-191fcc5',(Split-Path $release -Leaf)).Replace('0.4.0-dev','development '+$commit.Substring(0,7)).Replace('191fcc5c760d6fe488bcb6a7117a8fe40a8c3c51',$commit)
+$text=[IO.File]::ReadAllText((Join-Path $repo 'tools\START-PROMETHEUS-SSD.cmd')).Replace("`r`n","`n")
+$releaseName=Split-Path $release -Leaf
+$text=[regex]::Replace($text,'(?m)^set "PACKAGE=.*"$',('set "PACKAGE=%ROOT%\'+$releaseName+'"'))
+$text=[regex]::Replace($text,'(?m)^echo Prometheus version:.*$',('echo Prometheus version: development '+$commit.Substring(0,7)))
+$text=[regex]::Replace($text,'(?m)^echo Source checkpoint:.*$',('echo Source checkpoint: '+$commit))
 [IO.File]::WriteAllText($launcher,$text,[Text.Encoding]::ASCII)
 $media=Join-Path $env:USERPROFILE 'Documents\Removable-Media-Status'
 Copy-Item (Join-Path $media 'Prometheus-Drive-Watcher.ps1') (Join-Path $media ('Prometheus-Drive-Watcher.ps1.before-'+(Get-Date -Format yyyyMMdd-HHmmss)+'.bak'))
