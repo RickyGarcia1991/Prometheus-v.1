@@ -20,6 +20,7 @@ from .context import Evidence, assemble_context
 from .retrieval import rank_evidence
 from .evidence import collect_evidence
 from .synthesis import synthesize_context
+from .provenance import provenance_summary
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
@@ -158,9 +159,11 @@ def exchange(memory, client, session_id, prompt, vocabulary=None, research_conte
     reply, tokens = client.chat(messages)
     elapsed = time.perf_counter() - started
     memory.save_exchange(session_id, prompt, reply)
-    return {"session_id": session_id, "model": client.model, "reply": reply,
+    result = {"session_id": session_id, "model": client.model, "reply": reply,
             "elapsed_seconds": round(elapsed, 2), "generated_tokens": tokens,
             "context_turns": len(selected), "vocabulary_entries_used": (system.count('\n{'))}
+    result.update(provenance_summary(packed))
+    return result
 
 
 def _console_input_or_shutdown(prompt, shutdown_request=None):
