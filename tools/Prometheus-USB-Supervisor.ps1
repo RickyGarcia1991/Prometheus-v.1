@@ -4,6 +4,12 @@ New-Item -ItemType Directory -Force (Split-Path $log)|Out-Null
 function UsbVolumes {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.DeviceID -ne $env:SystemDrive -and $_.DriveType -in 2,3})}
 function DCAlive {@(Get-CimInstance Win32_Process|Where-Object {$_.CommandLine -match 'DesktopCommanderStartup|desktop-commander'}).Count -gt 0}
 function StartDC {if(!(DCAlive) -and (Test-Path $dcRunner)){Start-Process powershell.exe -ArgumentList '-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-File',$dcRunner -WindowStyle Hidden}}
+function RestartController {
+ Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue|Stop-Process -Force -ErrorAction SilentlyContinue
+ $controllers=Join-Path $local 'Controllers'
+ $exe=Get-ChildItem $controllers -Filter 'Prometheus.DriveController.exe' -File -Recurse -ErrorAction SilentlyContinue|Sort-Object FullName -Descending|Select-Object -First 1
+ if($exe){Start-Process $exe.FullName -WorkingDirectory $exe.DirectoryName}
+}
 while($true){
  $vols=UsbVolumes;$prom=@($vols|Where-Object {$_.VolumeName -eq 'Prometheus-2TB'});$flash=@($vols|Where-Object {$_.VolumeName -ne 'Prometheus-2TB'})
  $mode=if($prom.Count){'prometheus'}elseif($flash.Count){'flash'}else{'none'}
@@ -11,7 +17,7 @@ while($true){
  if(Test-Path $eject){
   try{$ej=Get-Content $eject -Raw|ConvertFrom-Json;$ed=[string]$ej.drive}catch{$ed=''}
   $gone=$true;if($ed){$gone=!(Test-Path ($ed.TrimEnd('\')+'\'))}
-  if($gone){Remove-Item $pause -Force -ErrorAction SilentlyContinue;Remove-Item $eject -Force -ErrorAction SilentlyContinue;StartDC;"$(Get-Date -Format o) Ejected volume disappeared; Commander recovery requested."|Add-Content -Encoding UTF8 $log}
+  if($gone){Remove-Item $pause -Force -ErrorAction SilentlyContinue;Remove-Item $eject -Force -ErrorAction SilentlyContinue;StartDC;RestartController;"$(Get-Date -Format o) Ejected volume disappeared; Commander and controller recovery requested."|Add-Content -Encoding UTF8 $log}
  } elseif(Test-Path $pause) {
   Remove-Item $pause -Force -ErrorAction SilentlyContinue;StartDC
  } elseif(!(DCAlive)) {StartDC}
