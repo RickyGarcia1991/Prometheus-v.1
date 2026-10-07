@@ -2,6 +2,13 @@ $ErrorActionPreference='Stop'
 $seen=@{}
 while($true){
  foreach($d in @(Get-CimInstance Win32_LogicalDisk | Where-Object {$_.VolumeName -eq 'Prometheus-2TB'})){
+  # Once a host-cached controller is alive, do not poll the removable volume.
+  # This prevents the watcher itself from racing Windows Safely Remove.
+  if($seen.ContainsKey($d.DeviceID)){
+   $controller=@(Get-CimInstance Win32_Process | Where-Object {$_.Name -eq 'Prometheus.DriveController.exe'})
+   if($controller.Count){continue}
+   $seen.Remove($d.DeviceID)
+  }
   $root=$d.DeviceID+'\'
   $status=Join-Path $root 'PROMETHEUS-SSD-STATUS.json'
   try {
