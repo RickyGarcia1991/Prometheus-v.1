@@ -15,7 +15,7 @@ $hostController=Join-Path $env:LOCALAPPDATA 'Prometheus\Controllers\Prometheus-C
 New-Item -ItemType Directory -Force $controller,$hostController | Out-Null
 Copy-Item (Join-Path $repo 'build\controller-v0.5.2\*') $controller
 Copy-Item (Join-Path $repo 'tools\Prometheus.DriveController\Prometheus-Drive-Engine.ps1') $controller
-$manifest=@(Get-ChildItem $controller -File | ForEach-Object {
+$manifest=@(Get-ChildItem $controller -File | Where-Object {$_.Name -ne 'SHA256-MANIFEST.json'} | ForEach-Object {
  $dest=Join-Path $hostController $_.Name
  Copy-Item $_.FullName $dest -Force
  $hash=(Get-FileHash $_.FullName).Hash
@@ -23,6 +23,7 @@ $manifest=@(Get-ChildItem $controller -File | ForEach-Object {
  [ordered]@{file=$_.Name;sha256=$hash;size=$_.Length}
 })
 $manifest | ConvertTo-Json | Set-Content (Join-Path $controller 'SHA256-MANIFEST.json')
+Copy-Item (Join-Path $controller 'SHA256-MANIFEST.json') $hostController -Force
 $sourceManifest=@(Get-ChildItem $release -File -Recurse | ForEach-Object {
  [ordered]@{path=$_.FullName.Substring($release.Length+1);sha256=(Get-FileHash $_.FullName).Hash;size=$_.Length}
 })
