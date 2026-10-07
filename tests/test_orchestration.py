@@ -35,3 +35,39 @@ def test_normal_prompt_stays_local_even_when_online_is_enabled():
     decision = choose_route("Explain how a differential works", online_enabled=True)
     assert decision.route is Route.LOCAL
     assert decision.requires_network is False
+
+
+def test_interactive_research_context_routes_each_turn(monkeypatch):
+    import prometheus_assistant.cli as cli
+    from prometheus_assistant.research import ResearchResult, ResearchSource
+
+    class Provider:
+        def __init__(self, endpoint):
+            assert endpoint == "https://search.example/api"
+
+        def search(self, query):
+            assert query == "Search the web for current robotics news"
+            source = ResearchSource.from_content(
+                url="https://example.test/robotics", title="Robotics",
+                content="current robotics evidence")
+            return ResearchResult(query=query, sources=(source,))
+
+    monkeypatch.setattr(cli, "HttpJsonResearchProvider", Provider)
+    context = cli._research_context_for_prompt(
+        "Search the web for current robotics news", online_enabled=True,
+        research_endpoint="https://search.example/api")
+    assert "current robotics evidence" in context
+    assert "https://example.test/robotics" in context
+
+
+def test_interactive_research_context_stays_off_without_opt_in(monkeypatch):
+    import prometheus_assistant.cli as cli
+
+    class Provider:
+        def __init__(self, endpoint):
+            raise AssertionError("network provider must not be created")
+
+    monkeypatch.setattr(cli, "HttpJsonResearchProvider", Provider)
+    assert cli._research_context_for_prompt(
+        "Search the web for current robotics news", online_enabled=False,
+        research_endpoint="https://search.example/api") is None

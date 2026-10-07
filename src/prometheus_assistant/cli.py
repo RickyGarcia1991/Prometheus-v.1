@@ -154,7 +154,30 @@ def _console_input_or_shutdown(prompt, shutdown_request=None):
             time.sleep(0.1)
 
 
-def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None):
+def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpoint=None, activity=None):
+    decision = choose_route(prompt, online_enabled=online_enabled)
+    if activity:
+        activity.record("orchestration", "selected", decision.reason,
+                        route=decision.route.value, requires_network=decision.requires_network)
+    if not decision.requires_network:
+        return None
+    provider = (HttpJsonResearchProvider(research_endpoint)
+                if research_endpoint else DisabledResearchProvider())
+    try:
+        research = provider.search(prompt)
+    except RuntimeError as error:
+        if activity:
+            activity.record("research", "blocked", str(error), query=prompt)
+        raise ValueError(str(error)) from error
+    context = research.context(max_chars=4000)
+    if activity:
+        activity.record("research", "complete", "Online research completed with provenance.",
+                        query=prompt, sources=len(research.sources), context_chars=len(context))
+    return context
+
+
+def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
+                     online_research=False, research_endpoint=None, activity=None):
     print("Prometheus local chat — no cloud fallback.")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
@@ -172,8 +195,11 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             continue
         try:
             prompt = validate_prompt(prompt)
+            research_context = _research_context_for_prompt(
+                prompt, online_enabled=online_research,
+                research_endpoint=research_endpoint, activity=activity)
             print("Thinking locally...", flush=True)
-            result = exchange(memory, client, session_id, prompt, vocabulary)
+            result = exchange(memory, client, session_id, prompt, vocabulary, research_context)
             print(f"Prometheus> {result['reply']}")
             print(f"[{result['elapsed_seconds']}s; saved locally]", flush=True)
         except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
@@ -189,26 +215,10 @@ def main(argv=None):
     activity = ActivityLog(args.activity_log) if args.activity_log else None
     research_context = None
     try:
-        if command in {"ask", "chat"}:
-            route_prompt = args.prompt if command == "ask" else "interactive local chat"
-            decision = choose_route(route_prompt, online_enabled=args.online_research)
-            if activity:
-                activity.record("orchestration", "selected", decision.reason,
-                                route=decision.route.value, requires_network=decision.requires_network)
-            if decision.requires_network:
-                provider = (HttpJsonResearchProvider(args.research_endpoint)
-                            if args.research_endpoint else DisabledResearchProvider())
-                try:
-                    research = provider.search(route_prompt)
-                except RuntimeError as error:
-                    if activity:
-                        activity.record("research", "blocked", str(error), query=route_prompt)
-                    raise ValueError(str(error)) from error
-                research_context = research.context(max_chars=4000)
-                if activity:
-                    activity.record("research", "complete", "Online research completed with provenance.",
-                                    query=route_prompt, sources=len(research.sources),
-                                    context_chars=len(research_context))
+        if command == "ask":
+            research_context = _research_context_for_prompt(
+                args.prompt, online_enabled=args.online_research,
+                research_endpoint=args.research_endpoint, activity=activity)
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
@@ -283,7 +293,12 @@ def main(argv=None):
                     print(result["reply"])
                     print(f"\nSession: {session_id} | Saved locally | {result['elapsed_seconds']}s")
                 return 0
-            return interactive_chat(memory, client, session_id, vocabulary, args.shutdown_request)
+            return interactive_chat(
+                memory, client, session_id, vocabulary, args.shutdown_request,
+                online_research=args.online_research,
+                research_endpoint=args.research_endpoint,
+                activity=activity,
+            )
     except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
