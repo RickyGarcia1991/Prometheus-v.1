@@ -151,6 +151,21 @@ class MemoryStore:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def recall(self, query, limit=6):
+        """Rank active durable knowledge by simple local token overlap."""
+        words = {w for w in query.lower().replace("-", " ").split() if len(w) >= 3}
+        if not words:
+            return []
+        rows = self.knowledge()
+        scored = []
+        for row in rows:
+            haystack = f"{row['kind']} {row['subject']} {row['value']}".lower()
+            score = sum(1 for word in words if word in haystack)
+            if score:
+                scored.append((score, row["confidence"], row["id"], row))
+        scored.sort(key=lambda item: (item[0], item[1], item[2]), reverse=True)
+        return [item[3] for item in scored[:max(1, int(limit))]]
+
     def sessions(self):
         rows = self.db.execute("""
             SELECT s.session_id, s.model, s.created_at, COUNT(t.id) AS turn_count

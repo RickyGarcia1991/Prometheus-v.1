@@ -57,6 +57,7 @@ def test_read_article_fetches_text_and_cleans_up(tmp_path,monkeypatch):
 
 def test_offline_context_can_ground_prompts(monkeypatch):
     from prometheus_assistant import cli
+    monkeypatch.setattr(cli,"resource_root",lambda:"X:/resources")
     monkeypatch.setattr(cli,"search_archive",lambda *a,**k:["Artificial intelligence"])
     monkeypatch.setattr(cli,"read_article",lambda *a,**k:"AI article body")
     text=cli._offline_context_for_prompt("What is AI?",enabled=True)
