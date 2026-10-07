@@ -31,7 +31,7 @@ $sourceManifest | ConvertTo-Json | Set-Content (Join-Path $release 'SHA256-MANIF
 foreach($row in $sourceManifest){
  $gitPath=$row.path.Replace('\','/')
  $expected=(& git -C $repo rev-parse ('HEAD:'+$gitPath)).Trim()
- $actual=(& git -C $repo hash-object --no-filters (Join-Path $release $row.path)).Trim()
+ $actual=(& git -C $repo hash-object ('--path='+$gitPath) (Join-Path $release $row.path)).Trim()
  if($actual -ne $expected){throw ('Source export mismatch: '+$row.path)}
 }
 $launcher=Join-Path $Root 'START-PROMETHEUS-SSD.cmd'
