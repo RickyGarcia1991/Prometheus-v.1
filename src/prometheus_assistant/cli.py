@@ -41,7 +41,9 @@ def build_parser():
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Installed local model; no cloud models")
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
     parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
-    parser.add_argument("--agent", action="store_true", help="Use the local Core agent planner and safe read-only tools")
+    agent = parser.add_mutually_exclusive_group()
+    agent.add_argument("--agent", dest="agent", action="store_true", default=True, help="Use the local Core agent planner and safe read-only tools (default)")
+    agent.add_argument("--no-agent", dest="agent", action="store_false", help="Use plain local-model chat without Core tool planning")
     parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
     parser.add_argument("--shutdown-request", type=Path, help="Optional local file whose presence requests a graceful interactive-chat exit")
     vocabulary = parser.add_mutually_exclusive_group()
@@ -205,6 +207,7 @@ def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpo
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
                      online_research=False, research_endpoint=None, activity=None, agent_mode=False):
     print("Prometheus local chat — no cloud fallback.")
+    print("Core: agent + safe local tools" if agent_mode else "Core: plain local-model compatibility mode")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
     print("Type /exit to leave. Answers may be wrong; verify important facts.")

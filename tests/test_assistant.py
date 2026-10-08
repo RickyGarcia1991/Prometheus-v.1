@@ -93,7 +93,7 @@ def ollama_stub():
 
 def run_cli(db, *args, stub=None, extra_env=None, input_text=None):
     command = [sys.executable, "-X", "utf8", str(ROOT / "prometheus.py"),
-               "--memory", str(db)]
+               "--memory", str(db), "--no-agent"]
     if stub is not None:
         command.extend(["--base-url", stub["url"]])
     command.extend(args)
@@ -124,8 +124,23 @@ def test_source_launcher_exposes_chat_commands(tmp_path):
 
 
 def test_ask_returns_a_local_answer(tmp_path, ollama_stub):
-    answer = ask(tmp_path / "memory.sqlite3", ollama_stub)
+    result = run_cli(tmp_path / "memory.sqlite3", "--no-agent", "ask", "test message", "--json", stub=ollama_stub)
+    answer = successful_json(result)
     assert answer["reply"] == "Local reply: test message"
+
+
+def test_agent_mode_is_default_and_plain_chat_is_explicit_opt_out(tmp_path, ollama_stub):
+    default = subprocess.run(
+        [sys.executable, "-X", "utf8", str(ROOT / "prometheus.py"), "--memory",
+         str(tmp_path / "agent.sqlite3"), "--base-url", ollama_stub["url"], "chat"],
+        text=True, encoding="utf-8", input="/exit\n", capture_output=True, timeout=15, cwd=ROOT)
+    assert default.returncode == 0
+    assert "Core: agent + safe local tools" in default.stdout
+    plain = run_cli(tmp_path / "plain.sqlite3", "chat", stub=ollama_stub, input_text="/exit\n")
+    assert plain.returncode == 0
+    assert "Core: plain local-model compatibility mode" in plain.stdout
+    help_result = run_cli(tmp_path / "memory.sqlite3", "--help")
+    assert "--no-agent" in help_result.stdout
 
 
 def test_successful_exchange_is_saved_atomically_with_unicode(tmp_path, ollama_stub):
