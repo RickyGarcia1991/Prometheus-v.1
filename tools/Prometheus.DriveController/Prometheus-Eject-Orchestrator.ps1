@@ -42,7 +42,7 @@ try {
  $remaining=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and (($_.ExecutablePath -and $_.ExecutablePath.StartsWith(($Drive+'\'),[StringComparison]::OrdinalIgnoreCase)) -or ($_.CommandLine -and $_.CommandLine.Contains(($Drive+'\'))) )})
  if($remaining.Count){throw ('SSD process still active: '+(($remaining|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))}
  Set-Content -LiteralPath $pause -Value 'Paused for Windows eject' -Encoding ASCII
- $dc=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and $_.Name -eq 'node.exe' -and $_.CommandLine -match 'DesktopCommanderStartup\\runtime-0\\.2\\.52\\node_modules\\@wonderwhy-er\\desktop-commander\\dist\\index\\.js'})
+ $dc=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and $_.Name -eq 'node.exe' -and $_.CommandLine -like '*desktop-commander*index.js*'})
  Log ('Identified '+$dc.Count+' Desktop Commander node processes for temporary shutdown')
  foreach($p in $dc){if($p.Name -eq 'node.exe'){Log ('Pausing Desktop Commander '+$p.ProcessId);Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}}
  Start-Sleep -Seconds 3

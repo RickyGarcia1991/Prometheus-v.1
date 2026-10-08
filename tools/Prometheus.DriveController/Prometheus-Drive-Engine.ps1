@@ -32,7 +32,7 @@ function UaspWarnings {
  @($events|Where-Object {$_.Id -eq 900 -and $_.Message -match "VID_0BC2&PID_2001|NZ0P54EM" -and $_.Message -match "UASPStor"})
 }
 function EjectLock {Join-Path (Join-Path $env:LOCALAPPDATA "Prometheus") "eject-mode.json"}
-function Status {
+function Status([switch]$ForHandoff) {
  if(!(Test-Path $root)){return Save "green" "Windows has released the Prometheus volume." "RELEASED / SAFE TO DISCONNECT." @("Volume no longer mounted")}
  $auditFile=Join-Path $root "Prometheus-Resources\Knowledge\Kiwix\metadata\live-status.json"
  if(Test-Path $auditFile){
@@ -48,6 +48,7 @@ function Status {
  $p=@(DriveProcesses);if($p.Count){$owned=@($p|Where-Object {$_.Name -match "^(ollama|llama-server)(\.exe)?$" -or ($_.Name -ieq "cmd.exe" -and $_.CommandLine -match "START-PROMETHEUS-SSD\.cmd") -or ($_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant")});$unknown=@($p|Where-Object {$owned.ProcessId -notcontains $_.ProcessId});if($unknown.Count){return Save "red" "An unexpected process is using the Prometheus drive." ("BLOCKED: "+(($unknown|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @() @("Unexpected drive-backed process remains")};return Save "yellow" "Prometheus is running." ("LIVE: "+(($owned|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")+". Do not eject.") @("Only recognized Prometheus processes reference the drive")}
  # ExactBlockers is already filtered to this physical SSD. Do not discard a veto
  # merely because the blocking process itself runs from the internal drive.
+ if($ForHandoff){return Save 'green' 'Prometheus shutdown checks passed; Windows removal has NOT been requested.' 'READY FOR HOST EJECT HANDOFF; NOT SAFE TO UNPLUG.' @('No SSD-backed processes remain','Database integrity checked when shutdown required','Historical Windows veto is deferred to the actual eject request')}
  $e=ExactBlockers;$live=@($e)
  if($live.Count){$last=$live|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows reports an exact-device eject blocker." ("BLOCKED: "+(($last.Message -split "[\r\n]")[0])) @() @("Fresh Windows Kernel-PnP Event 225")}
  $v=@(ExactRemovalVetoes);if($v.Count){$last=$v|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows storage stack vetoed device removal." ("BLOCKED: query-remove veto at "+$last.TimeCreated.ToString("HH:mm:ss")+".") @("No Prometheus drive process remains") @("Fresh Kernel-PnP Device Management Event 1000")}
@@ -73,7 +74,7 @@ if($Action -eq "stop"){
  New-Item -ItemType Directory -Force (Split-Path $lock)|Out-Null
  @{active=$true;drive=$Drive;started=(Get-Date).ToString("o");phase="stopping"}|ConvertTo-Json|Set-Content -Encoding UTF8 $lock
  $initialTargets=@(DriveProcesses)
- if(!$initialTargets.Count){Status;exit 0}
+ if(!$initialTargets.Count){Status -ForHandoff;exit 0}
  Save "yellow" "Stopping Prometheus..." "Requesting graceful chat shutdown before releasing model processes." @("Graceful shutdown requested")|Out-Null
  $shutdownDir=Join-Path $env:LOCALAPPDATA "Prometheus"
  $shutdownRequest=Join-Path $shutdownDir "active-chat.shutdown"
@@ -118,7 +119,7 @@ if($Action -eq "stop"){
  $remaining=@(DriveProcesses)
  if($remaining.Count){Save "red" "Prometheus shutdown is incomplete." ("BLOCKED: "+(($remaining|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @("Chat closed","Database integrity verified") @("SSD-backed process survived shutdown");exit 2}
  Remove-Item $shutdownRequest -Force -ErrorAction SilentlyContinue
- Status
+ Status -ForHandoff
  exit 0
 }
 Status
