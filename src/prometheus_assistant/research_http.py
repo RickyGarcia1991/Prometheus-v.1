@@ -3,24 +3,34 @@ from __future__ import annotations
 import json
 from typing import Callable
 from urllib.parse import urlencode, urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request, build_opener, HTTPSHandler, HTTPRedirectHandler
 
 from .research import ResearchResult, ResearchSource
+
+
+class NoResearchRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise RuntimeError('Research provider redirects are disabled.')
 
 
 class HttpJsonResearchProvider:
     """Search-provider adapter that converts JSON results into provenance records."""
 
     def __init__(self, endpoint: str, *, fetch: Callable | None = None, timeout: int = 20):
-        if not endpoint.startswith("https://"):
-            raise ValueError("Research search endpoint must use HTTPS.")
+        parsed = urlsplit(endpoint)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+            raise ValueError("Research search endpoint must be a valid HTTPS URL without credentials or fragments.")
         self.endpoint = endpoint
         self.fetch = fetch or self._fetch
         self.timeout = timeout
 
     def _fetch(self, url: str) -> bytes:
         request = Request(url, headers={"Accept": "application/json", "User-Agent": "Prometheus/0.2"})
-        with urlopen(request, timeout=self.timeout) as response:
+        # An HTTPS-only opener with no redirect handler prevents cross-origin redirects.
+        opener = build_opener(HTTPSHandler, NoResearchRedirects)
+        with opener.open(request, timeout=self.timeout) as response:
+            if response.geturl() != url:
+                raise RuntimeError("Research provider redirected unexpectedly.")
             return response.read(2_000_001)
 
     def search(self, query: str) -> ResearchResult:
