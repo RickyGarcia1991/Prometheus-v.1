@@ -1,7 +1,7 @@
 ﻿[
     {
         "path":  "Prometheus-Host-Agent.ps1",
-        "sha256":  "8F45D824F8F80A2138C85C8469EAE3CCC9194BE0F9C9004F00CEAD5BCB55CC8D"
+        "sha256":  "19B2675ADFAE804789EFEEC3BC411F7A1BE1AEB80EF20F287248B100B7A1A0F6"
     },
     {
         "path":  "Prometheus-Volume-Watcher.ps1",

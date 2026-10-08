@@ -35,3 +35,27 @@ def test_installer_removes_legacy_tasks_and_is_repairable():
     assert "Prometheus Volume Watcher" in s
     assert "Parser]::ParseFile" in s
     assert "/SC ONLOGON" in s
+
+
+def test_security_gate_is_fail_closed_and_host_bound():
+    s = text("Prometheus-Host-Agent.ps1")
+    assert "authorized-host.json" in s
+    assert "Host authorization fingerprint mismatch" in s
+    assert "Anti-rollback blocked controller" in s
+    assert "package-validation' 'quarantined" in s
+    assert "security-audit.jsonl" in s
+    assert "previous=$prev" in s
+
+
+def test_activation_has_bounded_rollback():
+    s = text("Prometheus-Host-Agent.ps1")
+    assert "controller-rollback" in s
+    assert "Move-Item $backup $dst" in s
+    assert "Set-SecurityState $pkg.Version" in s
+
+
+def test_installer_authorizes_only_after_signed_package_validation():
+    s = text("INSTALL-PROMETHEUS-HOST-AGENT.ps1")
+    assert "Prometheus-Host-Agent-v0.6.1" in s
+    assert "UAC-approved-install" in s
+    assert s.index("Host Agent manifest signature invalid") < s.index("UAC-approved-install")

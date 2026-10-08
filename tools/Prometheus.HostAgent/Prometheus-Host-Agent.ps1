@@ -2,46 +2,33 @@ param([ValidateSet('Run','Verify')][string]$Mode='Run')
 $ErrorActionPreference='Stop'
 $HostRoot=Join-Path $env:LOCALAPPDATA 'Prometheus'
 $Log=Join-Path $HostRoot 'host-agent.log'
+$AuditLog=Join-Path $HostRoot 'security-audit.jsonl'
+$SecurityState=Join-Path $HostRoot 'security-state.json'
+$AuthorizedHost=Join-Path $HostRoot 'authorized-host.json'
 $EjectLock=Join-Path $HostRoot 'eject-mode.json'
 $ControllerRoot=Join-Path $HostRoot 'Controllers'
+$TrustedThumbprint='898F702114B0F889763589C4057DC19CF1657CD5'
 function Write-Log([string]$Level,[string]$Message){New-Item -ItemType Directory -Force $HostRoot|Out-Null;Add-Content -Path $Log -Value ((Get-Date -Format o)+' '+$Level+' '+$Message)}
+function Get-HostFingerprint {$id=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid).MachineGuid;$sha=[Security.Cryptography.SHA256]::Create();try{return ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($id))).Replace('-',''))}finally{$sha.Dispose()}}
+function Write-Audit([string]$Event,[string]$Result,[string]$Detail='') {New-Item -ItemType Directory -Force $HostRoot|Out-Null;$prev='GENESIS';if(Test-Path $AuditLog){$last=Get-Content $AuditLog -Tail 1 -ErrorAction SilentlyContinue;if($last){try{$prev=([string](ConvertFrom-Json $last).hash)}catch{$prev='BROKEN'}}};$record=[ordered]@{timestamp=(Get-Date -Format o);event=$Event;result=$Result;host=(Get-HostFingerprint);detail=$Detail;previous=$prev};$body=$record|ConvertTo-Json -Compress;$sha=[Security.Cryptography.SHA256]::Create();try{$hash=([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($body))).Replace('-',''))}finally{$sha.Dispose()};$record.hash=$hash;Add-Content $AuditLog ($record|ConvertTo-Json -Compress)}
+function Assert-AuthorizedHost {if(!(Test-Path $AuthorizedHost)){throw 'Host is not authorized; run the signed Host Agent installer with UAC approval'};$a=Get-Content $AuthorizedHost -Raw|ConvertFrom-Json;if(([string]$a.fingerprint) -ne (Get-HostFingerprint)){throw 'Host authorization fingerprint mismatch'}}
 function Find-PrometheusVolume {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.VolumeName -eq 'Prometheus-2TB' -and $_.DriveType -eq 3})}
-function Test-EjectSuppressed {
- if(!(Test-Path $EjectLock)){return $false}
- try{$lock=Get-Content $EjectLock -Raw|ConvertFrom-Json;if(!$lock.active){return $false};$boot=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;$started=[datetime]$lock.started;if($started -lt $boot){Remove-Item $EjectLock -Force -ErrorAction SilentlyContinue;Write-Log 'info' 'cleared-stale-eject-lock-after-reboot';return $false};return $true}catch{return $true}
-}
+function Test-EjectSuppressed {if(!(Test-Path $EjectLock)){return $false};try{$lock=Get-Content $EjectLock -Raw|ConvertFrom-Json;if(!$lock.active){return $false};$boot=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;$started=[datetime]$lock.started;if($started -lt $boot){Remove-Item $EjectLock -Force -ErrorAction SilentlyContinue;Write-Log 'info' 'cleared-stale-eject-lock-after-reboot';return $false};return $true}catch{return $true}}
+function Convert-Version([string]$Name){if($Name -notmatch '^Prometheus-Controller-v([0-9]+\.[0-9]+\.[0-9]+)$'){throw 'Untrusted controller release name'};return [version]$Matches[1]}
+function Get-SecurityState {if(Test-Path $SecurityState){try{return Get-Content $SecurityState -Raw|ConvertFrom-Json}catch{throw 'Security state is malformed'}};return [pscustomobject]@{highest_controller_version='0.0.0'}}
+function Set-SecurityState([version]$Version){[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json|Set-Content $SecurityState -Encoding UTF8}
 function Get-Package($root){
- $metaPath=Join-Path $root 'PROMETHEUS-SSD-STATUS.json';if(!(Test-Path $metaPath)){throw 'SSD metadata missing'}
- $meta=Get-Content $metaPath -Raw|ConvertFrom-Json;$name=Split-Path ([string]$meta.controller_release) -Leaf
- if($name -notmatch '^Prometheus-Controller-v[0-9.]+$'){throw 'Untrusted controller release name'}
- $src=Join-Path $root $name;$manifest=Join-Path $src 'SHA256-MANIFEST.json';if(!(Test-Path $manifest)){throw 'Controller manifest missing'}
- $sigPath=Join-Path $src 'SHA256-MANIFEST.sig';$certPath=Join-Path $src 'MANIFEST-PUBLIC.cer';if(!(Test-Path $sigPath) -or !(Test-Path $certPath)){throw 'Signed controller manifest required'}
- $cert=New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath);if($cert.Thumbprint -ne '898F702114B0F889763589C4057DC19CF1657CD5'){throw 'Controller signing certificate is not trusted'};$rsa=[System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert);$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes($sigPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1);$rsa.Dispose();$cert.Dispose();if(!$ok){throw 'Controller manifest signature invalid'}
- $entries=Get-Content $manifest -Raw|ConvertFrom-Json
- foreach($e in $entries){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f)){throw ('Integrity failure: '+$e.path)};if((Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Integrity failure: '+$e.path)}}
- [pscustomobject]@{Meta=$meta;Name=$name;Source=$src;Manifest=$manifest}
+ $metaPath=Join-Path $root 'PROMETHEUS-SSD-STATUS.json';if(!(Test-Path $metaPath)){throw 'SSD metadata missing'};$meta=Get-Content $metaPath -Raw|ConvertFrom-Json;$name=Split-Path ([string]$meta.controller_release) -Leaf;$version=Convert-Version $name
+ $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version);if($version -lt $highest){throw ('Anti-rollback blocked controller '+$version+'; highest trusted is '+$highest)}
+ $src=Join-Path $root $name;$manifest=Join-Path $src 'SHA256-MANIFEST.json';if(!(Test-Path $manifest)){throw 'Controller manifest missing'};$sigPath=Join-Path $src 'SHA256-MANIFEST.sig';$certPath=Join-Path $src 'MANIFEST-PUBLIC.cer';if(!(Test-Path $sigPath) -or !(Test-Path $certPath)){throw 'Signed controller manifest required'}
+ $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2($certPath);if($cert.Thumbprint -ne $TrustedThumbprint){throw 'Controller signing certificate is not trusted'};$rsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert);try{$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes($sigPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)}finally{$rsa.Dispose();$cert.Dispose()};if(!$ok){throw 'Controller manifest signature invalid'}
+ $entries=Get-Content $manifest -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f)){throw ('Integrity failure: '+$e.path)};if((Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Integrity failure: '+$e.path)}};[pscustomobject]@{Meta=$meta;Name=$name;Version=$version;Source=$src}
 }
-function Sync-Controller($pkg){
- New-Item -ItemType Directory -Force $ControllerRoot|Out-Null
- $dst=Join-Path $ControllerRoot $pkg.Name;$stage=$dst+'.staging-'+[guid]::NewGuid().ToString('N');$backup=$dst+'.previous'
- Copy-Item $pkg.Source $stage -Recurse -Force
- $entries=Get-Content (Join-Path $stage 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json
- foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;throw ('Staged integrity failure: '+$e.path)}}
- if(Test-Path $backup){Remove-Item $backup -Recurse -Force}
- if(Test-Path $dst){Move-Item $dst $backup}
- Move-Item $stage $dst
- return $dst
+function Sync-Controller($pkg){New-Item -ItemType Directory -Force $ControllerRoot|Out-Null;$dst=Join-Path $ControllerRoot $pkg.Name;$stage=$dst+'.staging-'+[guid]::NewGuid().ToString('N');$backup=$dst+'.previous';Copy-Item $pkg.Source $stage -Recurse -Force
+ try{$entries=Get-Content (Join-Path $stage 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Staged integrity failure: '+$e.path)}};if(Test-Path $backup){Remove-Item $backup -Recurse -Force};if(Test-Path $dst){Move-Item $dst $backup};Move-Item $stage $dst;Set-SecurityState $pkg.Version;Write-Audit 'controller-activation' 'pass' $pkg.Name;return $dst}catch{Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;if(!(Test-Path $dst) -and (Test-Path $backup)){Move-Item $backup $dst;Write-Audit 'controller-rollback' 'pass' $pkg.Name};throw}
 }
-function Invoke-Agent {
- if(Test-EjectSuppressed){Write-Log 'info' 'suppressed eject-in-progress';return 0}
- $vols=@(Find-PrometheusVolume);if($vols.Count -eq 0){Write-Log 'info' 'no-prometheus-volume';return 0}
- $fail=0
- foreach($d in $vols){try{$root=$d.DeviceID+'\';$pkg=Get-Package $root;$running=@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue);$dst=Join-Path $ControllerRoot $pkg.Name
-   if(!$running.Count){$dst=Sync-Controller $pkg}else{Write-Log 'info' ('update-deferred controller-running '+$pkg.Name)}
-   $exe=Join-Path $dst 'Prometheus.DriveController.exe';if(!(Test-Path $exe)){throw 'Cached controller executable missing'}
-   if(!$running.Count){Start-Process $exe -WorkingDirectory $dst;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}}
-   Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name)
- }catch{$fail=1;Write-Log 'error' $_.Exception.Message}}
+function Invoke-Agent {if(Test-EjectSuppressed){Write-Log 'info' 'suppressed eject-in-progress';return 0};try{Assert-AuthorizedHost}catch{Write-Log 'security' $_.Exception.Message;Write-Audit 'host-authorization' 'blocked' $_.Exception.Message;return 2};$vols=@(Find-PrometheusVolume);if($vols.Count -eq 0){Write-Log 'info' 'no-prometheus-volume';return 0};$fail=0
+ foreach($d in $vols){try{$root=$d.DeviceID+'\';$pkg=Get-Package $root;$running=@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue);$dst=Join-Path $ControllerRoot $pkg.Name;if(!$running.Count){$dst=Sync-Controller $pkg}else{Write-Log 'info' ('update-deferred controller-running '+$pkg.Name)};$exe=Join-Path $dst 'Prometheus.DriveController.exe';if(!(Test-Path $exe)){throw 'Cached controller executable missing'};if(!$running.Count){Start-Process $exe -WorkingDirectory $dst;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}};Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name);Write-Audit 'host-agent' 'healthy' $pkg.Name}catch{$fail=1;Write-Log 'security' $_.Exception.Message;Write-Audit 'package-validation' 'quarantined' $_.Exception.Message}}
  return $fail
 }
 $rc=Invoke-Agent

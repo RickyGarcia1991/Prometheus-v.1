@@ -23,3 +23,13 @@ Remote-management processes, development shells, logs, controller caches, and te
 ## Validation
 
 Before release: parser-check the PowerShell files, run `python -m pytest -q`, run `git diff --check`, verify the installed Host Agent, confirm one controller and no bootstrap CMD processes, and perform physical reconnect plus reboot/logon tests. A fresh-PC test remains the final portability validation.
+
+
+## Portable security and recovery gate (v0.6.1)
+
+- A host is trusted only after an explicit UAC-approved Host Agent install/repair. The authorization file stores a SHA-256 fingerprint derived locally from the Windows MachineGuid rather than the raw identifier.
+- Controller versions are monotonic per host. Once a controller version is accepted, an older signed release is rejected to reduce rollback-to-vulnerable-release risk.
+- Package/signature/integrity/authorization failures fail closed. The Host Agent records them as quarantined security events and does not execute the rejected payload.
+- Security events are written to a hash-chained JSONL audit trail on the host. This is tamper-evident, not tamper-proof; off-host backup/signing can be added later if stronger forensic guarantees are required.
+- Controller activation remains transactional. A staged package is hash-verified before activation, and a failed activation restores the previous cached controller when available.
+- The release signing private key remains in the Windows certificate store and is not copied to the SSD. Only the public certificate, manifest, and signature are portable.
