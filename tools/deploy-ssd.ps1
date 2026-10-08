@@ -4,7 +4,11 @@ $repo=Split-Path $PSScriptRoot
 if((Get-Volume -DriveLetter $Root.Substring(0,1)).FileSystemLabel -ne 'Prometheus-2TB'){throw 'SSD identity mismatch'}
 $commit=(& git -C $repo rev-parse HEAD).Trim()
 if($LASTEXITCODE){throw 'Git revision unavailable'}
-$release=Join-Path $Root ('Prometheus-v0.8.0-dev-'+$commit.Substring(0,7))
+$versionMatch=[regex]::Match([IO.File]::ReadAllText((Join-Path $repo 'pyproject.toml')),'(?m)^version = "([^"]+)"')
+if(!$versionMatch.Success){throw 'Package version unavailable'}
+$version=$versionMatch.Groups[1].Value
+$displayVersion=$version.Replace('.dev','-dev')
+$release=Join-Path $Root ('Prometheus-v'+$displayVersion+'-'+$commit.Substring(0,7))
 if(Test-Path $release){throw 'Release already exists; inspect before replacing'}
 $zip=Join-Path $repo 'build\ssd-source.zip'
 & git -C $repo archive --format=zip --output=$zip HEAD
@@ -32,7 +36,7 @@ Copy-Item $launcher $backup
 $text=[IO.File]::ReadAllText((Join-Path $release 'tools\START-PROMETHEUS-SSD.cmd')).Replace("`r`n","`n")
 $releaseName=Split-Path $release -Leaf
 $text=[regex]::Replace($text,'(?m)^set "PACKAGE=.*"$',('set "PACKAGE=%ROOT%\'+$releaseName+'"'))
-$text=[regex]::Replace($text,'(?m)^echo Prometheus version:.*$',('echo Prometheus version: v0.8.0-dev '+$commit.Substring(0,7)))
+$text=[regex]::Replace($text,'(?m)^echo Prometheus version:.*$',('echo Prometheus version: v'+$displayVersion+' '+$commit.Substring(0,7)))
 $text=[regex]::Replace($text,'(?m)^echo Source checkpoint:.*$',('echo Source checkpoint: '+$commit))
 [IO.File]::WriteAllText($launcher,$text,[Text.Encoding]::ASCII)
 $media=Join-Path $env:USERPROFILE 'Documents\Removable-Media-Status'
@@ -40,5 +44,5 @@ Copy-Item (Join-Path $media 'Prometheus-Drive-Watcher.ps1') (Join-Path $media ('
 Copy-Item (Join-Path $release 'tools\Prometheus.DriveController\Prometheus-Drive-Watcher.ps1') $media -Force
 $branch=(& git -C $repo branch --show-current).Trim()
 $metaPath=Join-Path $Root 'PROMETHEUS-SSD-STATUS.json';$oldMeta=if(Test-Path $metaPath){Get-Content $metaPath -Raw|ConvertFrom-Json}else{$null}
-[ordered]@{version='0.8.0-dev';git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation} | ConvertTo-Json -Depth 8 | Set-Content $metaPath
+[ordered]@{version=$version;git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation} | ConvertTo-Json -Depth 8 | Set-Content $metaPath
 Write-Output ('DEPLOYED '+$commit)

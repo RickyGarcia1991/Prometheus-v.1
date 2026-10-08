@@ -23,6 +23,7 @@ from .resources import inventory
 from .source_catalog import source_catalog
 from .agent import run_agent, resume_agent
 from .builtin_tools import build_builtin_registry
+from .tool_registry import ToolSpec
 from .personality import Personality
 
 SYSTEM_PROMPT = (
@@ -47,6 +48,7 @@ def build_parser():
     agent = parser.add_mutually_exclusive_group()
     agent.add_argument("--agent", dest="agent", action="store_true", default=True, help="Use the local Core agent planner and safe read-only tools (default)")
     agent.add_argument("--no-agent", dest="agent", action="store_false", help="Use plain local-model chat without Core tool planning")
+    parser.add_argument("--retain-research", action="store_true", help="Explicitly save successful research evidence for later local recall; keeps it untrusted")
     parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
     parser.add_argument("--shutdown-request", type=Path, help="Optional local file whose presence requests a graceful interactive-chat exit")
     vocabulary = parser.add_mutually_exclusive_group()
@@ -106,12 +108,18 @@ def selected_session(memory, requested, model):
     return memory.create_session(model)
 
 
-def agent_exchange(memory, client, session_id, prompt, personality=Personality(), approval_callback=None):
+def agent_exchange(memory, client, session_id, prompt, personality=Personality(), approval_callback=None, research_context=None):
     prompt = validate_prompt(prompt)
     started = time.perf_counter()
     recent_turns = memory.history(session_id, limit=8)
     registry=build_builtin_registry(memory)
-    result = run_agent(memory, client, registry, prompt, recent_turns=recent_turns, personality=personality)
+    required_requests = ()
+    if research_context:
+        tool = ToolSpec("research", "evidence", "Read already retrieved untrusted research with provenance; performs no network access.", lambda request: research_context, {})
+        registry.register(tool)
+        required_requests = (tool.request("Read prefetched research evidence.", {}),)
+    result = run_agent(memory, client, registry, prompt, recent_turns=recent_turns, personality=personality,
+                       online_enabled=bool(research_context), required_requests=required_requests)
     if result.core.reply is None:
         pending=[(i,r,e) for i,(r,e) in enumerate(zip(result.core.plan.tool_requests,result.core.evidence)) if e.status=="approval"]
         if pending and approval_callback is not None:
@@ -214,6 +222,8 @@ def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpo
             activity.record("research", "blocked", str(error), query=prompt)
         raise ValueError(str(error)) from error
     context = research.context(max_chars=4000)
+    if not context.strip():
+        raise ValueError("Research returned no usable source evidence; no answer was generated.")
     if activity:
         activity.record("research", "complete", "Online research completed with provenance.",
                         query=prompt, sources=len(research.sources), context_chars=len(context))
@@ -252,7 +262,7 @@ def interactive_approval(pending):
 
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
                      online_research=False, research_endpoint=None, activity=None, agent_mode=False,
-                     personality=Personality()):
+                     personality=Personality(), retain_research=False):
     print("Prometheus local chat — no cloud fallback.")
     print("Core: agent + safe local tools" if agent_mode else "Core: plain local-model compatibility mode")
     print(f"Model: {client.model} | Session: {session_id}")
@@ -291,9 +301,11 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
                 prompt, online_enabled=online_research,
                 research_endpoint=research_endpoint, activity=activity)
             print("Thinking locally...", flush=True)
-            result = (agent_exchange(memory, client, session_id, prompt, personality, interactive_approval)
-                      if agent_mode and not research_context
+            result = (agent_exchange(memory, client, session_id, prompt, personality, interactive_approval, research_context)
+                      if agent_mode
                       else exchange(memory, client, session_id, prompt, vocabulary, research_context))
+            if retain_research and research_context:
+                memory.retain_research(session_id, prompt, research_context)
             print(f"Prometheus> {result['reply']}")
             if agent_mode and "self_evaluation" in result:
                 ev=result["self_evaluation"]; mood=result["emotional_state"]
@@ -314,7 +326,7 @@ def main(argv=None):
     try:
         if command == "ask":
             research_context = _research_context_for_prompt(
-                args.prompt, online_enabled=args.online_research,
+                validate_prompt(args.prompt), online_enabled=args.online_research,
                 research_endpoint=args.research_endpoint, activity=activity)
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
@@ -439,9 +451,11 @@ def main(argv=None):
                 return 0
             session_id = selected_session(memory, getattr(args, "session", None), client.model)
             if command == "ask":
-                result = (agent_exchange(memory, client, session_id, args.prompt, Personality(args.personality,args.banter))
-                          if args.agent and not research_context
+                result = (agent_exchange(memory, client, session_id, args.prompt, Personality(args.personality,args.banter), research_context=research_context)
+                          if args.agent
                           else exchange(memory, client, session_id, args.prompt, vocabulary, research_context))
+                if args.retain_research and research_context:
+                    memory.retain_research(session_id, args.prompt, research_context)
                 if args.json:
                     emit_json(result)
                 else:
@@ -453,7 +467,7 @@ def main(argv=None):
                 online_research=args.online_research,
                 research_endpoint=args.research_endpoint,
                 activity=activity, agent_mode=args.agent,
-                personality=Personality(args.personality,args.banter),
+                personality=Personality(args.personality,args.banter), retain_research=args.retain_research,
             )
     except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)

@@ -77,6 +77,14 @@ def retrieve_memory(memory, prompt: str, *, limit: int = 8) -> tuple[MemoryEvide
         subject_match = row["subject"].lower() in prompt.lower()
         if overlap or subject_match:
             ranked.append((subject_match, overlap, float(row["confidence"]), int(row["id"]), row))
+    if hasattr(memory, "research_notes"):
+        for row in memory.research_notes(prompt, limit=limit):
+            overlap = len(prompt_terms & _terms(row["query"]))
+            ranked.append((False, overlap, 0.0, int(row["id"]), {
+                "kind": "research", "subject": row["query"],
+                "value": row["context"][:1200] + (" [cached excerpt truncated]" if len(row["context"]) > 1200 else ""), "source_type": "untrusted_research",
+                "source_ref": f"research:{row['id']}; sha256:{row['context_hash']}",
+                "confidence": 0.0}))
     ranked.sort(key=lambda item: (item[0], item[1], item[2], item[3]), reverse=True)
     return tuple(
         MemoryEvidence(

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prometheus-control-center"
-version = "0.8.0.dev0"
+version = "0.8.0.dev1"
 description = "Local-first control, health, archive, and verification tooling for Project Prometheus."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,4 +24,5 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 addopts = "-ra"

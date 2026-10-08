@@ -59,6 +59,14 @@ class MemoryStore:
                     superseded_at TEXT
                 );
                 CREATE INDEX IF NOT EXISTS knowledge_active ON knowledge(kind, subject, superseded_at);
+                CREATE TABLE IF NOT EXISTS research_notes (
+                    id INTEGER PRIMARY KEY,
+                    session_id TEXT NOT NULL REFERENCES sessions(session_id),
+                    query TEXT NOT NULL,
+                    context TEXT NOT NULL,
+                    context_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
             """)
             self.db.execute("PRAGMA user_version = 2")
             self.db.commit()
@@ -150,6 +158,37 @@ class MemoryStore:
             "SELECT * FROM knowledge" + where + " ORDER BY id", params
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def retain_research(self, session_id, query, context):
+        """Explicitly retain untrusted evidence, separately from knowledge."""
+        from hashlib import sha256
+        self.session(session_id)
+        if not isinstance(query, str) or not query.strip() or len(query) > 4000:
+            raise ValueError("Research query must be non-empty and bounded.")
+        if not isinstance(context, str) or not context.strip() or len(context) > 4000:
+            raise ValueError("Research evidence must be non-empty and bounded.")
+        digest = sha256(context.encode("utf-8")).hexdigest()
+        with self.db:
+            cursor = self.db.execute(
+                "INSERT INTO research_notes (session_id, query, context, context_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                (session_id, query, context, digest, utc_now()))
+        return cursor.lastrowid
+
+    def research_notes(self, query, *, limit=8):
+        """Find bounded relevant cached evidence; never promote it to knowledge."""
+        import re
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= 20:
+            raise ValueError("Research retrieval limit must be between 1 and 20.")
+        terms = set(re.findall(r"[A-Za-z0-9_]+", query.casefold()))
+        rows = self.db.execute("SELECT * FROM research_notes ORDER BY id DESC LIMIT 200").fetchall()
+        ranked = []
+        for row in rows:
+            words = set(re.findall(r"[A-Za-z0-9_]+", row["query"].casefold()))
+            score = len(terms & words)
+            if score:
+                ranked.append((score, row["id"], dict(row)))
+        ranked.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        return [row for _, _, row in ranked[:limit]]
 
     def sessions(self):
         rows = self.db.execute("""

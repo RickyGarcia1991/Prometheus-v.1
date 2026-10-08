@@ -41,7 +41,7 @@ class ResearchResult:
         blocks = []
         used = 0
         for index, source in enumerate(self.sources, 1):
-            block = f"[Source {index}] {source.title}\nURL: {source.url}\nRetrieved: {source.retrieved_at}\n{source.excerpt}\n"
+            block = f"[Source {index}] {source.title}\nURL: {source.url}\nRetrieved: {source.retrieved_at}\nContent SHA-256: {source.content_hash}\n{source.excerpt}\n"
             if used + len(block) > max_chars:
                 break
             blocks.append(block)

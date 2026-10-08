@@ -1,4 +1,4 @@
-# Prometheus v0.8.0-dev — local agent core, portable knowledge, and federated research
+# Prometheus v0.8.0-dev1 — local agent core, portable knowledge, and federated research
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 
@@ -60,3 +60,15 @@ The packaged Windows release includes Python and uses a stable app-data installa
 Use backup-memory and restore-memory for verified history recovery, and search DIRECTORY QUERY
 for local .md/.txt/.csv evidence with exact source citations. These commands do not need Ollama.
 See docs/RECOVERY.md, docs/LOCAL_DOCUMENTS.md and docs/EVALUATION.md.
+
+## Research and local recall (0.8.0.dev1)
+
+The default agent keeps retrieved research inside its tool-evidence and self-evaluation lifecycle instead of switching to plain chat. Research excerpts remain untrusted data; answers are instructed to cite source URLs. Retrieval timestamps and source-content SHA-256 hashes accompany each excerpt. Empty research results stop the turn rather than producing an unsupported answer.
+
+Online research requires both explicit opt-in and a configured HTTPS JSON provider. To retain successful research evidence for later offline agent recall, also select --retain-research:
+
+    START_PROMETHEUS.cmd --online-research --research-endpoint https://YOUR-PROVIDER/search --retain-research chat
+
+Replace the endpoint with a compatible provider; no public search service is installed by this change. Without the retention flag, research evidence is not added to the separate cache, although successful chat exchanges remain in normal history. Cached evidence is plaintext SQLite data, carries a timestamp and context hash, and is retrieved lexically from at most 200 recent notes. Agent context uses bounded excerpts. It is never automatically promoted to trusted facts or used to train model weights. Compatibility --no-agent mode does not recall the research cache.
+
+Pytest now selects this checkout's src directory even when an older editable installation is present. Application development, signed Controller 0.5.4, and Host Agent 0.6.2 retain separate versions.
