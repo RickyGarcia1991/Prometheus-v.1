@@ -23,6 +23,7 @@ from .resources import inventory
 from .source_catalog import source_catalog
 from .agent import run_agent
 from .builtin_tools import build_builtin_registry
+from .personality import Personality
 
 SYSTEM_PROMPT = (
     "You are Prometheus, a helpful local assistant. Answer the user's question directly and concisely. "
@@ -40,6 +41,8 @@ def build_parser():
     parser.add_argument("--base-url", default="http://127.0.0.1:11434", help="Loopback Ollama URL only")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Installed local model; no cloud models")
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
+    parser.add_argument("--personality", choices=("balanced","technical","concise","companion"), default="balanced", help="Local response personality")
+    parser.add_argument("--banter", action="store_true", help="Allow bounded friendly banter when context is appropriate")
     parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
     agent = parser.add_mutually_exclusive_group()
     agent.add_argument("--agent", dest="agent", action="store_true", default=True, help="Use the local Core agent planner and safe read-only tools (default)")
@@ -103,18 +106,20 @@ def selected_session(memory, requested, model):
     return memory.create_session(model)
 
 
-def agent_exchange(memory, client, session_id, prompt):
+def agent_exchange(memory, client, session_id, prompt, personality=Personality()):
     prompt = validate_prompt(prompt)
     started = time.perf_counter()
     recent_turns = memory.history(session_id, limit=8)
-    result = run_agent(memory, client, build_builtin_registry(memory), prompt, recent_turns=recent_turns)
+    result = run_agent(memory, client, build_builtin_registry(memory), prompt, recent_turns=recent_turns, personality=personality)
     if result.core.reply is None:
         raise ValueError("Agent execution did not complete.")
     elapsed = time.perf_counter() - started
     memory.save_exchange(session_id, prompt, result.core.reply)
     return {"session_id": session_id, "model": client.model, "reply": result.core.reply,
             "elapsed_seconds": round(elapsed, 2), "agent_attempts": result.attempts,
-            "tools": [e.tool for e in result.core.evidence if e.status == "complete"]}
+            "tools": [e.tool for e in result.core.evidence if e.status == "complete"],
+            "self_evaluation": {"passed": result.self_evaluation.passed, "score": result.self_evaluation.overall, "reasons": list(result.self_evaluation.reasons)},
+            "emotional_state": {"label": result.emotional_state.label, "confidence": result.emotional_state.confidence}}
 
 
 def exchange(memory, client, session_id, prompt, vocabulary=None, research_context=None):
@@ -224,7 +229,8 @@ def _memory_rows(memory, query=""):
 
 
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
-                     online_research=False, research_endpoint=None, activity=None, agent_mode=False):
+                     online_research=False, research_endpoint=None, activity=None, agent_mode=False,
+                     personality=Personality()):
     print("Prometheus local chat — no cloud fallback.")
     print("Core: agent + safe local tools" if agent_mode else "Core: plain local-model compatibility mode")
     print(f"Model: {client.model} | Session: {session_id}")
@@ -263,10 +269,13 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
                 prompt, online_enabled=online_research,
                 research_endpoint=research_endpoint, activity=activity)
             print("Thinking locally...", flush=True)
-            result = (agent_exchange(memory, client, session_id, prompt)
+            result = (agent_exchange(memory, client, session_id, prompt, personality)
                       if agent_mode and not research_context
                       else exchange(memory, client, session_id, prompt, vocabulary, research_context))
             print(f"Prometheus> {result['reply']}")
+            if agent_mode and "self_evaluation" in result:
+                ev=result["self_evaluation"]; mood=result["emotional_state"]
+                print(f"[Core eval: {ev['score']:.3f} {'PASS' if ev['passed'] else 'CHECK'}; state: {mood['label']}; tools: {len(result['tools'])}]")
             print(f"[{result['elapsed_seconds']}s; saved locally]", flush=True)
         except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
             print(f"ERROR: {error}", file=sys.stderr)
@@ -408,7 +417,7 @@ def main(argv=None):
                 return 0
             session_id = selected_session(memory, getattr(args, "session", None), client.model)
             if command == "ask":
-                result = (agent_exchange(memory, client, session_id, args.prompt)
+                result = (agent_exchange(memory, client, session_id, args.prompt, Personality(args.personality,args.banter))
                           if args.agent and not research_context
                           else exchange(memory, client, session_id, args.prompt, vocabulary, research_context))
                 if args.json:
@@ -422,6 +431,7 @@ def main(argv=None):
                 online_research=args.online_research,
                 research_endpoint=args.research_endpoint,
                 activity=activity, agent_mode=args.agent,
+                personality=Personality(args.personality,args.banter),
             )
     except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)

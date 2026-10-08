@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Mapping
 
 
 class Decision(str, Enum):
@@ -22,6 +22,7 @@ class ToolRequest:
     worker: str
     tool: str
     summary: str
+    arguments: Mapping[str, object] | None = None
     mutates_state: bool = False
     external_network: bool = False
     command_execution: bool = False

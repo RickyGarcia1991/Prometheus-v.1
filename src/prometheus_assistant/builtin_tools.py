@@ -3,11 +3,12 @@ import json
 from .articles import search_articles
 from .hardware import detect_hardware, resource_root
 from .resources import inventory
-from .tool_registry import ToolRegistry, ToolSpec
+from .tool_registry import ArgSpec, ToolRegistry, ToolSpec
 
 def build_builtin_registry(memory):
     def memory_lookup(request):
-        words={w.lower().strip(".,!?") for w in request.summary.split() if len(w)>2}
+        query=request.arguments["query"]
+        words={w.lower().strip(".,!?") for w in query.split() if len(w)>2}
         rows=[]
         for row in memory.knowledge():
             text=(row["subject"]+" "+row["value"]).lower()
@@ -19,7 +20,7 @@ def build_builtin_registry(memory):
             "confidence":r["confidence"]} for _,r in rows[:8]],ensure_ascii=False)
 
     def offline_articles(request):
-        return json.dumps(search_articles(resource_root(),request.summary,limit=5),ensure_ascii=False)
+        return json.dumps(search_articles(resource_root(),request.arguments["query"],limit=5),ensure_ascii=False)
 
     def resource_status(request):
         return json.dumps(inventory(resource_root()),ensure_ascii=False)
@@ -30,8 +31,8 @@ def build_builtin_registry(memory):
                            "system":hw.system},ensure_ascii=False)
 
     return ToolRegistry([
-        ToolSpec("memory","lookup","Search trusted local knowledge with provenance.",memory_lookup),
-        ToolSpec("knowledge","articles","Search installed offline Wikimedia archives.",offline_articles),
-        ToolSpec("knowledge","resources","Inspect the local portable knowledge inventory.",resource_status),
-        ToolSpec("system","summary","Read basic local hardware and OS information.",host_summary),
+        ToolSpec("memory","lookup","Search trusted local knowledge with provenance.",memory_lookup,{"query":ArgSpec()}),
+        ToolSpec("knowledge","articles","Search installed offline Wikimedia archives.",offline_articles,{"query":ArgSpec()}),
+        ToolSpec("knowledge","resources","Inspect the local portable knowledge inventory.",resource_status,{}),
+        ToolSpec("system","summary","Read basic local hardware and OS information.",host_summary,{}),
     ])

@@ -17,7 +17,7 @@ def test_memory_tool_preserves_provenance(tmp_path):
         memory.remember("decision","robot body","hybrid actuation",
                         source_type="user",source_ref="session:test",confidence=.9)
         registry=build_builtin_registry(memory)
-        request=registry.get("memory","lookup").request("robot body")
+        request=registry.get("memory","lookup").request("robot body",{"query":"robot body"})
         rows=json.loads(registry.executors()[("memory","lookup")](request))
     assert rows[0]["value"]=="hybrid actuation"
     assert rows[0]["source_ref"]=="session:test"

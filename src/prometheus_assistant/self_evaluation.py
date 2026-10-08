@@ -1,0 +1,27 @@
+"""Deterministic, inspectable self-evaluation for completed agent cycles."""
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class SelfEvaluation:
+    authorization: float
+    execution: float
+    evidence: float
+    response: float
+    overall: float
+    passed: bool
+    reasons: tuple[str,...]
+
+def evaluate_agent_result(core):
+    reasons=[]
+    authorization=1.0 if core.evaluation.authorization_ok else 0.0
+    if not authorization: reasons.append("authorization failed")
+    statuses=[item.status for item in core.evidence]
+    execution=1.0 if all(s=="complete" for s in statuses) else (0.5 if not statuses else 0.0)
+    if statuses and execution==0: reasons.append("one or more tools did not complete")
+    evidence=1.0 if core.evaluation.tool_accuracy==1.0 else 0.0
+    if evidence<1: reasons.append("executed tools differed from the authorized plan")
+    response=1.0 if isinstance(core.reply,str) and core.reply.strip() else 0.0
+    if response==0: reasons.append("no completed response")
+    overall=round((authorization+execution+evidence+response)/4,3)
+    passed=bool(core.evaluation.passed and response==1.0 and authorization==1.0 and evidence==1.0)
+    return SelfEvaluation(authorization,execution,evidence,response,overall,passed,tuple(reasons))

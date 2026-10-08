@@ -15,7 +15,7 @@ def store(tmp_path):
     return MemoryStore(tmp_path/"memory.sqlite3")
 
 def test_model_can_choose_registered_read_only_tool(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"local","tool":"inspect","summary":"read it"}]}),"grounded answer"])
+    model=Model([json.dumps({"tools":[{"worker":"local","tool":"inspect","summary":"read it","arguments":{}}]}),"grounded answer"])
     registry=ToolRegistry([ToolSpec("local","inspect","Read local evidence",lambda req:"evidence")])
     with store(tmp_path) as memory:
         result=run_agent(memory,model,registry,"inspect this")
@@ -24,8 +24,8 @@ def test_model_can_choose_registered_read_only_tool(tmp_path):
     assert result.core.evidence[0].output=="evidence"
 
 def test_unknown_model_tool_gets_one_bounded_plan_repair(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"local","tool":"missing","summary":"try"}]}),
-                 json.dumps({"tools":[{"worker":"local","tool":"inspect","summary":"read"}]}),"answer"])
+    model=Model([json.dumps({"tools":[{"worker":"local","tool":"missing","summary":"try","arguments":{}}]}),
+                 json.dumps({"tools":[{"worker":"local","tool":"inspect","summary":"read","arguments":{}}]}),"answer"])
     called=[]
     registry=ToolRegistry([ToolSpec("local","inspect","Read",lambda req:called.append(True) or "ok")])
     with store(tmp_path) as memory:
@@ -34,7 +34,7 @@ def test_unknown_model_tool_gets_one_bounded_plan_repair(tmp_path):
     assert result.attempts==2 and result.core.reply=="answer"
 
 def test_model_cannot_remove_registry_risk_flags(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change"}]})])
+    model=Model([json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change","arguments":{}}]})])
     called=[]
     registry=ToolRegistry([ToolSpec("code","write","Write state",lambda req:called.append(True),
                                     mutates_state=True)])
@@ -45,7 +45,7 @@ def test_model_cannot_remove_registry_risk_flags(tmp_path):
     assert result.core.reply is None
 
 def test_approved_state_change_executes_and_is_grounded(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change"}]}),"done"])
+    model=Model([json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change","arguments":{}}]}),"done"])
     registry=ToolRegistry([ToolSpec("code","write","Write state",lambda req:"changed",
                                     mutates_state=True)])
     with store(tmp_path) as memory:
@@ -54,7 +54,7 @@ def test_approved_state_change_executes_and_is_grounded(tmp_path):
 
 @pytest.mark.parametrize("bad",[
     "not json", "[]", json.dumps({"tools":"bad"}), json.dumps({"tools":[],"extra":1}),
-    json.dumps({"tools":[{"worker":"a","tool":"b"}]})
+    json.dumps({"tools":[{"worker":"a","tool":"b","summary":"x","arguments":{}}]})
 ])
 def test_malformed_plans_fall_back_to_no_tools(tmp_path,bad):
     model=Model([bad,bad,"safe conversational answer"]); registry=ToolRegistry()
@@ -94,7 +94,7 @@ def test_failed_read_only_tool_gets_one_bounded_replan(tmp_path):
 
 
 def test_retry_cannot_escalate_permissions(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"local","tool":"first","summary":"try"}]}),json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change"}]})])
+    model=Model([json.dumps({"tools":[{"worker":"local","tool":"first","summary":"try","arguments":{}}]}),json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change","arguments":{}}]})])
     called=[]
     def fail(_):
         raise RuntimeError("failed")
