@@ -4,26 +4,17 @@ $repo=Split-Path $PSScriptRoot
 if((Get-Volume -DriveLetter $Root.Substring(0,1)).FileSystemLabel -ne 'Prometheus-2TB'){throw 'SSD identity mismatch'}
 $commit=(& git -C $repo rev-parse HEAD).Trim()
 if($LASTEXITCODE){throw 'Git revision unavailable'}
-$release=Join-Path $Root ('Prometheus-v0.5.2-dev-'+$commit.Substring(0,7))
+$release=Join-Path $Root ('Prometheus-v0.8.0-dev-'+$commit.Substring(0,7))
 if(Test-Path $release){throw 'Release already exists; inspect before replacing'}
 $zip=Join-Path $repo 'build\ssd-source.zip'
 & git -C $repo archive --format=zip --output=$zip HEAD
 if($LASTEXITCODE){throw 'Source archive failed'}
 Expand-Archive $zip $release
-$controller=Join-Path $Root 'Prometheus-Controller-v0.5.2'
-$hostController=Join-Path $env:LOCALAPPDATA 'Prometheus\Controllers\Prometheus-Controller-v0.5.2'
-New-Item -ItemType Directory -Force $controller,$hostController | Out-Null
-Copy-Item (Join-Path $repo 'build\controller-v0.5.2\*') $controller
-Copy-Item (Join-Path $repo 'tools\Prometheus.DriveController\Prometheus-Drive-Engine.ps1') $controller
-$manifest=@(Get-ChildItem $controller -File | Where-Object {$_.Name -ne 'SHA256-MANIFEST.json'} | ForEach-Object {
- $dest=Join-Path $hostController $_.Name
- Copy-Item $_.FullName $dest -Force
- $hash=(Get-FileHash $_.FullName).Hash
- if((Get-FileHash $dest).Hash -ne $hash){throw 'Controller host copy mismatch'}
- [ordered]@{file=$_.Name;sha256=$hash;size=$_.Length}
-})
-$manifest | ConvertTo-Json | Set-Content (Join-Path $controller 'SHA256-MANIFEST.json')
-Copy-Item (Join-Path $controller 'SHA256-MANIFEST.json') $hostController -Force
+$controller=Join-Path $Root 'Prometheus-Controller-v0.5.4'
+$hostController=Join-Path $env:LOCALAPPDATA 'Prometheus\Controllers\Prometheus-Controller-v0.5.4'
+if(!(Test-Path $controller)){throw 'Signed controller v0.5.4 is missing from the SSD'}
+if(!(Test-Path $hostController)){throw 'Verified host controller v0.5.4 is missing'}
+foreach($required in @('SHA256-MANIFEST.json','SHA256-MANIFEST.sig','MANIFEST-PUBLIC.cer')){if(!(Test-Path (Join-Path $controller $required))){throw ('Signed controller artifact missing: '+$required)}}
 $sourceManifest=@(Get-ChildItem $release -File -Recurse | ForEach-Object {
  [ordered]@{path=$_.FullName.Substring($release.Length+1);sha256=(Get-FileHash $_.FullName).Hash;size=$_.Length}
 })
@@ -41,11 +32,12 @@ Copy-Item $launcher $backup
 $text=[IO.File]::ReadAllText((Join-Path $repo 'tools\START-PROMETHEUS-SSD.cmd')).Replace("`r`n","`n")
 $releaseName=Split-Path $release -Leaf
 $text=[regex]::Replace($text,'(?m)^set "PACKAGE=.*"$',('set "PACKAGE=%ROOT%\'+$releaseName+'"'))
-$text=[regex]::Replace($text,'(?m)^echo Prometheus version:.*$',('echo Prometheus version: development '+$commit.Substring(0,7)))
+$text=[regex]::Replace($text,'(?m)^echo Prometheus version:.*$',('echo Prometheus version: v0.8.0-dev '+$commit.Substring(0,7)))
 $text=[regex]::Replace($text,'(?m)^echo Source checkpoint:.*$',('echo Source checkpoint: '+$commit))
 [IO.File]::WriteAllText($launcher,$text,[Text.Encoding]::ASCII)
 $media=Join-Path $env:USERPROFILE 'Documents\Removable-Media-Status'
 Copy-Item (Join-Path $media 'Prometheus-Drive-Watcher.ps1') (Join-Path $media ('Prometheus-Drive-Watcher.ps1.before-'+(Get-Date -Format yyyyMMdd-HHmmss)+'.bak'))
 Copy-Item (Join-Path $repo 'tools\Prometheus.DriveController\Prometheus-Drive-Watcher.ps1') $media -Force
-[ordered]@{version='0.5.2-dev';git_commit=$commit;branch='feature/ai-orchestration';built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;host_controller=$hostController;note='Verified source and controller copies; original releases and all data retained'} | ConvertTo-Json | Set-Content (Join-Path $Root 'PROMETHEUS-SSD-STATUS.json')
+$branch=(& git -C $repo branch --show-current).Trim()
+[ordered]@{version='0.8.0-dev';git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';note='Verified source and controller copies; component versions are independently managed'} | ConvertTo-Json | Set-Content (Join-Path $Root 'PROMETHEUS-SSD-STATUS.json')
 Write-Output ('DEPLOYED '+$commit)
