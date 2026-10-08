@@ -80,7 +80,10 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
         planner_attempts = 2
         repair_prompt = (prompt + "\n\nYour previous tool plan was invalid: " + str(first_error) +
                          " Return one corrected JSON plan using only exact catalog worker/tool names, or {\"tools\":[]}.")
-        requests, raw_plan = model_plan(client, registry, repair_prompt, seed.memory, recent_turns)
+        try:
+            requests, raw_plan = model_plan(client, registry, repair_prompt, seed.memory, recent_turns)
+        except (AgentPlanError, ValueError):
+            requests, raw_plan = (), '{"tools":[]}'
     result = run_core(memory, prompt, online_enabled=online_enabled, tool_requests=requests,
         approved_request_ids=approved_request_ids, executors=registry.executors(),
         responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns), trace=trace)

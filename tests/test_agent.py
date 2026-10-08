@@ -56,11 +56,14 @@ def test_approved_state_change_executes_and_is_grounded(tmp_path):
     "not json", "[]", json.dumps({"tools":"bad"}), json.dumps({"tools":[],"extra":1}),
     json.dumps({"tools":[{"worker":"a","tool":"b"}]})
 ])
-def test_malformed_plans_fail_closed(tmp_path,bad):
-    model=Model([bad,bad]); registry=ToolRegistry()
+def test_malformed_plans_fall_back_to_no_tools(tmp_path,bad):
+    model=Model([bad,bad,"safe conversational answer"]); registry=ToolRegistry()
     with store(tmp_path) as memory:
-        with pytest.raises((AgentPlanError,ValueError)):
-            run_agent(memory,model,registry,"test")
+        result=run_agent(memory,model,registry,"test")
+    assert result.core.evaluation.passed
+    assert result.core.evidence==()
+    assert result.core.reply=="safe conversational answer"
+    assert result.attempts==2
 
 def test_memory_is_labeled_evidence_for_planner(tmp_path):
     model=Model([json.dumps({"tools":[]}),"answer"])
