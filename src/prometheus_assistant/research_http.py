@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Callable
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 from .research import ResearchResult, ResearchSource
@@ -47,7 +47,15 @@ class HttpJsonResearchProvider:
             content = item.get("content") or item.get("excerpt")
             if not all(isinstance(value, str) and value.strip() for value in (source_url, title, content)):
                 continue
+            parsed = urlsplit(source_url)
+            if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+                continue
+            excerpt = item.get("excerpt")
+            if excerpt is not None and not isinstance(excerpt, str):
+                continue
+            if len(content) > 100_000 or (excerpt is not None and len(excerpt) > 10_000):
+                continue
             sources.append(ResearchSource.from_content(
-                url=source_url, title=title, content=content, excerpt=item.get("excerpt")
+                url=source_url, title=title, content=content, excerpt=excerpt
             ))
         return ResearchResult(query, tuple(sources))
