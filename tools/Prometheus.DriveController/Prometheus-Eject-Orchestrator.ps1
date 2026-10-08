@@ -7,6 +7,7 @@ $lock=Join-Path $local 'eject-mode.json'
 $runner=Join-Path $env:LOCALAPPDATA 'DesktopCommanderStartup\Run-DesktopCommander.ps1'
 $helper=Join-Path $local 'Prometheus-Safe-Eject.ps1'
 $log=Join-Path $diag 'eject-orchestrator.log'
+$ownsHandoff=$false
 New-Item -ItemType Directory -Force $diag | Out-Null
 function Log($s){"$(Get-Date -Format o) $s" | Add-Content -LiteralPath $log}
 function Present { $v=Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$Drive'";return ($v -and $v.VolumeName -eq 'Prometheus-2TB') }
@@ -24,8 +25,9 @@ try {
  if($LASTEXITCODE -ne 0){throw ('USB identity verification failed: '+($inspection -join ' '))}
  Log ('Identity verified: '+($inspection -join ' '))
  if($InspectOnly){Write-Output 'PASS: target SSD verified; no processes stopped and no eject requested';exit 0}
- if(Test-Path $lock){throw 'Another eject operation is already active'}
+ if(Test-Path $lock){$prior=Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json;if($prior.phase -ne 'stopping' -or $prior.drive -ne $Drive){throw 'Another operation owns the eject lock'}}
  @{active=$true;drive=$Drive;started=(Get-Date).ToString('o');phase='handoff'} | ConvertTo-Json | Set-Content -LiteralPath $lock -Encoding UTF8
+ $ownsHandoff=$true
  Start-Sleep -Seconds 2
  $targets=@(Get-CimInstance Win32_Process | Where-Object {
    $_.ProcessId -ne $PID -and ($_.Name -eq 'Prometheus.DriveController.exe' -or
@@ -45,4 +47,4 @@ try {
  Log ('Windows eject result: '+($result -join ' ')+' exit '+$LASTEXITCODE)
  if(!(Present)){Log 'SUCCESS: Windows removed Prometheus volume';Resume;exit 0}
  throw ('Windows did not release SSD: '+($result -join ' '))
-}catch{Log ('BLOCKED: '+$_.Exception.Message);Resume;exit 2}
+}catch{Log ('BLOCKED: '+$_.Exception.Message);if($ownsHandoff){Resume};exit 2}
