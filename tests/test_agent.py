@@ -23,14 +23,15 @@ def test_model_can_choose_registered_read_only_tool(tmp_path):
     assert result.core.reply=="grounded answer"
     assert result.core.evidence[0].output=="evidence"
 
-def test_unknown_model_tool_is_rejected_before_execution(tmp_path):
-    model=Model([json.dumps({"tools":[{"worker":"local","tool":"missing","summary":"try"}]})])
+def test_unknown_model_tool_gets_one_bounded_plan_repair(tmp_path):
+    model=Model([json.dumps({"tools":[{"worker":"local","tool":"missing","summary":"try"}]}),
+                 json.dumps({"tools":[{"worker":"local","tool":"inspect","summary":"read"}]}),"answer"])
     called=[]
-    registry=ToolRegistry([ToolSpec("local","inspect","Read",lambda req:called.append(True))])
+    registry=ToolRegistry([ToolSpec("local","inspect","Read",lambda req:called.append(True) or "ok")])
     with store(tmp_path) as memory:
-        with pytest.raises(ValueError,match="Unknown tool"):
-            run_agent(memory,model,registry,"test")
-    assert called==[]
+        result=run_agent(memory,model,registry,"test")
+    assert called==[True]
+    assert result.attempts==2 and result.core.reply=="answer"
 
 def test_model_cannot_remove_registry_risk_flags(tmp_path):
     model=Model([json.dumps({"tools":[{"worker":"code","tool":"write","summary":"change"}]})])
@@ -56,7 +57,7 @@ def test_approved_state_change_executes_and_is_grounded(tmp_path):
     json.dumps({"tools":[{"worker":"a","tool":"b"}]})
 ])
 def test_malformed_plans_fail_closed(tmp_path,bad):
-    model=Model([bad]); registry=ToolRegistry()
+    model=Model([bad,bad]); registry=ToolRegistry()
     with store(tmp_path) as memory:
         with pytest.raises((AgentPlanError,ValueError)):
             run_agent(memory,model,registry,"test")

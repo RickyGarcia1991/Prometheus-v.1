@@ -73,11 +73,18 @@ def model_response(client, plan, evidence, recent_turns=()):
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
-    requests, raw_plan = model_plan(client, registry, prompt, seed.memory, recent_turns)
+    planner_attempts = 1
+    try:
+        requests, raw_plan = model_plan(client, registry, prompt, seed.memory, recent_turns)
+    except (AgentPlanError, ValueError) as first_error:
+        planner_attempts = 2
+        repair_prompt = (prompt + "\n\nYour previous tool plan was invalid: " + str(first_error) +
+                         " Return one corrected JSON plan using only exact catalog worker/tool names, or {\"tools\":[]}.")
+        requests, raw_plan = model_plan(client, registry, repair_prompt, seed.memory, recent_turns)
     result = run_core(memory, prompt, online_enabled=online_enabled, tool_requests=requests,
         approved_request_ids=approved_request_ids, executors=registry.executors(),
         responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns), trace=trace)
-    attempts = 1
+    attempts = planner_attempts
     retryable = (not result.evaluation.passed and result.evaluation.authorization_ok
                  and any(e.status in {"error", "unavailable"} for e in result.evidence))
     if retryable:
@@ -89,5 +96,5 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
         result = run_core(memory, prompt, online_enabled=online_enabled, tool_requests=requests,
             executors=registry.executors(),
             responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns), trace=trace)
-        attempts = 2
+        attempts += 1
     return AgentResult(result, attempts, raw_plan)
