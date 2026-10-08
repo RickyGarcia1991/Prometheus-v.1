@@ -46,5 +46,11 @@ Copy-Item (Join-Path $media 'Prometheus-Drive-Watcher.ps1') (Join-Path $media ('
 Copy-Item (Join-Path $release 'tools\Prometheus.DriveController\Prometheus-Drive-Watcher.ps1') $media -Force
 $branch=(& git -C $repo branch --show-current).Trim()
 $metaPath=Join-Path $Root 'PROMETHEUS-SSD-STATUS.json';$oldMeta=if(Test-Path $metaPath){Get-Content $metaPath -Raw|ConvertFrom-Json}else{$null}
-[ordered]@{version=$version;git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation;research_integration_validation=$oldMeta.research_integration_validation} | ConvertTo-Json -Depth 8 | Set-Content $metaPath
+[ordered]@{version=$version;git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation;research_integration_validation=$oldMeta.research_integration_validation} | ConvertTo-Json -Depth 8 | Set-Variable -Name newMetadata
+$written=$false
+for($attempt=0;$attempt -lt 20;$attempt++){
+ try{[IO.File]::WriteAllText($metaPath,$newMetadata,[Text.Encoding]::UTF8);$written=$true;break}
+ catch [System.IO.IOException]{Start-Sleep -Milliseconds 500}
+}
+if(-not $written){throw 'SSD status metadata remained locked after 20 attempts.'}
 Write-Output ('DEPLOYED '+$commit)
