@@ -56,7 +56,7 @@ def test_activation_has_bounded_rollback():
 
 def test_installer_authorizes_only_after_signed_package_validation():
     s = text("INSTALL-PROMETHEUS-HOST-AGENT.ps1")
-    assert "Prometheus-Host-Agent-v0.6.1" in s
+    assert "Prometheus-Host-Agent-v0.6.2" in s
     assert "UAC-approved-install" in s
     assert s.index("Host Agent manifest signature invalid") < s.index("UAC-approved-install")
 

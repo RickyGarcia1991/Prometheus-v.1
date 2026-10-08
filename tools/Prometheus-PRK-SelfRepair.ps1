@@ -46,8 +46,11 @@ function Get-Health {
  $hostSup=Join-Path $r.local 'Prometheus-USB-Supervisor.ps1';$supOk=Test-Path $hostSup
  $eject=Join-Path $r.local 'eject-mode.json';$pause=Join-Path (Split-Path $r.local) 'DesktopCommanderStartup\runner-paused.request'
  $stale=(Test-Path $eject) -or (Test-Path $pause)
+ $securityState=Join-Path $r.local 'security-state.json';$authState=Join-Path $r.local 'authorized-host.json'
+ $protectedStateOk=$true;foreach($p in @($securityState,$authState)){if(Test-Path $p){$side=$p+'.sha256';if(!(Test-Path $side) -or (Get-FileHash $p -Algorithm SHA256).Hash -ne (Get-Content $side -Raw).Trim()){$protectedStateOk=$false}}}
  $repairable=($integrity.state -eq 'ready')
  $channels=@(
+  [pscustomobject]@{name='security_state';percent=$(if($protectedStateOk){100}else{0});state=$(if($protectedStateOk){'ready'}else{'blocked'});detail=$(if($protectedStateOk){'Host-bound security state preserved; PRK will not replace authorization or lower anti-rollback state'}else{'Protected host security state failed integrity; signed Host Agent repair required'})},
   [pscustomobject]@{name='identity';percent=$(if($id){100}else{0});state=$(if($id){'ready'}else{'error'});detail=$(if($id){'PRK identity verified'}else{'PRK status file missing'})},
   $integrity,
   [pscustomobject]@{name='tools';percent=$(if($tool){100}else{0});state=$(if($tool){'ready'}else{'error'});detail=$(if($tool){'Recovery toolset present'}else{'Recovery toolset missing'})},

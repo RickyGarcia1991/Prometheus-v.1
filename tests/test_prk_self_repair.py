@@ -67,3 +67,21 @@ def test_corrupt_staged_file_is_detected_and_rebuilt():
         repaired=json.loads(run_ps("repair",b,stage,local).stdout)
         assert repaired["success"] is True and "rebuilt_staging" in repaired["actions"]
         assert (stage/"src"/"a.txt").read_text(encoding="utf-8")=="source"
+
+
+def test_prk_preserves_host_bound_security_state():
+    t=ENGINE.read_text(encoding="utf-8")
+    assert "security_state" in t
+    assert "PRK will not replace authorization or lower anti-rollback state" in t
+    with tempfile.TemporaryDirectory() as td:
+        b=Path(td); make_key(b); local=b/"local"; local.mkdir()
+        state=local/"security-state.json"; auth=local/"authorized-host.json"
+        state.write_text('{"highest_controller_version":"9.9.9"}',encoding="utf-8")
+        auth.write_text('{"fingerprint":"BOUND-HOST"}',encoding="utf-8")
+        import hashlib
+        for p in (state,auth):
+            (Path(str(p)+".sha256")).write_text(hashlib.sha256(p.read_bytes()).hexdigest().upper(),encoding="ascii")
+        before=(state.read_bytes(),auth.read_bytes())
+        r=json.loads(run_ps("repair",b,b/"stage",local).stdout)
+        assert r["success"] is True
+        assert (state.read_bytes(),auth.read_bytes())==before

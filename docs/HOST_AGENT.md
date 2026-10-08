@@ -33,3 +33,16 @@ Before release: parser-check the PowerShell files, run `python -m pytest -q`, ru
 - Security events are written to a hash-chained JSONL audit trail on the host. This is tamper-evident, not tamper-proof; off-host backup/signing can be added later if stronger forensic guarantees are required.
 - Controller activation remains transactional. A staged package is hash-verified before activation, and a failed activation restores the previous cached controller when available.
 - The release signing private key remains in the Windows certificate store and is not copied to the SSD. Only the public certificate, manifest, and signature are portable.
+
+
+## Security and recovery checkpoint (v0.6.2)
+
+v0.6.2 freezes the portable security/recovery design pending fresh-PC validation.
+
+- Controller activation retains three verified recovery generations in addition to the transactional previous copy.
+- Host authorization and anti-rollback state use SHA-256 integrity sidecars. Security-state recovery considers protected generations and selects the highest valid version, so recovery cannot silently lower the rollback floor.
+- Prometheus-Security-Recovery.ps1 independently verifies the audit hash chain, protected host state, and controller recovery generations. Verification fails closed on malformed or modified data.
+- Upgrade from v0.6.1 preserves the pre-fix audit as a legacy forensic file and starts a clean serialized audit chain.
+- The PRK health engine checks protected host security state but never replaces host authorization or lowers anti-rollback state. Damaged host-bound state requires the signed Host Agent repair path.
+- Automated failure simulations cover audit tampering, protected-state corruption, recovery-snapshot corruption, PRK preservation, package integrity, host mismatch, anti-rollback, transactional rollback, and concurrent Host Agent starts.
+- The release-signing private key remains only in the Windows certificate store. Portable media contains the public certificate, signed manifest, and signature only.
