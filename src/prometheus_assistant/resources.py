@@ -2,6 +2,7 @@
 from dataclasses import dataclass, asdict
 import json, os
 from pathlib import Path
+from .offline_archive import ARCHIVES
 
 @dataclass(frozen=True)
 class KnowledgeResource:
@@ -36,6 +37,15 @@ def inventory(resource_root: str | None = None) -> list[dict]:
         row["path"]=str(path) if path else None
         row["size_bytes"]=path.stat().st_size if path and path.is_file() else None
         rows.append(row)
+    for item in ARCHIVES:
+        path = root / "Knowledge" / "Kiwix" / item.project / item.filename if root else None
+        rows.append({"id": item.id, "title": item.title, "subjects": [item.project],
+                     "kind": "kiwix-zim", "access": "offline", "source": item.source_url,
+                     "relative_path": f"Knowledge/Kiwix/{item.project}/{item.filename}",
+                     "license_note": item.license_note, "installed": bool(path and path.is_file()),
+                     "path": str(path) if path else None,
+                     "size_bytes": path.stat().st_size if path and path.is_file() else None,
+                     "version": item.version})
     return rows
 
 def write_catalog(destination: Path, resource_root: str | None = None) -> Path:

@@ -14,6 +14,7 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+offline = ["libzim==3.13.1"]
 
 [project.scripts]
 prometheusctl = "prometheus_control_center.cli:main"
