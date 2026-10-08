@@ -59,3 +59,11 @@ def test_installer_authorizes_only_after_signed_package_validation():
     assert "Prometheus-Host-Agent-v0.6.1" in s
     assert "UAC-approved-install" in s
     assert s.index("Host Agent manifest signature invalid") < s.index("UAC-approved-install")
+
+
+def test_host_agent_serializes_concurrent_invocations():
+    s = text("Prometheus-Host-Agent.ps1")
+    assert "PrometheusHostAgent" in s
+    assert "WaitOne(15000)" in s
+    assert "host-agent-busy" in s
+    assert "ReleaseMutex()" in s

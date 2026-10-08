@@ -8,6 +8,7 @@ $AuthorizedHost=Join-Path $HostRoot 'authorized-host.json'
 $EjectLock=Join-Path $HostRoot 'eject-mode.json'
 $ControllerRoot=Join-Path $HostRoot 'Controllers'
 $TrustedThumbprint='898F702114B0F889763589C4057DC19CF1657CD5'
+$AgentMutex=New-Object Threading.Mutex($false,'Local\\PrometheusHostAgent')
 function Write-Log([string]$Level,[string]$Message){New-Item -ItemType Directory -Force $HostRoot|Out-Null;Add-Content -Path $Log -Value ((Get-Date -Format o)+' '+$Level+' '+$Message)}
 function Get-HostFingerprint {$id=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid).MachineGuid;$sha=[Security.Cryptography.SHA256]::Create();try{return ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($id))).Replace('-',''))}finally{$sha.Dispose()}}
 function Write-Audit([string]$Event,[string]$Result,[string]$Detail='') {New-Item -ItemType Directory -Force $HostRoot|Out-Null;$prev='GENESIS';if(Test-Path $AuditLog){$last=Get-Content $AuditLog -Tail 1 -ErrorAction SilentlyContinue;if($last){try{$prev=([string](ConvertFrom-Json $last).hash)}catch{$prev='BROKEN'}}};$record=[ordered]@{timestamp=(Get-Date -Format o);event=$Event;result=$Result;host=(Get-HostFingerprint);detail=$Detail;previous=$prev};$body=$record|ConvertTo-Json -Compress;$sha=[Security.Cryptography.SHA256]::Create();try{$hash=([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($body))).Replace('-',''))}finally{$sha.Dispose()};$record.hash=$hash;Add-Content $AuditLog ($record|ConvertTo-Json -Compress)}
@@ -31,6 +32,5 @@ function Invoke-Agent {if(Test-EjectSuppressed){Write-Log 'info' 'suppressed eje
  foreach($d in $vols){try{$root=$d.DeviceID+'\';$pkg=Get-Package $root;$running=@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue);$dst=Join-Path $ControllerRoot $pkg.Name;if(!$running.Count){$dst=Sync-Controller $pkg}else{Write-Log 'info' ('update-deferred controller-running '+$pkg.Name)};$exe=Join-Path $dst 'Prometheus.DriveController.exe';if(!(Test-Path $exe)){throw 'Cached controller executable missing'};if(!$running.Count){Start-Process $exe -WorkingDirectory $dst;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}};Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name);Write-Audit 'host-agent' 'healthy' $pkg.Name}catch{$fail=1;Write-Log 'security' $_.Exception.Message;Write-Audit 'package-validation' 'quarantined' $_.Exception.Message}}
  return $fail
 }
-$rc=Invoke-Agent
-if($Mode -eq 'Verify'){if($rc -eq 0){Write-Output 'Prometheus Host Agent verification passed.'}else{Write-Error 'Prometheus Host Agent verification failed.'}}
-exit $rc
+$acquired=$false
+try{$acquired=$AgentMutex.WaitOne(15000);if(!$acquired){Write-Log 'info' 'host-agent-busy';exit 0};$rc=Invoke-Agent;if($Mode -eq 'Verify'){if($rc -eq 0){Write-Output 'Prometheus Host Agent verification passed.'}else{Write-Error 'Prometheus Host Agent verification failed.'}};exit $rc}finally{if($acquired){$AgentMutex.ReleaseMutex()};$AgentMutex.Dispose()}
