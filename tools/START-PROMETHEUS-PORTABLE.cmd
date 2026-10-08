@@ -28,6 +28,6 @@ if /I "%~1"=="research-status" goto run
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%PACKAGE%\tools\wait-ollama.ps1"
 if errorlevel 1 exit /b 1
 :run
-call "%PACKAGE%\START_PROMETHEUS.cmd" --memory "%PORTABLE_MEMORY%" %*
+"%PROMETHEUS_PYTHON%" "%ROOT%\Prometheus-Resources\Tools\portable-memory-guard.py" --root "%ROOT%" %*
 exit /b %errorlevel%
 
