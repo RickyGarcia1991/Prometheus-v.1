@@ -72,6 +72,15 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
             return f"Operating system: {data['system']}; RAM: {data['ram_gib']} GiB; CPU threads: {data['cpu_threads']}."
         except (TypeError,ValueError,KeyError):
             return "Verified system evidence was returned in an unreadable format."
+    complete_search=[e for e in evidence if e.worker=="project" and e.tool=="search" and e.status=="complete"]
+    if len(evidence)==1 and complete_search:
+        try:
+            data=json.loads(complete_search[0].output); rows=data.get("results",[])[:5]
+            if not rows: return "No matching source lines were found in the bounded Prometheus project search."
+            rendered="; ".join(f"{row['path']}:{row['line']} — {row['excerpt'].strip()}" for row in rows)
+            return "Verified project matches: "+rendered
+        except (TypeError,ValueError,KeyError):
+            return "Verified project-search evidence was returned in an unreadable format."
     rows = [{"worker":e.worker,"tool":e.tool,"status":e.status,
              "summary":e.summary,"output":e.output[:4000]} for e in evidence]
     system = (
@@ -99,6 +108,16 @@ def _deterministic_readonly_fallback(registry, prompt):
             return ()
         if not (spec.mutates_state or spec.external_network or spec.command_execution):
             return (spec.request("Read verified local system and hardware information.",{}),)
+    project_terms=("prometheus project","project source","source code","project for","project files")
+    search_terms=("search","find","where","defined","definition")
+    if any(term in text for term in project_terms) and any(term in text for term in search_terms):
+        try:
+            spec=registry.get("project","search")
+        except ValueError:
+            return ()
+        if not (spec.mutates_state or spec.external_network or spec.command_execution):
+            query=prompt[:200]
+            return (spec.request("Search verified local Prometheus project text.",{"query":query}),)
     return ()
 
 

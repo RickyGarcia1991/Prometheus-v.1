@@ -2,7 +2,7 @@ import json
 import pytest
 from prometheus_assistant.agent import AgentPlanError, run_agent
 from prometheus_assistant.memory import MemoryStore
-from prometheus_assistant.tool_registry import ToolRegistry, ToolSpec
+from prometheus_assistant.tool_registry import ArgSpec, ToolRegistry, ToolSpec
 
 class Model:
     def __init__(self, replies):
@@ -179,3 +179,13 @@ def test_resume_agent_rejects_invalid_approval_index(tmp_path):
         prior=run_agent(memory,model,registry,"change")
         with pytest.raises(ValueError,match="Approval IDs"):
             resume_agent(memory,model,registry,prior,(1,))
+
+
+def test_invalid_planner_uses_readonly_project_search_fallback(tmp_path):
+    model=Model(["bad","still bad"]); calls=[]
+    payload=json.dumps({"query":"run_agent","results":[{"path":"src/prometheus_assistant/agent.py","line":108,"excerpt":"def run_agent(...):","score":1}],"files_scanned":20})
+    registry=ToolRegistry([ToolSpec("project","search","Search",lambda req:calls.append(req) or payload,{"query":ArgSpec(max_length=200)})])
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,registry,"Search the Prometheus project for where run_agent is defined")
+    assert calls and "src/prometheus_assistant/agent.py:108" in result.core.reply
+    assert len(model.messages)==2
