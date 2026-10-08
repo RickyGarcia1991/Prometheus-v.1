@@ -1,4 +1,11 @@
 param([string]$Drive='D:',[switch]$InspectOnly)
+# Safety interlock: legacy forced process termination and remote-agent shutdown are disabled.
+# InspectOnly remains available. Actual removal requires the portable preflight and
+# an explicit Windows Safely Remove Hardware action after all applications close.
+if (-not $InspectOnly) {
+ Write-Error 'BLOCKED: legacy controller eject is disabled to protect SSD memory and remote access. Close apps normally, run portable-eject-preflight.ps1, then use Windows Safely Remove Hardware.'
+ exit 2
+}
 $ErrorActionPreference='Stop'
 $local=Join-Path $env:LOCALAPPDATA 'Prometheus'
 $diag=Join-Path $local 'Diagnostics'
@@ -47,7 +54,8 @@ try {
  foreach($p in $dc){if($p.Name -eq 'node.exe'){Log ('Pausing Desktop Commander '+$p.ProcessId);Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}}
  Start-Sleep -Seconds 3
  $result=& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper -Drive $Drive 2>&1
- Log ('Windows eject result: '+($result -join ' ')+' exit '+$LASTEXITCODE)
- if(!(Present)){Log 'SUCCESS: Windows removed Prometheus volume';Resume;exit 0}
+ $ejectExit=$LASTEXITCODE
+ Log ('Windows eject result: '+($result -join ' ')+' exit '+$ejectExit)
+ if($ejectExit -eq 0 -and (($result -join ' ') -like '*Windows confirmed volume removal; safe to unplug.*') -and !(Present)){Log 'SUCCESS: Windows explicitly accepted removal and Prometheus volume disappeared';Resume;exit 0}
  throw ('Windows did not release SSD: '+($result -join ' '))
 }catch{Log ('BLOCKED: '+$_.Exception.Message);if($ownsHandoff){Resume};exit 2}
