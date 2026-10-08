@@ -11,6 +11,7 @@ $displayVersion=$version.Replace('.dev','-dev')
 $release=Join-Path $Root ('Prometheus-v'+$displayVersion+'-'+$commit.Substring(0,7))
 if(Test-Path $release){throw 'Release already exists; inspect before replacing'}
 $zip=Join-Path $repo 'build\ssd-source.zip'
+New-Item -ItemType Directory -Force -Path (Split-Path $zip) | Out-Null
 & git -C $repo archive --format=zip --output=$zip HEAD
 if($LASTEXITCODE){throw 'Source archive failed'}
 Expand-Archive $zip $release
@@ -25,6 +26,7 @@ $sourceManifest=@(Get-ChildItem $release -File -Recurse | ForEach-Object {
 $sourceManifest | ConvertTo-Json | Set-Content (Join-Path $release 'SHA256-MANIFEST.json')
 # Check exported source against tracked working files, excluding generated manifest.
 foreach($row in $sourceManifest){
+ if($row.path -eq 'SHA256-MANIFEST.json'){continue}
  $gitPath=$row.path.Replace('\','/')
  $expected=(& git -C $repo rev-parse ('HEAD:'+$gitPath)).Trim()
  $actual=(& git -C $repo hash-object ('--path='+$gitPath) (Join-Path $release $row.path)).Trim()
