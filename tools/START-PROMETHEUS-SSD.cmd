@@ -15,6 +15,8 @@ if not exist "%PROMETHEUS_PYTHON%" (echo ERROR: Portable SSD Python runtime miss
 if not exist "%OLLAMA_EXE%" (echo ERROR: SSD Ollama runtime missing.& exit /b 1)
 if not exist "%OLLAMA_MODELS%" (echo ERROR: SSD model library missing.& exit /b 1)
 
+if /I "%~1"=="research" goto run_prometheus
+if /I "%~1"=="research-status" goto run_prometheus
 if /I "%~1"=="articles" goto run_prometheus
 if /I "%~1"=="article" goto run_prometheus
 if /I "%~1"=="resources" goto run_prometheus

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict
 import json
 import os
 from pathlib import Path
@@ -17,6 +18,8 @@ from .activity import ActivityLog
 from .orchestration import choose_route
 from .research import DisabledResearchProvider
 from .research_http import HttpJsonResearchProvider
+from .web_research import PublicResearchProvider, PROVIDERS
+from .research_settings import load_research_settings
 from .hardware import coding_agents, detect_hardware, resource_root, select_model
 from .integrations import available_local_workers, launch_integrations, ollama_executable
 from .resources import inventory
@@ -44,11 +47,16 @@ def build_parser():
     parser.add_argument("--activity-log", type=Path, help="Optional append-only JSONL activity log")
     parser.add_argument("--personality", choices=("balanced","technical","concise","companion"), default="balanced", help="Local response personality")
     parser.add_argument("--banter", action="store_true", help="Allow bounded friendly banter when context is appropriate")
-    parser.add_argument("--online-research", action="store_true", help="Allow explicit online-research routing; local model remains loopback-only")
+    network = parser.add_mutually_exclusive_group()
+    network.add_argument("--online-research", dest="online_research", action="store_true", default=None, help="Enable live research for explicitly online questions")
+    network.add_argument("--offline", dest="online_research", action="store_false", help="Disable all research-provider requests for this run")
+    parser.add_argument("--research-provider", choices=PROVIDERS, help="Public search provider; defaults to configured provider or federated")
     agent = parser.add_mutually_exclusive_group()
     agent.add_argument("--agent", dest="agent", action="store_true", default=True, help="Use the local Core agent planner and safe read-only tools (default)")
     agent.add_argument("--no-agent", dest="agent", action="store_false", help="Use plain local-model chat without Core tool planning")
-    parser.add_argument("--retain-research", action="store_true", help="Explicitly save successful research evidence for later local recall; keeps it untrusted")
+    retention = parser.add_mutually_exclusive_group()
+    retention.add_argument("--retain-research", dest="retain_research", action="store_true", default=None, help="Save successful research for local recall")
+    retention.add_argument("--no-retain-research", dest="retain_research", action="store_false", help="Disable research-cache retention for this run")
     parser.add_argument("--research-endpoint", help="HTTPS JSON search endpoint used only with --online-research")
     parser.add_argument("--shutdown-request", type=Path, help="Optional local file whose presence requests a graceful interactive-chat exit")
     vocabulary = parser.add_mutually_exclusive_group()
@@ -83,6 +91,11 @@ def build_parser():
     resources.add_argument("--json", action="store_true")
     sources = sub.add_parser("sources", help="List ranked remote research sources")
     sources.add_argument("--json", action="store_true")
+    research = sub.add_parser("research", help="Search live sources and show evidence without loading a model")
+    research.add_argument("query")
+    research.add_argument("--json", action="store_true")
+    status = sub.add_parser("research-status", help="Show effective research configuration without network access")
+    status.add_argument("--json", action="store_true")
     return parser
 
 
@@ -206,7 +219,7 @@ def _console_input_or_shutdown(prompt, shutdown_request=None):
             time.sleep(0.1)
 
 
-def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpoint=None, activity=None):
+def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpoint=None, activity=None, research_provider="federated"):
     decision = choose_route(prompt, online_enabled=online_enabled)
     if activity:
         activity.record("orchestration", "selected", decision.reason,
@@ -214,7 +227,7 @@ def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpo
     if not decision.requires_network:
         return None
     provider = (HttpJsonResearchProvider(research_endpoint)
-                if research_endpoint else DisabledResearchProvider())
+                if research_endpoint else PublicResearchProvider(research_provider))
     try:
         research = provider.search(prompt)
     except RuntimeError as error:
@@ -262,12 +275,13 @@ def interactive_approval(pending):
 
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
                      online_research=False, research_endpoint=None, activity=None, agent_mode=False,
-                     personality=Personality(), retain_research=False):
+                     personality=Personality(), retain_research=False, research_provider="federated"):
     print("Prometheus local chat — no cloud fallback.")
     print("Core: agent + safe local tools" if agent_mode else "Core: plain local-model compatibility mode")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
-    print("Commands: /remember KIND | SUBJECT | VALUE, /memories [QUERY], /exit")
+    print(f"Live research: {'enabled' if online_research else 'offline'} | Provider: {'custom HTTPS' if research_endpoint else research_provider}")
+    print("Commands: /web QUERY, /online, /offline, /remember KIND | SUBJECT | VALUE, /memories [QUERY], /exit")
     print("Answers may be wrong; verify important facts.")
     while True:
         try:
@@ -278,6 +292,15 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             return 0
         if prompt.strip().lower() in {"/exit", "/quit"}:
             return 0
+        if prompt.strip().lower() in {"/online", "/offline"}:
+            online_research = prompt.strip().lower() == "/online"
+            print("Live research enabled for explicit web questions." if online_research else "Offline mode: research providers disabled.")
+            continue
+        if prompt.strip().lower().startswith("/web "):
+            if not online_research:
+                print("Research is offline. Type /online to enable it.")
+                continue
+            prompt = "Search the web for " + prompt.strip()[5:].strip()
         if prompt.strip().lower().startswith("/remember "):
             try:
                 print(_remember_command(memory, session_id, prompt.strip()[10:].strip()))
@@ -299,7 +322,7 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             prompt = validate_prompt(prompt)
             research_context = _research_context_for_prompt(
                 prompt, online_enabled=online_research,
-                research_endpoint=research_endpoint, activity=activity)
+                research_endpoint=research_endpoint, activity=activity, research_provider=research_provider)
             print("Thinking locally...", flush=True)
             result = (agent_exchange(memory, client, session_id, prompt, personality, interactive_approval, research_context)
                       if agent_mode
@@ -311,7 +334,7 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
                 ev=result["self_evaluation"]; mood=result["emotional_state"]
                 print(f"[Core eval: {ev['score']:.3f} {'PASS' if ev['passed'] else 'CHECK'}; state: {mood['label']}; tools: {len(result['tools'])}]")
             print(f"[{result['elapsed_seconds']}s; saved locally]", flush=True)
-        except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
+        except (LocalModelError, ValueError, RuntimeError, OSError, sqlite3.Error) as error:
             print(f"ERROR: {error}", file=sys.stderr)
 
 
@@ -324,10 +347,34 @@ def main(argv=None):
     activity = ActivityLog(args.activity_log) if args.activity_log else None
     research_context = None
     try:
+        if command in {"ask", "chat", "research", "research-status"}:
+            explicit_offline = args.online_research is False
+            settings = load_research_settings()
+            if args.online_research is None: args.online_research = settings["online_enabled"]
+            if args.retain_research is None: args.retain_research = settings["retain_research"]
+            args.research_provider = args.research_provider or settings["provider"]
+            if command == "research-status":
+                result = {"online_enabled": args.online_research, "provider": "custom HTTPS" if args.research_endpoint else args.research_provider,
+                          "retain_research": args.retain_research, "model_inference": "local Ollama",
+                          "query_scope": "only the requested query; no conversation or memory upload"}
+                emit_json(result)
+                return 0
+            if command == "research":
+                if explicit_offline: raise ValueError("Live research is disabled by --offline.")
+                provider = HttpJsonResearchProvider(args.research_endpoint) if args.research_endpoint else PublicResearchProvider(args.research_provider)
+                research = provider.search(validate_prompt(args.query))
+                if not research.sources: raise ValueError("Research returned no usable source evidence.")
+                if args.retain_research:
+                    with MemoryStore(args.memory) as memory:
+                        session_id = memory.create_session("research-only")
+                        memory.retain_research(session_id, args.query, research.context(max_chars=4000))
+                if args.json: emit_json(asdict(research))
+                else: print(research.context())
+                return 0
         if command == "ask":
             research_context = _research_context_for_prompt(
                 validate_prompt(args.prompt), online_enabled=args.online_research,
-                research_endpoint=args.research_endpoint, activity=activity)
+                research_endpoint=args.research_endpoint, activity=activity, research_provider=args.research_provider)
         if command == "backup-memory":
             emit_json(backup_memory(args.memory, args.destination))
             return 0
@@ -468,8 +515,9 @@ def main(argv=None):
                 research_endpoint=args.research_endpoint,
                 activity=activity, agent_mode=args.agent,
                 personality=Personality(args.personality,args.banter), retain_research=args.retain_research,
+                research_provider=args.research_provider,
             )
-    except (LocalModelError, ValueError, OSError, sqlite3.Error) as error:
+    except (LocalModelError, ValueError, RuntimeError, OSError, sqlite3.Error) as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:

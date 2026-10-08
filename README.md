@@ -1,4 +1,4 @@
-# Prometheus v0.8.0-dev1 — local agent core, portable knowledge, and federated research
+# Prometheus v0.8.0-dev2 — local agent core, portable knowledge, and federated research
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 

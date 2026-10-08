@@ -34,18 +34,23 @@ class ResearchSource:
 class ResearchResult:
     query: str
     sources: tuple[ResearchSource, ...]
+    diagnostics: tuple[str, ...] = ()
 
     def context(self, max_chars: int = 6000) -> str:
         if max_chars < 1:
             raise ValueError("Research context limit must be positive.")
         blocks = []
-        used = 0
+        status = "Provider status: " + "; ".join(self.diagnostics) if self.diagnostics else ""
+        if status and len(status) < max_chars // 3:
+            blocks.append(status)
+        used = sum(len(block) for block in blocks)
         for index, source in enumerate(self.sources, 1):
             block = f"[Source {index}] {source.title}\nURL: {source.url}\nRetrieved: {source.retrieved_at}\nContent SHA-256: {source.content_hash}\n{source.excerpt}\n"
-            if used + len(block) > max_chars:
+            separator = 1 if blocks else 0
+            if used + separator + len(block) > max_chars:
                 break
             blocks.append(block)
-            used += len(block)
+            used += separator + len(block)
         return "\n".join(blocks)
 
 
