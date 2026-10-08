@@ -9,7 +9,7 @@ function RestartController {
  if(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue){return}
  $controllers=Join-Path $local 'Controllers'
  $exe=Get-ChildItem $controllers -Filter 'Prometheus.DriveController.exe' -File -Recurse -ErrorAction SilentlyContinue|Where-Object {$_.Directory.Name -match '^Prometheus-Controller-v[0-9.]+$'}|Sort-Object FullName -Descending|Select-Object -First 1
- if($exe){Start-Process $exe.FullName -WorkingDirectory $exe.DirectoryName}
+ if($exe){Start-Process $exe.FullName -WorkingDirectory $exe.DirectoryName -WindowStyle Hidden}
 }
 while($true){
  $vols=UsbVolumes;$prom=@($vols|Where-Object {$_.VolumeName -eq 'Prometheus-2TB'});$flash=@($vols|Where-Object {$_.VolumeName -ne 'Prometheus-2TB'})

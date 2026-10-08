@@ -19,5 +19,9 @@ public sealed class StartupProbe
   if(Process.GetProcessesByName("python").Any(p=>SafePath(p).StartsWith(root,StringComparison.OrdinalIgnoreCase)))done.Add("Open chat runtime");
   return done;
  }
+ public async Task<bool> WarmModelAsync(string model="llama3.2:1b")
+ {
+  try{using var http=new System.Net.Http.HttpClient(){Timeout=TimeSpan.FromSeconds(120)};var payload=System.Text.Json.JsonSerializer.Serialize(new{model,keep_alive="5m"});using var content=new System.Net.Http.StringContent(payload,System.Text.Encoding.UTF8,"application/json");var response=await http.PostAsync("http://127.0.0.1:11434/api/generate",content);return response.IsSuccessStatusCode;}catch{return false;}
+ }
  private static string SafePath(Process p){try{return p.MainModule?.FileName??"";}catch{return "";}}
 }

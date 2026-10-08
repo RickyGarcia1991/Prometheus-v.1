@@ -59,8 +59,10 @@ if($Action -eq "start"){
  if(Test-Path $lock){Remove-Item $lock -Force -ErrorAction SilentlyContinue}
  $launcher=Join-Path $root "START-PROMETHEUS-SSD.cmd"
  if(!(Test-Path $launcher)){Save "red" "Prometheus launcher is missing." "Cannot start." @() @("Missing launcher");exit 1}
+ $existing=@(DriveProcesses|Where-Object {$_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant"})
+ if($existing.Count){Save "yellow" "Prometheus is already running." ("LIVE: existing chat runtime PID "+$existing[0].ProcessId+". No duplicate was launched.") @("Existing chat runtime detected","Duplicate start suppressed");exit 0}
  Save "yellow" "Starting Prometheus..." "Launching SSD runtime and model. Do not eject." @("Launcher found")|Out-Null
- Start-Process "cmd.exe" -ArgumentList "/c",("`""+$launcher+"`" chat")
+ Start-Process "cmd.exe" -ArgumentList "/d","/s","/c",("`""+$launcher+"`" chat") -WindowStyle Hidden
  Start-Sleep 2
  $active=@(DriveProcesses)
  if($active.Count){Save "yellow" "Prometheus is starting / active." ("LIVE: "+(($active|ForEach-Object {$_.Name}) -join ", ")+". Do not eject.") @("Prometheus process tree detected")}else{Save "red" "Prometheus did not remain running." "Launcher returned but no Prometheus drive process was detected." @() @("Startup process missing")}

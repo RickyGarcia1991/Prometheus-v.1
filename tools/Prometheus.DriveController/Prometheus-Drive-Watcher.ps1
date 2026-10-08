@@ -34,7 +34,7 @@ while($true){
       Copy-Item $file.FullName $dest -Force
       if((Get-FileHash $file.FullName).Hash -ne (Get-FileHash $dest).Hash){throw 'Controller copy verification failed'}
      }
-     Start-Process $exe -WorkingDirectory $hostDir
+     Start-Process $exe -WorkingDirectory $hostDir -WindowStyle Hidden
     }
     $seen[$d.DeviceID]=$true
    }
