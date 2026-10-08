@@ -75,14 +75,17 @@ class OllamaClient:
             raise LocalModelError("The selected model is remote, not local. Cloud access is disabled.")
         return selected
 
-    def chat(self, messages):
-        result = self._request("/api/chat", {
+    def chat(self, messages, *, json_format=False, num_predict=256):
+        payload = {
             "model": self.model,
             "messages": messages,
             "stream": False,
             "keep_alive": "5m",
-            "options": {"num_ctx": self.num_ctx, "num_predict": 256, "temperature": 0.2},
-        })
+            "options": {"num_ctx": self.num_ctx, "num_predict": num_predict, "temperature": 0.2},
+        }
+        if json_format:
+            payload["format"] = "json"
+        result = self._request("/api/chat", payload)
         message = result.get("message")
         if (result.get("done") is not True or not isinstance(message, dict)
                 or not isinstance(message.get("content"), str) or not message["content"].strip()):
