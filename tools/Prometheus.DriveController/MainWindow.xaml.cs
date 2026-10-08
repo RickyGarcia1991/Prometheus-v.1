@@ -58,16 +58,59 @@ public partial class MainWindow:Window{
  Visual("yellow");StateText.Text="STATUS: PREPARING EJECT";ActivityText.Text="Closing chat and verifying databases before Windows removal.";OperationText.Text="Safe eject";EjectText.Text="No";
  var result=await _bridge.RunAsync("stop",root.TrimEnd('\\'));
  Log(result.Status?.Activity??result.StdErr);
- if(result.ExitCode!=0||result.Status==null){Visual("red");StateText.Text="STATUS: EJECT BLOCKED";ActivityText.Text=result.Status?.Message??"Graceful shutdown failed.";return;}
- var script=Path.Combine(AppContext.BaseDirectory,"Prometheus-Safe-Eject.ps1");
- if(!File.Exists(script))throw new FileNotFoundException("Safe eject helper is missing.",script);
- var psi=new ProcessStartInfo("powershell.exe"){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=AppContext.BaseDirectory};
+ if(result.ExitCode!=0||result.Status?.Phase!="green"){Visual("red");StateText.Text="STATUS: EJECT BLOCKED";ActivityText.Text=result.Status?.Message??"Graceful shutdown failed.";return;}
+ var script=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Prometheus","Prometheus-Eject-Orchestrator.ps1");
+ if(!File.Exists(script))throw new FileNotFoundException("Host eject orchestrator missing.",script);
+ var psi=new ProcessStartInfo("powershell.exe"){UseShellExecute=true,WindowStyle=ProcessWindowStyle.Hidden};
  foreach(var arg in new[]{"-NoProfile","-ExecutionPolicy","Bypass","-File",script,"-Drive",root.TrimEnd('\\')})psi.ArgumentList.Add(arg);
- using var process=Process.Start(psi)??throw new InvalidOperationException("Could not request Windows removal.");
- var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();await process.WaitForExitAsync();var details=await output;var errors=await error;Log(details+errors);
- if(process.ExitCode==0&&_probe.FindPrometheusDrive()==null){Visual("green");StateText.Text="STATUS: SSD RELEASED";ActivityText.Text="Windows removed the SSD. You can unplug it and connect PRK.";EjectText.Text="Yes";DriveStateText.Text="Released";OperationText.Text="Ejected";ShowPlan(ProgressPlan.Shutdown,new HashSet<string>(ProgressPlan.Shutdown.Select(x=>x.Name)));}
- else{Visual("red");StateText.Text="STATUS: EJECT BLOCKED";ActivityText.Text="Windows still holds the SSD. Keep it connected; see the veto details in the live log.";OperationText.Text="Windows veto";EjectText.Text="No";}
+ Process.Start(psi);
+ Log("Host eject handoff started. Controller will close; Desktop Commander will reconnect after Windows release or veto.");
+ ActivityText.Text="Handoff started. Watch Windows notification. Do not unplug until Windows confirms removal.";
+ OperationText.Text="Host handoff";
+ await Task.Delay(500);
+ Close();
  }catch(Exception ex){Visual("red");StateText.Text="STATUS: EJECT ERROR";EjectText.Text="No";Log(ex.Message);}
  finally{_ejecting=false;EjectButton.IsEnabled=true;StartButton.IsEnabled=_probe.FindPrometheusDrive()!=null;}
  }
+
+ void ShowInfo(string title,string content){
+  var window=new Window{Title=title,Width=760,Height=520,MinWidth=500,MinHeight=300,Owner=this,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=new SolidColorBrush(Color.FromRgb(7,17,28))};
+  var panel=new System.Windows.Controls.DockPanel{Margin=new Thickness(16)};
+  var close=new System.Windows.Controls.Button{Content="Close",Height=38,Width=100,HorizontalAlignment=HorizontalAlignment.Right,Margin=new Thickness(0,12,0,0)};
+  close.Click+=(_,_)=>window.Close();System.Windows.Controls.DockPanel.SetDock(close,System.Windows.Controls.Dock.Bottom);panel.Children.Add(close);
+  panel.Children.Add(new System.Windows.Controls.TextBox{Text=content,IsReadOnly=true,TextWrapping=TextWrapping.Wrap,VerticalScrollBarVisibility=System.Windows.Controls.ScrollBarVisibility.Auto,Background=new SolidColorBrush(Color.FromRgb(13,27,41)),Foreground=System.Windows.Media.Brushes.White,Padding=new Thickness(12)});
+  window.Content=panel;window.Show();
+ }
+ void Logs_Click(object sender,RoutedEventArgs e){
+  try{
+   var local=Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+   var paths=new[]{Path.Combine(local,"RemovableMediaWorkStatus","activity-D.log"),Path.Combine(local,"Prometheus","Diagnostics","eject-history.jsonl"),Path.Combine(local,"Prometheus","Diagnostics","usb-supervisor.log")};
+   var report=string.Join(Environment.NewLine+Environment.NewLine,paths.Select(p=>{
+    if(!File.Exists(p))return p+Environment.NewLine+"(No log found)";
+    using var fs=new FileStream(p,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete);
+    fs.Seek(Math.Max(0,fs.Length-16000),SeekOrigin.Begin);
+    using var sr=new StreamReader(fs);return p+Environment.NewLine+sr.ReadToEnd();
+   }));
+   ShowInfo("Prometheus — Diagnostic Logs",report);Log("Diagnostic logs opened.");
+  }catch(Exception ex){ShowInfo("Logs error",ex.ToString());Log("Logs error: "+ex.Message);}
+ }
+ void Settings_Click(object sender,RoutedEventArgs e){
+  var root=_probe.FindPrometheusDrive();
+  ShowInfo("Prometheus — Settings", "Controller settings and safety information"+Environment.NewLine+Environment.NewLine+
+  "SSD: "+(root??"Not connected")+Environment.NewLine+
+  "Auto-start desired: "+_desiredRunning+Environment.NewLine+
+  "Watchdog: "+(_desiredRunning?"Armed":"Disarmed")+Environment.NewLine+
+  "Windows released SSD: "+EjectText.Text+Environment.NewLine+Environment.NewLine+
+  "The controller does not change USB policies or format drives. Ejection is allowed only after Windows confirms release.");
+  Log("Settings opened.");
+ }
+ void Vault_Click(object sender,RoutedEventArgs e){
+  var root=_probe.FindPrometheusDrive();
+  if(root==null){ShowInfo("Knowledge Vault","Prometheus SSD is not connected.");return;}
+  var path=Path.Combine(root,"Prometheus-Resources","Knowledge");
+  if(!Directory.Exists(path)){ShowInfo("Knowledge Vault","Knowledge folder not found: "+path);return;}
+  try{Process.Start(new ProcessStartInfo("explorer.exe"){ArgumentList={path},UseShellExecute=true});Log("Knowledge Vault opened.");}
+  catch(Exception ex){ShowInfo("Knowledge Vault error",ex.Message);}
+ }
+
 }
