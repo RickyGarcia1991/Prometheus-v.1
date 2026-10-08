@@ -11,6 +11,7 @@ $displayVersion=$version.Replace('.dev','-dev')
 $release=Join-Path $Root ('Prometheus-v'+$displayVersion+'-'+$commit.Substring(0,7))
 if(Test-Path $release){throw 'Release already exists; inspect before replacing'}
 $zip=Join-Path $repo 'build\ssd-source.zip'
+New-Item -ItemType Directory -Force -Path (Split-Path $zip) | Out-Null
 & git -C $repo archive --format=zip --output=$zip HEAD
 if($LASTEXITCODE){throw 'Source archive failed'}
 Expand-Archive $zip $release
@@ -25,6 +26,7 @@ $sourceManifest=@(Get-ChildItem $release -File -Recurse | ForEach-Object {
 $sourceManifest | ConvertTo-Json | Set-Content (Join-Path $release 'SHA256-MANIFEST.json')
 # Check exported source against tracked working files, excluding generated manifest.
 foreach($row in $sourceManifest){
+ if($row.path -eq 'SHA256-MANIFEST.json'){continue}
  $gitPath=$row.path.Replace('\','/')
  $expected=(& git -C $repo rev-parse ('HEAD:'+$gitPath)).Trim()
  $actual=(& git -C $repo hash-object ('--path='+$gitPath) (Join-Path $release $row.path)).Trim()
@@ -44,5 +46,11 @@ Copy-Item (Join-Path $media 'Prometheus-Drive-Watcher.ps1') (Join-Path $media ('
 Copy-Item (Join-Path $release 'tools\Prometheus.DriveController\Prometheus-Drive-Watcher.ps1') $media -Force
 $branch=(& git -C $repo branch --show-current).Trim()
 $metaPath=Join-Path $Root 'PROMETHEUS-SSD-STATUS.json';$oldMeta=if(Test-Path $metaPath){Get-Content $metaPath -Raw|ConvertFrom-Json}else{$null}
-[ordered]@{version=$version;git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation} | ConvertTo-Json -Depth 8 | Set-Content $metaPath
+[ordered]@{version=$version;git_commit=$commit;branch=$branch;built=(Get-Date).ToString('o');code_release=$release;controller_release=$controller;controller_version='0.5.4';controller_commit='e158724db89f31d9eb8158b22b21ea72c0486456';host_controller=$hostController;host_agent_release=(Join-Path $Root 'Prometheus-Host-Agent-v0.6.2');host_agent_version='0.6.2';host_agent_commit='d70ba90';note='Verified source release; signed controller and Host Agent are independently versioned';validation=$oldMeta.validation;stabilization_validation=$oldMeta.stabilization_validation;research_integration_validation=$oldMeta.research_integration_validation} | ConvertTo-Json -Depth 8 | Set-Variable -Name newMetadata
+$written=$false
+for($attempt=0;$attempt -lt 20;$attempt++){
+ try{[IO.File]::WriteAllText($metaPath,$newMetadata,[Text.Encoding]::UTF8);$written=$true;break}
+ catch [System.IO.IOException]{Start-Sleep -Milliseconds 500}
+}
+if(-not $written){throw 'SSD status metadata remained locked after 20 attempts.'}
 Write-Output ('DEPLOYED '+$commit)

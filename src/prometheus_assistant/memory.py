@@ -129,6 +129,12 @@ class MemoryStore:
         now = utc_now()
         subject = subject.strip()
         with self.db:
+            existing = self.db.execute(
+                "SELECT id FROM knowledge WHERE kind = ? AND subject = ? AND value = ? AND source_type = ? AND source_ref = ? AND retention = ? AND confidence = ? AND superseded_at IS NULL",
+                (kind, subject, value.strip(), source_type.strip(), source_ref.strip(), retention, confidence),
+            ).fetchone()
+            if existing is not None:
+                return existing[0]
             if retention == "until_replaced":
                 self.db.execute(
                     "UPDATE knowledge SET superseded_at = ? WHERE kind = ? AND subject = ? AND superseded_at IS NULL",

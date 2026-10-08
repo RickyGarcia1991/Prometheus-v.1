@@ -43,6 +43,34 @@ def test_http_provider_rejects_oversized_response():
         provider.search("robotics")
 
 
+@pytest.mark.parametrize("url", ["http://example.org/a", "javascript:alert(1)", "https://user:pass@example.org/a", "https:///missing-host"])
+def test_http_provider_skips_unsafe_source_urls(url):
+    provider = HttpJsonResearchProvider(
+        "https://search.example/api",
+        fetch=lambda _: payload({"results": [{"url": url, "title": "Bad", "content": "untrusted"}]}),
+    )
+    assert provider.search("robotics").sources == ()
+
+
+def test_http_provider_skips_invalid_or_excessive_excerpts():
+    provider = HttpJsonResearchProvider(
+        "https://search.example/api",
+        fetch=lambda _: payload({"results": [
+            {"url": "https://example.org/one", "title": "One", "content": "ok", "excerpt": {"unsafe": True}},
+            {"url": "https://example.org/two", "title": "Two", "content": "ok", "excerpt": "x" * 10_001},
+        ]}),
+    )
+    assert provider.search("robotics").sources == ()
+
+
+def test_http_provider_skips_oversized_source_content():
+    provider = HttpJsonResearchProvider(
+        "https://search.example/api",
+        fetch=lambda _: payload({"results": [{"url": "https://example.org/large", "title": "Large", "content": "x" * 100_001}]}),
+    )
+    assert provider.search("robotics").sources == ()
+
+
 def test_http_provider_skips_malformed_results():
     provider = HttpJsonResearchProvider(
         "https://search.example/api",
