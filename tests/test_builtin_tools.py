@@ -21,3 +21,16 @@ def test_memory_tool_preserves_provenance(tmp_path):
         rows=json.loads(registry.executors()[("memory","lookup")](request))
     assert rows[0]["value"]=="hybrid actuation"
     assert rows[0]["source_ref"]=="session:test"
+
+
+def test_project_list_is_bounded(tmp_path):
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        registry=build_builtin_registry(memory)
+        result=json.loads(registry.get("project","list").executor(registry.get("project","list").request("list",{})))
+    assert any(row["path"]=="src" for row in result)
+
+def test_project_replace_is_state_changing_and_requires_guardrail_approval(tmp_path):
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        spec=build_builtin_registry(memory).get("project","replace")
+        req=spec.request("change",{"path":"README.md","old":"Prometheus","new":"Prometheus"})
+    assert req.mutates_state and not req.external_network and not req.command_execution
