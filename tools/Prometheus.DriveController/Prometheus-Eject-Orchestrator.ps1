@@ -25,6 +25,8 @@ try {
  if($LASTEXITCODE -ne 0){throw ('USB identity verification failed: '+($inspection -join ' '))}
  Log ('Identity verified: '+($inspection -join ' '))
  if($InspectOnly){Write-Output 'PASS: target SSD verified; no processes stopped and no eject requested';exit 0}
+ $supervisor=@(Get-CimInstance Win32_Process | Where-Object {$_.Name -eq 'powershell.exe' -and $_.CommandLine -match '[P]rometheus-USB-Reconnect-Supervisor.ps1'})
+ if(!$supervisor.Count){throw 'Reconnect supervisor not running; refusing to interrupt remote access'}
  if(Test-Path $lock){$prior=Get-Content -LiteralPath $lock -Raw | ConvertFrom-Json;if($prior.phase -ne 'stopping' -or $prior.drive -ne $Drive){throw 'Another operation owns the eject lock'}}
  @{active=$true;drive=$Drive;started=(Get-Date).ToString('o');phase='handoff'} | ConvertTo-Json | Set-Content -LiteralPath $lock -Encoding UTF8
  $ownsHandoff=$true
@@ -40,8 +42,9 @@ try {
  $remaining=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and (($_.ExecutablePath -and $_.ExecutablePath.StartsWith(($Drive+'\'),[StringComparison]::OrdinalIgnoreCase)) -or ($_.CommandLine -and $_.CommandLine.Contains(($Drive+'\'))) )})
  if($remaining.Count){throw ('SSD process still active: '+(($remaining|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))}
  Set-Content -LiteralPath $pause -Value 'Paused for Windows eject' -Encoding ASCII
- $dc=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and $_.CommandLine -match 'DesktopCommanderStartup|desktop-commander'})
- foreach($p in $dc){if($p.Name -in @('node.exe','powershell.exe')){Log ('Pausing Desktop Commander '+$p.ProcessId);Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}}
+ $dc=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and $_.Name -eq 'node.exe' -and $_.CommandLine -match 'DesktopCommanderStartup\\runtime-0\\.2\\.52\\node_modules\\@wonderwhy-er\\desktop-commander\\dist\\index\\.js'})
+ Log ('Identified '+$dc.Count+' Desktop Commander node processes for temporary shutdown')
+ foreach($p in $dc){if($p.Name -eq 'node.exe'){Log ('Pausing Desktop Commander '+$p.ProcessId);Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}}
  Start-Sleep -Seconds 3
  $result=& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper -Drive $Drive 2>&1
  Log ('Windows eject result: '+($result -join ' ')+' exit '+$LASTEXITCODE)
