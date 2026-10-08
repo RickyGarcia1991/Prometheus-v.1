@@ -8,7 +8,7 @@ $AuthorizedHost=Join-Path $HostRoot 'authorized-host.json'
 $EjectLock=Join-Path $HostRoot 'eject-mode.json'
 $ControllerRoot=Join-Path $HostRoot 'Controllers'
 $TrustedThumbprint='898F702114B0F889763589C4057DC19CF1657CD5'
-$AgentMutex=New-Object Threading.Mutex($false,'Local\\PrometheusHostAgent')
+$AgentMutex=New-Object Threading.Mutex($false,'Local\PrometheusHostAgent')
 function Write-Log([string]$Level,[string]$Message){New-Item -ItemType Directory -Force $HostRoot|Out-Null;Add-Content -Path $Log -Value ((Get-Date -Format o)+' '+$Level+' '+$Message)}
 function Get-HostFingerprint {$id=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid).MachineGuid;$sha=[Security.Cryptography.SHA256]::Create();try{return ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($id))).Replace('-',''))}finally{$sha.Dispose()}}
 function Write-Audit([string]$Event,[string]$Result,[string]$Detail='') {New-Item -ItemType Directory -Force $HostRoot|Out-Null;$prev='GENESIS';if(Test-Path $AuditLog){$last=Get-Content $AuditLog -Tail 1 -ErrorAction SilentlyContinue;if($last){try{$prev=([string](ConvertFrom-Json $last).hash)}catch{$prev='BROKEN'}}};$record=[ordered]@{timestamp=(Get-Date -Format o);event=$Event;result=$Result;host=(Get-HostFingerprint);detail=$Detail;previous=$prev};$body=$record|ConvertTo-Json -Compress;$sha=[Security.Cryptography.SHA256]::Create();try{$hash=([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($body))).Replace('-',''))}finally{$sha.Dispose()};$record.hash=$hash;Add-Content $AuditLog ($record|ConvertTo-Json -Compress)}
