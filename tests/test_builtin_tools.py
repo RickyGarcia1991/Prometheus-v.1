@@ -41,3 +41,18 @@ def test_project_search_prioritizes_exact_code_tokens(tmp_path):
         spec=build_builtin_registry(memory).get("project","search")
         result=json.loads(spec.executor(spec.request("find run_agent",{"query":"def run_agent"})))
     assert any(row["path"].endswith("agent.py") and "run_agent" in row["excerpt"] for row in result["results"][:5])
+
+
+def test_project_tests_requires_command_approval(tmp_path):
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        spec=build_builtin_registry(memory).get("project","tests")
+        req=spec.request("run focused tests",{"target":"tests/test_builtin_tools.py"})
+    assert req.command_execution and not req.mutates_state and not req.external_network
+
+def test_project_tests_rejects_escape_target(tmp_path):
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        spec=build_builtin_registry(memory).get("project","tests")
+        req=spec.request("bad",{"target":"../outside"})
+        import pytest
+        with pytest.raises(ValueError,match="Invalid bounded test target"):
+            spec.executor(req)

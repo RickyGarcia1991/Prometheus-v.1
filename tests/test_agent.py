@@ -158,3 +158,24 @@ def test_system_summary_is_rendered_deterministically_without_model_embellishmen
         result=run_agent(memory,model,registry,"What hardware is available?")
     assert result.core.reply=="Operating system: Windows; RAM: 7.6 GiB; CPU threads: 8."
     assert len(model.messages)==1
+
+
+def test_resume_agent_executes_exact_previously_denied_plan(tmp_path):
+    from prometheus_assistant.agent import resume_agent
+    calls=[]
+    model=Model([json.dumps({"tools":[{"worker":"project","tool":"replace","summary":"change one block","arguments":{}}]}),"done"]);
+    registry=ToolRegistry([ToolSpec("project","replace","Change",lambda req:calls.append(req) or "changed",{},mutates_state=True)])
+    with store(tmp_path) as memory:
+        prior=run_agent(memory,model,registry,"make exact change")
+        assert prior.core.reply is None and calls==[]
+        resumed=resume_agent(memory,model,registry,prior,(0,))
+    assert calls and resumed.core.evaluation.passed and resumed.core.reply=="done"
+    assert resumed.core.plan.tool_requests==prior.core.plan.tool_requests
+
+def test_resume_agent_rejects_invalid_approval_index(tmp_path):
+    from prometheus_assistant.agent import resume_agent
+    model=Model([json.dumps({"tools":[{"worker":"project","tool":"replace","summary":"change","arguments":{}}]})]); registry=ToolRegistry([ToolSpec("project","replace","Change",lambda req:"x",{},mutates_state=True)])
+    with store(tmp_path) as memory:
+        prior=run_agent(memory,model,registry,"change")
+        with pytest.raises(ValueError,match="Approval IDs"):
+            resume_agent(memory,model,registry,prior,(1,))

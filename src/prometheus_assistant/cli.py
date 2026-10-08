@@ -21,7 +21,7 @@ from .hardware import coding_agents, detect_hardware, resource_root, select_mode
 from .integrations import available_local_workers, launch_integrations, ollama_executable
 from .resources import inventory
 from .source_catalog import source_catalog
-from .agent import run_agent
+from .agent import run_agent, resume_agent
 from .builtin_tools import build_builtin_registry
 from .personality import Personality
 
@@ -106,13 +106,23 @@ def selected_session(memory, requested, model):
     return memory.create_session(model)
 
 
-def agent_exchange(memory, client, session_id, prompt, personality=Personality()):
+def agent_exchange(memory, client, session_id, prompt, personality=Personality(), approval_callback=None):
     prompt = validate_prompt(prompt)
     started = time.perf_counter()
     recent_turns = memory.history(session_id, limit=8)
-    result = run_agent(memory, client, build_builtin_registry(memory), prompt, recent_turns=recent_turns, personality=personality)
+    registry=build_builtin_registry(memory)
+    result = run_agent(memory, client, registry, prompt, recent_turns=recent_turns, personality=personality)
     if result.core.reply is None:
-        raise ValueError("Agent execution did not complete.")
+        pending=[(i,r,e) for i,(r,e) in enumerate(zip(result.core.plan.tool_requests,result.core.evidence)) if e.status=="approval"]
+        if pending and approval_callback is not None:
+            approved=approval_callback(pending)
+            if approved:
+                result=resume_agent(memory,client,registry,result,approved,recent_turns=recent_turns,personality=personality)
+        if result.core.reply is None:
+            if pending:
+                details=", ".join(f"[{i}] {r.worker}/{r.tool}" for i,r,_ in pending)
+                raise ValueError("Agent action requires explicit approval: "+details)
+            raise ValueError("Agent execution did not complete.")
     elapsed = time.perf_counter() - started
     memory.save_exchange(session_id, prompt, result.core.reply)
     return {"session_id": session_id, "model": client.model, "reply": result.core.reply,
@@ -228,6 +238,18 @@ def _memory_rows(memory, query=""):
     return rows[-20:]
 
 
+def interactive_approval(pending):
+    print("Prometheus requests explicit approval for:")
+    for index,request,_ in pending:
+        risks=[]
+        if request.mutates_state: risks.append("state change")
+        if request.command_execution: risks.append("command execution")
+        if request.external_network: risks.append("network")
+        print(f"  [{index}] {request.worker}/{request.tool}: {request.summary} ({', '.join(risks) or 'read-only'})")
+    answer=input("Approve these exact actions? Type yes to continue: ").strip().casefold()
+    return tuple(index for index,_,_ in pending) if answer=="yes" else ()
+
+
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
                      online_research=False, research_endpoint=None, activity=None, agent_mode=False,
                      personality=Personality()):
@@ -269,7 +291,7 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
                 prompt, online_enabled=online_research,
                 research_endpoint=research_endpoint, activity=activity)
             print("Thinking locally...", flush=True)
-            result = (agent_exchange(memory, client, session_id, prompt, personality)
+            result = (agent_exchange(memory, client, session_id, prompt, personality, interactive_approval)
                       if agent_mode and not research_context
                       else exchange(memory, client, session_id, prompt, vocabulary, research_context))
             print(f"Prometheus> {result['reply']}")

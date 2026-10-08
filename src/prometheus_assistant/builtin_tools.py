@@ -1,5 +1,5 @@
 """Bounded built-in tools for Prometheus local agent workflows."""
-import json,re
+import json,re,subprocess,sys
 from pathlib import Path
 from .articles import search_articles
 from .hardware import detect_hardware,resource_root
@@ -58,6 +58,15 @@ def build_builtin_registry(memory):
         if text.count(old)!=1: raise ValueError("Replacement requires exactly one matching block.")
         temp=path.with_name(path.name+".prometheus-tmp"); temp.write_text(text.replace(old,new,1),encoding="utf-8",newline=""); temp.replace(path)
         return json.dumps({"path":path.relative_to(root).as_posix(),"changed":True,"old_chars":len(old),"new_chars":len(new)})
+    def project_tests(request):
+        target=request.arguments.get("target","tests").replace("\\","/").strip("/")
+        if not target or target.startswith(".") or ".." in target.split("/") or not re.fullmatch(r"[A-Za-z0-9_./-]+",target): raise ValueError("Invalid bounded test target.")
+        root=_project_root().resolve(); selected=(root/target).resolve()
+        if selected!=root and not selected.is_relative_to(root): raise ValueError("Test target escapes the Prometheus source root.")
+        if not selected.exists(): raise ValueError("Test target is unavailable.")
+        proc=subprocess.run([sys.executable,"-m","pytest",target,"-q"],cwd=root,text=True,capture_output=True,timeout=120)
+        output=(proc.stdout+proc.stderr)[-12000:]
+        return json.dumps({"target":target,"exit_code":proc.returncode,"output":output},ensure_ascii=False)
     return ToolRegistry([
         ToolSpec("memory","lookup","Search trusted local knowledge with provenance.",memory_lookup,{"query":ArgSpec()}),
         ToolSpec("knowledge","articles","Search installed offline Wikimedia archives.",offline_articles,{"query":ArgSpec()}),
@@ -67,4 +76,5 @@ def build_builtin_registry(memory):
         ToolSpec("project","read","Read one bounded relative text/code file inside the Prometheus source tree.",project_read,{"path":ArgSpec(max_length=240)}),
         ToolSpec("project","list","List one bounded directory inside the Prometheus source tree.",project_list,{"path":ArgSpec(required=False,max_length=240)}),
         ToolSpec("project","replace","Atomically replace exactly one matching text block inside an approved Prometheus source file.",project_replace,{"path":ArgSpec(max_length=240),"old":ArgSpec(max_length=8000),"new":ArgSpec(max_length=8000)},mutates_state=True),
+        ToolSpec("project","tests","Run bounded pytest checks inside the Prometheus repository after explicit approval.",project_tests,{"target":ArgSpec(required=False,max_length=120)},command_execution=True),
     ])

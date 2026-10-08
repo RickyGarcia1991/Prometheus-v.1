@@ -101,6 +101,15 @@ def _deterministic_readonly_fallback(registry, prompt):
             return (spec.request("Read verified local system and hardware information.",{}),)
     return ()
 
+
+def resume_agent(memory, client, registry, prior, approved_request_ids, *, trace=None, recent_turns=(), personality=Personality()):
+    """Resume the exact previously inspected plan; never ask the model to re-plan an approval."""
+    requests=prior.core.plan.tool_requests
+    result=run_core(memory, prior.core.plan.prompt, online_enabled=(prior.core.plan.route=="research"),
+        tool_requests=requests, approved_request_ids=approved_request_ids, executors=registry.executors(),
+        responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
+    return _finalize(result, prior.attempts, prior.plan_text, prior.core.plan.prompt)
+
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
