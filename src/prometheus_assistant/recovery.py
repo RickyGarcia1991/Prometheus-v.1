@@ -16,7 +16,7 @@ def validate_database(path):
         version = db.execute('PRAGMA user_version').fetchone()[0]
         if version not in (1, 2):
             raise ValueError('Unsupported history version.')
-        tables = ('sessions', 'turns') if version == 1 else ('sessions', 'turns', 'knowledge')
+        tables = ('sessions', 'turns') if version == 1 else ('sessions', 'turns', 'knowledge', 'research_notes')
         return {'schema_version': version, **{
             table: db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
             for table in tables
@@ -54,6 +54,6 @@ def restore_memory(source, destination):
     if hashlib.sha256(source.read_bytes()).hexdigest() != metadata['sha256']:
         raise ValueError('Backup checksum mismatch.')
     counts = validate_database(source)
-    if any(counts[key] != metadata.get(key) for key in counts):
+    if any(counts[key] != metadata[key] for key in counts if key in metadata):
         raise ValueError('Backup record counts mismatch.')
     return backup_memory(source, destination)
