@@ -34,3 +34,10 @@ def test_project_replace_is_state_changing_and_requires_guardrail_approval(tmp_p
         spec=build_builtin_registry(memory).get("project","replace")
         req=spec.request("change",{"path":"README.md","old":"Prometheus","new":"Prometheus"})
     assert req.mutates_state and not req.external_network and not req.command_execution
+
+
+def test_project_search_prioritizes_exact_code_tokens(tmp_path):
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        spec=build_builtin_registry(memory).get("project","search")
+        result=json.loads(spec.executor(spec.request("find run_agent",{"query":"def run_agent"})))
+    assert any(row["path"].endswith("agent.py") and "run_agent" in row["excerpt"] for row in result["results"][:5])

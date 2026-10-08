@@ -33,7 +33,7 @@ def build_builtin_registry(memory):
     def project_search(request):
         query=request.arguments["query"]; terms=set(re.findall(r"[A-Za-z0-9_]+",query.casefold())); hits=[]; root=_project_root().resolve(); scanned=0
         for path in root.rglob("*"):
-            if len(hits)>=20 or scanned>=300: break
+            if scanned>=300: break
             if not path.is_file() or path.is_symlink() or path.suffix.lower() not in PROJECT_EXTENSIONS: continue
             if any(part in {".git",".venv","bin","obj","__pycache__"} for part in path.parts): continue
             try:
@@ -41,9 +41,8 @@ def build_builtin_registry(memory):
                 text=path.read_text(encoding="utf-8-sig",errors="replace"); scanned+=1
             except OSError: continue
             for number,line in enumerate(text.splitlines(),1):
-                score=sum(term in line.casefold() for term in terms)
+                line_terms=set(re.findall(r"[A-Za-z0-9_]+",line.casefold())); score=len(terms & line_terms)
                 if score: hits.append({"path":path.relative_to(root).as_posix(),"line":number,"excerpt":line[:500],"score":score})
-                if len(hits)>=20: break
         hits.sort(key=lambda x:(-x["score"],x["path"],x["line"])); return json.dumps({"query":query,"results":hits[:20],"files_scanned":scanned},ensure_ascii=False)
     def project_list(request):
         root=_project_root().resolve(); base=(root/request.arguments.get("path","")).resolve()
