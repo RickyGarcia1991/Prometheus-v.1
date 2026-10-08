@@ -117,6 +117,10 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
             text = "The local model returned unsupported citation formatting. Retrieved source evidence follows:\n" + "\n".join(e.output for e in evidence if e.worker == "research" and e.tool == "evidence" and e.status == "complete")
     else:
         text, _ = client.chat([{"role":"system","content":system},{"role":"user","content":payload}])
+    # Remove unsupported bibliography-like claims when no retrieved evidence exists.
+    if not evidence:
+        text = re.sub(r'(?im)^\s*(?:source|references?)\s*:\s*.*(?:\n\s*\[\d+\].*)*', '', text).strip()
+        text = re.sub(r'(?<!\w)\[\d+\](?!\w)', '', text).strip()
     urls = []
     for item in evidence:
         if item.worker == "research" and item.tool == "evidence" and item.status == "complete":
@@ -163,6 +167,29 @@ def resume_agent(memory, client, registry, prior, approved_request_ids, *, trace
         responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
     return _finalize(result, prior.attempts, prior.plan_text, prior.core.plan.prompt)
 
+def _safe_conversation_fast_path(prompt, *, online_enabled=False, required_requests=()):
+    """Conservative allowlist; never bypass planning for evidence or actions."""
+    if online_enabled or required_requests:
+        return False
+    text = prompt.strip().casefold()
+    if len(text) > 500 or not text:
+        return False
+    blocked = ("remember", "recall", "previous", "earlier", "last time", "memory", "saved", "history",
+               "search", "research", "browse", "internet", "online", "latest", "today", "current",
+               "computer", "system", "hardware", "cpu", "ram", "disk", "drive", "file", "folder",
+               "prometheus", "version", "status", "diagnos", "tool", "run", "execute", "open",
+               "create", "delete", "install", "download", "send", "email", "weather", "write a file",
+               "time now", "my ", "our ", "this ", "that ", "it ", "above", "below")
+    if any(term in text for term in blocked):
+        return False
+    patterns = (r"(?:hi|hello|hey|good morning|good evening)[!. ]*",
+                r"(?:explain|define|describe)\s+[a-z0-9 ,'-]+[?.!]?",
+                r"(?:what does|what is)\s+[a-z0-9 ,'-]+\s+(?:mean|in simple terms)[?.!]?",
+                r"(?:give me|list)\s+(?:two|three|four|five|2|3|4|5)\s+(?:examples|ideas|tips)\s+(?:of|for|about)\s+[a-z0-9 ,'-]+[?.!]?",
+                r"(?:write|draft)\s+(?:a|an)\s+(?:short|brief)\s+(?:poem|story|joke)\s+(?:about|on)\s+[a-z0-9 ,'-]+[?.!]?" )
+    return any(re.fullmatch(pattern, text) for pattern in patterns)
+
+
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality(), required_requests=()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
@@ -171,6 +198,10 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
             executors=registry.executors(), responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
         return _finalize(result, 0, '{"route":"prefetched-research"}', prompt)
     if not required_requests and _cached_research_request(prompt) and any(item.source_type == "untrusted_research" for item in seed.memory):
+        result = run_core(memory, prompt, online_enabled=online_enabled, executors=registry.executors(),
+            responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
+        return _finalize(result, 0, '{"tools":[]}', prompt)
+    if _safe_conversation_fast_path(prompt, online_enabled=online_enabled, required_requests=required_requests):
         result = run_core(memory, prompt, online_enabled=online_enabled, executors=registry.executors(),
             responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
         return _finalize(result, 0, '{"tools":[]}', prompt)
