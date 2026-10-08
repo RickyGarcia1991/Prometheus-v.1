@@ -24,9 +24,9 @@ def evaluate_agent_result(core):
     if response==0: reasons.append("no completed response")
     prompt=core.plan.prompt.casefold()
     grounding=1.0
-    system_claim=any(word in prompt for word in ("version","running","current status","system status","core status"))
+    system_claim=any(word in prompt for word in ("version","running","current status","system status","core status","operating system","hardware","ram","memory available","cpu","processor","resources available","computer resources"))
     if system_claim and not statuses:
-        grounding=0.0; reasons.append("current system/status claim lacks tool evidence")
+        grounding=0.0; reasons.append("current system/hardware/status claim lacks tool evidence")
     overall=round((authorization+execution+evidence+response+grounding)/5,3)
     passed=bool(core.evaluation.passed and response==1.0 and authorization==1.0 and evidence==1.0 and grounding==1.0)
     return SelfEvaluation(authorization,execution,evidence,response,overall,passed,tuple(reasons))

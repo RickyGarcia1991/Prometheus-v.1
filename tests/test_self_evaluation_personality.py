@@ -29,4 +29,12 @@ def test_self_evaluation_flags_unsupported_current_system_claim():
     item.plan.prompt="What Core version is running?"
     result=evaluate_agent_result(item)
     assert not result.passed
-    assert "current system/status claim lacks tool evidence" in result.reasons
+    assert "current system/hardware/status claim lacks tool evidence" in result.reasons
+
+
+def test_hardware_question_requires_runtime_evidence():
+    c=core(reply="invented specs")
+    c.plan=SimpleNamespace(prompt="What operating system and hardware resources are available on this computer?")
+    result=evaluate_agent_result(c)
+    assert not result.passed
+    assert "current system/hardware/status claim lacks tool evidence" in result.reasons

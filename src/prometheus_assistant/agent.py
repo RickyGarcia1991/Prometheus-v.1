@@ -18,8 +18,8 @@ class AgentResult:
 
 def _finalize(result, attempts, raw_plan, prompt):
     evaluation=evaluate_agent_result(result)
-    if "current system/status claim lacks tool evidence" in evaluation.reasons:
-        result=replace(result, reply="I do not have verified evidence for the current version or runtime status, so I will not guess.")
+    if "current system/hardware/status claim lacks tool evidence" in evaluation.reasons:
+        result=replace(result, reply="I do not have verified local evidence for the requested current system, hardware, version, or runtime information, so I will not guess.")
     return AgentResult(result, attempts, raw_plan, evaluation, detect_emotional_state(prompt))
 
 
