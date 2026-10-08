@@ -100,3 +100,22 @@ def test_retry_cannot_escalate_permissions(tmp_path):
     assert result.attempts==1
     assert called==[]
     assert not result.core.evaluation.passed
+
+
+def test_recent_conversation_is_context_for_planner_and_responder(tmp_path):
+    model=Model([json.dumps({"tools":[]}),"follow-up answer"])
+    recent=[{"role":"user","content":"My project is Atlas","created_at":"x"},
+            {"role":"assistant","content":"Understood","created_at":"x"}]
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,ToolRegistry(),"What was its name?",recent_turns=recent)
+    assert result.core.reply=="follow-up answer"
+    assert "RECENT CONVERSATION" in model.messages[0][1]["content"]
+    assert "My project is Atlas" in model.messages[0][1]["content"]
+    assert "RECENT CONVERSATION" in model.messages[1][1]["content"]
+
+
+def test_recent_conversation_context_is_bounded(tmp_path):
+    from prometheus_assistant.agent import conversation_context
+    turns=[{"role":"user","content":"x"*1000} for _ in range(10)]
+    rendered=conversation_context(turns,max_chars=2200)
+    assert len(rendered) < 2300

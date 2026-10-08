@@ -191,6 +191,11 @@ def run_core(memory, prompt: str, *, online_enabled: bool = False,
                      decision="selected", reason=plan.reason)
     decisions = authorize_plan(plan, approved_request_ids=approved_request_ids, trace=trace)
     evidence, actual, authorization_ok = execute_authorized(decisions, executors or {})
+    if trace:
+        for item in evidence:
+            trace.record(trace_id=plan.trace_id, kind="execution", actor=item.worker,
+                         action=item.tool, decision=item.status,
+                         reason=item.summary if item.status == "complete" else item.output or item.summary)
     evaluation = evaluate_run(plan, evidence, actual, authorization_ok)
     reply = responder(plan, evidence) if responder and evaluation.passed else None
     if trace:

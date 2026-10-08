@@ -435,3 +435,24 @@ def test_structured_knowledge_rejects_invalid_metadata(tmp_path, field, value):
     with MemoryStore(tmp_path / "memory.sqlite3") as memory:
         with pytest.raises(ValueError):
             memory.remember(**kwargs)
+
+
+def test_explicit_remember_command_writes_provenance_and_replaces(tmp_path):
+    from prometheus_assistant.cli import _remember_command, _memory_rows
+    from prometheus_assistant.memory import MemoryStore
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        assert "Remembered" in _remember_command(memory,"abc","preference | response style | concise")
+        _remember_command(memory,"abc","preference | response style | detailed")
+        active=_memory_rows(memory,"response")
+        all_rows=memory.knowledge(kind="preference",subject="response style",include_superseded=True)
+    assert len(active)==1 and active[0]["value"]=="detailed"
+    assert active[0]["source_ref"]=="session:abc"
+    assert len(all_rows)==2 and all_rows[0]["superseded_at"] is not None
+
+
+def test_explicit_remember_command_rejects_invalid_kind(tmp_path):
+    from prometheus_assistant.cli import _remember_command
+    from prometheus_assistant.memory import MemoryStore
+    with MemoryStore(tmp_path/"m.sqlite3") as memory:
+        with pytest.raises(ValueError,match="KIND"):
+            _remember_command(memory,"abc","secret | password | nope")

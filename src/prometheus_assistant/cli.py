@@ -106,7 +106,8 @@ def selected_session(memory, requested, model):
 def agent_exchange(memory, client, session_id, prompt):
     prompt = validate_prompt(prompt)
     started = time.perf_counter()
-    result = run_agent(memory, client, build_builtin_registry(memory), prompt)
+    recent_turns = memory.history(session_id, limit=8)
+    result = run_agent(memory, client, build_builtin_registry(memory), prompt, recent_turns=recent_turns)
     if result.core.reply is None:
         raise ValueError("Agent execution did not complete.")
     elapsed = time.perf_counter() - started
@@ -204,13 +205,32 @@ def _research_context_for_prompt(prompt, *, online_enabled=False, research_endpo
     return context
 
 
+def _remember_command(memory, session_id, text):
+    parts=[part.strip() for part in text.split("|",2)]
+    if len(parts)!=3 or parts[0] not in {"preference","decision","fact","instruction"} or not all(parts):
+        raise ValueError("Use /remember KIND | SUBJECT | VALUE, where KIND is preference, decision, fact, or instruction.")
+    kind,subject,value=parts
+    memory.remember(kind,subject,value,source_type="user_statement",
+                    source_ref=f"session:{session_id}",confidence=1.0,retention="until_replaced")
+    return f"Remembered [{kind}] {subject}: {value}"
+
+
+def _memory_rows(memory, query=""):
+    rows=memory.knowledge()
+    terms={word.lower() for word in query.split() if word.strip()}
+    if terms:
+        rows=[row for row in rows if any(term in (row["kind"]+" "+row["subject"]+" "+row["value"]).lower() for term in terms)]
+    return rows[-20:]
+
+
 def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_request=None,
                      online_research=False, research_endpoint=None, activity=None, agent_mode=False):
     print("Prometheus local chat — no cloud fallback.")
     print("Core: agent + safe local tools" if agent_mode else "Core: plain local-model compatibility mode")
     print(f"Model: {client.model} | Session: {session_id}")
     print(f"Local history: {memory.path}")
-    print("Type /exit to leave. Answers may be wrong; verify important facts.")
+    print("Commands: /remember KIND | SUBJECT | VALUE, /memories [QUERY], /exit")
+    print("Answers may be wrong; verify important facts.")
     while True:
         try:
             prompt = _console_input_or_shutdown("You> ", shutdown_request)
@@ -220,6 +240,21 @@ def interactive_chat(memory, client, session_id, vocabulary=None, shutdown_reque
             return 0
         if prompt.strip().lower() in {"/exit", "/quit"}:
             return 0
+        if prompt.strip().lower().startswith("/remember "):
+            try:
+                print(_remember_command(memory, session_id, prompt.strip()[10:].strip()))
+            except ValueError as error:
+                print(f"ERROR: {error}", file=sys.stderr)
+            continue
+        if prompt.strip().lower().startswith("/memories"):
+            query=prompt.strip()[9:].strip()
+            rows=_memory_rows(memory, query)
+            if not rows:
+                print("No matching saved knowledge.")
+            else:
+                for row in rows:
+                    print(f"[{row['kind']}] {row['subject']}: {row['value']} (source={row['source_type']}:{row['source_ref']})")
+            continue
         if not prompt.strip():
             continue
         try:

@@ -84,7 +84,9 @@ def test_trace_records_plan_guardrail_and_evaluation(tmp_path):
         )
     rows = trace.path.read_text(encoding="utf-8").splitlines()
     assert result.evaluation.passed
-    assert len(rows) == 3
+    assert len(rows) == 4
+    assert '"kind": "execution"' in rows[2]
+    assert '"decision": "complete"' in rows[2]
     assert all(result.plan.trace_id in row for row in rows)
 
 
