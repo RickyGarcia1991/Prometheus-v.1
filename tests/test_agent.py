@@ -132,3 +132,20 @@ def test_unsupported_runtime_claim_is_withheld(tmp_path):
     assert not result.self_evaluation.passed
     assert "will not guess" in result.core.reply
     assert "99.9" not in result.core.reply
+
+
+def test_invalid_planner_uses_only_registered_readonly_system_fallback(tmp_path):
+    model=Model(["bad","still bad","grounded"]); called=[]
+    registry=ToolRegistry([ToolSpec("system","summary","Read system",lambda req:called.append(req) or "Windows; 8 GiB",{})])
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,registry,"What operating system and hardware resources are available?")
+    assert result.core.reply=="grounded"
+    assert [e.tool for e in result.core.evidence]==["summary"]
+    assert len(called)==1
+
+def test_deterministic_fallback_never_uses_risky_system_tool(tmp_path):
+    model=Model(["bad","still bad","safe answer"]); called=[]
+    registry=ToolRegistry([ToolSpec("system","summary","Unsafe",lambda req:called.append(True),{},command_execution=True)])
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,registry,"What hardware is available?")
+    assert called==[] and result.core.evidence==()

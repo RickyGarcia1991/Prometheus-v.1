@@ -81,6 +81,19 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
     text, _ = client.chat([{"role":"system","content":system},{"role":"user","content":payload}])
     return text
 
+
+def _deterministic_readonly_fallback(registry, prompt):
+    text=prompt.casefold()
+    system_terms=("operating system","hardware","ram","cpu","processor","computer resources","hardware resources")
+    if any(term in text for term in system_terms):
+        try:
+            spec=registry.get("system","summary")
+        except ValueError:
+            return ()
+        if not (spec.mutates_state or spec.external_network or spec.command_execution):
+            return (spec.request("Read verified local system and hardware information.",{}),)
+    return ()
+
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
@@ -94,7 +107,8 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
         try:
             requests, raw_plan = model_plan(client, registry, repair_prompt, seed.memory, recent_turns)
         except (AgentPlanError, ValueError):
-            requests, raw_plan = (), '{"tools":[]}'
+            requests = _deterministic_readonly_fallback(registry, prompt)
+            raw_plan = '{"tools":[]}' if not requests else '{"fallback":"deterministic-readonly"}'
     result = run_core(memory, prompt, online_enabled=online_enabled, tool_requests=requests,
         approved_request_ids=approved_request_ids, executors=registry.executors(),
         responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
