@@ -1,5 +1,5 @@
 """Local-model planning and evidence-grounded response layer."""
-import json
+import json, re
 from dataclasses import dataclass, replace
 from .core import build_plan, memory_context, run_core
 from .personality import Personality, detect_emotional_state, personality_instruction
@@ -116,7 +116,9 @@ def _deterministic_readonly_fallback(registry, prompt):
         except ValueError:
             return ()
         if not (spec.mutates_state or spec.external_network or spec.command_execution):
-            query=prompt[:200]
+            code_tokens=re.findall(r"[A-Za-z_][A-Za-z0-9_]*",prompt)
+            distinctive=[token for token in code_tokens if "_" in token or any(ch.isupper() for ch in token[1:])]
+            query=(distinctive[-1] if distinctive else prompt)[:200]
             return (spec.request("Search verified local Prometheus project text.",{"query":query}),)
     return ()
 

@@ -187,5 +187,6 @@ def test_invalid_planner_uses_readonly_project_search_fallback(tmp_path):
     registry=ToolRegistry([ToolSpec("project","search","Search",lambda req:calls.append(req) or payload,{"query":ArgSpec(max_length=200)})])
     with store(tmp_path) as memory:
         result=run_agent(memory,model,registry,"Search the Prometheus project for where run_agent is defined")
-    assert calls and "src/prometheus_assistant/agent.py:108" in result.core.reply
+    assert calls and calls[0].arguments["query"]=="run_agent"
+    assert "src/prometheus_assistant/agent.py:108" in result.core.reply
     assert len(model.messages)==2
