@@ -3,7 +3,7 @@ from prometheus_assistant.personality import Personality,detect_emotional_state,
 from prometheus_assistant.self_evaluation import evaluate_agent_result
 
 def core(reply="ok",passed=True,auth=True,accuracy=1.0,evidence=()):
-    return SimpleNamespace(reply=reply,evidence=evidence,evaluation=SimpleNamespace(passed=passed,authorization_ok=auth,tool_accuracy=accuracy))
+    return SimpleNamespace(reply=reply,evidence=evidence,plan=SimpleNamespace(prompt="hello"),evaluation=SimpleNamespace(passed=passed,authorization_ok=auth,tool_accuracy=accuracy))
 
 def test_self_evaluation_scores_clean_cycle():
     result=evaluate_agent_result(core())
@@ -22,3 +22,11 @@ def test_emotional_state_is_bounded_presentation_signal():
 
 def test_neutral_state_does_not_invent_emotion():
     assert detect_emotional_state("Show me the project status").label=="neutral"
+
+
+def test_self_evaluation_flags_unsupported_current_system_claim():
+    item=core(reply="version 99",evidence=())
+    item.plan.prompt="What Core version is running?"
+    result=evaluate_agent_result(item)
+    assert not result.passed
+    assert "current system/status claim lacks tool evidence" in result.reasons

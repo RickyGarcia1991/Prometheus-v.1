@@ -22,6 +22,11 @@ def evaluate_agent_result(core):
     if evidence<1: reasons.append("executed tools differed from the authorized plan")
     response=1.0 if isinstance(core.reply,str) and core.reply.strip() else 0.0
     if response==0: reasons.append("no completed response")
-    overall=round((authorization+execution+evidence+response)/4,3)
-    passed=bool(core.evaluation.passed and response==1.0 and authorization==1.0 and evidence==1.0)
+    prompt=core.plan.prompt.casefold()
+    grounding=1.0
+    system_claim=any(word in prompt for word in ("version","running","current status","system status","core status"))
+    if system_claim and not statuses:
+        grounding=0.0; reasons.append("current system/status claim lacks tool evidence")
+    overall=round((authorization+execution+evidence+response+grounding)/5,3)
+    passed=bool(core.evaluation.passed and response==1.0 and authorization==1.0 and evidence==1.0 and grounding==1.0)
     return SelfEvaluation(authorization,execution,evidence,response,overall,passed,tuple(reasons))
