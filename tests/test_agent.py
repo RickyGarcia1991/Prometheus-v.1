@@ -123,3 +123,12 @@ def test_recent_conversation_context_is_bounded(tmp_path):
     turns=[{"role":"user","content":"x"*1000} for _ in range(10)]
     rendered=conversation_context(turns,max_chars=2200)
     assert len(rendered) < 2300
+
+
+def test_unsupported_runtime_claim_is_withheld(tmp_path):
+    model=Model(["bad plan","still bad","Core 99.9 is running"])
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,ToolRegistry(),"What Core version is running?")
+    assert not result.self_evaluation.passed
+    assert "will not guess" in result.core.reply
+    assert "99.9" not in result.core.reply

@@ -1,6 +1,6 @@
 """Local-model planning and evidence-grounded response layer."""
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from .core import build_plan, memory_context, run_core
 from .personality import Personality, detect_emotional_state, personality_instruction
 from .self_evaluation import evaluate_agent_result
@@ -15,6 +15,13 @@ class AgentResult:
     plan_text: str
     self_evaluation: object = None
     emotional_state: object = None
+
+def _finalize(result, attempts, raw_plan, prompt):
+    evaluation=evaluate_agent_result(result)
+    if "current system/status claim lacks tool evidence" in evaluation.reasons:
+        result=replace(result, reply="I do not have verified evidence for the current version or runtime status, so I will not guess.")
+    return AgentResult(result, attempts, raw_plan, evaluation, detect_emotional_state(prompt))
+
 
 def _json_object(text):
     text = text.strip()
@@ -99,9 +106,9 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
         retry_prompt = prompt + "\n\nPrevious execution failed. Choose a safer registered alternative or no tool. " + feedback[:2000]
         requests, raw_plan = model_plan(client, registry, retry_prompt, seed.memory, recent_turns)
         if any(r.mutates_state or r.external_network or r.command_execution for r in requests):
-            return AgentResult(result, attempts, raw_plan, evaluate_agent_result(result), detect_emotional_state(prompt))
+            return _finalize(result, attempts, raw_plan, prompt)
         result = run_core(memory, prompt, online_enabled=online_enabled, tool_requests=requests,
             executors=registry.executors(),
             responder=lambda plan,evidence:model_response(client,plan,evidence,recent_turns,personality), trace=trace)
         attempts += 1
-    return AgentResult(result, attempts, raw_plan, evaluate_agent_result(result), detect_emotional_state(prompt))
+    return _finalize(result, attempts, raw_plan, prompt)
