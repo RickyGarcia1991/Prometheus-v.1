@@ -136,10 +136,10 @@ def test_unsupported_runtime_claim_is_withheld(tmp_path):
 
 def test_invalid_planner_uses_only_registered_readonly_system_fallback(tmp_path):
     model=Model(["bad","still bad","grounded"]); called=[]
-    registry=ToolRegistry([ToolSpec("system","summary","Read system",lambda req:called.append(req) or "Windows; 8 GiB",{})])
+    registry=ToolRegistry([ToolSpec("system","summary","Read system",lambda req:called.append(req) or json.dumps({"system":"Windows","ram_gib":8.0,"cpu_threads":8}),{})])
     with store(tmp_path) as memory:
         result=run_agent(memory,model,registry,"What operating system and hardware resources are available?")
-    assert result.core.reply=="grounded"
+    assert result.core.reply=="Operating system: Windows; RAM: 8.0 GiB; CPU threads: 8."
     assert [e.tool for e in result.core.evidence]==["summary"]
     assert len(called)==1
 
@@ -149,3 +149,12 @@ def test_deterministic_fallback_never_uses_risky_system_tool(tmp_path):
     with store(tmp_path) as memory:
         result=run_agent(memory,model,registry,"What hardware is available?")
     assert called==[] and result.core.evidence==()
+
+
+def test_system_summary_is_rendered_deterministically_without_model_embellishment(tmp_path):
+    model=Model([json.dumps({"tools":[{"worker":"system","tool":"summary","summary":"read","arguments":{}}]})])
+    registry=ToolRegistry([ToolSpec("system","summary","Read system",lambda req:json.dumps({"system":"Windows","ram_gib":7.6,"cpu_threads":8}),{})])
+    with store(tmp_path) as memory:
+        result=run_agent(memory,model,registry,"What hardware is available?")
+    assert result.core.reply=="Operating system: Windows; RAM: 7.6 GiB; CPU threads: 8."
+    assert len(model.messages)==1

@@ -65,6 +65,13 @@ def model_plan(client, registry, prompt, memory_items=(), recent_turns=()):
     return registry.requests_from_plan(value["tools"]), text
 
 def model_response(client, plan, evidence, recent_turns=(), personality=Personality()):
+    complete_system=[e for e in evidence if e.worker=="system" and e.tool=="summary" and e.status=="complete"]
+    if len(evidence)==1 and complete_system:
+        try:
+            data=json.loads(complete_system[0].output)
+            return f"Operating system: {data['system']}; RAM: {data['ram_gib']} GiB; CPU threads: {data['cpu_threads']}."
+        except (TypeError,ValueError,KeyError):
+            return "Verified system evidence was returned in an unreadable format."
     rows = [{"worker":e.worker,"tool":e.tool,"status":e.status,
              "summary":e.summary,"output":e.output[:4000]} for e in evidence]
     system = (
