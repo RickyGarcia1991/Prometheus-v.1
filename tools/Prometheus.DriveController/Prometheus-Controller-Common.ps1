@@ -40,3 +40,23 @@ function Test-PortableMemory([string]$Root) {
  & $python -B (Join-Path $PSScriptRoot 'verify-portable-memory.py') $db
  if($LASTEXITCODE -ne 0){throw 'Portable SQLite integrity check failed'}
 }
+
+function Test-PrometheusStudio($p,[string]$Drive) {
+ return $p.Name -match '^python(w)?\.exe$' -and $p.ExecutablePath -and
+  $p.ExecutablePath.StartsWith(($Drive+'\Prometheus-Resources\Python\'),[StringComparison]::OrdinalIgnoreCase) -and $p.CommandLine -match 'studio\.py(?:["\s]|$)'
+}
+function Stop-PrometheusStudios([string]$Drive) {
+ foreach($row in @(Get-DriveProcesses $Drive | Where-Object {Test-PrometheusStudio $_ $Drive})){
+  if(!(Test-ProcessIdentity $row)){continue}
+  # Legacy Studio instances do not yet observe the shared shutdown file.
+  $ports=@(Get-NetTCPConnection -OwningProcess ([int]$row.ProcessId) -State Listen -ErrorAction SilentlyContinue | Where-Object LocalAddress -eq '127.0.0.1')
+  foreach($port in $ports){
+   $origin='http://127.0.0.1:'+([int]$port.LocalPort)
+   try {
+    $bootstrap=Invoke-RestMethod ($origin+'/api/bootstrap') -TimeoutSec 3
+    if($bootstrap.version -notmatch '^1\.0\.[0-9]+$' -or !$bootstrap.token){continue}
+    Invoke-RestMethod ($origin+'/api/close') -Method Post -ContentType 'application/json' -Body '{}' -Headers @{Origin=$origin;'X-Prometheus-Token'=$bootstrap.token} -TimeoutSec 5|Out-Null
+   }catch{}
+  }
+ }
+}

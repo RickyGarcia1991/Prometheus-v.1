@@ -19,6 +19,8 @@ let activeOnline = null;
 let activeReview = null;
 let lastResearch = null;
 let lastReview = null;
+let lastMoneyTest = null;
+let moneyVersion = 0;
 let researchVersion = 0;
 let reviewVersion = 0;
 let regionVersion = 0;
@@ -57,13 +59,14 @@ function syncControls() {
   document.querySelectorAll('button, input, select').forEach(control => { control.disabled = closed || closing; });
   if (closed || closing) return;
   for (const id of ['closeApp', 'loadRegions', 'searchNasa', 'nasaQuery', 'nasaType', 'codeFile']) $(id).disabled = !token;
-  for (const id of ['researchFilter', 'autoFilter', 'exportAuto']) $(id).disabled = !catalog;
+  for (const id of ['researchFilter', 'autoFilter', 'exportAuto', 'moneyFilter', 'exportMoney']) $(id).disabled = !catalog;
   for (const id of ['loadRegions', 'searchNasa']) $(id).disabled = !token || !!activeOnline;
   $('regions').disabled = !token || !regionCount || activeOnline?.kind === 'regions';
   $('mapFreshness').disabled = !token || !$('regions').value || !!activeOnline;
   $('reviewCode').disabled = !token || !$('codeFile').files[0] || !!activeReview;
   $('exportResearch').disabled = !lastResearch;
   $('exportReview').disabled = !lastReview;
+  $('exportMoneyTest').disabled = !lastMoneyTest;
   for (const id of imageControls) $(id).disabled = !base || imageLoading;
   $('retryInit').disabled = initializing;
   $('retryInit').hidden = !initializationError;
@@ -529,6 +532,65 @@ action('exportAuto', () => download('prometheus-automotive-directory.json', JSON
   automotive: catalog.automotive, registries: catalog.registries
 }, null, 2)));
 
+
+// Money inputs and imported prices stay in browser memory; exports are explicit.
+const moneyNumber = id => {
+  if (!$(id).value.trim()) throw Error('Complete the numeric inputs.');
+  return Number($(id).value);
+};
+const moneyFormat = value => value == null ? 'Not measurable' : value.toLocaleString(undefined, {maximumFractionDigits: 2});
+$('moneyFilter').addEventListener('input', () => {
+  if (catalog && !closed && !closing) renderCards('moneyLinks', filter('money', $('moneyFilter').value));
+});
+action('exportMoney', () => download('prometheus-money-resources.json', JSON.stringify({generated_utc: new Date().toISOString(), sources: catalog.money}, null, 2)));
+const checklistIds = ['checkBusiness', 'checkCash', 'checkDebt', 'checkValue', 'checkRisk', 'checkCosts'];
+for (const id of ['moneyCompany', 'moneySource', 'moneyAsOf', ...checklistIds]) $(id).addEventListener('input', () => $('stockChecklistResult').replaceChildren());
+action('stockChecklist', () => {
+  const company = $('moneyCompany').value.trim(), source = $('moneySource').value.trim(), date = $('moneyAsOf').value;
+  if (!company || !date || date > new Date().toISOString().slice(0, 10)) throw Error('Enter the company and a valid source as-of date.');
+  const link = safeLink(source, 'Review original source');
+  const count = checklistIds.filter(id => $(id).checked).length;
+  $('stockChecklistResult').replaceChildren(node('h3', `${company}: ${count}/6 research areas covered`),
+    node('p', `Source as of ${date}. This is research completeness, not a buy/sell rating. A complete checklist does not establish suitability or predict returns.`), link);
+});
+function clearMoneyTest() {
+  moneyVersion++; lastMoneyTest = null; $('moneyTestResult').replaceChildren(); syncControls();
+}
+for (const id of ['priceFile', 'moneyWindow', 'moneyCost', 'priceSource']) $(id).addEventListener(id === 'priceFile' ? 'change' : 'input', clearMoneyTest);
+action('runMoneyTest', async () => {
+  clearMoneyTest(); const version = moneyVersion, file = $('priceFile').files[0];
+  if (!file || file.size > 500000) throw Error('Choose a prices CSV under 500 KB.');
+  const source = $('priceSource').value.trim();
+  if (!source) throw Error('Describe the data source, asset, benchmark and adjustments.');
+  const windowSize = moneyNumber('moneyWindow'), cost = moneyNumber('moneyCost');
+  const text = await file.text();
+  if (closed || closing || version !== moneyVersion || $('priceFile').files[0] !== file) return;
+  const rows = MoneyTools.parsePrices(text), result = MoneyTools.simulate(rows, windowSize, cost);
+  lastMoneyTest = {...result, dataSource: source, file: file.name, generated_utc: new Date().toISOString()};
+  const output = $('moneyTestResult');
+  output.replaceChildren(node('h3', `Historical test: ${result.testStart} to ${result.testEnd}`),
+    node('p', `${result.testIntervals} test intervals. Direction accuracy: ${moneyFormat(result.directionAccuracyPct)}${result.directionAccuracyPct == null ? '' : '%'}. Always-up baseline: ${moneyFormat(result.alwaysUpAccuracyPct)}${result.alwaysUpAccuracyPct == null ? '' : '%'}. Flat intervals excluded from accuracy.`),
+    node('p', `${result.testIntervals < 252 ? 'Limited test history. ' : ''}No evidence here establishes reliable future stock-picking accuracy. A high hit rate can still lose money.`, 'callout'));
+  for (const [label, item] of [['Trend strategy', result.strategy], ['Hold imported asset', result.assetHold], ['Hold imported benchmark', result.benchmarkHold]]) {
+    output.append(node('p', `${label}: return ${moneyFormat(item.returnPct)}%; maximum closing drawdown ${moneyFormat(item.maxDrawdownPct)}%; ending value per 100 invested: ${moneyFormat(item.endingPer100)}.`));
+  }
+  output.append(node('p', `Source: ${source}. Last observation: ${result.testEnd}. This is not live market data.`), node('p', result.note, 'fine'));
+  status('Historical comparison calculated locally. No order was placed.');
+});
+action('exportMoneyTest', () => download('prometheus-historical-test.json', JSON.stringify(lastMoneyTest, null, 2)));
+action('moneyTemplate', () => download('prices-format-example.csv', 'date,asset,benchmark\n2020-01-02,100,100\n2020-01-03,99,100.5\n2020-01-06,101,100.2\n', 'text/csv'));
+for (const id of ['moneyInitial','moneyMonthly','moneyYears','moneyAnnual','moneyFee','moneyInflation']) $(id).addEventListener('input', () => $('moneyProjectionResult').replaceChildren());
+action('projectMoney', () => {
+  const result = MoneyTools.projection({initial: moneyNumber('moneyInitial'), monthly: moneyNumber('moneyMonthly'), years: moneyNumber('moneyYears'), annual: moneyNumber('moneyAnnual'), fee: moneyNumber('moneyFee'), inflation: moneyNumber('moneyInflation')});
+  const end = result.rows.at(-1);
+  $('moneyProjectionResult').replaceChildren(node('p', `Contributed: ${moneyFormat(end.contributed)}. Hypothetical ending amount: ${moneyFormat(end.nominal)}. In starting-year purchasing power: ${moneyFormat(end.purchasingPower)}.`), node('p', result.note, 'fine'));
+});
+for (const id of ['moneyRevenue','moneyExpenses','moneyHours']) $(id).addEventListener('input', () => $('moneyOpportunityResult').replaceChildren());
+action('checkOpportunity', () => {
+  const result = MoneyTools.opportunity(moneyNumber('moneyRevenue'), moneyNumber('moneyExpenses'), moneyNumber('moneyHours'));
+  $('moneyOpportunityResult').replaceChildren(node('p', `Estimated net before tax: ${moneyFormat(result.netBeforeTax)}. Per hour before tax: ${moneyFormat(result.hourlyBeforeTax)}. Verify demand, payment terms and all costs before committing.`));
+});
+
 async function initialize() {
   const version = ++initializationVersion;
   initializing = true;
@@ -547,13 +609,14 @@ async function initialize() {
   if (catalogResult.status === 'fulfilled') {
     try {
       const data = catalogResult.value;
-      for (const group of ['maps', 'research', 'automotive', 'registries', 'connections']) validateCards(data?.[group]);
+      for (const group of ['maps', 'research', 'automotive', 'registries', 'connections', 'money']) validateCards(data?.[group]);
       catalog = data;
       renderCards('mapLinks', data.maps);
       renderCards('researchLinks', filter('research', $('researchFilter').value));
       renderCards('autoLinks', filter('automotive', $('autoFilter').value));
       renderCards('registryLinks', data.registries);
       renderCards('connectionLinks', data.connections);
+      renderCards('moneyLinks', filter('money', $('moneyFilter').value));
       $('autoCount').textContent = `${data.automotive.length} manufacturer/group portals · ${data.coverage}`;
     } catch (error) {
       errors.push('The source directory has an unexpected format.');

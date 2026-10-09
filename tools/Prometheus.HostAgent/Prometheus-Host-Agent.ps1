@@ -16,7 +16,7 @@ function Test-ProtectedFile([string]$Path){$side=$Path+'.sha256';if(!(Test-Path 
 function Protect-File([string]$Path){(Get-FileHash $Path -Algorithm SHA256).Hash|Set-Content ($Path+'.sha256') -Encoding ASCII}
 function Assert-AuthorizedHost {if(!(Test-ProtectedFile $AuthorizedHost)){throw 'Host authorization state is missing or corrupt; signed installer repair required'};$a=Get-Content $AuthorizedHost -Raw|ConvertFrom-Json;if(([string]$a.fingerprint) -ne (Get-HostFingerprint)){throw 'Host authorization fingerprint mismatch'}}
 function Find-PrometheusVolume {@(Get-CimInstance Win32_LogicalDisk|Where-Object {$_.VolumeName -eq 'Prometheus-2TB' -and $_.DriveType -eq 3})}
-function Test-EjectSuppressed {if(!(Test-Path $EjectLock)){return $false};try{$lock=Get-Content $EjectLock -Raw|ConvertFrom-Json;if(!$lock.active){return $false};$boot=(Get-CimInstance Win32_OperatingSystem).LastBootUpTime;$started=[datetime]$lock.started;if($started -lt $boot){Remove-Item $EjectLock -Force -ErrorAction SilentlyContinue;Write-Log 'info' 'cleared-stale-eject-lock-after-reboot';return $false};return $true}catch{return $true}}
+function Test-EjectSuppressed {return (Test-Path -LiteralPath $EjectLock)}
 function Convert-Version([string]$Name){if($Name -notmatch '^Prometheus-Controller-v([0-9]+\.[0-9]+\.[0-9]+)$'){throw 'Untrusted controller release name'};return [version]$Matches[1]}
 function Get-SecurityState {$candidates=@($SecurityState,$SecurityState+'.bak1',$SecurityState+'.bak2');$valid=@();foreach($p in $candidates){if(Test-ProtectedFile $p){try{$x=Get-Content $p -Raw|ConvertFrom-Json;$valid+=[pscustomobject]@{path=$p;version=[version]([string]$x.highest_controller_version);data=$x}}catch{}}};if(!$valid.Count){if(!(Test-Path $SecurityState)){return [pscustomobject]@{highest_controller_version='0.0.0'}};throw 'Security state is malformed or failed integrity verification'};$best=$valid|Sort-Object version -Descending|Select-Object -First 1;if($best.path -ne $SecurityState){Copy-Item $best.path $SecurityState -Force;Copy-Item ($best.path+'.sha256') ($SecurityState+'.sha256') -Force;Write-Audit 'security-state-recovery' 'pass' $best.version.ToString()};return $best.data}
 function Set-SecurityState([version]$Version){if(Test-ProtectedFile $SecurityState){if(Test-ProtectedFile ($SecurityState+'.bak1')){Copy-Item ($SecurityState+'.bak1') ($SecurityState+'.bak2') -Force;Copy-Item ($SecurityState+'.bak1.sha256') ($SecurityState+'.bak2.sha256') -Force};Copy-Item $SecurityState ($SecurityState+'.bak1') -Force;Copy-Item ($SecurityState+'.sha256') ($SecurityState+'.bak1.sha256') -Force};[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json|Set-Content $SecurityState -Encoding UTF8;Protect-File $SecurityState}
@@ -64,6 +64,7 @@ function Invoke-Agent {
     Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name+' verified; intentional close respected')
     continue
    }
+   if(Test-EjectSuppressed){return 0}
    $exe=Join-Path $dst 'Prometheus.DriveController.exe'
    if(!$running.Count){Start-Process $exe -WorkingDirectory $dst -WindowStyle Hidden;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}}
    Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name)

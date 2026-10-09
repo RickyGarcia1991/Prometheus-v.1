@@ -1,4 +1,4 @@
-param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[switch]$InspectOnly)
+param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[switch]$InspectOnly,[switch]$Json)
 $ErrorActionPreference='Stop'
 try {
  $volume=Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$Drive'"
@@ -29,12 +29,12 @@ public static class SafeUsbRemoval {
   $node=$parent
  }
  if(!$usbFound){throw 'Exact USB device could not be identified. No removal attempted.'}
- if($InspectOnly){Write-Output ("Verified target: "+$Drive+" "+$volume.VolumeName+" "+$id.ToString());exit 0}
+ if($InspectOnly){if($Json){@{drive=$Drive;label=$volume.VolumeName;usb_instance=$id.ToString()}|ConvertTo-Json -Compress}else{Write-Output ("Verified target: "+$Drive+" "+$volume.VolumeName+" "+$id.ToString())};exit 0}
  $local=Join-Path $env:LOCALAPPDATA 'Prometheus'
  $prefix=$Drive+'\'
  $processes=@(Get-CimInstance Win32_Process | Where-Object {$_.ProcessId -ne $PID -and (($_.ExecutablePath -and $_.ExecutablePath.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) -or ($_.CommandLine -and $_.CommandLine.Contains($prefix)))})
  if($processes.Count){throw ('Drive-backed processes remain: '+(($processes | ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))}
- @{active=$true;drive=$Drive;started=(Get-Date).ToString('o');phase='windows-removal'} | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $local 'eject-mode.json')
+ # The orchestrator owns the persistent eject latch; never overwrite its USB identity.
  [int]$veto=0;$name=New-Object Text.StringBuilder 1024
  $result=[SafeUsbRemoval]::CM_Request_Device_EjectW($node,[ref]$veto,$name,1024,0)
  if($result -ne 0){

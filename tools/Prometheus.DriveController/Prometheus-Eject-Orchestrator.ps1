@@ -1,6 +1,7 @@
-param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[switch]$InspectOnly)
+param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[switch]$InspectOnly,[switch]$PrepareOnly)
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Prometheus-Controller-Common.ps1')
+. (Join-Path $PSScriptRoot 'Prometheus-Lifecycle.ps1')
 $local=Join-Path $env:LOCALAPPDATA 'Prometheus'
 $dc=Join-Path $env:LOCALAPPDATA 'DesktopCommanderStartup'
 $pause=Join-Path $dc 'runner-paused.request'
@@ -41,13 +42,24 @@ try {
   throw 'Run the controller from its verified cache on the computer before ejecting'
  }
  $helper=Join-Path $PSScriptRoot 'Prometheus-Safe-Eject.ps1'
- & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper -Drive $Drive -InspectOnly
+ $identityText=& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper -Drive $Drive -InspectOnly -Json
  if($LASTEXITCODE -ne 0){throw 'Exact USB identity check failed'}
- if($InspectOnly){Say 'Inspection passed. No applications closed and no removal requested.';exit 0}
+ $identity=($identityText -join "`n")|ConvertFrom-Json
+ if($InspectOnly){$identity|ConvertTo-Json -Compress;exit 0}
  New-Item -ItemType Directory -Force -Path $local | Out-Null
- if(Test-Path -LiteralPath $lock){throw 'Another operation owns the eject lock'}
- @{active=$true;drive=$Drive;started=(Get-Date).ToString('o');phase='stopping'} | ConvertTo-Json | Set-Content -LiteralPath $lock -Encoding UTF8
+ $supervisor=@(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop|Where-Object {$_.CommandLine -like ('*'+$local+'\Prometheus-USB-Reconnect-Supervisor.ps1*')})
+ if(!$supervisor.Count){throw 'The internal USB lifecycle supervisor is not running; automatic reconnection is unavailable'}
+ $previous=Get-EjectState
+ if($previous -and ($previous.drive -ne $Drive -or $previous.usb_instance -ne $identity.usb_instance -or $previous.phase -notin @('blocked','released','prepared'))){throw 'Another operation owns the eject lock'}
+ $operation=if($previous){[string]$previous.id}else{[guid]::NewGuid().ToString('N')}
+ $state=@{id=$operation;active=$true;drive=$Drive;usb_instance=$identity.usb_instance;started=(Get-Date).ToString('o');phase='stopping'}
+ Write-LifecycleJson $lock $state
  $ownsLock=$true
+ $marker='Prometheus eject '+$operation
+ if((Test-Path -LiteralPath $pause) -and (Get-Content -LiteralPath $pause -Raw).Trim() -ne $marker){throw 'A different pause owns Desktop Commander'}
+ Set-Content -LiteralPath $pause -Value $marker -Encoding ASCII
+ Remove-Item -LiteralPath (Join-Path $local 'desired-running.flag') -ErrorAction SilentlyContinue
+ Close-DriveWindows $root
  $result=& powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'Prometheus-Drive-Engine.ps1') -Drive $Drive -Action stop
  $stopExit=$LASTEXITCODE
  $status=($result -join [Environment]::NewLine) | ConvertFrom-Json
@@ -71,9 +83,12 @@ try {
     if($child.ProcessId -ne $health.localExecutorPid -or $child.Name -ne 'node.exe'){throw 'Desktop Commander has unknown active work'}
     if(@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+[int]$child.ProcessId) -ErrorAction Stop).Count){throw 'Desktop Commander has a running terminal/job; finish it first'}
    }
-   if(!(Test-Path -LiteralPath $pause)){Set-Content -LiteralPath $pause -Value 'Prometheus eject handoff';$ownsPause=$true}
-   if(Test-Path -LiteralPath $stop){throw 'A Desktop Commander stop operation is already pending'}
-   Set-Content -LiteralPath $stop -Value 'Prometheus eject handoff';$ownsStop=$true
+   $marker='Prometheus eject '+$operation
+   foreach($path in @($pause,$stop)){
+    if((Test-Path -LiteralPath $path) -and (Get-Content -LiteralPath $path -Raw).Trim() -ne $marker){throw 'A different Desktop Commander pause is already active'}
+    Set-Content -LiteralPath $path -Value $marker -Encoding ASCII
+   }
+   $ownsPause=$true;$ownsStop=$true
    $deadline=(Get-Date).AddSeconds(25)
    do {
     if(!(Test-ProcessIdentity $remote)){break}
@@ -84,28 +99,29 @@ try {
    Say 'Desktop Commander closed cooperatively.'
   }
  }
+ # Keep the runner paused even if Desktop Commander was already offline.
+ $marker='Prometheus eject '+$operation
+ if(!(Test-Path -LiteralPath $pause)){Set-Content -LiteralPath $pause -Value $marker -Encoding ASCII}
+ elseif((Get-Content -LiteralPath $pause -Raw).Trim() -ne $marker){throw 'A different pause owns Desktop Commander'}
  Start-Sleep -Milliseconds 750
  $remaining=@(Get-DriveProcesses $Drive)
  if($remaining.Count){throw ('Drive references remain: '+(($remaining|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))}
+ if($PrepareOnly){
+  $state.phase='prepared';$state.message='Prometheus services stopped and verified. Use Windows Safely Remove Hardware now; Windows removal is not yet confirmed.'
+  Write-LifecycleJson $lock $state;Say $state.message;exit 0
+ }
  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper -Drive $Drive
  if($LASTEXITCODE -ne 0){throw 'Windows vetoed removal; keep the drive connected and review the blocker above'}
  if([IO.DriveInfo]::new($Drive+'\').IsReady){throw 'Volume is still mounted; keep it connected'}
- Say 'Windows confirmed removal. Safe to unplug.'
+ $state.phase='released';$state.message='Windows confirmed removal. Safe to unplug; services stay paused until physical USB disconnection.';Write-LifecycleJson $lock $state
+ Say $state.message
  exit 0
 }catch{
- Say ('Eject blocked: '+$_.Exception.Message)
+ if($ownsLock){$state.phase='blocked';$state.message=$_.Exception.Message;Write-LifecycleJson $lock $state}
+ Say ('Eject blocked: '+$_.Exception.Message+'; services remain paused. Retry eject or explicitly Start Prometheus to cancel.')
  exit 2
 }finally{
- if($ownsStop){Remove-Item -LiteralPath $stop -ErrorAction SilentlyContinue}
- if($ownsPause){
-  Remove-Item -LiteralPath $pause -ErrorAction SilentlyContinue
-  $runner=Join-Path $dc 'Run-DesktopCommander.ps1'
-  if(Test-Path -LiteralPath $runner){
-   # Runner mutex prevents duplicates. Its existing instance also sees pause removal.
-   Start-Process powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$runner+'"')) -WorkingDirectory $dc -WindowStyle Hidden | Out-Null
-  }
- }
- if($ownsLock){Remove-Item -LiteralPath $lock -ErrorAction SilentlyContinue}
+ # Only physical disconnection or an explicit user Start releases the pause.
  if($held){$mutex.ReleaseMutex()}
  $mutex.Dispose()
 }

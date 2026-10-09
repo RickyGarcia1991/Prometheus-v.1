@@ -7,6 +7,7 @@ namespace Prometheus.DriveController;
 
 public sealed class StartupProbe
 {
+    public static bool EjectSuppressed => File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Prometheus", "eject-mode.json"));
     DateTime _checkedAt = DateTime.MinValue;
     string? _checkedRoot;
     JsonElement? _readiness;
@@ -45,6 +46,7 @@ public sealed class StartupProbe
 
     public static async Task<JsonElement?> RunJsonAsync(string python, string directory, params string[] args)
     {
+        if (EjectSuppressed) return null;
         var info = new ProcessStartInfo(python) { UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = directory };
         info.ArgumentList.Add("-B");
@@ -62,6 +64,7 @@ public sealed class StartupProbe
 
     public async Task<JsonElement?> HardwareProfileAsync(string root, bool refresh = false)
     {
+        if (EjectSuppressed) return null;
         if (!refresh && _checkedRoot == root && DateTime.UtcNow - _profileAt < TimeSpan.FromSeconds(60)) return _profile;
         var release = FindActiveRelease(root);
         if (release == null) return null;
@@ -74,6 +77,7 @@ public sealed class StartupProbe
     public async Task<HashSet<string>> MeasureAsync(string? drive = null)
     {
         var done = new HashSet<string>();
+        if (EjectSuppressed) return done;
         var root = drive ?? FindPrometheusDrive();
         if (root == null || !DriveHealth(root).Healthy) return done;
         done.Add("Verify Prometheus SSD identity");
@@ -110,6 +114,7 @@ public sealed class StartupProbe
 
     public async Task<bool> WarmModelAsync()
     {
+        if (EjectSuppressed) return false;
         var root = FindPrometheusDrive();
         if (root == null) return false;
         var profile = await HardwareProfileAsync(root, true);
