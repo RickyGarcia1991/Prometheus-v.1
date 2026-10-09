@@ -19,11 +19,14 @@ def launch_integrations(executable: str | None = None) -> set[str]:
     exe = executable or ollama_executable()
     if not exe:
         return set()
-    result = subprocess.run(
-        [exe, "launch", "--help"],
-        capture_output=True, text=True, timeout=10, check=False,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-    )
+    try:
+        result = subprocess.run(
+            [exe, "launch", "--help"],
+            capture_output=True, text=True, timeout=10, check=False,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
     if result.returncode != 0:
         return set()
     supported: set[str] = set()

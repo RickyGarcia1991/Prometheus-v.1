@@ -20,7 +20,8 @@ public partial class MainWindow {
    _startupFailed=true;ShowPlan(ProgressPlan.Startup,new HashSet<string>{ProgressPlan.Startup[0].Name,ProgressPlan.Startup[1].Name});UpdateLayout();
    if(StepsList.Items.Cast<StepRow>().Count(x=>x.Color==Red)!=6)throw new Exception("Failed check state mapping failed.");
    _startupFailed=false;_operationActive=false;
-   ShowPlan(ProgressPlan.Startup,await _probe.MeasureAsync());UpdateLayout();
+   var measured=await _probe.MeasureAsync();ShowPlan(ProgressPlan.Startup,measured);UpdateComponents(measured);UpdateLayout();
+   if(EjectText.Text!="No")throw new Exception("Windows release must default to No.");
    foreach(var width in new[]{1080d,1280d}){
     Width=width;UpdateLayout();
     var numbers=Descendants<TextBlock>(StepsList).Where(x=>x.Text.EndsWith('%')).ToArray();

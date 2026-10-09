@@ -1,0 +1,64 @@
+{
+  "repair_id": "stabilization-20261008",
+  "base_git_commit": "8c17eab47935aa176658220c30f12aaea144449e",
+  "git_status": "local repair; not a new git commit",
+  "baseline": "Prometheus-v0.8.0-dev1-8c17eab",
+  "preexisting_agent_drift_preserved": true,
+  "changes": [
+    {
+      "path": "REPAIR-NOTES.md",
+      "before": null,
+      "after": "52e3cb633f121951b36482aecceb5226fd51481bd05de09990fe3e7363e1cf21"
+    },
+    {
+      "path": "src/prometheus_assistant/agent.py",
+      "before": "6cddc62eadcd1eea9cbf6a042f90d31362db89969c4600f8f52c08385df065fc",
+      "after": "d089f0571961c5724c86aa4f2adc90c2a9125321143d14343eb6dc51490d5729"
+    },
+    {
+      "path": "src/prometheus_assistant/cli.py",
+      "before": "626af601f83c159d39918ae251f6554728b39ec4bf75873c7f556cfcff5ee9c9",
+      "after": "fd221c6efee4f3173a277d648c6510ebc7883d641c45fa2d6684d0fea03f4568"
+    },
+    {
+      "path": "src/prometheus_assistant/response_checks.py",
+      "before": null,
+      "after": "056867f1fae8f03d61567596dec185de8722587cbdd97f63d62fcb57ab14ae2c"
+    },
+    {
+      "path": "src/prometheus_assistant/self_evaluation.py",
+      "before": "4330063d841a9e9faf082492400987982f22b5a35c232bb4c7a57eee55e34e4f",
+      "after": "8c97f2d1829315c3a9a3856a7994bed730ab7464a2eb8bc636441854da98c28f"
+    },
+    {
+      "path": "tests/test_host_agent.py",
+      "before": "ca6a3df8f8462158d49ea90ff6dbc8583a70dbd38189ba66f991bc91c0b852b3",
+      "after": "d81f1d704ee6dc86d3c776949df214a4cf3dd2f46281f8564a300f98e922f679"
+    },
+    {
+      "path": "tests/test_response_checks.py",
+      "before": null,
+      "after": "5f1580f724ce032d02627b4dba2f339e634fdfb6d27f1214b07faa6deaa1f885"
+    },
+    {
+      "path": "tools/Prometheus.HostAgent/INSTALL-PROMETHEUS-HOST-AGENT.ps1",
+      "before": "7d73283e5e687a93aa89f894026d0574c904fb9c757e5ba0805c24add9ff7cf7",
+      "after": "81929d467a309c50c09f2e65aa33e4d4d4f27d0555c3aec5631e4775ec4cd18c"
+    },
+    {
+      "path": "tools/Prometheus.HostAgent/Prometheus-Host-Agent.ps1",
+      "before": "b29acd49d27ec340dc1d6fd22ef3c4eabe7389a81c64e9a0463154f64bf86fb8",
+      "after": "48ae6a341cebe7f18f24bb86a274906068f6b71b978f350236d4e7aee0e2da44"
+    },
+    {
+      "path": "tools/Repair-Prometheus-Controller.ps1",
+      "before": null,
+      "after": "1b84af34021f0bd170b2b997f2bc0c6c791319846686160858ef407b66edff46"
+    },
+    {
+      "path": "tools/START-PROMETHEUS-CONTROLLER.cmd",
+      "before": null,
+      "after": "3d56ae619258635489635a280d9c59f676ad3bfbd3e7679b4c4944f39bbd3535"
+    }
+  ]
+}

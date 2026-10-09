@@ -1,0 +1,2689 @@
+{
+  "created_utc": "2026-10-09T19:45:08+00:00",
+  "coverage": "Curated portals plus manufacturer associations and registries; not an exhaustive world census or a downloaded service-manual collection.",
+  "maps": [
+    {
+      "title": "OpenStreetMap",
+      "url": "https://www.openstreetmap.org/",
+      "description": "Roads, places and community-maintained map data.",
+      "category": "MAPS",
+      "access": "Free public access; data licenses apply.",
+      "link_check": {
+        "url": "https://www.openstreetmap.org/",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "status": 200,
+        "final_url": "https://www.openstreetmap.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Worldview",
+      "url": "https://worldview.earthdata.nasa.gov/",
+      "description": "Time-selectable satellite imagery; inspect each layer’s observation date.",
+      "category": "MAPS",
+      "access": "Free public access; data licenses apply.",
+      "link_check": {
+        "url": "https://worldview.earthdata.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "status": 200,
+        "final_url": "https://worldview.earthdata.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Geofabrik regional extracts",
+      "url": "https://download.geofabrik.de/",
+      "description": "Download dated OpenStreetMap data for compatible offline mapping tools.",
+      "category": "MAPS",
+      "access": "Free public access; data licenses apply.",
+      "link_check": {
+        "url": "https://download.geofabrik.de/",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "status": 200,
+        "final_url": "https://download.geofabrik.de/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "USGS National Map",
+      "url": "https://www.usgs.gov/programs/national-geospatial-program/national-map",
+      "description": "US topographic, elevation and geographic data.",
+      "category": "MAPS",
+      "access": "Free public access; data licenses apply.",
+      "link_check": {
+        "url": "https://www.usgs.gov/programs/national-geospatial-program/national-map",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "status": 200,
+        "final_url": "https://www.usgs.gov/programs/national-geospatial-program/national-map",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    }
+  ],
+  "research": [
+    {
+      "title": "NASA Image & Video Library",
+      "url": "https://images.nasa.gov/",
+      "description": "Images, video, audio and original asset credits.",
+      "category": "MEDIA",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://images.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "status": 200,
+        "final_url": "https://images.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Technical Reports Server",
+      "url": "https://ntrs.nasa.gov/",
+      "description": "Technical reports, papers and public NASA-funded research; registered content is separate.",
+      "category": "REPORTS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://ntrs.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:10+00:00",
+        "state": "not_verified",
+        "error": "TimeoutError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Science Data Portal",
+      "url": "https://science.data.nasa.gov/",
+      "description": "Entry point across Earth, planetary, heliophysics, astrophysics and biological science archives.",
+      "category": "DATA CATALOG",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://science.data.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "status": 200,
+        "final_url": "https://science.data.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Earthdata Search",
+      "url": "https://search.earthdata.nasa.gov/",
+      "description": "Search by place, time and collection; some downloads need free Earthdata Login.",
+      "category": "EARTH DATA",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://search.earthdata.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "status": 200,
+        "final_url": "https://search.earthdata.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Planetary Data System",
+      "url": "https://pds.nasa.gov/",
+      "description": "Planetary mission datasets and supporting documentation.",
+      "category": "PLANETARY DATA",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://pds.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "status": 200,
+        "final_url": "https://pds.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "HEASARC",
+      "url": "https://heasarc.gsfc.nasa.gov/",
+      "description": "High-energy astrophysics observations and analysis resources.",
+      "category": "ASTROPHYSICS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://heasarc.gsfc.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "status": 200,
+        "final_url": "https://heasarc.gsfc.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "MAST at STScI",
+      "url": "https://archive.stsci.edu/",
+      "description": "Space telescope archive and mission data; access varies by collection.",
+      "category": "ASTRONOMY",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://archive.stsci.edu/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA IRSA at Caltech",
+      "url": "https://irsa.ipac.caltech.edu/",
+      "description": "Infrared and submillimeter astronomy archives.",
+      "category": "ASTRONOMY",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://irsa.ipac.caltech.edu/",
+        "checked_utc": "2026-10-09T19:45:11+00:00",
+        "status": 200,
+        "final_url": "https://irsa.ipac.caltech.edu/frontpage/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Open Science Data Repository",
+      "url": "https://osdr.nasa.gov/",
+      "description": "Space biology experiments, datasets and metadata.",
+      "category": "BIOLOGY",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://osdr.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://science.nasa.gov/biological-physical/data/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA SPDF",
+      "url": "https://spdf.gsfc.nasa.gov/",
+      "description": "Space physics and heliophysics data services.",
+      "category": "HELIOPHYSICS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://spdf.gsfc.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://spdf.gsfc.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Software Catalog",
+      "url": "https://software.nasa.gov/",
+      "description": "NASA software releases; eligibility and licensing vary.",
+      "category": "SOFTWARE",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://software.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://software.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Open Source",
+      "url": "https://code.nasa.gov/",
+      "description": "Open source project discovery; verify each repository and license.",
+      "category": "SOURCE CODE",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://code.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://code.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Learning Resources",
+      "url": "https://www.nasa.gov/learning-resources/",
+      "description": "Education, training and public learning material.",
+      "category": "EDUCATION",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.nasa.gov/learning-resources/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://www.nasa.gov/learning-resources/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Missions",
+      "url": "https://www.nasa.gov/missions/",
+      "description": "Official mission information and links to current status.",
+      "category": "MISSIONS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.nasa.gov/missions/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://www.nasa.gov/missions/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA API Catalog",
+      "url": "https://api.nasa.gov/",
+      "description": "Public developer APIs; some require a free key and have rate limits.",
+      "category": "DEVELOPER TOOLS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://api.nasa.gov/",
+        "checked_utc": "2026-10-09T19:45:12+00:00",
+        "status": 200,
+        "final_url": "https://api.nasa.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NASA Media Usage Guidelines",
+      "url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "description": "Check third-party credits, logos, publicity rights and usage conditions before reuse.",
+      "category": "USAGE TERMS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "PubMed",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/",
+      "description": "Biomedical article metadata; full-text access varies.",
+      "category": "RESEARCH DATABASE",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://pubmed.ncbi.nlm.nih.gov/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://pubmed.ncbi.nlm.nih.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "PubMed Central",
+      "url": "https://pmc.ncbi.nlm.nih.gov/",
+      "description": "Full-text biomedical archive; article licenses differ.",
+      "category": "FULL TEXT",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://pmc.ncbi.nlm.nih.gov/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://pmc.ncbi.nlm.nih.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "arXiv",
+      "url": "https://arxiv.org/",
+      "description": "Scientific preprints; inclusion does not imply peer review.",
+      "category": "PREPRINTS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://arxiv.org/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://arxiv.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "DOAJ",
+      "url": "https://doaj.org/",
+      "description": "Directory of open-access journals and article metadata.",
+      "category": "JOURNALS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://doaj.org/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Crossref",
+      "url": "https://search.crossref.org/",
+      "description": "DOIs and publication metadata; metadata is not necessarily full text.",
+      "category": "METADATA",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://search.crossref.org/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://search.crossref.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "OSTI",
+      "url": "https://www.osti.gov/",
+      "description": "US Department of Energy research, reports and datasets.",
+      "category": "TECHNICAL REPORTS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.osti.gov/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://www.osti.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "GovInfo",
+      "url": "https://www.govinfo.gov/",
+      "description": "Authenticated US government publications.",
+      "category": "GOVERNMENT",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.govinfo.gov/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://www.govinfo.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Library of Congress",
+      "url": "https://www.loc.gov/",
+      "description": "Primary historical collections and catalog records.",
+      "category": "ARCHIVES",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.loc.gov/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://www.loc.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Smithsonian Open Access",
+      "url": "https://www.si.edu/openaccess",
+      "description": "Open collections; inspect item-level rights metadata.",
+      "category": "MUSEUM COLLECTIONS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://www.si.edu/openaccess",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "WIPO PATENTSCOPE",
+      "url": "https://patentscope.wipo.int/",
+      "description": "Patent documents and technical disclosures; account access varies.",
+      "category": "PATENTS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://patentscope.wipo.int/",
+        "checked_utc": "2026-10-09T19:45:13+00:00",
+        "status": 200,
+        "final_url": "https://patentscope.wipo.int/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Espacenet",
+      "url": "https://worldwide.espacenet.com/",
+      "description": "European Patent Office patent search.",
+      "category": "PATENTS",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://worldwide.espacenet.com/",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Zenodo",
+      "url": "https://zenodo.org/",
+      "description": "Research datasets, software and publications with persistent identifiers; quality and licenses vary.",
+      "category": "REPOSITORY",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://zenodo.org/",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://zenodo.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Internet Archive",
+      "url": "https://archive.org/",
+      "description": "Archived websites and digital collections; availability and rights vary.",
+      "category": "ARCHIVES",
+      "access": "Public portal; individual items may have access requirements.",
+      "link_check": {
+        "url": "https://archive.org/",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://archive.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    }
+  ],
+  "automotive": [
+    {
+      "title": "Chevrolet",
+      "url": "https://www.oem1stop.com/content/chevrolet",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/chevrolet",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.gmparts.com/parts/electric-hybrid-propulsion"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/chevrolet",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/chevrolet",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Acura",
+      "url": "https://techinfo.honda.com",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/acura",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.honda.com"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.honda.com"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://techinfo.honda.com"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.honda.com",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Audi",
+      "url": "https://erwin.audiusa.com/erwin/showHome.do",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/audi",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://erwin.audiusa.com/erwin/showHome.do"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://erwin.audiusa.com/erwin/showHome.do"
+        }
+      ],
+      "link_check": {
+        "url": "https://erwin.audiusa.com/erwin/showHome.do",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Buick",
+      "url": "https://www.oem1stop.com/content/buick",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/buick",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.gmparts.com/parts/electric-hybrid-propulsion"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/buick",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/buick",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Cadillac",
+      "url": "https://www.oem1stop.com/content/cadillac",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/cadillac",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.gmparts.com/parts/electric-hybrid-propulsion"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/cadillac",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/cadillac",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Chrysler",
+      "url": "https://stellantisiop.com/iop/app/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/chrysler",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://stellantisiop.com/iop/app/landing",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Dodge",
+      "url": "https://stellantisiop.com/iop/app/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/dodge",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://stellantisiop.com/iop/app/landing",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Fiat",
+      "url": "https://stellantisiop.com/iop/app/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/fiat",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://stellantisiop.com/iop/app/landing",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Ford",
+      "url": "https://www.motorcraftservice.com",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/ford",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.motorcraftservice.com"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.motorcraftservice.com"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.motorcraftservice.com/QuickGuides/QuickGuides"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.motorcraftservice.com",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Genesis",
+      "url": "https://www.genesistechinfo.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/genesis",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.genesistechinfo.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.genesistechinfo.com/"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.genesistechinfo.com/",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://www.genesistechinfo.com/",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Gmc",
+      "url": "https://www.oem1stop.com/content/gmc",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/gmc",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.gmparts.com/parts/electric-hybrid-propulsion"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/gmc",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/gmc",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Honda",
+      "url": "https://techinfo.honda.com",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/honda",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.honda.com"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.honda.com"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://techinfo.honda.com"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.honda.com",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Hummer",
+      "url": "https://www.oem1stop.com/content/hummer",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/hummer",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/hummer",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/hummer",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Hyundai",
+      "url": "https://www.hyundaitechinfo.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/hyundai",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.hyundaitechinfo.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.hyundaitechinfo.com/"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.hyundaitechinfo.com/",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://www.hyundaitechinfo.com/",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Infiniti",
+      "url": "https://www.oem1stop.com/content/infiniti",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/infiniti",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/infiniti",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/infiniti",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Jaguar",
+      "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/jaguar",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm"
+        }
+      ],
+      "link_check": {
+        "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Jeep",
+      "url": "https://stellantisiop.com/iop/app/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/jeep",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://stellantisiop.com/iop/app/landing",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Kia",
+      "url": "https://kiatechinfo.snapon.com/Default.aspx",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/kia",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://kiatechinfo.snapon.com/Default.aspx"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://kiatechinfo.snapon.com/Default.aspx"
+        }
+      ],
+      "link_check": {
+        "url": "https://kiatechinfo.snapon.com/Default.aspx",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://kiatechinfo.snapon.com/Default.aspx",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Land Rover",
+      "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/land-rover",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm"
+        }
+      ],
+      "link_check": {
+        "url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://topix.jaguar.jlrext.com/topix/user/loginForm",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Lexus",
+      "url": "https://techinfo.toyota.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/lexus",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti?_nfpb=true&_pageLabel=ti_home_search_docs_page"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.toyota.com/",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Lincoln",
+      "url": "https://www.motorcraftservice.com",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/lincoln",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.motorcraftservice.com"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.motorcraftservice.com"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.motorcraftservice.com/QuickGuides/QuickGuides"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.motorcraftservice.com",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Lucid",
+      "url": "https://techinfo.lucidmotors.com/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/lucid",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.lucidmotors.com/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.lucidmotors.com/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.lucidmotors.com/landing",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://techinfo.lucidmotors.com/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Mazda",
+      "url": "https://www.oem1stop.com/content/mazda",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/mazda",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/mazda",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/mazda",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Mercedes Benz",
+      "url": "https://www.oem1stop.com/content/mercedes-benz",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/mercedes-benz",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/mercedes-benz",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/mercedes-benz",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Mercury",
+      "url": "https://www.motorcraftservice.com",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/mercury",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.motorcraftservice.com"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.motorcraftservice.com"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.motorcraftservice.com",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Nissan",
+      "url": "https://www.oem1stop.com/content/nissan",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/nissan",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/nissan",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/nissan",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Oldsmobile",
+      "url": "https://www.oem1stop.com/content/oldsmobile",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/oldsmobile",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/oldsmobile",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/oldsmobile",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Pontiac",
+      "url": "https://www.oem1stop.com/content/pontiac",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/pontiac",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/pontiac",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/pontiac",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Ram",
+      "url": "https://stellantisiop.com/iop/app/landing",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/ram",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://stellantisiop.com/iop/app/landing"
+        }
+      ],
+      "link_check": {
+        "url": "https://stellantisiop.com/iop/app/landing",
+        "checked_utc": "2026-10-09T19:45:14+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Rivian",
+      "url": "https://www.oem1stop.com/content/rivian",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/rivian",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/rivian",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/rivian",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Saturn",
+      "url": "https://www.oem1stop.com/content/saturn",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/saturn",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://www.gmparts.com/parts/electric-hybrid-propulsion"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/saturn",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/saturn",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Scion",
+      "url": "https://techinfo.toyota.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/scion",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti?_nfpb=true&_pageLabel=ti_home_search_docs_page"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.toyota.com/",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Subaru",
+      "url": "https://www.oem1stop.com/content/subaru",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/subaru",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [],
+      "link_check": {
+        "url": "https://www.oem1stop.com/content/subaru",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/content/subaru",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Tesla",
+      "url": "https://service.tesla.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/tesla",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://service.tesla.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://service.tesla.com/"
+        }
+      ],
+      "link_check": {
+        "url": "https://service.tesla.com/",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://service.tesla.com/",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Toyota",
+      "url": "https://techinfo.toyota.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/toyota",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://techinfo.toyota.com/"
+        },
+        {
+          "title": "Hybrid/Electric",
+          "url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti?_nfpb=true&_pageLabel=ti_home_search_docs_page"
+        }
+      ],
+      "link_check": {
+        "url": "https://techinfo.toyota.com/",
+        "checked_utc": "2026-10-09T19:45:15+00:00",
+        "status": 200,
+        "final_url": "https://techinfo.toyota.com/techInfoPortal/appmanager/t3/ti",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "Volkswagen",
+      "url": "https://erwin.vw.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/volkswagen",
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://erwin.vw.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://erwin.vw.com/"
+        }
+      ],
+      "link_check": {
+        "url": "https://erwin.vw.com/",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      }
+    },
+    {
+      "title": "Volvo",
+      "url": "https://www.volvotechinfo.com/",
+      "description": "Manufacturer-linked repair information. Look up the exact vehicle for manuals, diagrams, engine specifications, diagnostics, parts and repair procedures; availability varies.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may be required; no subscription purchased.",
+      "region": "Primarily North America",
+      "provenance_url": "https://www.oem1stop.com/content/volvo",
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested.",
+      "resource_links": [
+        {
+          "title": "Collision",
+          "url": "https://www.volvotechinfo.com/"
+        },
+        {
+          "title": "Mechanical",
+          "url": "https://www.volvotechinfo.com/"
+        }
+      ],
+      "link_check": {
+        "url": "https://www.volvotechinfo.com/",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.volvotechinfo.com/",
+        "state": "reachable"
+      }
+    },
+    {
+      "title": "BMW",
+      "url": "https://bmwtechinfo.bmwgroup.com/",
+      "description": "Manufacturer technical information entry point listed by OEM1Stop. Exact model, year and market determine the available documents.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may apply.",
+      "region": "North America",
+      "provenance_url": "https://www.oem1stop.com/",
+      "link_check": {
+        "url": "https://bmwtechinfo.bmwgroup.com/",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://bmwtechinfo.bmwgroup.com:443/tisUI/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "MINI",
+      "url": "https://www.minitechinfo.com/",
+      "description": "Manufacturer technical information entry point listed by OEM1Stop. Exact model, year and market determine the available documents.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may apply.",
+      "region": "North America",
+      "provenance_url": "https://www.oem1stop.com/",
+      "link_check": {
+        "url": "https://www.minitechinfo.com/",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://www.minitechinfo.com:443/tisUI/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Mitsubishi",
+      "url": "https://mitsubishitechinfo.com",
+      "description": "Manufacturer technical information entry point listed by OEM1Stop. Exact model, year and market determine the available documents.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may apply.",
+      "region": "North America",
+      "provenance_url": "https://www.oem1stop.com/",
+      "link_check": {
+        "url": "https://mitsubishitechinfo.com",
+        "checked_utc": "2026-10-09T19:45:16+00:00",
+        "status": 200,
+        "final_url": "https://mitsubishitechinfo.com",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Porsche",
+      "url": "https://www.porsche.com/usa/accessoriesandservices/porscheservice/additionalinformation/",
+      "description": "Manufacturer technical information entry point listed by OEM1Stop. Exact model, year and market determine the available documents.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may apply.",
+      "region": "North America",
+      "provenance_url": "https://www.oem1stop.com/",
+      "link_check": {
+        "url": "https://www.porsche.com/usa/accessoriesandservices/porscheservice/additionalinformation/",
+        "checked_utc": "2026-10-09T19:45:17+00:00",
+        "status": 200,
+        "final_url": "https://www.porsche.com/usa/accessoriesandservice/porscheservice/additionalinformation/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Suzuki",
+      "url": "https://suzukipitstopplus.com/",
+      "description": "Manufacturer technical information entry point listed by OEM1Stop. Exact model, year and market determine the available documents.",
+      "category": "AUTOMAKER · OEM1STOP",
+      "access": "Registration or paid access may apply.",
+      "region": "North America",
+      "provenance_url": "https://www.oem1stop.com/",
+      "link_check": {
+        "url": "https://suzukipitstopplus.com/",
+        "checked_utc": "2026-10-09T19:45:17+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "BMW / MINI AOS",
+      "url": "https://aos.bmwgroup.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://aos.bmwgroup.com/",
+        "checked_utc": "2026-10-09T19:45:17+00:00",
+        "status": 200,
+        "final_url": "https://aos.bmwgroup.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Mercedes-Benz",
+      "url": "https://b2bconnect.mercedes-benz.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://b2bconnect.mercedes-benz.com/",
+        "checked_utc": "2026-10-09T19:45:17+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Mercedes-Benz Trucks",
+      "url": "https://service-info.mercedes-benz-trucks.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://service-info.mercedes-benz-trucks.com/",
+        "checked_utc": "2026-10-09T19:45:17+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Ferrari",
+      "url": "https://techinfo.ferrari.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://techinfo.ferrari.com/",
+        "checked_utc": "2026-10-09T19:45:18+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Ford Europe",
+      "url": "https://www.fordserviceinfo.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.fordserviceinfo.com/",
+        "checked_utc": "2026-10-09T19:45:18+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Honda Europe",
+      "url": "https://www.techinfo.honda-eu.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.techinfo.honda-eu.com/",
+        "checked_utc": "2026-10-09T19:45:18+00:00",
+        "status": 200,
+        "final_url": "https://www.techinfo.honda-eu.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Hyundai Europe",
+      "url": "https://service.hyundai-motor.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://service.hyundai-motor.com/",
+        "checked_utc": "2026-10-09T19:45:18+00:00",
+        "status": 200,
+        "final_url": "https://service.hyundai-motor.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Iveco",
+      "url": "https://techinformation.iveco.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://techinformation.iveco.com/",
+        "checked_utc": "2026-10-09T19:45:19+00:00",
+        "status": 200,
+        "final_url": "https://techinformation.iveco.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Jaguar TOPIx",
+      "url": "https://topix.jaguar.jlrext.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://topix.jaguar.jlrext.com/",
+        "checked_utc": "2026-10-09T19:45:19+00:00",
+        "status": 200,
+        "final_url": "https://topix.jaguar.jlrext.com/topix/vehicle/lookupForm",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Land Rover TOPIx",
+      "url": "https://topix.landrover.jlrext.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://topix.landrover.jlrext.com/",
+        "checked_utc": "2026-10-09T19:45:19+00:00",
+        "status": 200,
+        "final_url": "https://topix.landrover.jlrext.com/topix/vehicle/lookupForm",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Nissan Europe",
+      "url": "https://login.eu.nissan.biz/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://login.eu.nissan.biz/",
+        "checked_utc": "2026-10-09T19:45:19+00:00",
+        "status": 200,
+        "final_url": "https://login.eu.nissan.biz/nidp/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Renault / Dacia New Dialogys",
+      "url": "https://newdialogys.renault.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://newdialogys.renault.com/",
+        "checked_utc": "2026-10-09T19:45:19+00:00",
+        "status": 200,
+        "final_url": "https://newdialogys.renault.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Fiat / Abarth / Alfa Romeo / Lancia",
+      "url": "https://www.technicalinformation.fiat.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.technicalinformation.fiat.com/",
+        "checked_utc": "2026-10-09T19:45:20+00:00",
+        "status": 200,
+        "final_url": "https://www.technicalinformation.fiat.com/tech-info-web/web/index.do",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Peugeot / Citroën / DS / Opel / Vauxhall",
+      "url": "https://public.servicebox-parts.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://public.servicebox-parts.com/",
+        "checked_utc": "2026-10-09T19:45:20+00:00",
+        "status": 200,
+        "final_url": "https://public.servicebox-parts.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Jeep / Chrysler / Dodge / RAM Europe",
+      "url": "https://stellantisiop.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://stellantisiop.com/",
+        "checked_utc": "2026-10-09T19:45:20+00:00",
+        "status": 200,
+        "final_url": "https://stellantisiop.com/iop/app/landing",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Toyota Europe",
+      "url": "https://www.toyota-tech.eu/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.toyota-tech.eu/",
+        "checked_utc": "2026-10-09T19:45:20+00:00",
+        "status": 200,
+        "final_url": "https://www.toyota-tech.eu/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Lexus Europe",
+      "url": "https://www.lexus-tech.eu/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.lexus-tech.eu/",
+        "checked_utc": "2026-10-09T19:45:20+00:00",
+        "status": 200,
+        "final_url": "https://www.lexus-tech.eu/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Volkswagen erWin",
+      "url": "https://erwin.volkswagen.de/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://erwin.volkswagen.de/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Audi erWin",
+      "url": "https://erwin.audi.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://erwin.audi.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "SEAT / CUPRA",
+      "url": "https://erwin.seat.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://erwin.seat.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Škoda",
+      "url": "https://erwin.skoda-auto.cz/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://erwin.skoda-auto.cz/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Bentley",
+      "url": "https://erwin.bentleymotors.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://erwin.bentleymotors.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "status": 200,
+        "final_url": "https://erwin.bentleymotors.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Lamborghini",
+      "url": "https://serviceinformation.lamborghini.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://serviceinformation.lamborghini.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "status": 200,
+        "final_url": "https://serviceinformation.lamborghini.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Porsche Europe",
+      "url": "https://pcss-tsi.porsche.com/landing/static/BE/start",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://pcss-tsi.porsche.com/landing/static/BE/start",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "status": 200,
+        "final_url": "https://pcss-tsi.porsche.com/landing/static/BE/start",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "MAN",
+      "url": "https://www.asp.mantruckandbus.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.asp.mantruckandbus.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "status": 200,
+        "final_url": "https://public.man.eu/portal/asp",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Scania",
+      "url": "https://rmi.scania.com/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://rmi.scania.com/",
+        "checked_utc": "2026-10-09T19:45:21+00:00",
+        "status": 200,
+        "final_url": "https://www.scania.com/group/en/home/products-and-services/services/rmi.html",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Volvo Trucks & Buses",
+      "url": "https://www.independentoperator.eu/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.independentoperator.eu/",
+        "checked_utc": "2026-10-09T19:45:22+00:00",
+        "status": 200,
+        "final_url": "https://www.independentoperator.eu/rmi/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Renault Trucks",
+      "url": "https://www.renault-trucks-independentoperator.net/",
+      "description": "Repair and maintenance information portal listed by ACEA. Inspect current market, registration and document coverage before subscribing.",
+      "category": "AUTOMAKER · EUROPE",
+      "access": "Professional eligibility, registration and subscription may apply.",
+      "region": "Europe / provider-specific",
+      "provenance_url": "https://www.acea.auto/fact/rmi-service-information/",
+      "link_check": {
+        "url": "https://www.renault-trucks-independentoperator.net/",
+        "checked_utc": "2026-10-09T19:45:22+00:00",
+        "status": 200,
+        "final_url": "https://www.renault-trucks-independentoperator.net/rmi",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "BYD China manuals",
+      "url": "https://www.byd.com/cn/user-manual",
+      "description": "Owner manuals; Chinese domestic models and language.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "China",
+      "provenance_url": "https://www.byd.com/cn/user-manual",
+      "link_check": {
+        "url": "https://www.byd.com/cn/user-manual",
+        "checked_utc": "2026-10-09T19:45:22+00:00",
+        "status": 200,
+        "final_url": "https://www.byd.com/cn/user-manual",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "BYD Japan owners",
+      "url": "https://www.byd.com/jp/forowner",
+      "description": "Regional owner support and documentation.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "Japan",
+      "provenance_url": "https://www.byd.com/jp/forowner",
+      "link_check": {
+        "url": "https://www.byd.com/jp/forowner",
+        "checked_utc": "2026-10-09T19:45:22+00:00",
+        "status": 200,
+        "final_url": "https://www.byd.com/jp/forowner",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Geely Care+",
+      "url": "https://global.geely.com/en/after-sales-service/professional",
+      "description": "Official after-sales entry point; request exact market documentation through the local service network.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "International",
+      "provenance_url": "https://global.geely.com/en/after-sales-service/professional",
+      "link_check": {
+        "url": "https://global.geely.com/en/after-sales-service/professional",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "status": 200,
+        "final_url": "https://global.geely.com/en/after-sales-service/professional",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Mahindra owner care",
+      "url": "https://auto.mahindra.com/care-and-maintenance.html",
+      "description": "Owner care and maintenance information; find model-specific manuals through the official site.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "India",
+      "provenance_url": "https://auto.mahindra.com/care-and-maintenance.html",
+      "link_check": {
+        "url": "https://auto.mahindra.com/care-and-maintenance.html",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "status": 200,
+        "final_url": "https://auto.mahindra.com/care-and-maintenance.html",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Tata Motors",
+      "url": "https://cars.tatamotors.com/",
+      "description": "Official vehicle specifications and owner/service navigation. Workshop access may require a dealer.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "India",
+      "provenance_url": "https://cars.tatamotors.com/",
+      "link_check": {
+        "url": "https://cars.tatamotors.com/",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Maruti Suzuki",
+      "url": "https://www.marutisuzuki.com/",
+      "description": "Official Indian-market model and owner/service resources.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "India",
+      "provenance_url": "https://www.marutisuzuki.com/",
+      "link_check": {
+        "url": "https://www.marutisuzuki.com/",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "status": 200,
+        "final_url": "https://www.marutisuzuki.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Proton",
+      "url": "https://www.proton.com/",
+      "description": "Official product specifications and after-sales support.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "Malaysia / export markets",
+      "provenance_url": "https://www.proton.com/",
+      "link_check": {
+        "url": "https://www.proton.com/",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "status": 200,
+        "final_url": "https://www.proton.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Perodua",
+      "url": "https://www.perodua.com.my/",
+      "description": "Official model information and owner/service resources.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "Malaysia",
+      "provenance_url": "https://www.perodua.com.my/",
+      "link_check": {
+        "url": "https://www.perodua.com.my/",
+        "checked_utc": "2026-10-09T19:45:23+00:00",
+        "status": 200,
+        "final_url": "https://www.perodua.com.my/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "VinFast",
+      "url": "https://vinfastauto.us/",
+      "description": "Official US-market EV product and owner support; not a full workshop-manual archive.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States / Vietnam brand",
+      "provenance_url": "https://vinfastauto.us/",
+      "link_check": {
+        "url": "https://vinfastauto.us/",
+        "checked_utc": "2026-10-09T19:45:24+00:00",
+        "status": 200,
+        "final_url": "https://vinfastauto.us/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "GWM",
+      "url": "https://www.gwm-global.com/",
+      "description": "Official global brand and model entry point for GWM, Haval, ORA and Tank; regional documentation varies.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "China / export markets",
+      "provenance_url": "https://www.gwm-global.com/",
+      "link_check": {
+        "url": "https://www.gwm-global.com/",
+        "checked_utc": "2026-10-09T19:45:24+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Chery",
+      "url": "https://www.cheryinternational.com/",
+      "description": "Official global model and regional support entry point.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "China / export markets",
+      "provenance_url": "https://www.cheryinternational.com/",
+      "link_check": {
+        "url": "https://www.cheryinternational.com/",
+        "checked_utc": "2026-10-09T19:45:24+00:00",
+        "status": 200,
+        "final_url": "https://www.cheryinternational.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NIO",
+      "url": "https://www.nio.com/",
+      "description": "Official EV specifications and support entry point.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "China / selected global markets",
+      "provenance_url": "https://www.nio.com/",
+      "link_check": {
+        "url": "https://www.nio.com/",
+        "checked_utc": "2026-10-09T19:45:24+00:00",
+        "status": 200,
+        "final_url": "https://www.nio.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "XPENG",
+      "url": "https://www.xpeng.com/",
+      "description": "Official EV specifications and support entry point.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "China / selected global markets",
+      "provenance_url": "https://www.xpeng.com/",
+      "link_check": {
+        "url": "https://www.xpeng.com/",
+        "checked_utc": "2026-10-09T19:45:25+00:00",
+        "status": 200,
+        "final_url": "https://www.xpeng.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Isuzu",
+      "url": "https://www.isuzu.co.jp/world/",
+      "description": "Official global vehicle and regional company information.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "Japan / international",
+      "provenance_url": "https://www.isuzu.co.jp/world/",
+      "link_check": {
+        "url": "https://www.isuzu.co.jp/world/",
+        "checked_utc": "2026-10-09T19:45:25+00:00",
+        "status": 200,
+        "final_url": "https://www.isuzu.co.jp/world/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Daihatsu",
+      "url": "https://www.daihatsu.com/",
+      "description": "Official manufacturer and regional entry point; owner documentation is market-specific.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "Japan / international",
+      "provenance_url": "https://www.daihatsu.com/",
+      "link_check": {
+        "url": "https://www.daihatsu.com/",
+        "checked_utc": "2026-10-09T19:45:25+00:00",
+        "status": 200,
+        "final_url": "https://www.daihatsu.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Polestar manuals",
+      "url": "https://www.polestar.com/us/manual/",
+      "description": "Official owner manuals; choose market, model and year.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States / selectable markets",
+      "provenance_url": "https://www.polestar.com/us/manual/",
+      "link_check": {
+        "url": "https://www.polestar.com/us/manual/",
+        "checked_utc": "2026-10-09T19:45:26+00:00",
+        "status": 200,
+        "final_url": "https://www.polestar.com/us/manual/polestar-2/2025/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Volvo Cars support",
+      "url": "https://www.volvocars.com/us/support/",
+      "description": "Official owner manuals and vehicle support.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States / selectable markets",
+      "provenance_url": "https://www.volvocars.com/us/support/",
+      "link_check": {
+        "url": "https://www.volvocars.com/us/support/",
+        "checked_utc": "2026-10-09T19:45:27+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Toyota owner manuals",
+      "url": "https://www.toyota.com/owners/resources/warranty-owners-manuals/",
+      "description": "Owner manuals, maintenance and warranty documents.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States",
+      "provenance_url": "https://www.toyota.com/owners/resources/warranty-owners-manuals/",
+      "link_check": {
+        "url": "https://www.toyota.com/owners/resources/warranty-owners-manuals/",
+        "checked_utc": "2026-10-09T19:45:27+00:00",
+        "status": 200,
+        "final_url": "https://www.toyota.com/owners/warranty-owners-manuals/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Ford owner manuals",
+      "url": "https://www.ford.com/support/owner-manuals/",
+      "description": "Owner manuals by vehicle or VIN.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States",
+      "provenance_url": "https://www.ford.com/support/owner-manuals/",
+      "link_check": {
+        "url": "https://www.ford.com/support/owner-manuals/",
+        "checked_utc": "2026-10-09T19:45:27+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Honda owner resources",
+      "url": "https://owners.honda.com/programs",
+      "description": "Official Honda owner-resource landing page with links to manuals, guides and how-to videos.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States",
+      "provenance_url": "https://owners.honda.com/programs",
+      "link_check": {
+        "url": "https://owners.honda.com/programs",
+        "checked_utc": "2026-10-09T20:19:36+00:00",
+        "status": 200,
+        "final_url": "https://owners.honda.com/programs",
+        "state": "reachable"
+      },
+      "verification": "Official source found in web research 2026-10-09; automated reachability: reachable. Manual completeness and account access were not tested."
+    },
+    {
+      "title": "Chevrolet owner manuals",
+      "url": "https://www.chevrolet.com/support/vehicle/manuals-guides",
+      "description": "Free Chevrolet owner manuals by model year. For other GM brands use their regional support websites.",
+      "category": "AUTOMAKER · OWNER / GLOBAL",
+      "access": "Public pages; full workshop manuals, diagrams or parts access not assumed.",
+      "region": "United States",
+      "provenance_url": "https://www.chevrolet.com/support/vehicle/manuals-guides",
+      "link_check": {
+        "url": "https://www.chevrolet.com/support/vehicle/manuals-guides",
+        "checked_utc": "2026-10-09T20:19:40+00:00",
+        "status": 200,
+        "final_url": "https://www.chevrolet.com/support/vehicle/manuals-guides",
+        "state": "reachable"
+      },
+      "verification": "Official source found in web research 2026-10-09; automated reachability: reachable. Manual completeness and account access were not tested."
+    }
+  ],
+  "registries": [
+    {
+      "title": "OEM1Stop",
+      "url": "https://www.oem1stop.com/",
+      "description": "Manufacturer-maintained repair portal directory and collision position statements.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "US / participating automakers",
+      "link_check": {
+        "url": "https://www.oem1stop.com/",
+        "checked_utc": "2026-10-09T19:45:27+00:00",
+        "status": 200,
+        "final_url": "https://www.oem1stop.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "ACEA RMI directory",
+      "url": "https://www.acea.auto/fact/rmi-service-information/",
+      "description": "Technical-service portal directory including European passenger and commercial vehicles.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Europe",
+      "link_check": {
+        "url": "https://www.acea.auto/fact/rmi-service-information/",
+        "checked_utc": "2026-10-09T19:45:27+00:00",
+        "status": 200,
+        "final_url": "https://www.acea.auto/fact/rmi-service-information/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NHTSA manufacturer registry (vPIC)",
+      "url": "https://vpic.nhtsa.dot.gov/",
+      "description": "Manufacturer and VIN data reported for US-market vehicles; overseas manufacturers included.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "US-regulated market",
+      "link_check": {
+        "url": "https://vpic.nhtsa.dot.gov/",
+        "checked_utc": "2026-10-09T19:45:28+00:00",
+        "status": 200,
+        "final_url": "https://vpic.nhtsa.dot.gov/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NHTSA recalls and manufacturer communications",
+      "url": "https://www.nhtsa.gov/recalls",
+      "description": "VIN recall checks, investigations and manufacturer communications; US coverage.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "United States",
+      "link_check": {
+        "url": "https://www.nhtsa.gov/recalls",
+        "checked_utc": "2026-10-09T19:45:28+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "UK vehicle recalls",
+      "url": "https://www.check-vehicle-recalls.service.gov.uk/",
+      "description": "Official UK vehicle recall lookup.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "United Kingdom",
+      "link_check": {
+        "url": "https://www.check-vehicle-recalls.service.gov.uk/",
+        "checked_utc": "2026-10-09T19:45:28+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Australian vehicle recalls",
+      "url": "https://www.vehiclerecalls.gov.au/",
+      "description": "Australian government recall notices and affected vehicles.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Australia",
+      "link_check": {
+        "url": "https://www.vehiclerecalls.gov.au/",
+        "checked_utc": "2026-10-09T19:45:29+00:00",
+        "state": "not_verified",
+        "error": "TimeoutError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Transport Canada recalls",
+      "url": "https://recalls-rappels.canada.ca/en",
+      "description": "Canadian government recall search; filter for vehicles.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Canada",
+      "link_check": {
+        "url": "https://recalls-rappels.canada.ca/en",
+        "checked_utc": "2026-10-09T19:45:29+00:00",
+        "status": 200,
+        "final_url": "https://recalls-rappels.canada.ca/en",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "OICA member associations",
+      "url": "https://www.oica.net/",
+      "description": "National automotive associations for expanding manufacturer coverage.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "International",
+      "link_check": {
+        "url": "https://www.oica.net/",
+        "checked_utc": "2026-10-09T19:45:30+00:00",
+        "status": 200,
+        "final_url": "https://oica.net/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "JAMA",
+      "url": "https://www.jama.or.jp/english/",
+      "description": "Japanese automaker association and member information.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Japan",
+      "link_check": {
+        "url": "https://www.jama.or.jp/english/",
+        "checked_utc": "2026-10-09T19:45:30+00:00",
+        "status": 200,
+        "final_url": "https://www.jama.or.jp/english/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "SIAM",
+      "url": "https://www.siam.in/",
+      "description": "Indian manufacturer association and industry/member information.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "India",
+      "link_check": {
+        "url": "https://www.siam.in/",
+        "checked_utc": "2026-10-09T19:45:30+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "NAAMSA",
+      "url": "https://naamsa.net/",
+      "description": "South African automotive association and member information.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "South Africa",
+      "link_check": {
+        "url": "https://naamsa.net/",
+        "checked_utc": "2026-10-09T19:45:30+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "ANFAVEA",
+      "url": "https://anfavea.com.br/",
+      "description": "Brazilian manufacturer association and member information.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Brazil",
+      "link_check": {
+        "url": "https://anfavea.com.br/",
+        "checked_utc": "2026-10-09T19:45:31+00:00",
+        "status": 200,
+        "final_url": "https://anfavea.com.br/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "ANAC",
+      "url": "https://www.anac.cl/",
+      "description": "Chilean automotive association and market information.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Chile",
+      "link_check": {
+        "url": "https://www.anac.cl/",
+        "checked_utc": "2026-10-09T19:45:32+00:00",
+        "state": "not_verified",
+        "error": "URLError"
+      },
+      "verification": "Automated link check: not verified · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "I-CAR Repairability Technical Support",
+      "url": "https://rts.i-car.com/",
+      "description": "Collision repair, OEM procedure links and technical training references; access varies.",
+      "category": "REGISTRY / TECHNICAL DIRECTORY",
+      "access": "Public entry point; individual services may require registration or payment.",
+      "region": "Multiple manufacturers",
+      "link_check": {
+        "url": "https://rts.i-car.com/",
+        "checked_utc": "2026-10-09T19:45:33+00:00",
+        "status": 200,
+        "final_url": "https://rts.i-car.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    }
+  ],
+  "connections": [
+    {
+      "title": "ProDemand / Mitchell 1",
+      "url": "https://prodemand.com/",
+      "category": "YOUR SUBSCRIPTION",
+      "description": "Preferred automotive source for all available categories: component locations and tests, service manuals, DTCs, reset procedures, tires/lifting, fluids, specifications, bulletins, ADAS, wiring, and other subscribed resources. Browser-assisted access; no unattended connector.",
+      "access": "Existing subscription required. No passwords, cookies or session tokens are imported into Prometheus.",
+      "verification": "Signed-in access tested 2026-10-09 using a sample 2020 Toyota Corolla SE 2.0L. Vehicle selection and search work. Session displays 1SEARCH LIMITED; Wiring Diagrams and Service Manual did not open. Full repair entitlement not verified.",
+      "resource_links": [
+        {
+          "title": "Official integration eligibility",
+          "url": "https://mitchell1.com/resources/api-request/"
+        },
+        {
+          "title": "Official account association guidance",
+          "url": "https://mitchell1.com/suretrack-faqs/"
+        }
+      ]
+    },
+    {
+      "title": "Adobe",
+      "url": "https://www.adobe.com/express/",
+      "description": "Installed and enabled in Codex. Tools initialized in this chat; specific account entitlements not tested. Adobe use is external to local image editing.",
+      "category": "CODEX PLUGIN",
+      "access": "Free and paid features vary. No paid operation performed.",
+      "link_check": {
+        "url": "https://www.adobe.com/express/",
+        "checked_utc": "2026-10-09T19:45:35+00:00",
+        "status": 403,
+        "state": "access_restricted"
+      },
+      "verification": "Automated link check: access restricted · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Runway tools and assets",
+      "url": "https://app.runwayml.com/",
+      "description": "Authentication confirmed October 9, 2026. The connected Free workspace exposes image models but no video models. Asset access stays in Runway/Codex.",
+      "category": "CONNECTED IN CODEX",
+      "access": "Image generations consume credits; video requires a paid plan in the connected workspace. No credits spent.",
+      "link_check": {
+        "url": "https://app.runwayml.com/",
+        "checked_utc": "2026-10-09T19:45:35+00:00",
+        "status": 200,
+        "final_url": "https://app.runwayml.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "OpenAI Developers",
+      "url": "https://developers.openai.com/",
+      "description": "Installed in Codex. Official developer documentation and integration guidance.",
+      "category": "CODEX PLUGIN",
+      "access": "Documentation is free; API usage is separately billed.",
+      "link_check": {
+        "url": "https://developers.openai.com/",
+        "checked_utc": "2026-10-09T19:45:35+00:00",
+        "status": 200,
+        "final_url": "https://developers.openai.com/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "OpenAI Docs MCP",
+      "url": "https://developers.openai.com/learn/docs-mcp",
+      "description": "Official read-only documentation endpoint. This is not an API entitlement or a transfer of Codex tools into Prometheus.",
+      "category": "DEVELOPER DOCUMENTATION",
+      "access": "Public documentation service.",
+      "link_check": {
+        "url": "https://developers.openai.com/learn/docs-mcp",
+        "checked_utc": "2026-10-09T19:45:35+00:00",
+        "status": 200,
+        "final_url": "https://developers.openai.com/learn/docs-mcp",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "ChatGPT GPTs",
+      "url": "https://chatgpt.com/gpts",
+      "description": "Open GPTs in ChatGPT. This workspace does not embed custom GPTs or inherit a ChatGPT subscription as an API key.",
+      "category": "CHATGPT WEBSITE",
+      "access": "Access depends on your ChatGPT account and the GPT.",
+      "link_check": {
+        "url": "https://chatgpt.com/gpts",
+        "checked_utc": "2026-10-09T19:45:36+00:00",
+        "status": 200,
+        "final_url": "https://chatgpt.com/gpts",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Codex Security",
+      "url": "https://developers.openai.com/codex/",
+      "description": "Installed and enabled in Codex for deeper security workflows. Local source triage in this app is a separate, limited check.",
+      "category": "CODEX PLUGIN",
+      "access": "Use your existing Codex account; no separate account is connected by this app.",
+      "link_check": {
+        "url": "https://developers.openai.com/codex/",
+        "checked_utc": "2026-10-09T19:45:36+00:00",
+        "status": 200,
+        "final_url": "https://learn.chatgpt.com/docs",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "ComfyUI local image generation",
+      "url": "https://docs.comfy.org/",
+      "description": "The Prometheus SSD already contains a portable ComfyUI application. Use START-PROMETHEUS-MEDIA.cmd on the SSD. Model installation, hardware suitability and generation still require verification.",
+      "category": "LOCAL APPLICATION",
+      "access": "No paid image API required for local inference. Model licenses and hardware requirements vary.",
+      "link_check": {
+        "url": "https://docs.comfy.org/",
+        "checked_utc": "2026-10-09T19:45:36+00:00",
+        "status": 200,
+        "final_url": "https://docs.comfy.org/",
+        "state": "reachable"
+      },
+      "verification": "Link reachable · 2026-10-09. Document completeness and account access were not tested."
+    },
+    {
+      "title": "Smart home / Home Assistant",
+      "url": "https://www.home-assistant.io/integrations/",
+      "category": "SMART HOME · STANDBY",
+      "description": "The main Prometheus interface includes named-device commands through an opt-in Home Assistant bridge. Pair your hub and approved devices before use. Alexa, Hue, Cast/Nest, HomeKit, Matter and SmartThings support depends on the actual integration and model.",
+      "access": "No devices connected by default. Some vendor APIs or cloud options require paid accounts. Drop In remains an Alexa app/Echo handoff.",
+      "resource_links": [
+        {
+          "title": "Alexa Devices",
+          "url": "https://www.home-assistant.io/integrations/alexa_devices/"
+        },
+        {
+          "title": "Philips Hue",
+          "url": "https://www.home-assistant.io/integrations/hue/"
+        },
+        {
+          "title": "Matter",
+          "url": "https://www.home-assistant.io/integrations/matter/"
+        }
+      ]
+    }
+  ]
+}

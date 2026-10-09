@@ -3,12 +3,18 @@ from pathlib import Path
 import re
 
 SUPPORTED = {'.md', '.txt', '.csv'}
+CODE_SUPPORTED = {'.py', '.pyi', '.js', '.jsx', '.ts', '.tsx', '.html', '.css', '.scss',
+                  '.sql', '.c', '.h', '.cpp', '.hpp', '.cc', '.cs', '.java', '.kt', '.swift',
+                  '.go', '.rs', '.rb', '.php', '.r', '.jl', '.m', '.dart', '.lua', '.pl',
+                  '.sh', '.ps1', '.fs', '.hs', '.ex', '.exs', '.erl', '.scala', '.clj',
+                  '.ml', '.zig', '.asm', '.s', '.f90', '.f', '.cob', '.sol', '.vhd',
+                  '.v', '.sv', '.ino', '.yaml', '.yml', '.json', '.toml', '.tf', '.graphql', '.proto'}
 MAX_FILE_BYTES = 1_000_000
 MAX_FILES = 500
 MAX_TOTAL_BYTES = 20_000_000
 
 
-def search_documents(root, query, limit=5):
+def search_documents(root, query, limit=5, *, include_code=False):
     root = Path(root).resolve()
     if not root.is_dir():
         raise ValueError('Choose an existing document directory.')
@@ -16,15 +22,18 @@ def search_documents(root, query, limit=5):
     if not terms or len(query) > 4000:
         raise ValueError('Enter a search query of 1–4000 characters.')
     results, skipped, total, count = [], [], 0, 0
+    extensions = SUPPORTED | CODE_SUPPORTED if include_code else SUPPORTED
     # Do not traverse directory links or junctions outside the selected folder.
     import os
     for folder, directories, files in os.walk(root, followlinks=False):
         directories[:] = sorted(d for d in directories if not d.startswith('.')
+                                and (not include_code or d not in {'node_modules', '__pycache__', 'venv', 'vendor', 'target', 'dist', 'build'})
                                 and not Path(folder, d).is_symlink()
                                 and not getattr(Path(folder, d), 'is_junction', lambda: False)())
         for name in sorted(files):
             path = Path(folder, name)
-            if path.suffix.lower() not in SUPPORTED or path.is_symlink() or name.startswith('.'):
+            if ((path.suffix.lower() not in extensions and not (include_code and name in {'Dockerfile','Makefile','CMakeLists.txt'}))
+                    or path.is_symlink() or name.startswith('.')):
                 continue
             if not path.resolve().is_relative_to(root):
                 continue
