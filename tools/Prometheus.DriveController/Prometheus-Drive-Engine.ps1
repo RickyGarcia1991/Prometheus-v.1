@@ -1,124 +1,74 @@
-param([string]$Drive="D:",[string]$Action="status")
-$ErrorActionPreference="SilentlyContinue"
-$root=$Drive.TrimEnd("\\")+"\\"
-$stateDir=Join-Path $env:LOCALAPPDATA "RemovableMediaWorkStatus"
-$driveKey=$Drive.Substring(0,1).ToUpper()
-$stateFile=Join-Path $stateDir ("state-"+$driveKey+".json")
-$logFile=Join-Path $stateDir ("activity-"+$driveKey+".log")
-New-Item -ItemType Directory -Force $stateDir|Out-Null
-function Save($phase,$message,$activity,$checks=@(),$errors=@()){
- $o=[ordered]@{phase=$phase;message=$message;activity=$activity;checks=@($checks);errors=@($errors);updated=(Get-Date).ToString("o")}
- $o|ConvertTo-Json -Depth 5|Set-Content -Encoding UTF8 $stateFile
- Add-Content $logFile ((Get-Date -Format s)+" ["+$phase+"] "+$activity)
- $o|ConvertTo-Json -Depth 5
+param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[ValidateSet('status','start','stop')][string]$Action='status')
+$ErrorActionPreference='Stop'
+. (Join-Path $PSScriptRoot 'Prometheus-Controller-Common.ps1')
+$local=Join-Path $env:LOCALAPPDATA 'Prometheus'
+$stateDir=Join-Path $env:LOCALAPPDATA 'RemovableMediaWorkStatus'
+$checks=@()
+function Save($phase,$message,$activity,$errors=@()) {
+ $state=[ordered]@{phase=$phase;message=$message;activity=$activity;checks=@($script:checks);errors=@($errors);updated=(Get-Date).ToString('o')}
+ New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+ $json=$state | ConvertTo-Json -Depth 5
+ $json | Set-Content -LiteralPath (Join-Path $stateDir ('state-'+$Drive[0]+'.json')) -Encoding UTF8
+ $json
 }
-function DriveProcesses {
- $letter=$Drive.Substring(0,1)+":\"
- @(Get-CimInstance Win32_Process|Where-Object {$_.ExecutablePath -like ($letter+"*") -or ($_.CommandLine -and $_.ProcessId -ne $PID -and $_.CommandLine -match ([regex]::Escape($letter)))})
-}
-function ExactBlockers {
- $letter=$Drive.Substring(0,1);$logical=Get-CimInstance Win32_LogicalDisk -Filter ("DeviceID='"+$letter+":'");if(!$logical){return @()}
- $assoc=Get-CimInstance Win32_LogicalDiskToPartition|Where-Object {$_.Dependent.DeviceID -eq ($letter+":")}|Select-Object -First 1;$tokens=@($logical.VolumeName)
- if($assoc){$m=[regex]::Match($assoc.Antecedent.DeviceID,"Disk #(\d+)");if($m.Success){$disk=Get-CimInstance Win32_DiskDrive -Filter ("Index="+$m.Groups[1].Value);$tokens+=@($disk.Model,$disk.PNPDeviceID,$disk.SerialNumber)}}
- $tokens=@($tokens|Where-Object {$_});$events=Get-WinEvent -FilterHashtable @{LogName="System";ProviderName="Microsoft-Windows-Kernel-PnP";Id=225;StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue
- @($events|Where-Object {$msg=$_.Message;@($tokens|Where-Object {$msg -like ("*"+$_+"*")}).Count -gt 0})
-}
-function ExactRemovalVetoes {
- $events=Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Kernel-PnP/Device Management";Id=1000;StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue
- @($events|Where-Object {$_.Message -match "could not be query removed" -and $_.Message -match "VID_0BC2&PID_2001|NZ0P54EM|STORAGE\\Volume"})
-}
-function UaspWarnings {
- $events=Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Kernel-PnP/Driver Watchdog";StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue
- @($events|Where-Object {$_.Id -eq 900 -and $_.Message -match "VID_0BC2&PID_2001|NZ0P54EM" -and $_.Message -match "UASPStor"})
-}
-function EjectLock {Join-Path (Join-Path $env:LOCALAPPDATA "Prometheus") "eject-mode.json"}
-function Status {
- if(!(Test-Path $root)){return Save "green" "Windows has released the Prometheus volume." "RELEASED / SAFE TO DISCONNECT." @("Volume no longer mounted")}
- $auditFile=Join-Path $root "Prometheus-Resources\Knowledge\Kiwix\metadata\live-status.json"
- if(Test-Path $auditFile){
-  try{
-   $audit=Get-Content $auditFile -Raw|ConvertFrom-Json
-   $fresh=((Get-Date)-(Get-Item $auditFile).LastWriteTime).TotalSeconds -lt 30
-   $worker=@(Get-CimInstance Win32_Process|Where-Object {$_.Name -match "^python" -and $_.CommandLine -match "verify_archives_live\.py"})
-   if($fresh -and $audit.phase -eq "verifying" -and $worker.Count){
-    return Save "yellow" "Archive checksum verification is active." ("VERIFYING: "+$audit.percent+"% of archive bytes. Do not eject.") @("Live audit worker and fresh progress report detected")
-   }
-  }catch{}
+try {
+ $root=Get-PrometheusRoot $Drive
+ New-Item -ItemType Directory -Force -Path $local | Out-Null
+ $targets=@(Get-DriveProcesses $Drive)
+ if($Action -eq 'start'){
+  $lock=Join-Path $local 'eject-mode.json'
+  if(Test-Path -LiteralPath $lock){throw 'Eject preparation is active. Wait for it to finish before starting.'}
+  $launcher=Join-Path $root 'START-PROMETHEUS-SSD.cmd'
+  if(!(Test-Path -LiteralPath $launcher)){throw 'Portable launcher is missing'}
+  if(!@($targets | Where-Object {Test-PrometheusChat $_}).Count){
+   # This is the user's interactive chat window, so it must be visible and exit
+   # with the chat; /k would leave a shell holding the drive after shutdown.
+   $command='"title Prometheus Chat '+$Drive+' & call "'+$launcher+'" chat"'
+   Start-Process cmd.exe -ArgumentList @('/d','/s','/c',$command) -WorkingDirectory $env:SystemRoot -WindowStyle Normal | Out-Null
+  }
+  $deadline=(Get-Date).AddSeconds(20)
+  do {
+   $chat=@(Get-DriveProcesses $Drive | Where-Object {Test-PrometheusChat $_})
+   if($chat.Count){Save 'yellow' 'Prometheus started; model readiness is still being checked.' 'Chat process detected.';exit 0}
+   Start-Sleep -Milliseconds 500
+  }while((Get-Date) -lt $deadline)
+  throw 'No Prometheus chat process appeared before the startup deadline'
  }
- $p=@(DriveProcesses);if($p.Count){$owned=@($p|Where-Object {$_.Name -match "^(ollama|llama-server)(\.exe)?$" -or ($_.Name -ieq "cmd.exe" -and $_.CommandLine -match "START-PROMETHEUS-SSD\.cmd") -or ($_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant")});$unknown=@($p|Where-Object {$owned.ProcessId -notcontains $_.ProcessId});if($unknown.Count){return Save "red" "An unexpected process is using the Prometheus drive." ("BLOCKED: "+(($unknown|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @() @("Unexpected drive-backed process remains")};return Save "yellow" "Prometheus is running." ("LIVE: "+(($owned|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")+". Do not eject.") @("Only recognized Prometheus processes reference the drive")}
- # ExactBlockers is already filtered to this physical SSD. Do not discard a veto
- # merely because the blocking process itself runs from the internal drive.
- $e=ExactBlockers;$live=@($e)
- if($live.Count){$last=$live|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows reports an exact-device eject blocker." ("BLOCKED: "+(($last.Message -split "[\r\n]")[0])) @() @("Fresh Windows Kernel-PnP Event 225")}
- $v=@(ExactRemovalVetoes);if($v.Count){$last=$v|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows storage stack vetoed device removal." ("BLOCKED: query-remove veto at "+$last.TimeCreated.ToString("HH:mm:ss")+".") @("No Prometheus drive process remains") @("Fresh Kernel-PnP Device Management Event 1000")}
- $u=@(UaspWarnings);if($u.Count){$last=$u|Sort-Object TimeCreated -Descending|Select-Object -First 1;return Save "red" "Windows UASP storage stack is still settling." ("BLOCKED: UASPStor watchdog warning at "+$last.TimeCreated.ToString("HH:mm:ss")+".") @("No Prometheus drive process remains") @("Fresh UASPStor watchdog warning")}
- Save "green" "Prometheus is stopped and the drive is idle." "READY TO TRY WINDOWS SAFELY REMOVE/EJECT." @("No drive-backed process or command reference","No live exact-device Event 225 blocker","No fresh query-remove veto","No fresh UASPStor watchdog warning")
-}
-if($Action -eq "start"){
- $lock=EjectLock
- if(Test-Path $lock){Remove-Item $lock -Force -ErrorAction SilentlyContinue}
- $launcher=Join-Path $root "START-PROMETHEUS-SSD.cmd"
- if(!(Test-Path $launcher)){Save "red" "Prometheus launcher is missing." "Cannot start." @() @("Missing launcher");exit 1}
- $existing=@(DriveProcesses|Where-Object {$_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant"})
- if($existing.Count){Save "yellow" "Prometheus is already running." ("LIVE: existing chat runtime PID "+$existing[0].ProcessId+". No duplicate was launched.") @("Existing chat runtime detected","Duplicate start suppressed");exit 0}
- Save "yellow" "Starting Prometheus..." "Launching SSD runtime and model. Do not eject." @("Launcher found")|Out-Null
- Start-Process "cmd.exe" -ArgumentList "/d","/s","/c",("`""+$launcher+"`" chat") -WindowStyle Hidden
- Start-Sleep 2
- $active=@(DriveProcesses)
- if($active.Count){Save "yellow" "Prometheus is starting / active." ("LIVE: "+(($active|ForEach-Object {$_.Name}) -join ", ")+". Do not eject.") @("Prometheus process tree detected")}else{Save "red" "Prometheus did not remain running." "Launcher returned but no Prometheus drive process was detected." @() @("Startup process missing")}
+ if($Action -eq 'stop'){
+  $request=Join-Path $local 'active-chat.shutdown'
+  Set-Content -LiteralPath $request -Value (Get-Date).ToString('o') -Encoding ASCII
+  $checks += 'Request graceful chat shutdown'
+  $deadline=(Get-Date).AddSeconds(130)
+  do {
+   $chat=@(Get-DriveProcesses $Drive | Where-Object {Test-PrometheusChat $_})
+   if(!$chat.Count){break}
+   Start-Sleep -Milliseconds 250
+  }while((Get-Date) -lt $deadline)
+  if($chat.Count){throw 'Chat is still finishing a request. No chat process was forcibly terminated.'}
+  $checks += 'Confirm zero active chat clients'
+  Test-PortableMemory $root
+  $checks += 'Verify SQLite integrity'
+  $models=@(Get-DriveProcesses $Drive | Where-Object {Test-PrometheusModel $_ $Drive})
+  # Only the known inference runtime, after chat exit and database verification.
+  foreach($p in $models){if(Test-ProcessIdentity $p){Stop-Process -Id $p.ProcessId -ErrorAction Stop}}
+  $deadline=(Get-Date).AddSeconds(10)
+  do {
+   $remaining=@(Get-DriveProcesses $Drive | Where-Object {(Test-PrometheusModel $_ $Drive) -or (Test-PrometheusChat $_)})
+   if(!$remaining.Count){break}
+   Start-Sleep -Milliseconds 250
+  }while((Get-Date) -lt $deadline)
+  if($remaining.Count){throw 'Prometheus runtime has not released the drive'}
+  $checks += 'Stop Ollama and model workers'
+  $checks += 'Confirm no Prometheus process references SSD'
+  Remove-Item -LiteralPath $request -ErrorAction SilentlyContinue
+  $others=@(Get-DriveProcesses $Drive)
+  Save 'green' 'Prometheus stopped; Windows has not released the drive.' ('Other drive references: '+(($others|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))
+  exit 0
+ }
+ if($targets.Count){Save 'yellow' 'Drive-related programs are active.' (($targets|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', ')}
+ else{Save 'green' 'No drive-backed program was detected. Windows removal is not yet confirmed.' 'Use Safely Eject to request removal.'}
  exit 0
+}catch{
+ Save 'red' 'Controller check could not complete.' $_.Exception.Message @($_.Exception.Message)
+ exit 2
 }
-if($Action -eq "stop"){
- $lock=EjectLock
- New-Item -ItemType Directory -Force (Split-Path $lock)|Out-Null
- @{active=$true;drive=$Drive;started=(Get-Date).ToString("o");phase="stopping"}|ConvertTo-Json|Set-Content -Encoding UTF8 $lock
- $initialTargets=@(DriveProcesses)
- if(!$initialTargets.Count){Status;exit 0}
- Save "yellow" "Stopping Prometheus..." "Requesting graceful chat shutdown before releasing model processes." @("Graceful shutdown requested")|Out-Null
- $shutdownDir=Join-Path $env:LOCALAPPDATA "Prometheus"
- $shutdownRequest=Join-Path $shutdownDir "active-chat.shutdown"
- New-Item -ItemType Directory -Force $shutdownDir|Out-Null
- Set-Content -Encoding ASCII $shutdownRequest (Get-Date).ToString("o")
- $deadline=(Get-Date).AddSeconds(20)
- do{
-  $targets=@(DriveProcesses)
-  $chat=@($targets|Where-Object {$_.Name -match "^python" -and $_.CommandLine -match "prometheus\.py|prometheus_assistant"})
-  if(!$chat.Count){break}
-  Start-Sleep -Milliseconds 250
- }while((Get-Date) -lt $deadline)
- if($chat.Count){
-  Save "red" "Prometheus chat did not close cleanly." ("BLOCKED: "+(($chat|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @("20-second graceful shutdown window expired") @("No forced chat termination was performed")
-  exit 2
- }
- Save "yellow" "Chat closed cleanly." "Verifying Prometheus databases before model shutdown." @("Zero active Prometheus chat clients")|Out-Null
- $localPrometheus=Join-Path $env:LOCALAPPDATA "Prometheus"
- $dbs=@(
-  (Join-Path $localPrometheus "memory.sqlite3"),
-  (Join-Path $localPrometheus "resources\lookup-cache.sqlite3")
- )|Where-Object {Test-Path $_}
- if($dbs.Count -lt 1){Save "red" "No active Prometheus database was found for verification." "DO NOT EJECT." @("Chat closed") @("Expected local Prometheus database missing");exit 3}
- $python=Join-Path $root "Prometheus-Resources\Python\python.exe"
- foreach($db in $dbs){
-  if(!(Test-Path $python)){Save "red" "Database verification could not run." "DO NOT EJECT." @("Chat closed") @("Portable Python runtime missing");exit 3}
-  $verifyCode="import sqlite3,sys; c=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True); r=c.execute('PRAGMA integrity_check').fetchone()[0]; c.close(); raise SystemExit(0 if r=='ok' else 1)"
-  & $python -c $verifyCode $db
-  if($LASTEXITCODE -ne 0){Save "red" "Prometheus database verification failed." "DO NOT EJECT." @("Chat closed") @("SQLite integrity check failed: "+$db);exit 3}
- }
- Save "yellow" "Database verification passed." "Closing SSD-backed model server after verified chat shutdown." @("Zero active chat clients","SQLite integrity checks passed")|Out-Null
- Start-Sleep 1
- $targets=@(DriveProcesses)
- $owned=@($targets|Where-Object {
-   $_.Name -match "^(ollama|llama-server)(\.exe)?$" -or
-   ($_.Name -ieq "cmd.exe" -and $_.CommandLine -match "START-PROMETHEUS-SSD\.cmd")
- })
- $unexpected=@($targets|Where-Object {$owned.ProcessId -notcontains $_.ProcessId})
- if($unexpected.Count){Save "red" "Unexpected SSD-backed process remains." ("BLOCKED: "+(($unexpected|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @("Chat closed","Database integrity verified") @("Refusing broad force termination");exit 2}
- foreach($proc in $owned){Stop-Process -Id $proc.ProcessId -ErrorAction SilentlyContinue}
- Start-Sleep 2
- $remaining=@(DriveProcesses)
- if($remaining.Count){Save "red" "Prometheus shutdown is incomplete." ("BLOCKED: "+(($remaining|ForEach-Object {$_.Name+" PID "+$_.ProcessId}) -join ", ")) @("Chat closed","Database integrity verified") @("SSD-backed process survived shutdown");exit 2}
- Remove-Item $shutdownRequest -Force -ErrorAction SilentlyContinue
- Status
- exit 0
-}
-Status

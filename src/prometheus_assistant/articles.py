@@ -37,12 +37,46 @@ def _bindings():
     except ImportError as error:
         raise ArticleError("Offline ZIM reader is missing. Install the pinned offline-reader dependency into this Python runtime.") from error
 
-def _selected(root, project):
+def _selected(root, project, query=""):
     if not root or not Path(root).is_dir():
         raise ArticleError("Set PROMETHEUS_RESOURCE_ROOT to the connected resource directory.")
-    choices = [a for a in ARCHIVES if project in {"all", a.project, a.id}]
-    if not choices: raise ArticleError("Unknown archive. Choose wikipedia, wiktionary, or wikisource.")
-    return [(a, archive_root(root) / a.project / a.filename) for a in choices]
+    choices = [a for a in ARCHIVES if project in {"auto", "all", a.project, a.id}]
+    if not choices: raise ArticleError("Unknown archive. Use the resources command to list collection IDs.")
+    base = archive_root(root).resolve()
+    selected=[]
+    for item in choices:
+        path=base/item.project/item.filename
+        if not path.resolve().is_relative_to(base): raise ArticleError("Archive path escapes the library.")
+        if any(p.is_symlink() or getattr(p,'is_junction',lambda:False)() for p in (path,path.parent)):
+            raise ArticleError("Archive links and junctions are not accepted.")
+        selected.append((item,path))
+    if project=="auto":
+        words=set(re.findall(r'\w+',query.casefold()))
+        # Ordinary questions seldom name a catalog subject. Expand only known
+        # topic words; this affects archive selection, not the user's query.
+        topic_terms={
+            'math':{'quadratic','equation','equations','fraction','fractions','polynomial','polynomials','derivative','derivatives','integral','integrals','trigonometry','theorem','proof','matrices'},
+            'algebra':{'quadratic','polynomial','polynomials','linear','equation','equations'},
+            'statistics':{'probability','regression','variance','deviation','hypothesis'},
+            'physics':{'velocity','acceleration','momentum','gravity','quantum','electromagnetic'},
+            'chemistry':{'molecule','molecules','reaction','periodic','stoichiometry'},
+            'biology':{'photosynthesis','genetics','organism','organisms','evolution'},
+            'medicine':{'diabetes','anatomy','symptom','symptoms','disease'},
+            'history':{'historical','civilization','medieval','renaissance'},
+        }
+        words.update(subject for subject,terms in topic_terms.items() if words & terms)
+        def score(pair):
+            item,_=pair
+            tags=set(item.subjects)
+            if item.project=='wiktionary':tags.update(('word','meaning','dictionary','definition','etymology','translate'))
+            if item.project=='wikisource':tags.update(('historical','history','poem','literature','manuscript'))
+            return len(words & tags)
+        installed=[pair for pair in selected if pair[1].is_file()]
+        relevant=sorted((pair for pair in installed if score(pair)),key=lambda p:-score(p))
+        broad_order={'wikipedia':0,'wikibooks':1,'wiktionary':2,'wikisource':3}
+        fallback=sorted(installed,key=lambda p:(broad_order.get(p[0].project,4),p[0].id))
+        selected=(relevant+[pair for pair in fallback if pair not in relevant])[:4]
+    return selected
 
 def _entry(archive, item, path, chars, query=""):
     entry = archive.get_entry_by_path(path)
@@ -69,17 +103,18 @@ def _entry(archive, item, path, chars, query=""):
             "archive_sha256": item.sha256, "path": path, "title": entry.title,
             "text": excerpt, "truncated": offset > 0 or len(text) > chars,
             "citation": f"zim://{item.id}/{quote(path, safe='/')}@{item.version}",
-            "source_url": f"https://en.{item.project}.org/wiki/{quote(title_path, safe='/')}",
+            "source_url": item.reference_url or f"https://en.{item.project}.org/wiki/{quote(title_path, safe='/')}",
+            "source_url_scope": "collection" if item.reference_url else "article",
             "license_note": item.license_note}
 
-def search_articles(root, query, project="all", limit=5):
+def search_articles(root, query, project="auto", limit=5):
     query = query.strip()
     if not query or len(query) > MAX_QUERY_CHARS:
         raise ArticleError("Article queries must contain 1–256 characters.")
     if not 1 <= limit <= 10: raise ArticleError("Result limit must be between 1 and 10.")
     Archive, Query, Searcher = _bindings()
     groups = []; warnings = []; searched = []
-    for item, path in _selected(root, project):
+    for item, path in _selected(root, project, query):
         if not path.is_file():
             warnings.append({"archive": item.project, "error": "Archive is not installed."}); continue
         try:
@@ -99,7 +134,7 @@ def search_articles(root, query, project="all", limit=5):
                 except (RuntimeError, KeyError, ArticleError) as error:
                     warnings.append({"archive": item.project, "error": str(error)})
                 if len(rows) >= min(limit, 5): break
-            groups.append(rows); searched.append(item.project)
+            groups.append(rows); searched.append(item.id)
         except (RuntimeError, OSError, ValueError) as error:
             warnings.append({"archive": item.project, "error": str(error)})
     results = []
@@ -108,6 +143,7 @@ def search_articles(root, query, project="all", limit=5):
             if index < len(group): results.append(group[index])
     if not searched: raise ArticleError("No archive could be searched: " + "; ".join(w["error"] for w in warnings))
     return {"query": query, "offline": True, "archives_searched": searched,
+            "selection": project, "search_is_exhaustive": project=="all",
             "results": results[:limit], "warnings": warnings}
 
 def read_article(root, project, path, max_chars=12000):

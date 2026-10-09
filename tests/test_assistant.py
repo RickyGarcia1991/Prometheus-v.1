@@ -93,7 +93,9 @@ def ollama_stub():
 
 def run_cli(db, *args, stub=None, extra_env=None, input_text=None):
     command = [sys.executable, "-X", "utf8", str(ROOT / "prometheus.py"),
-               "--memory", str(db), "--no-agent"]
+               "--memory", str(db), "--no-agent", "--model", "llama3.2:1b"]
+    # Protocol fixtures do not load weights; their behavior must not depend on
+    # the test host's free memory. Auto-selection is covered separately.
     if stub is not None:
         command.extend(["--base-url", stub["url"]])
     command.extend(args)
@@ -132,7 +134,7 @@ def test_ask_returns_a_local_answer(tmp_path, ollama_stub):
 def test_agent_mode_is_default_and_plain_chat_is_explicit_opt_out(tmp_path, ollama_stub):
     default = subprocess.run(
         [sys.executable, "-X", "utf8", str(ROOT / "prometheus.py"), "--memory",
-         str(tmp_path / "agent.sqlite3"), "--base-url", ollama_stub["url"], "chat"],
+         str(tmp_path / "agent.sqlite3"), "--base-url", ollama_stub["url"], "--model", "llama3.2:1b", "chat"],
         text=True, encoding="utf-8", input="/exit\n", capture_output=True, timeout=15, cwd=ROOT)
     assert default.returncode == 0
     assert "Core: agent + safe local tools" in default.stdout

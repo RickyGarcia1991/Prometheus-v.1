@@ -1,0 +1,16 @@
+{
+  "jurisdiction": "US-federal-civil",
+  "court": "",
+  "trigger_date": "",
+  "days": null,
+  "direction": "after",
+  "period_source": "",
+  "period_rule": "",
+  "service_rule": "",
+  "state_holidays": [],
+  "additional_federal_holidays": [],
+  "court_closures": [],
+  "court_time_zone": "",
+  "filing_method": "",
+  "verified_checks": []
+}

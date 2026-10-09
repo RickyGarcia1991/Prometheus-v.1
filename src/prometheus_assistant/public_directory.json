@@ -1,0 +1,1496 @@
+[
+  {
+    "id": "us-courts",
+    "title": "U.S. Courts rules, forms and court directory",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "courts",
+      "forms"
+    ],
+    "base_url": "https://www.uscourts.gov/forms-rules",
+    "authority": 90,
+    "access": "directory",
+    "notes": "National rules do not replace local rules or case orders.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "us-code",
+    "title": "United States Code",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://uscode.house.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Check currency and pending classification of amendments.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "govinfo",
+    "title": "GovInfo official government publications",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "government",
+      "congress",
+      "history"
+    ],
+    "base_url": "https://www.govinfo.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Authenticated publications; API keys required for some services.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "congress",
+    "title": "Congress.gov",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "legislation",
+      "government"
+    ],
+    "base_url": "https://www.congress.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Bills and legislative history; a bill is not necessarily law.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ecfr",
+    "title": "Electronic Code of Federal Regulations",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "regulations",
+      "government"
+    ],
+    "base_url": "https://www.ecfr.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Search connector installed; compare historical effective dates and official editions.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "federal-register",
+    "title": "Federal Register",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "regulations",
+      "government"
+    ],
+    "base_url": "https://www.federalregister.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Search connector installed; distinguish proposals from final rules.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "supreme-court",
+    "title": "Supreme Court of the United States",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "courts",
+      "judges",
+      "opinions"
+    ],
+    "base_url": "https://www.supremecourt.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Opinions, docket information and rules; separate filing requirements.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "fjc",
+    "title": "Federal Judicial Center",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "judges",
+      "courts",
+      "research"
+    ],
+    "base_url": "https://www.fjc.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Judicial education and historical federal judge biographies.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "pacer",
+    "title": "PACER federal court records",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "courts",
+      "dockets"
+    ],
+    "base_url": "https://pacer.uscourts.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Account and possible fees; no account creation or paid access enabled.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "courtlistener",
+    "title": "CourtListener / Free Law Project",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://www.courtlistener.com/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Independent nonprofit archive; API terms and authentication apply. Verify controlling authority.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ncsc",
+    "title": "National Center for State Courts",
+    "jurisdiction": "US states",
+    "subjects": [
+      "law",
+      "courts",
+      "judges"
+    ],
+    "base_url": "https://www.ncsc.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "State court information and directories; verify on the particular court website.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "lsc",
+    "title": "Legal Services Corporation legal-aid finder",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "lawyers",
+      "legal-aid"
+    ],
+    "base_url": "https://www.lsc.gov/about-lsc/what-legal-aid/i-need-legal-help",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Eligibility and local program availability vary.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "aba-help",
+    "title": "American Bar Association legal help",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "lawyers",
+      "legal-aid"
+    ],
+    "base_url": "https://www.americanbar.org/groups/legal_services/flh-home/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Lawyer referral and legal-help information; verify license with state bar regulator.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "usa-legal-aid",
+    "title": "USA.gov legal aid",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "lawyers",
+      "legal-aid"
+    ],
+    "base_url": "https://www.usa.gov/legal-aid",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Public guide to legal assistance and low-cost representation.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "eeoc",
+    "title": "Equal Employment Opportunity Commission",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "employment",
+      "civil-rights"
+    ],
+    "base_url": "https://www.eeoc.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Employment discrimination procedures; deadlines depend on charge type and jurisdiction.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "dol",
+    "title": "U.S. Department of Labor",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "employment",
+      "jobs",
+      "wages"
+    ],
+    "base_url": "https://www.dol.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Federal wage, safety and workplace programs; state rules may also apply.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "nlrb",
+    "title": "National Labor Relations Board",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "employment",
+      "labor"
+    ],
+    "base_url": "https://www.nlrb.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Labor rights, agency procedures and decisions.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "usajobs",
+    "title": "USAJOBS",
+    "jurisdiction": "US",
+    "subjects": [
+      "jobs",
+      "employment",
+      "government"
+    ],
+    "base_url": "https://www.usajobs.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Federal jobs; API credentials may be required. No applications submitted.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "career-onestop",
+    "title": "CareerOneStop",
+    "jurisdiction": "US",
+    "subjects": [
+      "jobs",
+      "employment",
+      "education"
+    ],
+    "base_url": "https://www.careeronestop.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "U.S. Department of Labor sponsored career and training resources.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "onet",
+    "title": "O*NET Resource Center",
+    "jurisdiction": "US",
+    "subjects": [
+      "jobs",
+      "employment",
+      "skills"
+    ],
+    "base_url": "https://www.onetcenter.org/database.html",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Occupational data; preserve database edition and license.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "bls",
+    "title": "Bureau of Labor Statistics",
+    "jurisdiction": "US",
+    "subjects": [
+      "jobs",
+      "employment",
+      "economics",
+      "statistics"
+    ],
+    "base_url": "https://www.bls.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Labor statistics with release dates and methodology.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "cfpb",
+    "title": "Consumer Financial Protection Bureau",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "consumer",
+      "finance"
+    ],
+    "base_url": "https://www.consumerfinance.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Consumer finance rules, research and complaint information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ftc",
+    "title": "Federal Trade Commission",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "consumer",
+      "fraud"
+    ],
+    "base_url": "https://www.ftc.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Consumer and competition enforcement information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "irs",
+    "title": "Internal Revenue Service",
+    "jurisdiction": "US",
+    "subjects": [
+      "law",
+      "tax",
+      "government"
+    ],
+    "base_url": "https://www.irs.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Tax year, filing status and current forms matter.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "uk-legislation",
+    "title": "UK legislation",
+    "jurisdiction": "United Kingdom",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.legislation.gov.uk/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Check territorial extent, commencement and outstanding changes.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "uk-judgments",
+    "title": "The National Archives Find Case Law",
+    "jurisdiction": "United Kingdom",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://caselaw.nationalarchives.gov.uk/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official selected judgments; reuse and computational access terms apply.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "uk-courts",
+    "title": "Courts and Tribunals Judiciary",
+    "jurisdiction": "United Kingdom",
+    "subjects": [
+      "law",
+      "courts",
+      "judges"
+    ],
+    "base_url": "https://www.judiciary.uk/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Jurisdiction-specific court information and practice directions.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "canada-laws",
+    "title": "Justice Laws Website",
+    "jurisdiction": "Canada",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://laws-lois.justice.gc.ca/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Federal legislation; check currency and province-specific law separately.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "canada-court",
+    "title": "Supreme Court of Canada",
+    "jurisdiction": "Canada",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://www.scc-csc.ca/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Court judgments, case information and procedures.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "canlii",
+    "title": "Canadian Legal Information Institute",
+    "jurisdiction": "Canada",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://www.canlii.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Independent legal archive; automated reuse subject to terms.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "canada-open-data",
+    "title": "Government of Canada Open Data",
+    "jurisdiction": "Canada",
+    "subjects": [
+      "government",
+      "science",
+      "economics"
+    ],
+    "base_url": "https://open.canada.ca/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Dataset search connector installed; per-dataset license controls reuse.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "eurlex",
+    "title": "EUR-Lex",
+    "jurisdiction": "European Union",
+    "subjects": [
+      "law",
+      "statutes",
+      "treaties",
+      "government"
+    ],
+    "base_url": "https://eur-lex.europa.eu/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "EU law, official journal and consolidated versions; check language and legal status.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "curia",
+    "title": "Court of Justice of the European Union",
+    "jurisdiction": "European Union",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://curia.europa.eu/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "EU court case law and procedures.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "echr",
+    "title": "European Court of Human Rights HUDOC",
+    "jurisdiction": "Council of Europe",
+    "subjects": [
+      "law",
+      "courts",
+      "human-rights"
+    ],
+    "base_url": "https://hudoc.echr.coe.int/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Case law and decisions; admissibility requirements are case specific.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "au-legislation",
+    "title": "Federal Register of Legislation",
+    "jurisdiction": "Australia",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.legislation.gov.au/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Australian federal law; state and territory sources are separate.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "au-courts",
+    "title": "Federal Court of Australia",
+    "jurisdiction": "Australia",
+    "subjects": [
+      "law",
+      "courts",
+      "judges"
+    ],
+    "base_url": "https://www.fedcourt.gov.au/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Court rules, forms, practice notes and judgments.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "nz-legislation",
+    "title": "New Zealand Legislation",
+    "jurisdiction": "New Zealand",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.legislation.govt.nz/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official legislation and versions; check commencement.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "india-code",
+    "title": "India Code",
+    "jurisdiction": "India",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.indiacode.nic.in/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Central and state legislative resources; verify jurisdiction and amendments.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "india-court",
+    "title": "Supreme Court of India",
+    "jurisdiction": "India",
+    "subjects": [
+      "law",
+      "courts",
+      "opinions"
+    ],
+    "base_url": "https://www.sci.gov.in/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Judgments, orders and court procedures.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "sa-justice",
+    "title": "South Africa Department of Justice",
+    "jurisdiction": "South Africa",
+    "subjects": [
+      "law",
+      "courts",
+      "government"
+    ],
+    "base_url": "https://www.justice.gov.za/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Legislation and justice-system information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "br-legislation",
+    "title": "Brazil federal legislation",
+    "jurisdiction": "Brazil",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.planalto.gov.br/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official presidency legislation portal; Portuguese authoritative text.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "mx-legislation",
+    "title": "Mexico Chamber of Deputies laws",
+    "jurisdiction": "Mexico",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.diputados.gob.mx/LeyesBiblio/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Federal legislation; states have separate codes and procedures.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "fr-legislation",
+    "title": "Legifrance",
+    "jurisdiction": "France",
+    "subjects": [
+      "law",
+      "statutes",
+      "courts"
+    ],
+    "base_url": "https://www.legifrance.gouv.fr/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official French legal publication and case law.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "de-legislation",
+    "title": "Gesetze im Internet",
+    "jurisdiction": "Germany",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.gesetze-im-internet.de/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Federal legislation; check authoritative German text and state law.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "es-legislation",
+    "title": "Boletin Oficial del Estado",
+    "jurisdiction": "Spain",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://www.boe.es/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official gazette and consolidated legal texts.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "jp-legislation",
+    "title": "e-Gov law search",
+    "jurisdiction": "Japan",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://elaws.e-gov.go.jp/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Japanese legislation; translations may not be authoritative.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "sg-legislation",
+    "title": "Singapore Statutes Online",
+    "jurisdiction": "Singapore",
+    "subjects": [
+      "law",
+      "statutes",
+      "government"
+    ],
+    "base_url": "https://sso.agc.gov.sg/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Official legislation with versions and commencement details.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "worldlii",
+    "title": "World Legal Information Institute",
+    "jurisdiction": "International",
+    "subjects": [
+      "law",
+      "courts",
+      "legal-directories"
+    ],
+    "base_url": "https://www.worldlii.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Independent directory/aggregator; coverage varies and linked court sources control.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "un-treaties",
+    "title": "United Nations Treaty Collection",
+    "jurisdiction": "International",
+    "subjects": [
+      "law",
+      "treaties",
+      "diplomacy"
+    ],
+    "base_url": "https://treaties.un.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Check treaty status, reservations, parties and entry into force.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "icj",
+    "title": "International Court of Justice",
+    "jurisdiction": "International",
+    "subjects": [
+      "law",
+      "courts",
+      "treaties"
+    ],
+    "base_url": "https://www.icj-cij.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "International state-dispute cases; not a general small-claims court.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ohchr",
+    "title": "UN Office of the High Commissioner for Human Rights",
+    "jurisdiction": "International",
+    "subjects": [
+      "law",
+      "human-rights",
+      "treaties"
+    ],
+    "base_url": "https://www.ohchr.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Treaty bodies, rights instruments and country information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ilo",
+    "title": "International Labour Organization",
+    "jurisdiction": "International",
+    "subjects": [
+      "law",
+      "employment",
+      "jobs",
+      "statistics"
+    ],
+    "base_url": "https://www.ilo.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Labor standards and statistics; check ratification and national implementation.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "who",
+    "title": "World Health Organization",
+    "jurisdiction": "International",
+    "subjects": [
+      "medicine",
+      "public-health",
+      "science"
+    ],
+    "base_url": "https://www.who.int/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Guidelines and public-health information; record publication and update dates.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "cdc",
+    "title": "Centers for Disease Control and Prevention",
+    "jurisdiction": "US",
+    "subjects": [
+      "medicine",
+      "public-health",
+      "science"
+    ],
+    "base_url": "https://www.cdc.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Public-health guidance and surveillance; verify revision dates.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "fda",
+    "title": "Food and Drug Administration",
+    "jurisdiction": "US",
+    "subjects": [
+      "medicine",
+      "drugs",
+      "devices",
+      "food"
+    ],
+    "base_url": "https://www.fda.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Drug/device safety, labeling and regulatory information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "europe-pmc",
+    "title": "Europe PMC",
+    "jurisdiction": "International",
+    "subjects": [
+      "medicine",
+      "biology",
+      "research"
+    ],
+    "base_url": "https://europepmc.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Search connector installed; article license, study quality and retraction status vary.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "clinicaltrials",
+    "title": "ClinicalTrials.gov",
+    "jurisdiction": "International",
+    "subjects": [
+      "medicine",
+      "clinical-research"
+    ],
+    "base_url": "https://clinicaltrials.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Search connector installed; a study registration does not establish effectiveness.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "nice",
+    "title": "National Institute for Health and Care Excellence",
+    "jurisdiction": "United Kingdom",
+    "subjects": [
+      "medicine",
+      "guidelines",
+      "public-health"
+    ],
+    "base_url": "https://www.nice.org.uk/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Clinical guidance; licensing and UK applicability require attention.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "cochrane",
+    "title": "Cochrane Library",
+    "jurisdiction": "International",
+    "subjects": [
+      "medicine",
+      "reviews",
+      "evidence"
+    ],
+    "base_url": "https://www.cochranelibrary.com/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Evidence reviews; abstracts and full-text access have different permissions.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "ema",
+    "title": "European Medicines Agency",
+    "jurisdiction": "European Union",
+    "subjects": [
+      "medicine",
+      "drugs",
+      "safety"
+    ],
+    "base_url": "https://www.ema.europa.eu/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Medicines assessment and safety information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "clinical-guidelines",
+    "title": "PubMed",
+    "jurisdiction": "International",
+    "subjects": [
+      "medicine",
+      "biology",
+      "research"
+    ],
+    "base_url": "https://pubmed.ncbi.nlm.nih.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Citation discovery; publication alone does not establish clinical reliability.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "usgs",
+    "title": "U.S. Geological Survey",
+    "jurisdiction": "US",
+    "subjects": [
+      "science",
+      "geology",
+      "water",
+      "earthquakes"
+    ],
+    "base_url": "https://www.usgs.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Earth science data, maps and research; record dataset dates.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "noaa",
+    "title": "National Oceanic and Atmospheric Administration",
+    "jurisdiction": "US",
+    "subjects": [
+      "science",
+      "climate",
+      "weather",
+      "oceans"
+    ],
+    "base_url": "https://www.noaa.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Environmental science and operational forecasts; timeliness matters.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "epa",
+    "title": "Environmental Protection Agency",
+    "jurisdiction": "US",
+    "subjects": [
+      "science",
+      "environment",
+      "law"
+    ],
+    "base_url": "https://www.epa.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Environmental data, science and regulatory information.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "doe-osti",
+    "title": "DOE Office of Scientific and Technical Information",
+    "jurisdiction": "US",
+    "subjects": [
+      "science",
+      "energy",
+      "research"
+    ],
+    "base_url": "https://www.osti.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Energy research records and eligible full-text reports.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "nsf",
+    "title": "National Science Foundation",
+    "jurisdiction": "US",
+    "subjects": [
+      "science",
+      "research",
+      "education",
+      "grants"
+    ],
+    "base_url": "https://www.nsf.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Research awards, statistics and funding opportunities.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "arxiv",
+    "title": "arXiv",
+    "jurisdiction": "International",
+    "subjects": [
+      "science",
+      "physics",
+      "math",
+      "computing"
+    ],
+    "base_url": "https://arxiv.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Preprints are not necessarily peer reviewed; per-paper licenses apply.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "zenodo",
+    "title": "Zenodo",
+    "jurisdiction": "International",
+    "subjects": [
+      "science",
+      "research",
+      "datasets"
+    ],
+    "base_url": "https://zenodo.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Repository records; assess provenance and item-specific licenses.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "datacite",
+    "title": "DataCite",
+    "jurisdiction": "International",
+    "subjects": [
+      "science",
+      "research",
+      "datasets",
+      "doi"
+    ],
+    "base_url": "https://datacite.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Research dataset metadata and identifiers; underlying data access varies.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "esa",
+    "title": "European Space Agency",
+    "jurisdiction": "International",
+    "subjects": [
+      "science",
+      "space",
+      "earth"
+    ],
+    "base_url": "https://www.esa.int/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Space science and Earth-observation resources; item rights vary.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "worldbank",
+    "title": "World Bank Open Data",
+    "jurisdiction": "International",
+    "subjects": [
+      "economics",
+      "government",
+      "statistics"
+    ],
+    "base_url": "https://data.worldbank.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Country indicators; methodology, lag and revisions matter.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "oecd",
+    "title": "OECD Data Explorer",
+    "jurisdiction": "International",
+    "subjects": [
+      "economics",
+      "government",
+      "statistics"
+    ],
+    "base_url": "https://data-explorer.oecd.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Comparative data and methods; dataset license and coverage vary.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "imf",
+    "title": "International Monetary Fund Data",
+    "jurisdiction": "International",
+    "subjects": [
+      "economics",
+      "finance",
+      "statistics"
+    ],
+    "base_url": "https://data.imf.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Economic statistics; record release and vintage.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "un-data",
+    "title": "United Nations Data",
+    "jurisdiction": "International",
+    "subjects": [
+      "government",
+      "statistics",
+      "population"
+    ],
+    "base_url": "https://data.un.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "International statistical collections with source methodology.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "unesco",
+    "title": "UNESCO",
+    "jurisdiction": "International",
+    "subjects": [
+      "education",
+      "culture",
+      "science",
+      "history"
+    ],
+    "base_url": "https://www.unesco.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Education, heritage and science resources; per-publication terms apply.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "fao",
+    "title": "Food and Agriculture Organization",
+    "jurisdiction": "International",
+    "subjects": [
+      "agriculture",
+      "food",
+      "science",
+      "statistics"
+    ],
+    "base_url": "https://www.fao.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Agriculture and food data; verify geography and data vintage.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "eurostat",
+    "title": "Eurostat",
+    "jurisdiction": "European Union",
+    "subjects": [
+      "government",
+      "economics",
+      "statistics"
+    ],
+    "base_url": "https://ec.europa.eu/eurostat/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "European statistics and methodological documentation.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "data-europa",
+    "title": "European data portal",
+    "jurisdiction": "European Union",
+    "subjects": [
+      "government",
+      "datasets",
+      "science"
+    ],
+    "base_url": "https://data.europa.eu/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Dataset discovery; underlying publishers control currency and license.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "uk-data",
+    "title": "UK open data",
+    "jurisdiction": "United Kingdom",
+    "subjects": [
+      "government",
+      "datasets",
+      "science"
+    ],
+    "base_url": "https://www.data.gov.uk/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Government dataset directory; access varies by publisher.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "au-data",
+    "title": "Australian open data",
+    "jurisdiction": "Australia",
+    "subjects": [
+      "government",
+      "datasets",
+      "science"
+    ],
+    "base_url": "https://data.gov.au/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Australian government dataset directory.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "india-data",
+    "title": "India Open Government Data",
+    "jurisdiction": "India",
+    "subjects": [
+      "government",
+      "datasets",
+      "statistics"
+    ],
+    "base_url": "https://www.data.gov.in/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "National data portal; some APIs require credentials.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "us-census",
+    "title": "U.S. Census Bureau",
+    "jurisdiction": "US",
+    "subjects": [
+      "government",
+      "population",
+      "economics",
+      "statistics"
+    ],
+    "base_url": "https://www.census.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Population and economic datasets; use current methodology and disclosure limits.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "archives",
+    "title": "U.S. National Archives",
+    "jurisdiction": "US",
+    "subjects": [
+      "government",
+      "history",
+      "records"
+    ],
+    "base_url": "https://www.archives.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Archival records and research guides; digitization coverage is incomplete.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "cisa",
+    "title": "Cybersecurity and Infrastructure Security Agency",
+    "jurisdiction": "US",
+    "subjects": [
+      "security",
+      "cybersecurity",
+      "government"
+    ],
+    "base_url": "https://www.cisa.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Defensive advisories and known exploited vulnerabilities.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "nist-security",
+    "title": "NIST Computer Security Resource Center",
+    "jurisdiction": "US",
+    "subjects": [
+      "security",
+      "cybersecurity",
+      "standards"
+    ],
+    "base_url": "https://csrc.nist.gov/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Security standards and publications; apply the relevant revision.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "owasp",
+    "title": "OWASP Foundation",
+    "jurisdiction": "International",
+    "subjects": [
+      "security",
+      "cybersecurity",
+      "coding"
+    ],
+    "base_url": "https://owasp.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Defensive application-security guidance and open projects.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  },
+  {
+    "id": "mitre-attack",
+    "title": "MITRE ATT&CK",
+    "jurisdiction": "International",
+    "subjects": [
+      "security",
+      "cybersecurity",
+      "defense"
+    ],
+    "base_url": "https://attack.mitre.org/",
+    "authority": 90,
+    "access": "directory",
+    "notes": "Threat behavior knowledge base for defensive analysis; not autonomous retaliation.",
+    "coverage": "Selected public entry point, not a complete archive.",
+    "catalog_entry_is_active_connector": false,
+    "authority_is_accuracy_percentage": false
+  }
+]

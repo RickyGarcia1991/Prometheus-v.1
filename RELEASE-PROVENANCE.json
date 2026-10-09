@@ -1,0 +1,20 @@
+{
+  "release": "Prometheus-v0.8.0-dev1-retest-20261009",
+  "created_utc": "2026-10-09T21:15:28.601470+00:00",
+  "base_release": "Prometheus-v0.8.0-dev1-milestones-20261009",
+  "core_tests_passed": 621,
+  "core_tests_skipped": 2,
+  "javascript_tests_passed": 13,
+  "changes": [
+    "Browser fetch binding repaired",
+    "Smart home mode and restricted Home Assistant bridge on standby",
+    "Host-bound hub credentials and private browser control key",
+    "Packaged UI regression tests"
+  ],
+  "limits": [
+    "No physical smart-home pairing or device test",
+    "Microphone/speaker and eject/reconnect need physical acceptance",
+    "Two Windows link-creation tests skipped for host privileges",
+    "No universal Alexa Drop In API integrated"
+  ]
+}

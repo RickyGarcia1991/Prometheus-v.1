@@ -1,0 +1,23 @@
+{
+  "openai": {
+    "path": "Knowledge/OpenAI-Reference/2026-10-09/openai-2026-10-09.sqlite3",
+    "sha256": "181d9d4139b8e7bf93584765bc0ca52fdbc7c87caa0b88fa8370ac79f8bdc7c6",
+    "size_bytes": 321236992,
+    "sources": 7,
+    "passages": 96711
+  },
+  "engineering": {
+    "path": "Knowledge/Engineering/2026-10-09/engineering-2026-10-09.sqlite3",
+    "sha256": "b95db8520e758c57c6629700083decbcaa2fac0593ceb5ff620adc916560e8c9",
+    "size_bytes": 547676160,
+    "sources": 17,
+    "passages": 190394
+  },
+  "public": {
+    "path": "Knowledge/Public-Reference/2026-10-09/public-2026-10-09.sqlite3",
+    "sha256": "c213962ead178de1c67d47529ee1935ee700c6440b3abd151437a3b88b1f041b",
+    "size_bytes": 2760704,
+    "sources": 14,
+    "passages": 822
+  }
+}

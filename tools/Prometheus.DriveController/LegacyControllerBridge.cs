@@ -19,11 +19,14 @@ public sealed class LegacyControllerBridge
     public async Task<BridgeResult> RunAsync(string action,string drive="D:")
     {
         if(!File.Exists(_script)) return new(2,null,"",$"Controller not found: {_script}");
-        var psi=new ProcessStartInfo("powershell.exe") { UseShellExecute=false, RedirectStandardOutput=true, RedirectStandardError=true, CreateNoWindow=true };
+        var psi=new ProcessStartInfo("powershell.exe") { UseShellExecute=false, RedirectStandardOutput=true, RedirectStandardError=true, CreateNoWindow=true, WorkingDirectory=AppContext.BaseDirectory };
         foreach(var a in new[]{"-NoProfile","-ExecutionPolicy","Bypass","-File",_script,"-Drive",drive,"-Action",action}) psi.ArgumentList.Add(a);
         using var p=Process.Start(psi) ?? throw new InvalidOperationException("Could not start controller bridge.");
         var stdoutTask=p.StandardOutput.ReadToEndAsync(); var stderrTask=p.StandardError.ReadToEndAsync();
-        await p.WaitForExitAsync(); var stdout=await stdoutTask; var stderr=await stderrTask;
+        using var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(action=="stop"?170:35));
+        try { await p.WaitForExitAsync(timeout.Token); }
+        catch(OperationCanceledException) { if(!p.HasExited)p.Kill(); return new(2,null,"","Controller operation timed out; Windows removal is not confirmed."); }
+        var stdout=await stdoutTask; var stderr=await stderrTask;
         BridgeStatus? status=null; try { status=JsonSerializer.Deserialize<BridgeStatus>(stdout,new JsonSerializerOptions{PropertyNameCaseInsensitive=true}); } catch { }
         return new(p.ExitCode,status,stdout,stderr);
     }
