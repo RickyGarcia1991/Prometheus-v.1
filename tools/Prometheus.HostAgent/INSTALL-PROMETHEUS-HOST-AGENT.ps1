@@ -4,7 +4,7 @@ $HostRoot=Join-Path $env:LOCALAPPDATA 'Prometheus';$Agent=Join-Path $HostRoot 'P
 $WatcherTask='Prometheus Volume Watcher';$Obsolete=@('Prometheus Host Agent','Prometheus Host Agent Logon','Prometheus Device Support')
 function Admin{$p=[Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent();$p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)}
 function Elevate{if(Admin){return};if($Elevated){throw 'Elevation failed'};$a="-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Mode $Mode -Elevated";$p=Start-Process powershell.exe -Verb RunAs -ArgumentList $a -Wait -PassThru;exit $p.ExitCode}
-function SourceRoot{$candidate=Join-Path (Split-Path $PSCommandPath -Parent) 'Prometheus-Host-Agent-v0.6.4';if(Test-Path $candidate){return $candidate};return (Split-Path $PSCommandPath -Parent)}
+function SourceRoot{$candidate=Join-Path (Split-Path $PSCommandPath -Parent) 'Prometheus-Host-Agent-v0.6.5';if(Test-Path $candidate){return $candidate};return (Split-Path $PSCommandPath -Parent)}
 function HostFingerprint{$id=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid).MachineGuid;$sha=[Security.Cryptography.SHA256]::Create();try{return ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($id))).Replace('-',''))}finally{$sha.Dispose()}}
 if($Mode -eq 'Verify'){& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $Agent -Mode Verify;exit $LASTEXITCODE}
 Elevate

@@ -12,6 +12,10 @@ public partial class MainWindow {
   await Task.Delay(3000);_timer.Stop();
   try{
    Directory.CreateDirectory(directory);
+   if(Descendants<Button>(this).Count(x=>x.Content?.ToString()=="Eject & verify")!=1 || Descendants<Button>(this).Any(x=>x.Content?.ToString()=="Prepare for Windows eject"))throw new Exception("Expected exactly one eject action.");
+   foreach(var phase in new[]{"stopping","blocked","released"}){ApplyDepartureState(phase,"Layout verification");if((EjectText.Text=="Yes")!=(phase=="released"))throw new Exception("Only Windows release may show safe removal.");}
+   ApplyDepartureState("stopping","Layout verification");
+   StartButton.IsEnabled=true;EjectButton.IsEnabled=true;
    _operationActive=true;
    ShowPlan(ProgressPlan.Startup,new HashSet<string>{ProgressPlan.Startup[0].Name,ProgressPlan.Startup[1].Name});
    UpdateLayout();
@@ -30,7 +34,7 @@ public partial class MainWindow {
    }
    var bitmap=new RenderTargetBitmap((int)ActualWidth,(int)ActualHeight,96,96,PixelFormats.Pbgra32);bitmap.Render(this);
    var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));using(var stream=File.Create(Path.Combine(directory,"controller-layout.png")))encoder.Save(stream);
-   File.WriteAllText(Path.Combine(directory,"controller-layout-test.txt"),"PASS: 8 aligned percentages at widths 1080 and 1280; green/yellow/red states; Windows release defaults to No.");
+   File.WriteAllText(Path.Combine(directory,"controller-layout-test.txt"),"PASS: one eject button; only released state shows safe removal; 8 aligned percentages at widths 1080 and 1280; green/yellow/red states; Windows release defaults to No.");
    Application.Current.Shutdown(0);
   }catch(Exception ex){File.WriteAllText(Path.Combine(directory,"controller-layout-test.txt"),"FAIL: "+ex);Application.Current.Shutdown(1);}
  }

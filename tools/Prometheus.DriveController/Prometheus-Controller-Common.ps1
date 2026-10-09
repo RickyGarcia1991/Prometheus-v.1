@@ -33,6 +33,13 @@ function Test-ProcessIdentity($snapshot) {
  $current = Get-CimInstance Win32_Process -Filter ('ProcessId='+[int]$snapshot.ProcessId) -ErrorAction Stop
  return $current -and $current.CreationDate -eq $snapshot.CreationDate -and $current.ExecutablePath -eq $snapshot.ExecutablePath
 }
+function Get-DesktopCommanderChildRole($Child,$Health,[string]$NodePath) {
+ # A Windows console host is a normal direct child of the owned remote node.
+ # Check its exact system path; a similarly named program is still unknown.
+ if($Child.Name -ieq 'conhost.exe' -and $Child.ExecutablePath -ieq (Join-Path $env:SystemRoot 'System32\conhost.exe')){return 'console-host'}
+ if($Health.localExecutorPid -and [int]$Child.ProcessId -eq [int]$Health.localExecutorPid -and $Child.Name -ieq 'node.exe' -and $Child.ExecutablePath -ieq $NodePath){return 'executor'}
+ return 'unknown'
+}
 function Test-PortableMemory([string]$Root) {
  $db = Join-Path $Root 'Prometheus-Data\memory.sqlite3'
  $python = Join-Path $Root 'Prometheus-Resources\Python\python.exe'

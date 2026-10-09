@@ -80,7 +80,7 @@ try {
    }
    $children=@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+[int]$remote.ProcessId) -ErrorAction Stop)
    foreach($child in $children){
-    if($child.ProcessId -ne $health.localExecutorPid -or $child.Name -ne 'node.exe'){throw 'Desktop Commander has unknown active work'}
+    if((Get-DesktopCommanderChildRole $child $health ([string]$config.nodePath)) -eq 'unknown'){throw 'Desktop Commander has unknown active work'}
     if(@(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+[int]$child.ProcessId) -ErrorAction Stop).Count){throw 'Desktop Commander has a running terminal/job; finish it first'}
    }
    $marker='Prometheus eject '+$operation
@@ -95,7 +95,11 @@ try {
     Start-Sleep -Milliseconds 250
    }while((Get-Date) -lt $deadline)
    if(Test-ProcessIdentity $remote){throw 'Desktop Commander did not close cooperatively'}
-   foreach($child in $children){if(Test-ProcessIdentity $child){throw 'Desktop Commander executor has not closed'}}
+   # Console teardown can trail node exit briefly. Do not claim release until
+   # every previously verified child has also exited.
+   $deadline=(Get-Date).AddSeconds(10)
+   do{$left=@($children|Where-Object {Test-ProcessIdentity $_});if(!$left.Count){break};Start-Sleep -Milliseconds 250}while((Get-Date) -lt $deadline)
+   if($left.Count){throw 'Desktop Commander child processes have not closed'}
    Say 'Desktop Commander closed cooperatively.'
   }
  }

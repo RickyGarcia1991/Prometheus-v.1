@@ -50,4 +50,16 @@ $studio=[pscustomobject]@{Name='pythonw.exe';ExecutablePath='Z:\Prometheus-Resou
 Assert (Test-PrometheusStudio $studio 'Z:') $true 'Owned Studio joins shutdown'
 $studio.ExecutablePath='C:\Other\pythonw.exe'
 Assert (Test-PrometheusStudio $studio 'Z:') $false 'Unrelated Python preserved'
+$health=[pscustomobject]@{localExecutorPid=42}
+$node='C:\Fixture\node.exe'
+$child=[pscustomobject]@{Name='conhost.exe';ExecutablePath=(Join-Path $env:SystemRoot 'System32\conhost.exe');ProcessId=43}
+Assert (Get-DesktopCommanderChildRole $child $health $node) 'console-host' 'Owned Windows console host is recognized'
+$child.ExecutablePath='C:\Other\conhost.exe'
+Assert (Get-DesktopCommanderChildRole $child $health $node) 'unknown' 'Imitation console host is rejected'
+$child=[pscustomobject]@{Name='node.exe';ExecutablePath=$node;ProcessId=42}
+Assert (Get-DesktopCommanderChildRole $child $health $node) 'executor' 'Exact reported executor is recognized'
+$child.ProcessId=44
+Assert (Get-DesktopCommanderChildRole $child $health $node) 'unknown' 'Other node work is rejected'
+$child.ProcessId=42;$child.ExecutablePath='C:\Other\node.exe'
+Assert (Get-DesktopCommanderChildRole $child $health $node) 'unknown' 'Executor runtime identity must match'
 @{passed=$count;failed=0;scope='Isolated lifecycle decisions, persisted ownership and process classification; no live device actions'}|ConvertTo-Json -Compress

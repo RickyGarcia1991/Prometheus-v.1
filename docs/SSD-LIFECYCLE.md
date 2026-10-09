@@ -1,9 +1,6 @@
 # SSD departure and arrival
 
-Controller v0.5.8 and Host Agent v0.6.4 add two departure actions:
-
-- **Eject & verify** records an owned pause on the internal disk, stops chat/Studio, checks SQLite, stops the known model runtime, closes drive-folder Explorer windows, cooperatively stops Desktop Commander and requests Windows safe removal. Green **SAFE TO REMOVE** requires a successful Windows request and an unmounted volume.
-- **Prepare for Windows eject** performs the shutdown checks but does not request Windows removal. Amber **READY FOR WINDOWS EJECT** means the user still needs Windows Safely Remove Hardware.
+Controller v0.5.9 and Host Agent v0.6.5 use one **Eject & verify** button. It records an owned pause on the internal disk, stops chat/Studio, checks SQLite, stops the known model runtime, closes drive-folder Explorer windows, cooperatively stops Desktop Commander and requests Windows safe removal. Green **SAFE TO REMOVE** requires a successful Windows request and an unmounted volume. If the request is blocked, the same button offers a retry and the log gives the reason. There is no separate prepare/eject button.
 
 Windows vetoes and unknown drive-related programs remain blockers. No forced filesystem dismount or termination of unrelated applications is used. The process scan is an additional check, not a substitute for Windows' own handle checks. Stop alone never claims Windows has released the device.
 
