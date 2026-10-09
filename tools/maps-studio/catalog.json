@@ -2685,5 +2685,241 @@
         }
       ]
     }
+  ],
+  "money": [
+    {
+      "title": "Pennsylvania Treasury: unclaimed property",
+      "url": "https://patreasury.gov/unclaimed-property/",
+      "category": "Money owed",
+      "region": "Pennsylvania",
+      "description": "Search property held by the state, including old accounts or checks. Follow Treasury links to search and claim directly.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "New Jersey: unclaimed property",
+      "url": "https://nj.gov/treasury/unclaimed-property/",
+      "category": "Money owed",
+      "region": "New Jersey",
+      "description": "Search former addresses and name variations. The state does not charge a fee to search or claim.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "USAGov: all-state and federal money searches",
+      "url": "https://www.usa.gov/unclaimed-money",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Official directory for states, unpaid wages, pensions, insurance refunds, failed banks, credit unions and bankruptcy funds. There is no single complete database.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Department of Labor: Workers Owed Wages",
+      "url": "https://www.dol.gov/agencies/whd/wow",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Search wages already recovered by the Wage and Hour Division. Not a search for every unpaid wage claim.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "PBGC: find retirement benefits",
+      "url": "https://www.pbgc.gov/workers-retirees/learn/find-your-retirement-benefits",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Find pension and other retirement benefits from covered plans. Coverage depends on the plan; submit identity documents only on the official service.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Pennsylvania benefits through COMPASS",
+      "url": "https://www.pa.gov/services/dhs/apply-for-cash-assistance",
+      "category": "Assistance",
+      "region": "Pennsylvania",
+      "description": "Official route to cash assistance and other benefits. Residency, income, resources and household eligibility must be checked by the program.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Pennsylvania property tax / rent rebate",
+      "url": "https://www.pa.gov/agencies/revenue/ptrr",
+      "category": "Assistance",
+      "region": "Pennsylvania",
+      "description": "Eligibility depends on age or disability, income and housing circumstances. Read current application-year rules and deadlines; eligibility has not been determined here.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "USAGov benefit finder",
+      "url": "https://www.usa.gov/benefit-finder",
+      "category": "Assistance",
+      "region": "United States",
+      "description": "Explore help with food, housing, health care, utilities and other needs. Each program decides eligibility; a listing is not an award.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "IRS earned income tax credit",
+      "url": "https://www.irs.gov/credits-deductions/individuals/earned-income-tax-credit-eitc",
+      "category": "Assistance",
+      "region": "United States",
+      "description": "Check the current tax-year EITC criteria and official filing assistance. No refund amount is estimated by this directory.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Bucks County CareerLink",
+      "url": "https://www.buckscounty.gov/559/PA-CareerLink-Bucks-County",
+      "category": "Earn income",
+      "region": "Pennsylvania",
+      "description": "Local job placement and employment services, including free assistance. Useful for evaluating actual work and training opportunities.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Pennsylvania CareerLink",
+      "url": "https://www.pacareerlink.pa.gov/jponline",
+      "category": "Earn income",
+      "region": "Pennsylvania",
+      "description": "Search jobs and training through the state workforce service. Read each position and program requirements.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "SBA local business assistance",
+      "url": "https://www.sba.gov/counseling/local-assistance/",
+      "category": "Earn income",
+      "region": "United States",
+      "description": "Find free or low-cost counseling and training to assess a service business, costs and customers. Counseling is not guaranteed funding.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Federal contracting opportunities",
+      "url": "https://sam.gov/content/opportunities",
+      "category": "Earn income",
+      "region": "United States",
+      "description": "Search official procurement notices. Winning a contract requires qualifications and delivery; registration is not an income guarantee.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Grants.gov funding search",
+      "url": "https://www.grants.gov/search-grants",
+      "category": "Assistance",
+      "region": "United States",
+      "description": "Search by opportunity and applicant eligibility. Many grants are for organizations, not personal spending; each notice controls eligibility.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Government grants and loans explained",
+      "url": "https://www.usa.gov/government-grants-and-loans",
+      "category": "Scam checks",
+      "region": "United States",
+      "description": "Distinguish benefits, grants and repayable loans. General-purpose free government money claims should be checked against official programs.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "SEC EDGAR company filings",
+      "url": "https://www.sec.gov/edgar/search/",
+      "category": "Stocks and learning",
+      "region": "United States / international SEC filers",
+      "description": "Read current filings, financial statements, risk factors and disclosures. Filings are not live price quotes or SEC investment endorsements.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "SEC public financial-data API documentation",
+      "url": "https://www.sec.gov/search-filings/edgar-application-programming-interfaces",
+      "category": "Research data",
+      "region": "United States / international SEC filers",
+      "description": "Public submissions and XBRL data for future integrations. This workspace opens the documentation; no automatic feed is connected.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Investor.gov: stocks and risks",
+      "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/stocks",
+      "category": "Stocks and learning",
+      "region": "United States",
+      "description": "Learn ownership, returns, losses, fees and diversification. An attractive past return does not establish a suitable investment.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Investor.gov financial tools",
+      "url": "https://www.investor.gov/free-financial-planning-tools",
+      "category": "Stocks and learning",
+      "region": "United States",
+      "description": "Official educational calculators and tools. Use assumptions consciously; calculator outputs are scenarios, not forecasts.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "ASIC Moneysmart: unclaimed money",
+      "url": "https://moneysmart.gov.au/find-unclaimed-money",
+      "category": "Money owed",
+      "region": "Australia",
+      "description": "Find Australian unclaimed bank, insurance and share money through the regulator. Useful only where you have a qualifying connection or entitlement.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "UK Pension Tracing Service",
+      "url": "https://www.gov.uk/find-pension-contact-details",
+      "category": "Money owed",
+      "region": "United Kingdom",
+      "description": "Find pension-provider contact details for a past employer. The service does not establish whether you have a pension or its value.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "Bank of Canada Unclaimed Properties Office",
+      "url": "https://www.unclaimedproperties.bankofcanada.ca/",
+      "category": "Money owed",
+      "region": "Canada",
+      "description": "Bank of Canada links to this office for unclaimed balances and related claims. Coverage and proof of ownership apply. Official referral verified; portal access not tested.",
+      "access": "External official resource. Apply or sign in directly with the provider.",
+      "verification": "Source reviewed 2026-10-09; listings, rules and eligibility can change."
+    },
+    {
+      "title": "FDIC failed-bank unclaimed funds",
+      "url": "https://closedbanks.fdic.gov/funds/",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Search funds associated with failed insured financial institutions. Claim only property you are entitled to; follow official verification requirements.",
+      "access": "Official website; search and claims remain with the agency.",
+      "verification": "Official source reviewed 2026-10-09. No personal claim search performed."
+    },
+    {
+      "title": "NCUA unclaimed credit-union deposits",
+      "url": "https://ncua.gov/support-services/conservatorships-liquidations/unclaimed-deposits",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Locate funds from closed or liquidated credit unions. Check institution and claimant requirements.",
+      "access": "Official website; search and claims remain with the agency.",
+      "verification": "Official source reviewed 2026-10-09. No personal claim search performed."
+    },
+    {
+      "title": "US Courts unclaimed funds locator",
+      "url": "https://ucf.uscourts.gov/",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Search bankruptcy-court unclaimed funds. Search results do not establish entitlement; the holding court controls the claim.",
+      "access": "Official website; search and claims remain with the agency.",
+      "verification": "Official source reviewed 2026-10-09. No personal claim search performed."
+    },
+    {
+      "title": "HUD FHA insurance refund search",
+      "url": "https://entp.hud.gov/dsrs/refunds/",
+      "category": "Money owed",
+      "region": "United States",
+      "description": "Check whether a qualifying FHA-insured mortgage generated an insurance refund. Coverage depends on the mortgage and official rules.",
+      "access": "Official website; search and claims remain with the agency.",
+      "verification": "Official source reviewed 2026-10-09. No personal claim search performed."
+    }
   ]
 }

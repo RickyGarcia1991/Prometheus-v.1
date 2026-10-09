@@ -1,6 +1,7 @@
 param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:',[ValidateSet('status','start','stop')][string]$Action='status')
 $ErrorActionPreference='Stop'
 . (Join-Path $PSScriptRoot 'Prometheus-Controller-Common.ps1')
+. (Join-Path $PSScriptRoot 'Prometheus-Lifecycle.ps1')
 $local=Join-Path $env:LOCALAPPDATA 'Prometheus'
 $stateDir=Join-Path $env:LOCALAPPDATA 'RemovableMediaWorkStatus'
 $checks=@()
@@ -17,14 +18,11 @@ try {
  $targets=@(Get-DriveProcesses $Drive)
  if($Action -eq 'start'){
   $lock=Join-Path $local 'eject-mode.json'
-  if(Test-Path -LiteralPath $lock){throw 'Eject preparation is active. Wait for it to finish before starting.'}
+  if(Test-Path -LiteralPath $lock){Resume-Lifecycle (Get-EjectState) 'explicit-user-start'}
   $launcher=Join-Path $root 'START-PROMETHEUS-SSD.cmd'
   if(!(Test-Path -LiteralPath $launcher)){throw 'Portable launcher is missing'}
   if(!@($targets | Where-Object {Test-PrometheusChat $_}).Count){
-   # This is the user's interactive chat window, so it must be visible and exit
-   # with the chat; /k would leave a shell holding the drive after shutdown.
-   $command='"title Prometheus Chat '+$Drive+' & call "'+$launcher+'" chat"'
-   Start-Process cmd.exe -ArgumentList @('/d','/s','/c',$command) -WorkingDirectory $env:SystemRoot -WindowStyle Normal | Out-Null
+   $child=Start-LifecycleScript (Join-Path $root 'Prometheus-Resources\Tools\Start-Prometheus-Interface.ps1');$child.Dispose()
   }
   $deadline=(Get-Date).AddSeconds(20)
   do {
@@ -38,9 +36,10 @@ try {
   $request=Join-Path $local 'active-chat.shutdown'
   Set-Content -LiteralPath $request -Value (Get-Date).ToString('o') -Encoding ASCII
   $checks += 'Request graceful chat shutdown'
+  Stop-PrometheusStudios $Drive
   $deadline=(Get-Date).AddSeconds(130)
   do {
-   $chat=@(Get-DriveProcesses $Drive | Where-Object {Test-PrometheusChat $_})
+   $chat=@(Get-DriveProcesses $Drive | Where-Object {(Test-PrometheusChat $_) -or (Test-PrometheusStudio $_ $Drive)})
    if(!$chat.Count){break}
    Start-Sleep -Milliseconds 250
   }while((Get-Date) -lt $deadline)
@@ -59,9 +58,11 @@ try {
   }while((Get-Date) -lt $deadline)
   if($remaining.Count){throw 'Prometheus runtime has not released the drive'}
   $checks += 'Stop Ollama and model workers'
-  $checks += 'Confirm no Prometheus process references SSD'
+  # Remaining drive references are verified below, including companion applications.
   Remove-Item -LiteralPath $request -ErrorAction SilentlyContinue
   $others=@(Get-DriveProcesses $Drive)
+  if($others.Count){throw ('Drive references remain: '+(($others|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))}
+  $checks += 'Confirm no Prometheus process references SSD'
   Save 'green' 'Prometheus stopped; Windows has not released the drive.' ('Other drive references: '+(($others|ForEach-Object {$_.Name+' PID '+$_.ProcessId}) -join ', '))
   exit 0
  }

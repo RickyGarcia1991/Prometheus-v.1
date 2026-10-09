@@ -65,3 +65,7 @@ The security report records the original launcher finding. The separate remediat
 Version 1.0.1 clears outdated region links and citation/code exports when their inputs change, prevents late tasks from reopening a closed workspace, and adds initialization retry and Cancel online lookup. Cancellation stops browser waiting; the server may finish its one publisher worker. Server callers wait at most 25 seconds, and additional publisher requests receive a busy response while that worker remains occupied. Local tools remain independent. Launcher failures write startup-error.txt and show a message; OPEN-STUDIO.txt contains the current loopback address if the browser does not open. These runtime files contain no account credentials.
 
 The main Prometheus interface separately includes Smart home mode with a Home Assistant bridge on standby. Pairing instructions and platform limits are in the core docs/SMART-HOME.md. No smart-home devices are connected by installing this companion.
+
+## Money and lifecycle update (1.0.2)
+
+Money & investing adds 26 official resources, a stock research checklist, a browser-local moving-average historical simulator with benchmark and cost comparisons, savings scenarios and income estimates. See ../../docs/MONEY-RESEARCH.md. No live price feed, trading or automated personal claims are connected. Studio now observes the shared shutdown/eject markers and closes during SSD departure. Physical removal still depends on Windows confirming safe eject.
