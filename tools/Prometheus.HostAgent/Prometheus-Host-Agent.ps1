@@ -66,7 +66,8 @@ function Invoke-Agent {
    }
    if(Test-EjectSuppressed){return 0}
    $exe=Join-Path $dst 'Prometheus.DriveController.exe'
-   if(!$running.Count){Start-Process $exe -WorkingDirectory $dst -WindowStyle Hidden;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}}
+   # The user requested a visible controller on SSD arrival; helper shells stay hidden.
+   if(!$running.Count){Start-Process $exe -WorkingDirectory $dst -WindowStyle Normal;Start-Sleep -Milliseconds 500;if(!@(Get-Process Prometheus.DriveController -ErrorAction SilentlyContinue).Count){throw 'Controller failed to start'}}
    Write-Log 'healthy' ($d.DeviceID+' '+$pkg.Name)
    Write-Audit 'host-agent' 'healthy' $pkg.Name
   }catch{$fail=1;Write-Log 'security' $_.Exception.Message;Write-Audit 'package-validation' 'quarantined' $_.Exception.Message}

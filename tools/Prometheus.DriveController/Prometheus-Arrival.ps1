@@ -29,11 +29,13 @@ try {
  if(Get-EjectState){exit 0}
  $greeting=if($status.hardware.chat_ready){'Welcome back. Prometheus is open, and your saved memory is ready.'}else{'Welcome back. Prometheus is open in reference mode, and your saved memory is ready.'}
  Start-Process ($url+'/')
- Write-LifecycleJson $result @{phase='ready';drive=$Drive;greeting=$greeting;chat_ready=[bool]$status.hardware.chat_ready;updated=(Get-Date).ToString('o');audio='requested'}
+ $ready=@{phase='ready';drive=$Drive;greeting=$greeting;chat_ready=[bool]$status.hardware.chat_ready;updated=(Get-Date).ToString('o');audio='requested'}
+ Write-LifecycleJson $result $ready
  try {
   Add-Type -AssemblyName System.Speech
   $voice=[System.Speech.Synthesis.SpeechSynthesizer]::new()
-  try {$voice.SetOutputToDefaultAudioDevice();if(!(Get-EjectState)){$voice.Speak($greeting)}}finally{$voice.Dispose()}
- }catch{Write-LifecycleJson $result @{phase='ready';drive=$Drive;greeting=$greeting;audio='unavailable';updated=(Get-Date).ToString('o')}}
+  try {$voice.SetOutputToDefaultAudioDevice();if(!(Get-EjectState)){$voice.Speak($greeting);$ready.audio='completed'}else{$ready.audio='skipped-during-eject'}}finally{$voice.Dispose()}
+ }catch{$ready.audio='unavailable'}
+ Write-LifecycleJson $result $ready
 }catch{Write-LifecycleJson $result @{phase='blocked';drive=$Drive;message=$_.Exception.Message;updated=(Get-Date).ToString('o')};exit 2}
 finally{if($held){$mutex.ReleaseMutex()};$mutex.Dispose()}

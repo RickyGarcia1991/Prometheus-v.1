@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using System.Windows;
 using System.Windows.Threading;
 
 namespace Prometheus.DriveController;
@@ -40,13 +41,32 @@ public partial class MainWindow {
                 string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Prometheus", "arrival-status.json");
                 if (!File.Exists(path)) return;
                 using var state = JsonDocument.Parse(File.ReadAllText(path));
-                if (state.RootElement.GetProperty("phase").GetString() != "ready") return;
+                string? phase = state.RootElement.GetProperty("phase").GetString();
                 string? updated = state.RootElement.GetProperty("updated").GetString();
-                if (updated == null || updated == _lastArrivalSeen) return;
-                _lastArrivalSeen = updated;
+                string identity = phase + "|" + updated;
+                if (updated == null || identity == _lastArrivalSeen) return;
+                _lastArrivalSeen = identity;
+                if (phase == "starting") {
+                    _timer.Stop();
+                    Visual("yellow"); StateText.Text = "STATUS: STARTING PROMETHEUS";
+                    ActivityText.Text = "Verifying the SSD, saved memory and interface. The workspace opens when these checks finish.";
+                    OperationText.Text = "Automatic startup"; EjectText.Text = "No";
+                    StartButton.IsEnabled = false; StopButton.IsEnabled = false; EjectButton.IsEnabled = false;
+                    Show(); WindowState = WindowState.Normal;
+                    bool wasTopmost = Topmost; Topmost = true; Activate(); Topmost = wasTopmost;
+                    return;
+                }
+                if (phase == "blocked") {
+                    _timer.Stop(); Visual("red"); StateText.Text = "STATUS: STARTUP BLOCKED";
+                    ActivityText.Text = state.RootElement.TryGetProperty("message", out var message) ? message.GetString() : "See the startup log.";
+                    EjectText.Text = "No"; StartButton.IsEnabled = true; EjectButton.IsEnabled = true;
+                    return;
+                }
+                if (phase != "ready") return;
                 _refreshing = true;
                 StartButton.Content = "Start Prometheus";
                 EjectButton.Content = "Eject & verify";
+                EjectButton.IsEnabled = true;
                 await RefreshAsync();
                 _timer.Start();
             } catch (IOException) { }
