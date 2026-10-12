@@ -105,6 +105,29 @@ def test_failed_dictation_keeps_error_state_and_closes_recording_status(app, mon
     assert app.state == 'error' and app.current is None
 
 
+def test_finish_without_speech_is_normal_idle_with_no_transcript(app, monkeypatch):
+    from prometheus_assistant import continuous_capture
+    closed = []
+    class QuietDevice:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            closed.append(True)
+        def read(self):
+            app.dictation_finish.set()
+            return b'\x00\x00'*1600
+        def finish(self):
+            return b''
+    monkeypatch.setattr(continuous_capture, '_WaveInput', QuietDevice)
+    monkeypatch.setattr(voice, '_transcriber', lambda model: None)
+    monkeypatch.setattr(voice, 'transcribe', lambda *args, **kwargs: pytest.fail('Empty capture must not invoke Whisper'))
+    row = wait(app, app.submit({'mode': 'dictate', 'prompt': ''}))
+    assert row['state'] == 'cancelled' and row['reason'] == 'empty_recording'
+    assert row['error'] == 'No audible speech detected. Microphone off; nothing was submitted.'
+    assert row['recording'] is False and 'result' not in row
+    assert app.state == 'idle' and app.current is None and closed == [True]
+
+
 def test_controls_reject_wrong_job_and_non_dictation(app, monkeypatch):
     entered, _, _ = recorder(monkeypatch)
     job = app.submit({'mode': 'dictate', 'prompt': ''})

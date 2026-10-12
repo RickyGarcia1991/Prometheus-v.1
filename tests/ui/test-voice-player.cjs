@@ -8,6 +8,7 @@ let starts=0,stops=0,context;
 global.AudioContext=class{
  constructor(){context=this;this.state='running';this.currentTime=0;this.outputLatency=.1;this.destination={};}
  async resume(){this.state='running';} async suspend(){this.state='suspended';}
+ addEventListener(){} removeEventListener(){}
  async decodeAudioData(){return audio;}
  createBufferSource(){return {connect(){},disconnect(){},start(){starts++;},stop(){stops++;}};}
 };
@@ -18,7 +19,7 @@ global.AudioContext=class{
  assert.equal(starts,0,'stopped pending request must never play later');
  let captured;const unicode='a'.repeat(3999)+'😀'+'extra';
  await player.play(unicode,async(_path,body)=>{captured=body.text;return {encoding:'wav-base64',audio:'AAAA'};},()=>began++,()=>ended++);
- assert.equal(Array.from(captured).length,4000);assert(captured.endsWith('😀'),'truncation preserves complete Unicode codepoints');
+ assert(Array.from(captured).length<=4000);assert(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(captured),'truncation preserves complete Unicode codepoints');assert(captured.endsWith('The rest of the answer is in the conversation.'));
  assert.equal(began,1);assert.equal(starts,1);
  context.currentTime=.9;assert(player.level(900)>.1,'heard voiced section pulses');
  context.currentTime=1.7;for(let i=0;i<20;i++)player.level(1700+i*20);assert(player.value<.003,'silence rests');

@@ -18,112 +18,119 @@
 
 /* Read-only boundary inventory. */
 .permission-row summary{cursor:pointer;line-height:1.6;color:#ccdcf1}.permission-row p{overflow-wrap:anywhere}#permissionStatus{font-size:12px;line-height:1.7}#permissionArguments{min-height:100px;width:100%;font:12px/1.6 Consolas,monospace;background:#080f1b;color:#ccdcf1;border:1px solid #425571;padding:10px;border-radius:8px}#permissionSearch:focus-visible,#permissionArguments:focus-visible,.permission-row summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
-/* Folded core home: the approved material with functional, separate controls. */
-.folded-home{background:#010506;color:#dcf5ef}
-.folded-home .shell{display:flex;flex-direction:column;min-height:100dvh;background:radial-gradient(ellipse at 50% 35%,#05221d60,transparent 65%)}
-.folded-home header{position:relative;min-height:70px;padding:16px 32px;border-bottom:1px solid #254c4130;background:transparent;gap:16px}
-.folded-home .brand{letter-spacing:.36em;font-weight:500;font-size:18px}
-.folded-home header .connection{margin-left:auto;font-size:11px;color:#86a59c}
-.folded-home #ownerPanel{position:fixed;z-index:10;right:20px;top:76px;width:min(340px,calc(100vw - 40px));max-height:calc(100dvh - 100px);overflow:auto;border:1px solid #386957;border-radius:20px;background:#051511f5;box-shadow:0 20px 80px #000b;padding:24px}
+/* Folded core interface: one fixed page, independent conversation/workspace scroll. */
+.folded-home{height:100dvh;overflow:hidden;background:#010806;color:#e1f1e9;--muted:#9bb2a6;--line:#294539}
+.folded-home .shell{display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;background:radial-gradient(ellipse at 50% 12%,#10362940,transparent 65%)}
 .folded-home [hidden]{display:none!important}
-.folded-home main{height:calc(100dvh - 72px);min-height:440px;max-width:1100px;width:100%;margin:auto;padding:0 28px 16px;gap:0;display:flex;flex-direction:column;overflow:visible}
-.folded-home .presence{position:relative;min-height:220px;flex:0 1 440px;display:flex;align-items:center;justify-content:center;padding:0}
-.folded-home .orb{position:relative;width:min(100%,920px);height:auto;aspect-ratio:2.16376;border:0;border-radius:0;background:none;box-shadow:none;isolation:isolate;transform:none!important}
+.folded-home header{position:relative;flex:none;height:64px;min-height:64px;padding:10px 24px;gap:12px;border-bottom:1px solid #27453870}
+.folded-home .brand{font-size:16px;font-weight:500;letter-spacing:.26em}
+.folded-home header .connection{margin-left:auto;font-size:11px;color:#a3c2b3}
+.folded-home header button,.folded-home .composerTools button{min-height:40px;padding:8px 15px;font-size:12px;border:1px solid #426352;border-radius:22px;background:#081b13;color:#d6eadd}
+.folded-home button:hover:not(:disabled){background:#18392b;border-color:#87b89c}
+.folded-home button:disabled{cursor:default;opacity:.5}
+.folded-home button[aria-pressed=true]{border-color:#8adab3;background:#214936;color:#f0fff4;box-shadow:none}
+.folded-home :focus-visible{outline:2px solid #9eebbc;outline-offset:3px}
+.folded-home main{display:flex;flex-direction:column;flex:1;min-height:0;height:auto;width:100%;max-width:1100px;margin:0 auto;padding:0 20px 10px;overflow:hidden}
+.folded-home .presence{position:relative;display:flex;align-items:center;justify-content:center;flex:0 0 136px;min-height:0;height:136px;padding:0;overflow:hidden}
+.folded-home .orb{position:relative;flex:none;width:210px;height:auto;aspect-ratio:2.16376;border:0;border-radius:0;background:none;box-shadow:none;isolation:isolate;transform:none!important;mask-image:radial-gradient(ellipse,#000 48%,transparent 74%)}
 .folded-home .orb::before,.folded-home .orb::after{display:none}
-.folded-home .orb .art{position:absolute;inset:0;border-radius:0;background-image:url('/folded-core.webp');background-size:111.111% 150.376%;background-position:50% 22.388%;filter:none;opacity:1;mask-image:linear-gradient(transparent,#000 3%,#000 95%,transparent)}
+.folded-home .orb .art{position:absolute;inset:0;border-radius:0;background:url('/folded-core.webp') 50% 22.388%/111.111% 150.376% no-repeat;filter:none;opacity:1;mask-image:linear-gradient(transparent,#000 8%,#000 88%,transparent),linear-gradient(90deg,transparent,#000 16%,#000 84%,transparent);mask-composite:intersect}
 .folded-home #fluid{position:absolute;inset:0;width:100%;height:100%;border-radius:0;mix-blend-mode:normal;opacity:0;filter:none}
-.folded-home .presence-caption{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;letter-spacing:.14em;color:#91b7aa;display:block;min-height:20px}
-.folded-home .messages{position:relative;flex:1 1 auto;min-height:160px;max-height:none;width:min(100%,840px);margin:10px auto 16px;padding:8px 2px;overflow:auto}
-.folded-home .message{background:#061915c7;border:1px solid #193c3280;border-radius:18px;padding:18px 20px;margin:10px 0}
-.folded-home .message.user{background:#10221fbd}
-.folded-home #compose{flex-shrink:0;position:relative;width:min(100%,840px);margin:0 auto;display:flex;align-items:center;border:1px solid #4b9b87;border-radius:28px;background:linear-gradient(110deg,#09312870,#091f3860);padding:7px 8px 7px 22px;box-shadow:0 0 32px #14795a12}
-.folded-home #prompt{border:0;background:transparent;resize:none;min-height:48px;padding:12px 6px;color:#e7fff6;outline-offset:2px}
-.folded-home #send{width:48px;height:48px;min-width:48px;border-radius:50%;background:#174f4a;border:1px solid #68c0b4;color:#e8fffc;font-size:25px}
-.folded-home .composerTools{flex-shrink:0;justify-content:center;display:flex;flex-wrap:wrap;gap:9px;margin:12px auto 4px;padding:0}
-.folded-home .composerTools button,.folded-home header button{border:1px solid #31584d;border-radius:24px;padding:10px 17px;background:#041511;color:#c5e6da;font-size:12px;min-height:42px}
-.folded-home button[aria-pressed=true]{border-color:#70d9ba;background:#0d3d2f;color:#eafff8;box-shadow:0 0 20px #44eeb512}
-.folded-home #dictate{border-color:#704260;color:#fbd8e6}
-.folded-home .notice{flex-shrink:0;width:min(100%,840px);margin:8px auto;background:#263820;color:#e8f1d8}
-.folded-home footer{width:min(100%,840px);align-self:center;flex-shrink:0;text-align:center;font-size:10px;color:#7f9e93;border:0;padding:8px 0 0;margin:0}
-.folded-home .workbench{max-height:60dvh;overflow:auto;flex:1 1 auto}
-.folded-home main:has(.workbench:not([hidden])) .presence{display:none}
-.folded-home :focus-visible{outline:2px solid #8cefd6;outline-offset:4px}
-@media(max-width:650px){.folded-home header{padding:12px 16px;gap:8px;flex-wrap:wrap}.folded-home .brand{font-size:14px;letter-spacing:.2em}.folded-home header .connection{display:none}.folded-home #ownerPanelToggle{margin-left:auto}.folded-home main{padding:0 14px 16px;min-height:440px}.folded-home .presence{min-height:185px;flex-basis:310px}.folded-home .orb{width:125%;flex-shrink:0}.folded-home .presence{overflow:hidden}.folded-home .composerTools button{padding:9px 11px;font-size:11px}}
-
-.folded-home header{height:76px;flex-shrink:0}
-.folded-home main{height:calc(100dvh - 76px)}
-.folded-home main:not(:has(.message)) .presence{flex:1;min-height:220px;height:auto}
-.folded-home .presence-caption{position:static;margin-top:6px}
-.folded-home .messages:not(:has(.message)){flex:0;min-height:0;height:0;margin:0;padding:0}
-.folded-home .orb .art{mask-image:linear-gradient(transparent,#000 3%,#000 95%,transparent),linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-composite:intersect}
-.folded-home #ownerPanel{display:flex;flex-direction:column}
-.folded-home #requestTime{margin-left:0}
-
-/* A bounded conversation pane keeps the composer and voice controls in view. */
-.folded-home main:has(.message) .presence{flex:0 0 104px;height:104px;min-height:104px}
-.folded-home main:has(.message) .orb{width:190px;max-height:88px}
-.folded-home main:has(.message) .presence-caption{margin-top:0}
-@media(max-width:650px),(max-height:600px){
- .folded-home main:has(.message) .presence{flex-basis:76px;height:76px;min-height:76px}
- .folded-home main:has(.message) .orb{width:130px;max-height:60px}
- .folded-home .message{max-width:100%;padding:14px 16px}
-}
-@media(max-width:360px){
- .folded-home header{padding:12px;gap:6px;flex-wrap:nowrap}
- .folded-home .brand{font-size:12px;letter-spacing:.14em}
- .folded-home header button{padding:9px 11px}
-}
-.folded-home{height:100dvh;overflow:hidden}
-.folded-home .shell{height:100dvh;min-height:0;overflow:hidden}
-.folded-home main{height:auto;min-height:0;flex:1;overflow:hidden;padding-bottom:10px}
-.folded-home main:not(:has(.message)) .presence{flex:0 0 150px;min-height:0;height:150px}
-.folded-home main:not(:has(.message)) .orb{width:285px;max-height:128px}
-.folded-home .conversation-panel{display:flex;flex-direction:column;flex:1;min-height:0;width:min(100%,840px);margin:8px auto 0;border:1px solid #315a4d;border-radius:22px;background:linear-gradient(145deg,#09221bb3,#03110ed9);overflow:hidden;box-shadow:0 12px 40px #0003}
-.folded-home .conversation-heading{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:6px 16px;border-bottom:1px solid #294c3f;color:#a7c9ba;font-size:11px;letter-spacing:.08em}
-.folded-home #latestReply{font-size:11px;padding:5px 10px;border-color:#355e4c;background:#0b231a;color:#c3e6d5;letter-spacing:0}
-.folded-home .messages,.folded-home .messages:not(:has(.message)){flex:1;min-height:0;height:auto;width:100%;margin:0;padding:8px 16px 18px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-color:#4a7761 transparent}
+.folded-home .presence-caption{position:static;display:flex;flex-direction:column;gap:3px;min-width:0;margin:0;text-align:center;letter-spacing:0;font-size:14px;line-height:1.35;color:#c4e3d2}
+.folded-home #activityNote{position:static;width:auto;height:auto;clip:auto;overflow:hidden;font-size:11px;color:#9bb6a6;max-width:430px;white-space:nowrap;text-overflow:ellipsis}
+.folded-home main:has(.message) .presence{flex:0 0 64px;height:64px;flex-direction:row;gap:12px}
+.folded-home main:has(.message) .orb{width:116px;max-height:54px}
+.folded-home main:has(.message) .presence-caption{text-align:left}
+.folded-home .conversation-panel{display:flex;flex-direction:column;flex:1;min-height:0;width:min(100%,920px);margin:6px auto 0;border:1px solid #3a5d49;border-radius:20px;background:#06170fed;overflow:hidden;box-shadow:0 10px 35px #0002}
+.folded-home .conversation-heading{display:flex;align-items:center;justify-content:space-between;flex:none;gap:8px;min-height:38px;padding:5px 14px;border-bottom:1px solid #304d3e;color:#b4cbbd;font-size:12px;letter-spacing:.05em;background:#0d2117}
+.folded-home #latestReply{min-height:27px;font-size:11px;padding:4px 10px;border-color:#466953;background:#122f1e;color:#d7f2df;letter-spacing:0}
+.folded-home .messages{position:relative;flex:1;min-height:0;height:auto;max-height:none;width:100%;margin:0;padding:6px 14px 12px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#60806b transparent}
 .folded-home #welcome{display:flex;min-height:100%;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;padding:20px;text-align:center}
-.folded-home #welcome p{margin:0 0 6px;color:#c0dbcf;font-size:16px}
-.folded-home #welcome small{color:#849f92;font-size:12px}
-.folded-home .message{max-width:100%;margin:10px 0 16px;background:#09251c;border-color:#284c3d}
-.folded-home .message.user{max-width:88%;margin-left:auto;background:#172e28;border-color:#3e5c50}
-.folded-home .message .label{color:#9dc8b4}
-.folded-home .conversation-dock{position:relative;flex:none;padding:10px 0 0;width:100%}
-.folded-home main:has(.workbench:not([hidden])) .conversation-panel{display:none}
-.folded-home .workbench{min-height:0;max-height:none;overflow:hidden}
-.folded-home .workbench-body{flex:1;min-height:0}
-.folded-home #compose{align-items:flex-end}
-.folded-home .voice-capture{width:min(100%,840px);margin:0 auto 10px;padding:12px 16px;border:1px solid #39745f;border-radius:22px;background:#071d17;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
-.folded-home .voice-caption{display:flex;justify-content:space-between;width:100%;gap:12px;font-size:12px;color:#b6dfce}
-.folded-home #voiceElapsed{font-variant-numeric:tabular-nums;color:#88b3a1}
-.folded-home .voice-wave{flex:1;min-width:100px;height:40px;display:flex;align-items:center;justify-content:space-between;gap:3px;overflow:hidden}
-.folded-home .voice-wave span{display:block;flex:1;max-width:9px;min-width:2px;height:3px;border-radius:5px;background:#84dfbd;transition:height .15s ease}
-.folded-home #finishRecording{border-radius:20px;background:#214d3c;border-color:#88d1af;font-size:12px;min-height:40px}
-.folded-home #dictate[aria-pressed=true]{background:#512438;border-color:#df96b9;color:#ffe2f0}
-@media(prefers-reduced-motion:reduce){.folded-home .voice-wave span{transition:none}}
+.folded-home #welcome p{margin:0 0 6px;color:#d2e7d9;font-size:17px}
+.folded-home #welcome small{color:#9cb9a7;font-size:13px}
+.folded-home .message{max-width:100%;margin:8px 0 12px;padding:14px 16px;border:1px solid #284b37;border-radius:14px;background:#0a2217;font-size:15px;line-height:1.7;color:#e2f0e7}
+.folded-home .message.user{max-width:88%;margin-left:auto;background:#1c3227;border-color:#45614e}
+.folded-home .message .label{color:#a8cdb5;font-size:10px;letter-spacing:.07em;margin-bottom:6px}
+.folded-home .message.user .label{color:#c0d4c7}
+.folded-home .message details{font-size:12px;color:#abc4b5}
+.folded-home .message.error{border-color:#ac6953;background:#2a1b13}
+.folded-home .conversation-dock{position:relative;flex:none;padding:8px 0 0;width:min(100%,920px);margin:0 auto}
+.folded-home #compose{position:relative;flex:none;display:flex;align-items:flex-end;gap:8px;width:100%;margin:0;padding:6px 8px 6px 15px;border:1px solid #659a7c;border-radius:24px;background:linear-gradient(115deg,#0d2a1c,#0b201b);box-shadow:none}
+.folded-home #compose:focus-within{border-color:#a0e6b7;box-shadow:0 0 0 2px #72c29635}
+.folded-home #prompt{font-size:15px;line-height:1.6;min-height:48px;max-height:120px;padding:10px 4px;border:0;background:transparent;color:#effaf2;resize:none;outline:none}
+.folded-home #prompt::placeholder{color:#a0b7a9}
+.folded-home #send{width:44px;height:44px;min-width:44px;padding:0;border-radius:50%;background:#295f43;border:1px solid #91c5a0;color:#f0fff4;font-size:24px}
+.folded-home .composerTools{display:flex;justify-content:center;align-items:center;flex:none;flex-wrap:wrap;gap:7px;margin:8px auto 0;padding:0}
+.folded-home #dictate{border-color:#7d6170;color:#f6dce6}
+.folded-home #dictate[aria-pressed=true]{background:#532d3e;border-color:#e5a3bf;color:#ffecf3}
+.folded-home #requestTime{margin:0;font-size:10px;color:#a5bbac}
+.folded-home .notice{flex:none;width:100%;margin:0 0 8px;padding:6px 10px;border:1px solid #466448;border-left:3px solid #8aba83;border-radius:9px;background:#172919;color:#dbe9d6;font-size:12px;line-height:1.5;max-height:76px;overflow:auto}
+.folded-home footer{flex:none;width:100%;margin:0;padding:5px 0 0;font-size:10px;line-height:1.5;text-align:center;color:#99b2a2}
+.folded-home #saveStatus{color:#b8d3c2}
+.folded-home .voice-capture{display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;margin:0 0 8px;padding:9px 13px;border:1px solid #69a27b;border-radius:16px;background:#0e2d1c}
+.folded-home .voice-caption{display:flex;justify-content:space-between;width:100%;gap:10px;font-size:12px;color:#d1ead8}
+.folded-home #voiceElapsed{font-variant-numeric:tabular-nums;color:#b2d8bd;flex:none}
+.folded-home .voice-wave{display:flex;align-items:center;justify-content:space-between;gap:3px;flex:1;min-width:90px;height:32px;overflow:hidden}
+.folded-home .voice-wave span{display:block;flex:1;min-width:2px;max-width:9px;height:3px;border-radius:5px;background:#9feaaf;transition:height .15s ease}
+.folded-home #finishRecording{min-height:34px;padding:6px 11px;font-size:12px;border-radius:18px;background:#285237;border-color:#a1cfaa}
+.folded-home #ownerPanel{position:fixed;z-index:10;display:flex;flex-direction:column;gap:7px;right:16px;top:68px;width:min(350px,calc(100vw - 32px));max-height:calc(100dvh - 80px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#7a9580 transparent;border:1px solid #638169;border-radius:17px;background:#0b1c11;box-shadow:0 14px 60px #000c;padding:18px}
+.folded-home #ownerPanel label{margin:9px 0 2px;color:#c0d5c4;font-size:12px}
+.folded-home #ownerPanel button,.folded-home #ownerPanel input,.folded-home #ownerPanel select{font-size:13px;border-color:#48614d;background:#11271a;border-radius:9px;min-height:38px}
+.folded-home #ownerPanel .primary{margin:5px 0;background:#28472e;border-color:#7b9d7e}
+.folded-home #ownerPanel .wide{margin-top:4px}
+.folded-home #ownerPanel .privacy{padding-top:6px;margin-top:4px}
+.folded-home #ownerPanel .settings{margin-top:9px}
+.folded-home #ownerPanel .fine{color:#a4b8aa;line-height:1.6}
+.folded-home .workbench{flex:1;min-height:0;max-height:none;overflow:hidden;background:#081a12;border-color:#4d6f57;border-radius:16px;margin:6px 0 0}
+.folded-home .workbench-body{flex:1;min-height:0;overscroll-behavior:contain}
+.folded-home main:has(.workbench:not([hidden])) .presence,.folded-home main:has(.workbench:not([hidden])) .conversation-panel{display:none}
+.folded-home .workbench-head{background:#10271a;border-color:#385640}
+.folded-home .workbench-tabs button[aria-selected=true]{background:#2a4c34;border-color:#8bb492;color:#edfff0}
+.folded-home .workspace-status{background:#152d1d;color:#c5dfcb;font-size:12px}
+.folded-home .workspace-card{background:#112a1a;border-color:#355840;font-size:13px}
+.folded-home .health-pass{border-left:4px solid #79c590;background:#102c1c}
+.folded-home .health-fail{border-left:4px solid #e1877a;background:#321c18}
+.folded-home .health-blocked{border-left:4px solid #e0bb70;background:#302719}
+.folded-home .health-untested{border-left:4px solid #91a19a;background:#1d2721}
+.folded-home .workbench .fine{color:#a9bdaf;font-size:12px}
 @media(max-width:650px){
- .folded-home main{padding:0 12px 8px}
- .folded-home .messages,.folded-home .messages:not(:has(.message)){padding:6px 10px 12px}
- .folded-home .conversation-panel{border-radius:18px}
- .folded-home footer{font-size:9px;padding-top:4px}
- .folded-home .voice-capture{padding:9px 12px;gap:6px;margin-bottom:6px}
- .folded-home .voice-caption{font-size:11px}
- .folded-home .composerTools{gap:6px;margin-top:8px}
+ .folded-home header{height:58px;min-height:58px;padding:8px 12px;gap:8px;flex-wrap:nowrap}
+ .folded-home .brand{font-size:14px;letter-spacing:.18em}
+ .folded-home header .connection{display:none}
+ .folded-home #ownerPanelToggle{margin-left:auto}
+ .folded-home #ownerLock{margin-left:0}
+ .folded-home header button{padding:7px 11px;font-size:11px;min-height:38px}
+ .folded-home main{padding:0 10px 8px}
+ .folded-home .messages{padding:5px 10px 10px}
+ .folded-home .message{padding:12px 13px;font-size:14px}
+ .folded-home .composerTools{gap:5px;margin-top:6px}
+ .folded-home .composerTools button{font-size:11px;padding:7px 10px;min-height:36px}
  .folded-home #prompt{max-height:96px}
+ .folded-home .voice-caption{font-size:11px}
+ .folded-home .voice-capture{padding:8px 11px;margin-bottom:6px}
+ .folded-home footer{font-size:9px;padding-top:4px}
+ .folded-home #saveStatus{display:inline;float:none;margin-left:6px}
+ .folded-home #ownerPanel{top:62px;max-height:calc(100dvh - 74px)}
+ .folded-home #activityNote{max-width:185px}
 }
-@media(max-height:650px){
- .folded-home header{height:60px;min-height:60px;padding-top:8px;padding-bottom:8px}
- .folded-home main .presence,.folded-home main:not(:has(.message)) .presence,.folded-home main:has(.message) .presence{flex:0 0 48px;min-height:0;height:48px;flex-direction:row;gap:12px}
- .folded-home main .orb,.folded-home main:not(:has(.message)) .orb,.folded-home main:has(.message) .orb{width:90px;max-height:42px;flex-shrink:0}
- .folded-home .presence-caption{margin:0;font-size:10px}
- .folded-home .notice{padding:6px 10px;font-size:11px;margin:4px auto}
- .folded-home .voice-capture{padding:7px 12px;gap:4px;margin-bottom:5px}
- .folded-home .voice-wave{height:24px}
- .folded-home #finishRecording{min-height:30px;padding:5px 10px;font-size:11px}
+@media(max-width:360px){.folded-home .brand{font-size:12px;letter-spacing:.12em}.folded-home header{gap:6px}.folded-home header button{padding:7px 9px}.folded-home main:has(.message) .orb{width:90px}.folded-home #activityNote{max-width:170px}}
+@media(max-height:600px){
+ .folded-home header{height:52px;min-height:52px;padding-top:6px;padding-bottom:6px}
+ .folded-home .presence,.folded-home main:has(.message) .presence{flex:0 0 44px;height:44px;flex-direction:row;gap:10px}
+ .folded-home .orb,.folded-home main:has(.message) .orb{width:86px;max-height:40px}
+ .folded-home .presence-caption{text-align:left;font-size:12px;gap:0}
+ .folded-home #activityNote{font-size:10px}
+ .folded-home .conversation-heading{min-height:32px;padding-top:3px;padding-bottom:3px}
+ .folded-home .notice{padding:4px 8px;font-size:11px;margin-bottom:5px;max-height:42px}
+ .folded-home .voice-capture{padding:6px 10px;margin-bottom:5px;gap:3px}
+ .folded-home .voice-wave{height:22px}
+ .folded-home #finishRecording{min-height:30px;font-size:11px;padding:4px 9px}
+ .folded-home #prompt{min-height:40px;max-height:72px;padding-top:8px;padding-bottom:8px}
+ .folded-home .composerTools button{min-height:32px;padding:5px 9px;font-size:11px}
+ .folded-home .composerTools{margin-top:5px;gap:5px}
  .folded-home footer{display:none}
- .folded-home .composerTools{margin-top:6px;gap:5px}
- .folded-home .composerTools button{min-height:34px;padding:6px 10px}
- .folded-home #prompt{max-height:72px;min-height:40px;padding-top:8px;padding-bottom:8px}
- .folded-home .conversation-dock{padding-top:6px}
+ .folded-home .conversation-dock{padding-top:5px}
+ .folded-home #ownerPanel{top:56px;max-height:calc(100dvh - 66px)}
 }
-@media(max-height:420px){.folded-home main .presence{display:none!important}.folded-home .conversation-heading{min-height:32px;padding-top:3px;padding-bottom:3px}.folded-home header{height:52px;min-height:52px}.folded-home .voice-caption{font-size:10px}.folded-home .voice-wave{height:16px}.folded-home .notice{max-height:42px;overflow:auto}}
+@media(max-height:400px){.folded-home .presence{display:none!important}.folded-home .voice-wave{height:16px}.folded-home .voice-caption{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.folded-home .voice-wave span{transition:none}}

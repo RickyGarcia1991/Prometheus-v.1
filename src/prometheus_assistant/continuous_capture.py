@@ -25,6 +25,10 @@ SPEECH_RMS = 200
 MIN_SPEECH_SECONDS = .24
 
 
+class EmptyRecording(GenerationCancelled):
+    """A user finished a quiet recording; there is no failed device or transcript."""
+
+
 class _Format(ctypes.Structure):
     _pack_ = 1
     _fields_ = [('tag', ctypes.c_uint16), ('channels', ctypes.c_uint16),
@@ -241,7 +245,7 @@ is never a generated animation or a transcription claim.
                         cancel_event.wait(.02)
                 check_cancel()
                 if last_speech is None:
-                    raise ValueError('No audible speech detected; nothing was submitted.')
+                    raise EmptyRecording('No audible speech detected. Microphone off; nothing was submitted.')
         completed = True
     finally:
         if not completed:

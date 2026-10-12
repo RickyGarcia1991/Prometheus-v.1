@@ -182,10 +182,12 @@ function renderHealth(data) {
   const holder = element('healthResults'); holder.replaceChildren();
   const counts = data.counts || {};
   holder.append(textNode('p', `Checked ${data.checked_utc || 'now'} · ${counts.pass || 0} passed · ${counts.fail || 0} failed · ${counts.blocked || 0} blocked · ${counts.untested || 0} untested`, 'fine'));
+  const labels = {pass: 'Passed', fail: 'Needs attention', blocked: 'Could not complete', untested: 'Not run by this check'};
   for (const row of data.checks || []) {
-    const card = textNode('article', '', 'workspace-card');
     const status = ['pass', 'fail', 'blocked', 'untested'].includes(row.status) ? row.status : 'untested';
-    card.append(textNode('strong', `${status.toUpperCase()} · ${row.title || 'Check'}`));
+    const card = textNode('article', '', 'workspace-card health-' + status);
+    card.setAttribute('data-health-status', status);
+    card.append(textNode('strong', `${labels[status]} · ${row.title || 'Check'}`));
     card.append(textNode('p', row.summary || 'No result available.'));
     if (row.next_step) card.append(textNode('p', 'Next step: ' + row.next_step, 'fine'));
     if (row.models?.length) card.append(textNode('p', 'Complete model files: ' + row.models.join(', '), 'fine'));
@@ -194,6 +196,9 @@ function renderHealth(data) {
     if (row.scope) card.append(textNode('p', row.scope, 'fine'));
     holder.append(card);
   }
+  const summary = `Health check complete: ${counts.pass || 0} passed, ${counts.fail || 0} failed, ${counts.blocked || 0} blocked.`;
+  const remaining = counts.untested ? ` ${counts.untested} checks were not run by this passive check.` : '';
+  return summary + remaining + ((counts.fail || counts.blocked) ? ' Review the cards needing attention below.' : '');
 }
 
 element('openWorkbench').onclick = () => showWorkbench(panel.hidden);
@@ -351,7 +356,7 @@ window.addEventListener('prometheus-result', event => {
     element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}`;
     message('Project check ' + status.toLowerCase() + '.');
   } else if (mode === 'maintenance') { renderReadiness(data); message('Readiness refreshed. Physical checks remain separate from device detection.'); }
-  else if (mode === 'health_check') { renderHealth(data); message('Health check completed. Review failed, blocked and untested checks below.'); }
+  else if (mode === 'health_check') { message(renderHealth(data)); }
   else if (['component_updates', 'check_updates', 'configure_updates'].includes(mode)) {
     renderUpdates(data);
     message(mode === 'check_updates' ? 'Component check finished. Review its result and any pending activation below.' : 'Component update settings refreshed.');
@@ -368,7 +373,7 @@ window.addEventListener('prometheus-result', event => {
 window.addEventListener('beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
 element('compose').addEventListener('submit', () => { if (!state.busy && element('prompt').value.trim()) showWorkbench(false); }, true);
 element('prompt').addEventListener('keydown', event => {
-  if (event.key === 'Enter' && !event.shiftKey && !state.busy && element('prompt').value.trim()) showWorkbench(false);
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229 && !state.busy && element('prompt').value.trim()) showWorkbench(false);
 }, true);
 new MutationObserver(syncProviders).observe(element('provider'), {childList: true});
 element('projectRoot').value = element('project').value;

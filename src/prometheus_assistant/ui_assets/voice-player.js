@@ -1,6 +1,46 @@
 /* Local PCM playback and a pulse measured from that same audible stream. */
 (function(root){
 'use strict';
+function speechText(text){
+ // This is a speech-only rendering; the complete answer stays in the conversation.
+ let fence=null;const lines=[];
+ for(const line of text.replace(/\r\n?/g,'\n').split('\n')){
+  const marker=line.match(/^\s{0,3}(`{3,}|~{3,})(.*)$/);
+  if(fence){if(marker&&marker[1][0]===fence[0]&&marker[1].length>=fence.length&&!marker[2].trim())fence=null;continue;}
+  if(marker){fence=marker[1];lines.push('A code example is shown in the conversation.');continue;}
+  if(/^\s{0,3}\[[^\]]+\]:\s*\S+/.test(line))continue;
+  lines.push(line.replace(/^\s{0,3}(?:#{1,6}\s+|>\s?|\*\s+)/,''));
+ }
+ let plain=lines.join('\n')
+  .replace(/!?\[([^\]\n]+)\]\((?:[^()]|\([^()]*\))*\)/g,'$1')
+  .replace(/!?\[([^\]\n]+)\]\[[^\]\n]*\]/g,'$1')
+  .replace(/<https?:\/\/[^>]+>/g,'the link shown in the conversation')
+  .replace(/https?:\/\/[^\s<>]+/g,url=>'the link shown in the conversation'+(url.match(/[),.;:!?]+$/)?.[0]||''))
+  .replace(/`+([^`\n]+)`+/g,'$1')
+  .replace(/(\*\*|__)(?=\S)([\s\S]*?\S)\1/g,'$2')
+  .replace(/(^|[\s(])([*_])(?=\S)([^*\n]+?)\2(?=$|[\s.,!?;)])/g,'$1$3')
+  .replace(/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)+\|?\s*$/gm,'')
+  .replace(/\s+/g,' ').trim();
+ if(!plain)plain='The answer is shown in the conversation.';
+ const points=Array.from(plain);if(points.length<=4000)return plain;
+ const suffix=' The rest of the answer is in the conversation.';
+ let prefix=points.slice(0,4000-suffix.length-1).join('');
+ const sentences=[...prefix.matchAll(/[.!?](?:["'”’)]*)(?=\s)/g)];
+ const boundary=sentences.at(-1);
+ if(boundary&&boundary.index>=prefix.length*.5)prefix=prefix.slice(0,boundary.index+boundary[0].length);
+ else {const space=prefix.lastIndexOf(' ');if(space>=prefix.length*.5)prefix=prefix.slice(0,space);prefix=prefix.trimEnd().replace(/[,;:]$/,'')+'…';}
+ return prefix.trimEnd()+suffix;
+}
+const INTERRUPTED='Audio playback was interrupted. Choose Spoken + text and start voice chat again; your answer stays in text.';
+async function resumeContext(context){
+ if(context.state==='running')return;
+ let timer;
+ try{
+  if(context.state==='closed')throw Error(INTERRUPTED);
+  await Promise.race([context.resume(),new Promise((_,reject)=>{timer=root.setTimeout(()=>reject(Error(INTERRUPTED)),3000);})]);
+  if(context.state!=='running')throw Error(INTERRUPTED);
+ }catch{throw Error(INTERRUPTED);}finally{if(timer!==undefined)root.clearTimeout(timer);}
+}
 function envelope(buffer){
  const pcm=buffer.getChannelData(0),hop=Math.max(1,Math.round(buffer.sampleRate*.01));
  const rms=new Float32Array(Math.ceil(pcm.length/hop));
@@ -9,23 +49,33 @@ function envelope(buffer){
  return Float32Array.from(rms,x=>x<.0035?0:Math.min(1,Math.pow((x-.0035)/reference,.72)));
 }
 class LocalVoice {
- constructor(){this.epoch=0;this.context=null;this.source=null;this.samples=null;this.start=0;this.value=0;this.last=0;}
+ constructor(){this.epoch=0;this.context=null;this.source=null;this.samples=null;this.start=0;this.value=0;this.last=0;this.contextListener=null;}
  async unlock(){
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)throw Error('Audio playback is unavailable. Your answer stays in text.');
   if(!this.context||this.context.state==='closed')this.context=new AC({latencyHint:'interactive'});
-  await this.context.resume();if(this.context.state!=='running')throw Error('Choose Spoken + text to enable local voice playback.');
+  await resumeContext(this.context);
  }
- stop(){this.epoch++;if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();}this.source=null;this.samples=null;this.value=0;this.last=0;}
- async play(text,request,onstart,onend){
+ stop(){this.epoch++;if(this.contextListener){const {context,listener}=this.contextListener;context.removeEventListener('statechange',listener);this.contextListener=null;}if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();}this.source=null;this.samples=null;this.value=0;this.last=0;}
+ async play(text,request,onstart,onend,onerror=()=>{}){
   this.stop();const epoch=this.epoch;await this.unlock();if(epoch!==this.epoch)return false;
-  const result=await request('/api/speech',{text:Array.from(text).slice(0,4000).join('')});if(epoch!==this.epoch)return false;
+  const result=await request('/api/speech',{text:speechText(text)});if(epoch!==this.epoch)return false;
   if(result.encoding!=='wav-base64'||typeof result.audio!=='string'||result.audio.length>14000000)throw Error('Invalid local voice response.');
   const bytes=Uint8Array.from(atob(result.audio),c=>c.charCodeAt(0));
   const context=this.context,buffer=await context.decodeAudioData(bytes.buffer);if(epoch!==this.epoch)return false;
   if(buffer.duration>300||buffer.numberOfChannels!==1)throw Error('Local voice output exceeded its limit.');
+  // Synthesis/decoding can outlive a browser or device interruption.
+  await resumeContext(context);if(epoch!==this.epoch)return false;
   this.samples=envelope(buffer);const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);
   this.source=source;this.start=context.currentTime+.04;this.last=0;
-  source.onended=()=>{if(epoch!==this.epoch)return;this.stop();onend();};
+  let recovering=false;
+  const fail=error=>{if(epoch!==this.epoch)return;this.stop();onerror(error);};
+  const listener=()=>{
+   if(epoch!==this.epoch||context.state==='running'||recovering)return;
+   recovering=true;
+   resumeContext(context).then(()=>{recovering=false;},fail);
+  };
+  this.contextListener={context,listener};context.addEventListener('statechange',listener);
+  source.onended=()=>{if(epoch!==this.epoch)return;if(context.state!=='running'){fail(Error(INTERRUPTED));return;}this.stop();onend();};
   source.start(this.start);onstart();return true;
  }
  level(now){
@@ -40,6 +90,6 @@ class LocalVoice {
  }
  suspend(){this.stop();if(this.context?.state==='running')this.context.suspend().catch(()=>{});}
 }
-root.PrometheusVoice={LocalVoice,envelope};
+root.PrometheusVoice={LocalVoice,envelope,speechText};
 if(typeof module!=='undefined')module.exports=root.PrometheusVoice;
 })(typeof window!=='undefined'?window:globalThis);

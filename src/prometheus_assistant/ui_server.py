@@ -23,6 +23,7 @@ from .model_routing import routing_record, ROLE_MODELS, choose_helper
 from . import ui_workspace
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
+from .continuous_capture import EmptyRecording
 from .request_timing import RequestTiming, stage, timed
 
 ASSETS = Path(__file__).with_name('ui_assets')
@@ -383,6 +384,8 @@ class Interface:
                 else:
                     result = self.execute(request)
                 result = {'state': 'done', 'result': result}
+            except EmptyRecording as error:
+                result = {'state': 'cancelled', 'reason': 'empty_recording', 'error': str(error)}
             except GenerationCancelled as error:
                 result = {'state': 'cancelled', 'error': str(error)}
             except Exception as error:
@@ -405,7 +408,7 @@ class Interface:
                 if request['mode'] == 'dictate':
                     self.jobs[job_id].update(recording=False, level=0., elapsed=recorded_seconds)
                 self.current = None
-                # End/hidden-tab/shutdown discards a voice turn normally; it is
+                # End/hidden-tab/shutdown or an empty Stop ends a voice turn normally; it is
                 # not a failed microphone or decoder operation.
                 ended_dictation = request['mode'] == 'dictate' and result['state'] == 'cancelled'
                 self.state = 'idle' if background or result['state'] == 'done' or ended_dictation else 'error'

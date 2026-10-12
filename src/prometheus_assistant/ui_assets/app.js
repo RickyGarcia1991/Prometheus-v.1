@@ -14,7 +14,7 @@ const orbRenderer=window.PrometheusOrb?new window.PrometheusOrb.FoldedCore(canva
 const localVoice=window.PrometheusVoice?new window.PrometheusVoice.LocalVoice():null;
 let spokenMode=false,speechEpoch=0;
 let voiceChat=false,dictationJob=null,dictationPending=false,dictationEpoch=0,microphoneOn=false,finishingDictation=false;
-let lastVoicePulse=0,voicePulsePending=false,voiceFrame=null,voiceEndNotice='';
+let lastVoicePulse=0,voicePulsePending=false,voiceFrame=null,voiceEndNotice='',voiceActivity=null;
 const discardedDictations=new Set();
 const waveBars=Array.from({length:32},()=>{const bar=document.createElement('span');$('voiceWave').append(bar);return bar;});
 function resetWave(){for(const bar of waveBars)bar.style.height='3px';}
@@ -32,10 +32,10 @@ function voiceControls(){
  $('finishRecording').hidden=!microphoneOn;
  $('finishRecording').disabled=finishingDictation;
 }
-function voiceState(text){$('voiceState').textContent=text;voiceControls();}
+function voiceState(text,state=null){voiceActivity=state;if(state)activity(state);$('voiceState').textContent=text;voiceControls();}
 function stopVoiceChat(cancel=true){
  if(voiceChat){spokenMode=false;$('textMode').setAttribute('aria-pressed','true');$('spokenMode').setAttribute('aria-pressed','false');}
- const captured=dictationJob;if(captured)discardedDictations.add(captured);dictationEpoch++;voiceChat=false;dictationJob=null;dictationPending=false;microphoneOn=false;finishingDictation=false;
+ const captured=dictationJob;if(captured)discardedDictations.add(captured);dictationEpoch++;voiceChat=false;dictationJob=null;dictationPending=false;microphoneOn=false;finishingDictation=false;voiceActivity=null;
  if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}
  resetWave();$('voiceElapsed').textContent='';voiceControls();
  if(cancel&&captured)api('/api/cancel',{id:captured}).catch(()=>{});
@@ -44,14 +44,14 @@ async function beginRecording(){
  if(closed||!online||busy||document.hidden)return false;
  voiceEndNotice='';
  dictationPending=true;microphoneOn=false;finishingDictation=false;lastVoicePulse=0;
- resetWave();$('voiceElapsed').textContent='';voiceState('Opening microphone…');
+ resetWave();$('voiceElapsed').textContent='';voiceState('Opening microphone…','opening');
  const accepted=await submit('dictate');
  if(!accepted){stopVoiceChat();return false;}return true;
 }
 function listenAfterReply(){
  if(!voiceChat||closed||!online||document.hidden)return;
  if(busy){
-  voiceState('Waiting for local work…');const epoch=dictationEpoch;
+  voiceState('Waiting for local work…','thinking');const epoch=dictationEpoch;
   setTimeout(()=>{if(epoch===dictationEpoch)listenAfterReply();},500);return;
  }
  beginRecording();
@@ -61,8 +61,10 @@ async function toggleRecording(){
  if(busy||closed||!online||historyPending)return;
  if(spokenMode){
   if($('prompt').value.trim()){notice('Send or clear your draft before starting voice chat.');$('prompt').focus();return;}
-  // Playback is unlocked by this explicit click, never by a polling callback.
-  await selectVoice(true);if(!spokenMode||document.hidden)return;
+  // Renew playback authorization in this click even if the mode is already selected.
+  const epoch=speechEpoch;
+  try{await localVoice.unlock();}catch(error){if(epoch===speechEpoch)notice(error.message);return;}
+  if(epoch!==speechEpoch||!spokenMode||document.hidden)return;
   voiceChat=true;
  }
  await beginRecording();
@@ -70,13 +72,14 @@ async function toggleRecording(){
 async function finishRecording(){
  if(!dictationJob||!microphoneOn||finishingDictation)return;
  finishingDictation=true;voiceControls();
- try{await api('/api/dictation/finish',{id:dictationJob});voiceState('Finishing recording…');}
+ try{await api('/api/dictation/finish',{id:dictationJob});voiceState('Finishing recording…','finishing');}
  catch(error){finishingDictation=false;voiceControls();notice(error.message);}
 }
 function trackRecording(id,result){
  if(dictationJob!==id)return;
  microphoneOn=result.recording===true;
- voiceState(microphoneOn?(finishingDictation?'Finishing recording…':'Listening · take your time, pause to send'):result.stage?.startsWith('Microphone off')?'Microphone off · transcribing locally':'Opening microphone…');
+ const transcribing=result.stage?.startsWith('Microphone off');
+ voiceState(microphoneOn?(finishingDictation?'Finishing recording…':'Listening · take your time, pause to send'):transcribing?'Microphone off · transcribing locally':'Opening microphone…',microphoneOn?(finishingDictation?'finishing':'listening'):transcribing?'transcribing':'opening');
  const elapsed=Math.max(0,Number(result.elapsed)||0);
  $('voiceElapsed').textContent=Math.floor(elapsed/60)+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
  showLevel(microphoneOn?result.level:0);
@@ -94,7 +97,7 @@ function growPrompt(){const prompt=$('prompt');prompt.style.height='auto';prompt
 function notice(text){$('notice').textContent=text;$('notice').hidden=!text;}
 function rememberSession(value){session=value;try{if(value)localStorage.setItem('prometheus.session',value);else localStorage.removeItem('prometheus.session');}catch{}}
 function invalidateHistory(){historyEpoch++;historyPending=false;$('history').value=session||'';}
-function activity(state){$('orb').dataset.state=state;const labels={idle:['I’m here.','What shall we work on?'],thinking:['Thinking…','Working on your request'],listening:['Listening…','Pause to finish, or press Stop'],speaking:['Speaking…','Reading your answer'],error:['Let’s adjust.','See the message below'],offline:['Disconnected','Your text stays here']};const pair=labels[state]||labels.idle;$('activity').textContent=pair[0];$('activityNote').textContent=pair[1];}
+function activity(state){$('orb').dataset.state=['opening','finishing','transcribing','preparing'].includes(state)?'thinking':state;const labels={idle:['I’m here.','What shall we work on?'],thinking:['Thinking…','Working on your request'],opening:['Opening microphone…','Starting local recording'],finishing:['Finishing recording…','Closing the microphone'],transcribing:['Transcribing…','Microphone off · reading your words locally'],preparing:['Preparing voice…','Microphone off · preparing the spoken reply'],listening:['Listening…','Pause to finish, or press Stop'],speaking:['Speaking…','Reading your answer'],error:['Let’s adjust.','See the message below'],offline:['Disconnected','Your text stays here']};const pair=labels[state]||labels.idle;$('activity').textContent=pair[0];$('activityNote').textContent=pair[1];}
 async function api(path,data){try{return await transport.request(path,data);}catch(error){if(error.status===401){stopVoiceChat(false);window.dispatchEvent(new CustomEvent('prometheus-auth-lost'));invalidateHistory();stopSpeaking();$('messages').replaceChildren();location.replace('/');}throw error;}}
 function renderSourceLinks(content,text){
  // Render the stored source footer without interpreting answer text as HTML.
@@ -121,7 +124,27 @@ function renderSourceLinks(content,text){
   content.append(link);literal(part.suffix);
  });
 }
-function append(role,text,label='',details=null){$('welcome')?.remove();const box=document.createElement('article');box.className='message '+role;const tag=document.createElement('div');tag.className='label';tag.textContent=label||(role==='user'?'You':'Prometheus');const content=document.createElement('div');content.className='text';if(role==='assistant')renderSourceLinks(content,text);else content.textContent=text;box.append(tag,content);if(details){const panel=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='Sources and result details';pre.textContent=JSON.stringify(details,null,2);panel.append(summary,pre);box.append(panel);}const messages=$('messages'),follow=role==='user'||role==='error'||messages.scrollHeight-messages.clientHeight-(messages.scrollTop||0)<80||!messages.children.length;messages.append(box);while(messages.children.length>80)messages.firstChild.remove();if(follow)messages.scrollTop=Math.max(0,(box.offsetTop||0)-8);$('latestReply').hidden=false;return box;}
+function fillMessage(box,role,text,label='',details=null){
+ box.className='message '+role;
+ const tag=document.createElement('div');tag.className='label';tag.textContent=label||(role==='user'?'You':'Prometheus');
+ const content=document.createElement('div');content.className='text';
+ if(role==='assistant')renderSourceLinks(content,text);else content.textContent=text;
+ box.replaceChildren(tag,content);
+ if(details){const panel=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='Sources and result details';pre.textContent=JSON.stringify(details,null,2);panel.append(summary,pre);box.append(panel);}
+}
+function followingConversation(){const messages=$('messages');return messages.scrollHeight-messages.clientHeight-(messages.scrollTop||0)<80;}
+function append(role,text,label='',details=null){
+ $('welcome')?.remove();const box=document.createElement('article');fillMessage(box,role,text,label,details);
+ const messages=$('messages'),follow=role==='user'||role==='error'||followingConversation()||!messages.children.length;
+ messages.append(box);while(messages.children.length>80)messages.firstChild.remove();
+ if(follow)messages.scrollTop=Math.max(0,(box.offsetTop||0)-8);
+ $('latestReply').hidden=false;return box;
+}
+function updateAnswer(box,text,label,details=null){
+ const messages=$('messages'),follow=followingConversation(),position=messages.scrollTop||0;
+ fillMessage(box,'assistant',text,label,details);
+ messages.scrollTop=follow?Math.max(0,messages.scrollHeight-messages.clientHeight):position;
+}
 $('latestReply').onclick=()=>{const messages=$('messages'),last=messages.children[messages.children.length-1];if(last)messages.scrollTop=Math.max(0,(last.offsetTop||0)-8);};
 function setBusy(value){busy=value;for(const id of ['send','dictate','newChat','history','codingTools','models','capabilities','homeKey','questionImage'])$(id).disabled=value||closed||!online||(historyPending&&!['newChat','history'].includes(id));window.dispatchEvent(new CustomEvent('prometheus-busy',{detail:{busy,closed,online}}));if(!busy&&$('cancelRequest'))$('cancelRequest').hidden=true;voiceControls();}
 function updateFields(){const mode=$('mode').value;$('reachField').hidden=mode!=='reach';$('homeKeyField').hidden=mode!=='home';$('sourceField').hidden=mode!=='ask';$('imageField').hidden=mode!=='vision';$('profileField').hidden=mode!=='library'&&!(mode==='ask'&&$('evidenceSource').value==='offline');$('providerField').hidden=mode!=='research';$('languageField').hidden=mode!=='coding';$('projectField').hidden=mode!=='project'&&!(mode==='ask'&&$('evidenceSource').value==='project');$('prompt').placeholder=mode==='reach'?({'web-search':'Search the web for a topic…',web:'https://example.com/article',feed:'https://example.com/feed.xml','github-repo':'Panniantong/Agent-Reach','github-releases':'Panniantong/Agent-Reach','github-search':'portable local AI',youtube:'https://www.youtube.com/watch?v=…','youtube-transcript':'https://www.youtube.com/watch?v=…'}[$('reachAction').value]):mode==='ask'?'Ask a question about your selected sources…':mode==='vision'?'What would you like to know about this image?':mode==='home'?'For example: turn off bedroom lights; status front porch lights':mode==='calculate'?'For example: (24 * 17) / 3':mode==='project'?'Search for a function, class, or phrase…':mode==='coding'?'Describe what you want to build or fix…':'Speak your mind…';}
@@ -145,15 +168,16 @@ async function pollJob(id){
   if(result.state==='running'){setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
   if(localJob===id)localJob=null;job=null;cancelling=false;setBusy(false);activity('idle');adapt();return;
  }
- if(result.state==='running'){trackRecording(id,result);$('activityNote').textContent=result.stage||'Working on your request';if($('cancelRequest')){$('cancelRequest').hidden=!result.cancellable||dictationJob===id;$('cancelRequest').disabled=cancelling;}if(result.partial){if(!partialBox)partialBox=append('assistant','','In progress · not saved');partialBox.querySelector('.text').textContent=result.partial;window.dispatchEvent(new CustomEvent('prometheus-partial',{detail:{text:result.partial}}));}setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
- const ownDictation=dictationJob===id,continueVoice=ownDictation&&voiceChat;const origin=localJob===id?'local':'observed';if(ownDictation){dictationJob=null;microphoneOn=false;finishingDictation=false;voiceControls();}if(localJob===id)localJob=null;job=null;cancelling=false;const completedPartial=partialBox;partialBox=null;$('requestTime').textContent=result.seconds+' s';
- if(result.state==='error'||result.state==='cancelled'){stopVoiceChat(false);if(completedPartial)completedPartial.querySelector('.label').textContent='Incomplete · not saved';append('error',result.error,result.state==='cancelled'?'Request stopped':'Request needs attention');activity('error');if(!$('prompt').value)$('prompt').value=lastSubmitted;window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{action:result.action,error:result.error,origin,job_id:id}}));notice('You can edit your request and try again.');}
- else{const r=result.result;if(completedPartial)completedPartial.remove();if(r.transcript){if(ownDictation){const draft=$('prompt').value.trim();if(draft&&voiceChat)stopVoiceChat(false);$('prompt').value=draft?draft+'\n'+r.transcript:r.transcript;growPrompt();notice('Dictation is ready. Review it, then send when you’re ready.');}}else{lastReply=r.reply||'';append('assistant',lastReply,r.label,r.details);if(r.session)rememberSession(r.session);$('workLabel').textContent=r.label||'Request completed';$('saveStatus').textContent=r.session?'Saved locally':'Completed locally';window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{...r,origin,job_id:id}}));}activity('idle');}
+ if(result.state==='running'){trackRecording(id,result);$('activityNote').textContent=result.stage||'Working on your request';if($('cancelRequest')){$('cancelRequest').hidden=!result.cancellable||dictationJob===id;$('cancelRequest').disabled=cancelling;}if(result.partial){if(!partialBox)partialBox=append('assistant',result.partial,'In progress · not saved');else updateAnswer(partialBox,result.partial,'In progress · not saved');window.dispatchEvent(new CustomEvent('prometheus-partial',{detail:{text:result.partial}}));}setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
+ const ownDictation=dictationJob===id,continueVoice=ownDictation&&voiceChat;const origin=localJob===id?'local':'observed';if(ownDictation){dictationJob=null;microphoneOn=false;finishingDictation=false;voiceActivity=null;voiceControls();}if(localJob===id)localJob=null;job=null;cancelling=false;const completedPartial=partialBox;partialBox=null;$('requestTime').textContent=result.seconds+' s';
+ if(result.state==='cancelled'&&result.action==='dictate'&&result.reason==='empty_recording'){stopVoiceChat(false);stopSpeaking();if(completedPartial)completedPartial.remove();activity('idle');voiceEndNotice=result.error;notice(voiceEndNotice);}
+ else if(result.state==='error'||result.state==='cancelled'){stopVoiceChat(false);if(completedPartial)completedPartial.querySelector('.label').textContent='Incomplete · not saved';append('error',result.error,result.state==='cancelled'?'Request stopped':'Request needs attention');activity('error');if(!$('prompt').value)$('prompt').value=lastSubmitted;window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{action:result.action,error:result.error,origin,job_id:id}}));notice('You can edit your request and try again.');}
+ else{const r=result.result;if(r.transcript){if(completedPartial)completedPartial.remove();if(ownDictation){const draft=$('prompt').value.trim();if(draft&&voiceChat)stopVoiceChat(false);$('prompt').value=draft?draft+'\n'+r.transcript:r.transcript;growPrompt();notice('Dictation is ready. Review it, then send when you’re ready.');}}else{lastReply=r.reply||'';if(completedPartial)updateAnswer(completedPartial,lastReply,r.label,r.details);else append('assistant',lastReply,r.label,r.details);if(r.session)rememberSession(r.session);$('workLabel').textContent=r.label||'Request completed';$('saveStatus').textContent=r.session?'Saved locally':'Completed locally';window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{...r,origin,job_id:id}}));}activity('idle');}
  setBusy(false);refreshHistory();
  adapt();
  if(result.state==='done'&&continueVoice&&voiceChat&&!document.hidden){
   if($('prompt').value.length>4000){stopVoiceChat(false);notice('This transcript is longer than one message. Edit it before sending; your words remain in the box.');return;}
-  voiceState('Thinking…');await submit('chat');
+  voiceState('Thinking…','thinking');await submit('chat');
  }else if(result.state==='done'&&origin==='local'&&result.result?.reply&&spokenMode&&!document.hidden)speak();
  }catch(error){if(job!==id)return;if(error.status===404||error.status===403){stopVoiceChat(false);job=null;localJob=null;setBusy(false);if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('This request is no longer available. Check saved conversations before sending it again.');await refreshHistory();return;}notice('Connection interrupted. Your request may still be running; reconnecting…');setTimeout(()=>pollJob(id),5000);}
 }
@@ -168,27 +192,28 @@ async function imageUpload(){
 }
 async function submit(modeOverride){
  if(busy||closed||!online)return false;if(historyPending){notice('Wait for the selected conversation to load, or choose New conversation. Your message stays here.');return;}const mode=modeOverride||$('mode').value,prompt=$('prompt').value.trim();if(!prompt&&!['dictate','tools','models','capabilities'].includes(mode)){$('prompt').focus();return;}
- window.dispatchEvent(new CustomEvent('prometheus-show-conversation'));invalidateHistory();stopSpeaking();notice('');submitting=true;cancelling=false;setBusy(true);activity(mode==='dictate'?'listening':'thinking');const captureEpoch=dictationEpoch;if(mode==='dictate'){dictationPending=true;voiceControls();notice(voiceChat?'Voice chat is on. Pause to send; End voice chat stops listening.':'Recording locally. Pause to finish, or press Stop recording. Your words will be held for review.');}
+ window.dispatchEvent(new CustomEvent('prometheus-show-conversation'));invalidateHistory();stopSpeaking();notice('');submitting=true;cancelling=false;setBusy(true);activity(mode==='dictate'?'opening':'thinking');const captureEpoch=dictationEpoch;if(mode==='dictate'){dictationPending=true;voiceActivity='opening';voiceControls();notice(voiceChat?'Voice chat is on. Pause to send; End voice chat stops listening.':'Recording locally. Pause to finish, or press Stop recording. Your words will be held for review.');}
  try{const body={mode,prompt,profile:$('profile').value,provider:$('provider').value||'crossref',language:$('language').value||'Auto',project:$('project').value};if(mode==='reach')body.reach_action=$('reachAction').value;if(mode==='ask')body.source=$('evidenceSource').value||'documents';if(mode==='vision')body.content=await imageUpload();if(mode==='home')body.home_key=$('homeKey').value;if(mode==='documents')body.include_history=$('documentHistory')?.checked||false;if(session)body.session=session;const result=await api('/api/jobs',body);job=result.id;localJob=job;if(mode==='dictate'){dictationPending=false;if(captureEpoch!==dictationEpoch||document.hidden){discardedDictations.add(job);api('/api/cancel',{id:job}).catch(()=>{});pollJob(job);return false;}dictationJob=job;voiceControls();}partialBox=null;lastSubmitted=prompt;if(mode==='vision')$('questionImage').value='';if(!['dictate','tools','models','capabilities'].includes(mode)){append('user',prompt);$('prompt').value='';}pollJob(job);adapt();growPrompt();return true;}
  catch(error){stopVoiceChat();setBusy(false);activity('error');notice(error.message);return false;}finally{submitting=false;}
 }
-function stopSpeaking(){speechEpoch++;localVoice?.stop();if('speechSynthesis'in window)speechSynthesis.cancel();speaking=false;if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}$('stopSpeech').hidden=true;activity(busy?'thinking':'idle');}
+function stopSpeaking(){speechEpoch++;localVoice?.stop();if('speechSynthesis'in window)speechSynthesis.cancel();speaking=false;voiceActivity=null;if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}$('stopSpeech').hidden=true;activity(busy?'thinking':'idle');}
 async function speak(){
  if(!lastReply||busy||closed||document.hidden)return;
  stopSpeaking();const epoch=speechEpoch;
  if(!localVoice){notice('Local voice playback is unavailable. Your answer stays in text.');return;}
- $('stopSpeech').hidden=false;notice('Preparing the installed local voice…');
- try{await localVoice.play(lastReply,api,()=>{if(epoch!==speechEpoch)return;speaking=true;activity('speaking');voiceState('Prometheus is speaking · microphone off');if(voiceChat)voiceFrame=requestAnimationFrame(playbackWave);notice('');},()=>{if(epoch!==speechEpoch)return;speaking=false;activity(busy?'thinking':'idle');$('stopSpeech').hidden=true;listenAfterReply();});}
+ $('stopSpeech').hidden=false;voiceState('Preparing voice · microphone off','preparing');notice('Preparing the installed local voice…');
+ try{await localVoice.play(lastReply,api,()=>{if(epoch!==speechEpoch)return;speaking=true;voiceState('Prometheus is speaking · microphone off','speaking');if(voiceChat)voiceFrame=requestAnimationFrame(playbackWave);notice('');},()=>{if(epoch!==speechEpoch)return;speaking=false;voiceActivity=null;activity(busy?'thinking':'idle');$('stopSpeech').hidden=true;listenAfterReply();},error=>{if(epoch!==speechEpoch)return;stopVoiceChat();stopSpeaking();notice(error.message);});}
  catch(error){if(epoch!==speechEpoch)return;stopVoiceChat();stopSpeaking();notice(error.message);}
 }
 async function selectVoice(enabled){
+ if(enabled&&spokenMode)return;
  if(!enabled)stopVoiceChat();stopSpeaking();const epoch=speechEpoch;spokenMode=false;
  $('textMode')?.setAttribute('aria-pressed','true');$('spokenMode')?.setAttribute('aria-pressed','false');
  if(enabled){try{if(!localVoice)throw Error('Local voice playback is unavailable.');await localVoice.unlock();if(epoch!==speechEpoch||document.hidden)return;spokenMode=true;}catch(error){if(epoch!==speechEpoch)return;notice(error.message);}}
  $('textMode')?.setAttribute('aria-pressed',String(!spokenMode));$('spokenMode')?.setAttribute('aria-pressed',String(spokenMode));voiceControls();
 }
-async function status(){if(closed)return;try{const s=await api('/api/status');online=true;$('lamp').className='ready';$('connection').textContent=s.development_preview?'Development preview · local test history':'Connected · local';hardware=s.hardware;$('memory').textContent=`${hardware.ram_gib} GiB installed · ${hardware.available_ram_gib??'unknown'} GiB available. ${hardware.chat_ready?'Local model can fit.':'Reference mode is ready.'}`;if(s.closing){stopVoiceChat(false);invalidateHistory();$('homeKey').value='';closed=true;setBusy(true);notice('Prometheus is closing after the current request. Saved conversations are retained.');stopSpeaking();motion();return;}if(s.job&&!s.job_background&&!job&&!submitting){invalidateHistory();job=s.job;pollJob(job);}setBusy(s.busy||submitting||!!job);if(!speaking)activity((submitting||job)&&!s.busy?"thinking":s.state);adapt();}catch(error){stopVoiceChat();invalidateHistory();online=false;setBusy(busy);$('lamp').className='';$('connection').textContent='Disconnected · retrying';activity('offline');}setTimeout(status,document.hidden?15000:5000);}
-$('compose').onsubmit=event=>{event.preventDefault();submit();};$('prompt').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}};
+async function status(){if(closed)return;try{const s=await api('/api/status');online=true;$('lamp').className='ready';$('connection').textContent=s.development_preview?'Development preview · local test history':'Connected · local';hardware=s.hardware;$('memory').textContent=`${hardware.ram_gib} GiB installed · ${hardware.available_ram_gib??'unknown'} GiB available. ${hardware.chat_ready?'Local model can fit.':'Reference mode is ready.'}`;if(s.closing){stopVoiceChat(false);invalidateHistory();$('homeKey').value='';closed=true;setBusy(true);notice('Prometheus is closing after the current request. Saved conversations are retained.');stopSpeaking();motion();return;}if(s.job&&!s.job_background&&!job&&!submitting){invalidateHistory();job=s.job;pollJob(job);}setBusy(s.busy||submitting||!!job);if(!speaking)activity(voiceActivity||((submitting||job)&&!s.busy?'thinking':s.state));adapt();}catch(error){stopVoiceChat();invalidateHistory();online=false;setBusy(busy);$('lamp').className='';$('connection').textContent='Disconnected · retrying';activity('offline');}setTimeout(status,document.hidden?15000:5000);}
+$('compose').onsubmit=event=>{event.preventDefault();submit();};$('prompt').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();submit();}};
 $('mode').onchange=updateFields;$('reachAction').onchange=updateFields;$('evidenceSource').onchange=updateFields;$('quality').onchange=()=>{preference=$('quality').value;try{localStorage.setItem('prometheus.display',preference);}catch{}adapt();};
 $('dictate').onclick=toggleRecording;$('finishRecording').onclick=finishRecording;$('codingTools').onclick=()=>submit('tools');$('stopSpeech').onclick=()=>{stopVoiceChat();stopSpeaking();};
 $('newChat').onclick=()=>{stopVoiceChat();invalidateHistory();stopSpeaking();rememberSession(null);window.dispatchEvent(new CustomEvent('prometheus-show-conversation'));$('messages').replaceChildren();$('latestReply').hidden=true;$('history').value='';lastReply='';$('workLabel').textContent='Ready for your next idea';$('requestTime').textContent='';$('saveStatus').textContent='Ready · nothing sent';notice('New conversation. Earlier conversations remain in Saved conversations.');setBusy(busy);$('prompt').focus();};
@@ -214,6 +239,7 @@ $('models').onclick=()=>submit('models');$('capabilities').onclick=()=>submit('c
 $('textMode')?.addEventListener('click',()=>selectVoice(false));
 $('spokenMode')?.addEventListener('click',()=>selectVoice(true));
 $('ownerPanelToggle')?.addEventListener('click',()=>{const panel=$('ownerPanel');panel.hidden=!panel.hidden;$('ownerPanelToggle').setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)refreshHistory();});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('ownerPanel').hidden){event.preventDefault();$('ownerPanel').hidden=true;$('ownerPanelToggle').setAttribute('aria-expanded','false');$('ownerPanelToggle').focus();}});
 $('ownerLock')?.addEventListener('click',async()=>{stopVoiceChat();invalidateHistory();stopSpeaking();try{await api('/api/owner/lock',{});stopSpeaking();$('messages').replaceChildren();location.replace('/');}catch(error){setBusy(busy);notice(error.message);}});
 window.addEventListener('pagehide',()=>{stopVoiceChat();stopSpeaking();localVoice?.suspend();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(voiceChat||dictationJob||dictationPending){voiceEndNotice='Voice chat ended when this tab was hidden. Start voice chat again when you return.';notice(voiceEndNotice);}stopVoiceChat();stopSpeaking();localVoice?.suspend();if($('ownerPanel'))$('ownerPanel').hidden=true;$('ownerPanelToggle')?.setAttribute('aria-expanded','false');}lastFrame=lastPaint=0;frames=slowFrames=drawTotal=0;adapt();});reduced.addEventListener('change',adapt);

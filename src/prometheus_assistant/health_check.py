@@ -277,7 +277,7 @@ def run_health_check(memory_path, resources_root=None, *, release_root=None, run
                           installed_ram_gib=hardware.ram_gib, available_ram_gib=hardware.available_ram_gib,
                           scope='Estimate with no resident-model credit. Successful loading, speed and answer quality are untested.'))
     checks.append(_result('physical_acceptance', 'Microphone, speaker and portability acceptance', 'untested',
-                          'No recording, audio playback, eject/reconnect or second-computer test was performed.',
+                          'This passive check does not record audio, play a reply, eject/reconnect the SSD or test another computer. Any separate user-confirmed tests remain separate evidence.',
                           'Review a spoken transcript, listen to a reply, then explicitly test safe eject/reconnect and startup on another computer.'))
     checks.append(_result('model_acceptance', 'Model task acceptance', 'untested',
                           'No model inference or answer-quality test was run by this health check.',

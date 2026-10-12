@@ -24,6 +24,29 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  assert.equal(posts(one).length,1,'ordinary dictation is held for review');
  assert(one.elements.voiceCapture.hidden);
 
+ for(const handsFree of [false,true]){
+  const empty=await fixture({voice:fakeVoice()});
+  if(handsFree)await empty.run('selectVoice(true)');
+  await empty.elements.dictate.click();await settle();const emptyId=empty.run('dictationJob');
+  empty.elements.prompt.value='Preserve this draft';
+  empty.jobs.set(emptyId,{state:'cancelled',action:'dictate',reason:'empty_recording',seconds:1,
+   error:'No audible speech detected. Microphone off; nothing was submitted.',recording:false});
+  await empty.run(`pollJob('${emptyId}')`);await settle();
+  assert.equal(empty.elements.orb.dataset.state,'idle','empty Stop recording is not a red device failure');
+  assert.equal(empty.run('voiceChat'),false);assert.equal(empty.run('dictationJob'),null);
+  assert.equal(empty.run('busy'),false);assert(empty.elements.voiceCapture.hidden);
+  assert.equal(empty.elements.messages.children.length,0,'empty recording creates no error bubble or conversation');
+  assert.equal(empty.elements.prompt.value,'Preserve this draft');
+  assert.match(empty.elements.notice.textContent,/No audible speech.*Microphone off/);
+  await empty.run('listenAfterReply()');await settle();
+  assert.equal(posts(empty).length,1,'empty hands-free input neither submits an empty message nor restarts recording');
+ }
+ const failed=await fixture({voice:fakeVoice()});await failed.run('selectVoice(true)');await failed.elements.dictate.click();await settle();
+ const failedId=failed.run('dictationJob');failed.jobs.set(failedId,{state:'error',action:'dictate',seconds:1,error:'Microphone device failed',recording:false});
+ await failed.run(`pollJob('${failedId}')`);await settle();
+ assert.equal(failed.elements.orb.dataset.state,'error','genuine microphone failures still need attention');
+ assert.equal(failed.run('voiceChat'),false);assert.equal(posts(failed).length,1);
+
  const racing=await fixture();await racing.elements.dictate.click();await settle();const raceId=racing.run('dictationJob');
  racing.context.performance.now=()=>5000;
  racing.jobs.set(raceId,{state:'running',recording:true,level:.4,elapsed:10});

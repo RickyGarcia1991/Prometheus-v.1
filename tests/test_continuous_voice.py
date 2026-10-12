@@ -109,7 +109,7 @@ def test_short_noise_is_not_accepted_as_speech(tmp_path, runtime):
     def update(level, elapsed):
         if elapsed >= 34:
             finish.set()
-    with pytest.raises(ValueError, match='No audible speech'):
+    with pytest.raises(capture.EmptyRecording, match='No audible speech'):
         capture.record_continuous(tmp_path/'noise.wav', finish_event=finish, on_level=update)
 
 
@@ -158,7 +158,7 @@ def test_end_or_disconnect_while_waiting_discards_idle_audio(tmp_path, runtime, 
             elif stop == 'cancel':
                 cancel.set()
     path = tmp_path/'ended-idle.wav'
-    expected = ValueError if stop == 'finish' else GenerationCancelled
+    expected = capture.EmptyRecording if stop == 'finish' else GenerationCancelled
     message = 'No audible speech' if stop == 'finish' else 'cancelled|disconnected'
     with pytest.raises(expected, match=message):
         capture.record_continuous(path, cancel_event=cancel, finish_event=finish,
