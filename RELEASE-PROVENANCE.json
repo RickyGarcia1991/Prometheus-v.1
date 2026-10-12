@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev7-folded-core-r2-20261012",
-  "version": "0.8.0.dev7",
-  "prepared_utc": "2026-10-12T06:31:02.718938+00:00",
-  "base_git_commit": "53cc95ef79934b387875f01d64711ceb0d82106e",
-  "source_branch": "feature/folded-core-20261012",
-  "base_release": "Prometheus-v0.8.0-dev6-scoped-policy-20261012",
-  "base_manifest_sha256": "74fe2a98c11a5aac0f4176c0c012ff5a2f042184ba37364b4abe0aa0c978b9a0",
-  "integration_scope": "Selected Folded core material, owner workspace disclosure, and playback-synchronized local speech pulses.",
+  "release": "Prometheus-v0.8.0-dev8-model-reliability-20261012",
+  "version": "0.8.0.dev8",
+  "prepared_utc": "2026-10-12T07:00:13.767823+00:00",
+  "base_git_commit": "ab47ea1157ea990a10055054cfcf47da96ba4b88",
+  "source_branch": "fix/model-reliability-20261012",
+  "base_release": "Prometheus-v0.8.0-dev7-folded-core-r2-20261012",
+  "base_manifest_sha256": "f8004ef6825dc6fae9e08f3fa44cdd093aadff5387c109f4bac5c961f1609431",
+  "integration_scope": "Targeted model reliability repairs; Folded core interface retained.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -22,8 +22,7 @@
     "Same-OS-account full authority rollback before restart is outside the host-local continuity guarantee.",
     "Real model qualification is a limited sample with retained failures, not model promotion.",
     "Human acoustic acceptance, physical removal/reinsertion and second-host checks remain separate.",
-    "Existing eight-second dictation retained; extended microphone recording and physical audio acceptance remain separate."
-  ],
-  "packaging_correction": "Release identity updated before signing; prior signed builds remain unchanged.",
-  "implementation_commit": "92f22f8bcb4f08187bde9556563355e5cb8068f1"
+    "Existing eight-second dictation retained; extended microphone recording and physical audio acceptance remain separate.",
+    "Six bounded agent cases pass, including deterministic attributed recall and registered source search. Raw planner errors remain; no model promotion or broad accuracy claim."
+  ]
 }

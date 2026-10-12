@@ -2,6 +2,9 @@
 import json
 import re
 
+def requests_json(prompt):
+    return bool(re.search(r"\b(?:return|respond|answer|output)\s+(?:with\s+|in\s+)?(?:only\s+|valid\s+)?json\b", prompt, re.I))
+
 def output_issues(prompt, reply):
     if not isinstance(reply, str) or not reply.strip():
         return ("no completed response",)
@@ -18,7 +21,7 @@ def output_issues(prompt, reply):
         items=re.findall(r"(?m)^\s*(?:[-*•]|\d+[.)])\s+\S",reply)
         if len(items)!=requested:
             issues.append(f"requested {requested} list items; found {len(items)} explicit list items")
-    if re.search(r"\b(?:return|respond|answer|output)\s+(?:with\s+|in\s+)?(?:only\s+|valid\s+)?json\b",text):
+    if requests_json(prompt):
         try: json.loads(reply)
         except (ValueError,TypeError): issues.append("requested JSON is not valid JSON")
     lines=[re.sub(r"\s+"," ",line).strip().casefold() for line in reply.splitlines() if line.strip()]
