@@ -202,6 +202,21 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   e.documentUrl.value = 'https://example.org/doc'; e.documentDate.value = '2026-10-09';
   await e.importDocument.click();
   assert.deepEqual(last(), {mode: 'document_import', content: 'dGVzdA==', name: 'example.md', source_url: 'https://example.org/doc', source_date: '2026-10-09', document_id: ''});
+  result('document_import', {});
+  for (const name of ['slides.pptx', 'inventory.xlsx', 'SLIDES.PPTX', 'INVENTORY.XLSX']) {
+    e.documentFile.files = [{name, size: 4, content: 'test'}]; e.documentFile.dispatch('change');
+    const beforeImport = submitted.length;
+    await e.importDocument.click();
+    assert.equal(submitted.length, beforeImport + 1, name + ' reaches the document importer');
+    assert.deepEqual(last(), {mode: 'document_import', content: 'dGVzdA==', name, source_url: 'https://example.org/doc', source_date: '2026-10-09', document_id: ''});
+    result('document_import', {});
+  }
+  for (const name of ['macros.xlsm', 'legacy.ppt', 'program.exe']) {
+    e.documentFile.files = [{name, size: 4, content: 'test'}]; e.documentFile.dispatch('change');
+    const beforeImport = submitted.length;
+    await e.importDocument.click();
+    assert.equal(submitted.length, beforeImport, name + ' remains unsupported');
+  }
   e.backupDestination.value = 'C:\\Backups'; await e.createBackup.click(); assert.deepEqual(last(), {mode: 'backup', destination: 'C:\\Backups'});
   e.restoreBackupPath.value = 'C:\\Backups\\saved'; e.restoreDestination.value = 'C:\\Backups\\new-restore'; await e.restoreCheck.click();
   assert.deepEqual(last(), {mode: 'restore_check', backup_path: 'C:\\Backups\\saved', destination: 'C:\\Backups\\new-restore'});

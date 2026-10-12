@@ -50,9 +50,12 @@ function controls() {
 function showWorkbench(show) {
   panel.hidden = !show; main.classList.toggle('workspace-open', show);
   element('openWorkbench').setAttribute('aria-expanded', String(show));
+  element('ownerPanel').hidden = true;
+  element('ownerPanelToggle').setAttribute('aria-expanded', 'false');
   if (show) element('workbench').querySelector('[role=tab][aria-selected=true]').focus();
   else element('prompt').focus();
 }
+window.addEventListener('prometheus-show-conversation', () => showWorkbench(false));
 function switchPanel(name, focus = false) {
   ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'].forEach(item => {
     const selected = item === name, tab = element('tab' + item);
@@ -216,7 +219,7 @@ element('indexDocuments').onclick = () => action({mode: 'document_index'});
 element('documentFile').onchange = controls;
 element('importDocument').onclick = async () => {
   const file = element('documentFile').files[0];
-  if (!file || !/\.(txt|md|csv|pdf|docx)$/i.test(file.name)) { message('Choose TXT, Markdown, CSV, PDF or DOCX.'); return; }
+  if (!file || !/\.(txt|md|csv|pdf|docx|pptx|xlsx)$/i.test(file.name)) { message('Choose TXT, Markdown, CSV, PDF, DOCX, PPTX or XLSX.'); return; }
   if (!file.size || file.size > 8 * 1024 * 1024) { message('Choose a file containing 1 byte to 8 MiB.'); return; }
   const metadata = {name: file.name, source_url: element('documentUrl').value.trim(), source_date: element('documentDate').value,
                     document_id: element('documentVersion').value};

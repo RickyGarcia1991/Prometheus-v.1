@@ -17,6 +17,12 @@ from prometheus_assistant import document_library
 from prometheus_assistant import markitdown_documents as converter
 
 
+requires_portable_markitdown = pytest.mark.skipif(
+    os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32,
+    reason='Native document converters require bundled Windows x64 Python 3.12',
+)
+
+
 def office_zip(entries):
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
@@ -48,6 +54,7 @@ def pptx_bytes(text='Portable presentation evidence'):
 
 
 @pytest.mark.parametrize('name,body,location', [('inventory.xlsx', xlsx_bytes(), 'sheet Inventory'), ('brief.pptx', pptx_bytes(), 'slide 1')], ids=['xlsx','pptx'])
+@requires_portable_markitdown
 def test_real_offline_office_import_search_and_original(tmp_path, name, body, location, monkeypatch):
     # Worker isolation ignores caller's Python import overrides and cloud keys.
     monkeypatch.setenv('PYTHONPATH', str(tmp_path/'unrelated-host-packages'))
@@ -61,6 +68,7 @@ def test_real_offline_office_import_search_and_original(tmp_path, name, body, lo
     assert record['sha256'] == hashlib.sha256(body).hexdigest()
 
 
+@requires_portable_markitdown
 def test_xlsx_revised_content_retains_history_and_conditional_updates(tmp_path):
     library = DocumentLibrary(tmp_path/'library')
     first = library.import_bytes('inventory.xlsx', xlsx_bytes('Original capacitor'))
@@ -71,6 +79,7 @@ def test_xlsx_revised_content_retains_history_and_conditional_updates(tmp_path):
     assert library.search('transistor', semantic=False)['results']
 
 
+@requires_portable_markitdown
 def test_xlsx_keeps_literal_identifiers_na_and_cached_numeric_values(tmp_path):
     xml = '''<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>
 <row r="1"><c r="A1" t="inlineStr"><is><t>Evidence</t></is></c></row>

@@ -82,9 +82,9 @@
 <h3>Latest result</h3><div id="remoteResult" class="remote-result" aria-live="polite"><p class="fine">No remote action result yet.</p></div><p class="fine">Disconnect closes this connection. Commands already started may continue on the other computer.</p>
 </section>
 </div></section>
-<section id="messages" class="messages" aria-label="Current conversation" aria-live="polite"><div id="welcome" aria-hidden="true"></div></section>
+<section id="messages" class="messages" tabindex="0" aria-label="Current conversation" aria-live="polite"><div id="welcome" aria-hidden="true"></div></section>
 <div id="notice" role="status" class="notice" hidden></div>
 <form id="compose"><label class="sr-only" for="prompt">Message to Prometheus</label><textarea id="prompt" placeholder="Speak your mind…" maxlength="4000" rows="2" required></textarea><button id="send" type="submit" class="send" aria-label="Send message">↗</button></form>
-<div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record 8 seconds</button><button id="speak" disabled>Read answer aloud</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
+<div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record 8 seconds</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
 <footer>Answers and code can need checking. Source excerpts retain their citations. <span id="saveStatus">Ready · nothing sent</span></footer>
 </main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script></body></html>

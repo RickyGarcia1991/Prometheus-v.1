@@ -188,3 +188,33 @@ def test_workspace_health_action_does_not_start_runtime_or_create_memory(install
     assert result['action'] == 'health_check'
     assert check(result['details'], 'memory_database')['status'] == 'blocked'
     assert not installation.memory.exists()
+
+
+@pytest.mark.parametrize('ticks', [[0, 0, 0, 0, 31], [0, 0, 0, 0, 0, 31]],
+                         ids=['between-files', 'during-read'])
+def test_checksum_timeout_preserves_previously_detected_failure(installation, monkeypatch, ticks):
+    missing = {'path': 'missing.py', 'size_bytes': 1, 'sha256': '0' * 64}
+    rows = [installation.entries[0], missing, installation.entries[1]]
+    (installation.release / 'SHA256-MANIFEST.json').write_text(json.dumps(rows))
+    clock = iter(ticks)
+    with monkeypatch.context() as patch:
+        patch.setattr(health.time, 'monotonic', lambda: next(clock))
+        result = health._code_manifest(installation.release)
+
+    assert result['status'] == 'fail'
+    assert result['checked_files'] == 1
+    assert result['issue_count'] == 1
+    assert result['files_needing_review'] == ['missing.py']
+    assert result['scan_complete'] is False
+    assert 'untested' in result['next_step']
+
+
+def test_checksum_timeout_without_known_failure_remains_blocked(installation, monkeypatch):
+    clock = iter([0, 0, 0, 31])
+    with monkeypatch.context() as patch:
+        patch.setattr(health.time, 'monotonic', lambda: next(clock))
+        result = health._code_manifest(installation.release)
+
+    assert result['status'] == 'blocked'
+    assert result['checked_files'] == 1
+    assert result['scan_complete'] is False

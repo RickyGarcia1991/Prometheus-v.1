@@ -205,10 +205,13 @@ class Interface:
 
     def status(self):
         self.last_seen = time.monotonic()
-        return {'hardware': hardware_status(), 'state': self.state,
-                'busy': self.current is not None, 'closing': self.closing,
-                'job': self.current, 'saved_locally': True, 'development_preview': self.preview,
-                'maintenance_error': self.maintenance_error}
+        hardware = hardware_status()
+        with self.lock:
+            return {'hardware': hardware, 'state': self.state,
+                    'busy': self.current is not None, 'closing': self.closing,
+                    'job': self.current, 'job_background': self.jobs.get(self.current, {}).get('background', False),
+                    'saved_locally': True, 'development_preview': self.preview,
+                    'maintenance_error': self.maintenance_error}
 
     def append_partial(self, text):
         with self.lock:
@@ -251,9 +254,9 @@ class Interface:
         try:
             # Alternate when both queues are due, so neither can starve the other.
             if update_due and (not source_due or self.maintenance_turn % 2 == 0):
-                self.submit({'mode': 'check_updates', 'prompt': ''})
+                self.submit({'mode': 'check_updates', 'prompt': ''}, background=True)
             elif source_due:
-                self.submit({'mode': 'check_sources', 'prompt': ''})
+                self.submit({'mode': 'check_sources', 'prompt': ''}, background=True)
             self.maintenance_turn += 1
         except Exception as error:
             self.maintenance_error = str(error)[:400]
@@ -308,8 +311,10 @@ class Interface:
                         process.kill()
                         process.wait(timeout=5)
 
-    def submit(self, request, *, grant_owner=None):
+    def submit(self, request, *, grant_owner=None, background=False):
         request = validate_job(request)
+        if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates'}:
+            raise ValueError('Only scheduled source and component checks can be background jobs.')
         from .application_policy import require_dispatch
         require_dispatch('ui.'+request['mode'])
         with self.lock:
@@ -319,7 +324,7 @@ class Interface:
             if len(self.jobs) >= 12:
                 del self.jobs[next(iter(self.jobs))]
             self.cancel_event.clear()
-            self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '',
+            self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
                                  'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
@@ -349,6 +354,7 @@ class Interface:
             except Exception as error:
                 result = {'state': 'error', 'error': str(error)[:1600]}
             with self.lock:
+                background = self.jobs.get(job_id, {}).get('background', False)
                 diagnostics = timing.snapshot({'done': 'completed', 'error': 'failed',
                                                'cancelled': 'cancelled'}[result['state']])
                 payload = result.get('result')
@@ -358,11 +364,13 @@ class Interface:
                     # stay untouched, and final persistence is measured too.
                     result['result'] = {**payload, 'details': {
                         **payload['details'], 'request_timing': diagnostics}}
-                self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'],
+                self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'], 'background': background,
                                     'seconds': round(diagnostics['worker_total_seconds'], 3),
                                     'diagnostics': diagnostics}
                 self.current = None
-                self.state = 'idle' if result['state'] == 'done' else 'error'
+                self.state = 'idle' if background or result['state'] == 'done' else 'error'
+                if background and result['state'] != 'done':
+                    self.maintenance_error = result['error'][:400]
 
     def save(self, request, data, label, model='references'):
         if self.cancel_event.is_set() and request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach'}:

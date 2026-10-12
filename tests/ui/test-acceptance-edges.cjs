@@ -13,7 +13,7 @@ function deferred() { let resolve, reject; const promise = new Promise((a, b) =>
 async function settle() { for (let i = 0; i < 50; i++) await Promise.resolve(); }
 const saved = name => [{role: 'user', content: 'Question ' + name}, {role: 'assistant', content: 'Answer ' + name, label: 'Helper ' + name}];
 
-async function fixture(voice=null) {
+async function fixture(voice=null, {workspace = false} = {}) {
   const dom = setup({runWorkspace: false}), {elements: e, context, documentRoot} = dom;
   const requests = [], queued = new Map(), jobs = new Map(), documentEvents = {}, storage = new Map(), timers = [];
   let serial = 0;
@@ -25,7 +25,7 @@ async function fixture(voice=null) {
   context.document.querySelectorAll = selector => documentRoot.querySelectorAll(selector);
   context.document.addEventListener = (name, callback) => { documentEvents[name] = callback; };
   context.window.dispatchEvent = event => dom.emit(event.type, event.detail);
-  context.CustomEvent = class { constructor(type, value) { this.type = type; this.detail = value.detail; } };
+  context.CustomEvent = class { constructor(type, value = {}) { this.type = type; this.detail = value.detail; } };
   context.matchMedia = () => reduced;
   context.PrometheusAdaptive = {AdaptiveDisplay};
   if(voice)context.window.PrometheusVoice={LocalVoice:class{constructor(){return voice;}}};
@@ -53,7 +53,7 @@ async function fixture(voice=null) {
     throw new Error('Unexpected synthetic request ' + url);
   };
   const runtime = vm.createContext(context);
-  for (const name of ['transport.js', 'app.js']) vm.runInContext(fs.readFileSync(path.join(asset, name), 'utf8'), runtime, {filename: name});
+  for (const name of ['transport.js', 'app.js', ...(workspace ? ['workspace.js'] : [])]) vm.runInContext(fs.readFileSync(path.join(asset, name), 'utf8'), runtime, {filename: name});
   await settle();
   async function select(name) { await vm.runInContext('refreshHistory()', runtime); e.history.value = name; return e.history.onchange(); }
   return {...dom, requests, queued, jobs, storage, server, screen, reduced, documentEvents, select,
@@ -225,4 +225,163 @@ test('disconnect disables draft mutations and reconnect retains reviewed draft s
   e.codeFile.value = 'b.py'; e.codeFile.dispatch('change');
   assert(e.previewCode.disabled && e.applyCode.disabled);
   assert.equal(e.codeEditor.value, 'draft\n');
+});
+
+test('sending, New conversation and loaded history reveal chat without clearing workbench fields', async () => {
+  for (const action of ['send', 'new', 'history']) {
+    const h = await fixture(null, {workspace: true}), e = h.elements;
+    await e.openWorkbench.click();
+    e.ownerPanel.hidden = false; e.ownerPanelToggle.setAttribute('aria-expanded', 'true');
+    e.codeEditor.value = 'unapplied draft\n';
+    e.documentUrl.value = 'https://example.org/original'; e.documentDate.value = '2026-10-12';
+    const file = {name: 'unsubmitted.xlsx', size: 20}; e.documentFile.files = [file];
+    let shown = 0; h.context.window.addEventListener('prometheus-show-conversation', () => shown++);
+    if (action === 'send') { e.prompt.value = 'A real new request'; await h.run('submit()'); }
+    else if (action === 'new') await e.newChat.click();
+    else await h.select('alpha');
+    await settle();
+    assert.equal(shown, 1, action + ' reveals the conversation once');
+    assert.equal(e.workbench.hidden, true); assert.equal(e.ownerPanel.hidden, true);
+    assert.equal(e.openWorkbench.getAttribute('aria-expanded'), 'false');
+    assert.equal(e.ownerPanelToggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(e.codeEditor.value, 'unapplied draft\n');
+    assert.equal(e.documentUrl.value, 'https://example.org/original');
+    assert.equal(e.documentDate.value, '2026-10-12');
+    assert.equal(e.documentFile.files[0], file, 'switching views retains the selected original document');
+  }
+});
+
+test('empty sends, pending history and failed or obsolete history never force the workbench closed', async () => {
+  const h = await fixture(null, {workspace: true}), e = h.elements;
+  await e.openWorkbench.click();
+  await h.run('submit()');
+  assert.equal(e.workbench.hidden, false, 'empty input does not navigate away from work');
+  const slow = deferred(); h.queued.set('/api/history/alpha', [slow.promise]);
+  const pending = h.select('alpha'); await settle();
+  assert.equal(e.workbench.hidden, false, 'history loading does not hide work until it succeeds');
+  await h.select('beta'); assert.equal(e.workbench.hidden, true);
+  await e.openWorkbench.click();
+  slow.resolve(response(saved('alpha'))); await pending;
+  assert.equal(e.workbench.hidden, false, 'obsolete history cannot close a newly reopened workbench');
+  h.queued.set('/api/history/alpha', [Promise.resolve(response({error: 'Synthetic history failure'}, 500))]);
+  await h.select('alpha');
+  assert.equal(e.workbench.hidden, false, 'failed history preserves the current workbench');
+  assert.equal(h.requests.filter(row => row.url === '/api/jobs').length, 0);
+});
+
+test('workbench navigation closes the Owner overlay and retains a reviewed unapplied edit', async () => {
+  const h = setup(), e = h.elements;
+  h.emit('prometheus-busy', {busy: false, online: true, closed: false});
+  e.ownerPanel.hidden = false; e.ownerPanelToggle.setAttribute('aria-expanded', 'true');
+  await e.openWorkbench.click();
+  assert.equal(e.ownerPanel.hidden, true, 'Owner must not cover the opened workbench');
+  assert.equal(e.ownerPanelToggle.getAttribute('aria-expanded'), 'false');
+  e.projectRoot.value = 'C:\\SyntheticProject'; await e.openProject.click();
+  h.result('code_open', {project: e.projectRoot.value, files: [{path: 'a.py', size: 5}], test_presets: []});
+  e.codeFile.value = 'a.py'; e.codeFile.dispatch('change'); await e.readCode.click();
+  h.result('code_read', {path: 'a.py', content: 'old\n', sha256: 'original-sha'});
+  e.codeEditor.value = 'reviewed draft\n'; e.codeEditor.dispatch('input'); await e.previewCode.click();
+  h.result('code_preview', {path: 'a.py', before_sha256: 'original-sha', changed: true, diff: '-old\n+reviewed draft'});
+  assert.equal(e.applyCode.disabled, false);
+  e.ownerPanel.hidden = false; e.ownerPanelToggle.setAttribute('aria-expanded', 'true');
+  h.emit('prometheus-show-conversation');
+  assert.equal(e.workbench.hidden, true); assert.equal(e.ownerPanel.hidden, true);
+  assert.equal(e.codeEditor.value, 'reviewed draft\n');
+  await e.openWorkbench.click();
+  assert.equal(e.applyCode.disabled, false, 'changing views preserves the exact reviewed edit');
+  await e.applyCode.click();
+  assert.deepEqual(h.submitted.at(-1), {mode: 'code_apply', project: 'C:\\SyntheticProject', file: 'a.py', content: 'reviewed draft\n', expected_sha256: 'original-sha'});
+  e.ownerPanel.hidden = false; e.ownerPanelToggle.setAttribute('aria-expanded', 'true');
+  await e.closeWorkbench.click();
+  assert.equal(e.ownerPanel.hidden, true, 'Back to chat also clears the overlay');
+  assert.equal(e.ownerPanelToggle.getAttribute('aria-expanded'), 'false');
+});
+
+test('appending a long reply scrolls to its beginning instead of its hidden end', async () => {
+  const h = await fixture(), e = h.elements;
+  const create = h.context.document.createElement;
+  h.context.document.createElement = tag => {
+    const node = create(tag);
+    if (tag === 'article') node.offsetTop = 1380;
+    return node;
+  };
+  e.messages.scrollHeight = 9000;
+  h.run("append('assistant', 'First line\\n' + 'Long explanation\\n'.repeat(300))");
+  assert.equal(e.messages.scrollTop, 1380, 'scroll targets the new message start, not the content bottom');
+  assert.equal(e.messages.getAttribute('tabindex'), '0', 'the scrollable conversation is keyboard focusable');
+});
+
+test('manual read-aloud control is absent while opted-in Spoken + text still plays a completed reply', async () => {
+  const played = [], voice = {stop() {}, async unlock() {}, async play(text) { played.push(text); }};
+  const h = await fixture(voice), e = h.elements;
+  assert.equal(e.speak, undefined, 'the removed manual Speak button is not in the page');
+  assert(e.spokenMode && e.textMode && e.stopSpeech, 'opt-in voice mode and stop remain available');
+  await h.run('selectVoice(true)');
+  e.prompt.value = 'Please explain'; await h.run('submit()'); await settle();
+  const id = h.run('job');
+  h.jobs.set(id, {state: 'done', seconds: 1, result: {reply: 'A complete spoken answer', label: 'Synthetic helper'}});
+  await h.run('pollJob(job)'); await settle();
+  assert.deepEqual(played, ['A complete spoken answer']);
+  assert.equal(e.messages.children.at(-1).querySelector('.text').textContent, 'A complete spoken answer');
+});
+
+test('automatic maintenance stays out of the conversation and does not invalidate pending history', async () => {
+  const played = [], voice = {stop() {}, async unlock() {}, async play(text) { played.push(text); }};
+  const h = await fixture(voice, {workspace: true}), e = h.elements;
+  h.run("append('assistant', 'The answer is 42'); lastReply='The answer is 42'");
+  e.messages.scrollTop = 27; e.workLabel.textContent = 'Local model'; e.saveStatus.textContent = 'Saved locally';
+  const slow = deferred(); h.queued.set('/api/history/alpha', [slow.promise]);
+  const pending = h.select('alpha'); await settle();
+  const epoch = h.run('historyEpoch');
+  h.server.status.busy = true; h.server.status.job = 'idle-check'; h.server.status.job_background = true;
+  h.jobs.set('idle-check', {state: 'done', background: true, result: {reply: 'Automatic update JSON', label: 'Check updates'}});
+  await h.run('status()'); await settle();
+  assert.equal(h.run('job'), null, 'idle work is not adopted as a conversation request');
+  assert.equal(h.run('historyEpoch'), epoch, 'scheduled work must not cancel the owner history selection');
+  assert.equal(e.messages.children.length, 1); assert.equal(e.messages.scrollTop, 27);
+  assert.equal(e.workLabel.textContent, 'Local model'); assert.equal(e.saveStatus.textContent, 'Saved locally');
+  assert.equal(e.send.disabled, true, 'maintenance still reserves the single worker');
+  assert.equal(h.requests.some(row => row.url === '/api/job/idle-check'), false);
+  h.server.status.busy = false; h.server.status.job = null; h.server.status.job_background = false;
+  await h.run('status()'); slow.resolve(response(saved('alpha'))); await pending;
+  assert.equal(e.messages.children.at(-1).querySelector('.text').textContent, 'Answer alpha');
+  assert.deepEqual(played, []);
+});
+
+test('already observed background partials and terminal states cannot overwrite or speak the owner answer', async () => {
+  for (const state of ['done', 'error', 'cancelled']) {
+    const played = [], voice = {stop() {}, async unlock() {}, async play(text) { played.push(text); }};
+    const h = await fixture(voice), e = h.elements, results = [];
+    await h.run('selectVoice(true)');
+    h.run("append('assistant', 'Read this answer'); lastReply='Read this answer'; lastSubmitted='Prior question'; job='idle-check'");
+    e.messages.scrollTop = 17; e.requestTime.textContent = '2.9 s'; e.notice.textContent = 'Existing notice';
+    h.context.window.addEventListener('prometheus-result', event => results.push(event.detail));
+    h.jobs.set('idle-check', {state: 'running', background: true, partial: 'Automatic maintenance details', cancellable: true});
+    await h.run("pollJob('idle-check')"); await settle();
+    assert.equal(e.messages.children.length, 1, 'scheduled progress is not an answer');
+    h.jobs.set('idle-check', {state, background: true, seconds: 1, action: 'check_updates', error: 'Scheduled error', result: {reply: 'Automatic update JSON'}});
+    await h.run("pollJob('idle-check')"); await settle();
+    assert.equal(h.run('job'), null); assert.equal(e.messages.children.length, 1);
+    assert.equal(e.messages.scrollTop, 17); assert.equal(e.requestTime.textContent, '2.9 s');
+    assert.equal(e.notice.textContent, 'Existing notice'); assert.equal(e.prompt.value, '');
+    assert.deepEqual(results, []); assert.deepEqual(played, []);
+  }
+});
+
+test('explicit maintenance and genuine jobs from another window still display their results', async () => {
+  for (const origin of ['local', 'observed']) {
+    const h = await fixture(), e = h.elements, results = [];
+    h.context.window.addEventListener('prometheus-result', event => results.push(event.detail));
+    if (origin === 'local') await h.run("submitAction({mode:'check_updates'})");
+    else {
+      h.server.status.busy = true; h.server.status.job = 'other-window'; h.server.status.job_background = false;
+      h.jobs.set('other-window', {state: 'running', background: false});
+      await h.run('status()');
+    }
+    await settle(); const id = h.run('job');
+    h.jobs.set(id, {state: 'done', background: false, seconds: 1, result: {reply: 'Requested update report', label: 'Check updates', action: 'check_updates'}});
+    await h.run('pollJob(job)'); await settle();
+    assert.equal(e.messages.children.at(-1).querySelector('.text').textContent, 'Requested update report');
+    assert.equal(results.at(-1).origin, origin);
+  }
 });

@@ -1,11 +1,14 @@
 import json, os, subprocess
 from pathlib import Path
+import pytest
 from test_prk_self_repair import make_key, run_ps
 
 ROOT=Path(__file__).resolve().parents[1]
 RECOVERY=ROOT/"tools"/"Prometheus-Recovery-Key.ps1"
 
 def stage(base, local):
+    if os.name != 'nt':
+        pytest.skip('Recovery integration requires Windows PowerShell')
     env=os.environ.copy()
     env["LOCALAPPDATA"]=str(local)
     return subprocess.run(["powershell","-NoProfile","-ExecutionPolicy","Bypass","-File",str(RECOVERY),"-Action","stage","-Drive",str(base)],env=env,capture_output=True,text=True)

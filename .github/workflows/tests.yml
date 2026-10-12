@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -24,8 +27,42 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install development dependencies
-        run: python -m pip install -e '.[dev]'
+        run: python -m pip install -e '.[dev]' 'fido2==2.2.1'
       - name: Run unit tests
-        run: pytest -q
+        run: python -m pytest tests tools/maps-studio -q
+      - name: Run Control Center health check
+        run: python prometheusctl.py doctor
+
+  portable-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Set up portable Python target
+        id: portable-python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install development dependencies
+        run: python -m pip install -e '.[dev]' 'fido2==2.2.1'
+      - name: Run full Python tests including portable document converters
+        env:
+          PROMETHEUS_PYTHON: ${{ steps.portable-python.outputs.python-path }}
+        run: python -m pytest tests tools/maps-studio -q
+      - name: Run application and Maps Studio JavaScript tests
+        shell: pwsh
+        run: |
+          Get-ChildItem -LiteralPath tests/ui -Filter 'test-*.cjs' | Sort-Object Name | ForEach-Object {
+            node $_.FullName
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          node tools/maps-studio/test_studio_ui.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run Control Center health check
         run: python prometheusctl.py doctor

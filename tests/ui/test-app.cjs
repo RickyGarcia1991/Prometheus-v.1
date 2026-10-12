@@ -21,7 +21,7 @@ async function fixture() {
   context.document.querySelectorAll = selector => documentRoot.querySelectorAll(selector);
   context.document.addEventListener = () => {};
   context.window.dispatchEvent = event => dom.emit(event.type, event.detail);
-  context.CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
+  context.CustomEvent = class { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } };
   context.matchMedia = () => ({matches: false, addEventListener() {}});
   context.PrometheusAdaptive = {AdaptiveDisplay: class { update() { return {level: 0, name: 'Still', fps: 0, size: 0, reason: 'test'}; } }};
   context.Image = class { constructor() { this.complete = false; this.naturalWidth = 0; } };

@@ -365,7 +365,7 @@ def test_watched_source_api_and_idle_scheduler_use_only_selected_query(workspace
     assert schedule.status()['watches'][0]['last_snapshot']
     schedule.watch('nasa', 'Mars', enabled=True, now=0)
     submitted = []
-    monkeypatch.setattr(app, 'submit', lambda body: submitted.append(body))
+    monkeypatch.setattr(app, 'submit', lambda body, **options: submitted.append({**body, **options}))
     app.current = 'a-running-foreground-job'
     app.next_maintenance = 0
     app.idle_maintenance()
@@ -373,4 +373,4 @@ def test_watched_source_api_and_idle_scheduler_use_only_selected_query(workspace
     app.current = None
     app.next_maintenance = 0
     app.idle_maintenance()
-    assert submitted == [{'mode': 'check_sources', 'prompt': ''}]
+    assert submitted == [{'mode': 'check_sources', 'prompt': '', 'background': True}]
