@@ -132,6 +132,7 @@ def test_http_gate_protects_history_jobs_status_and_actions(tmp_path):
         assert request('/api/jobs',{'mode':'chat','prompt':'Who am I?'})[0]==401
         assert request('/api/remote/action',{})[0]==401
         assert request('/api/close',{})[0]==401
+        assert request('/api/speech',{'text':'Private answer'})[0]==401
         assert b'Unlock Prometheus' in request('/')[1]
         device=Authenticator();access=server.owner_access
         begin=access.begin('register',setup_ticket='private-test-ticket')

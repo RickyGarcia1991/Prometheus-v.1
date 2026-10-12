@@ -13,7 +13,7 @@ function deferred() { let resolve, reject; const promise = new Promise((a, b) =>
 async function settle() { for (let i = 0; i < 50; i++) await Promise.resolve(); }
 const saved = name => [{role: 'user', content: 'Question ' + name}, {role: 'assistant', content: 'Answer ' + name, label: 'Helper ' + name}];
 
-async function fixture() {
+async function fixture(voice=null) {
   const dom = setup({runWorkspace: false}), {elements: e, context, documentRoot} = dom;
   const requests = [], queued = new Map(), jobs = new Map(), documentEvents = {}, storage = new Map(), timers = [];
   let serial = 0;
@@ -28,6 +28,7 @@ async function fixture() {
   context.CustomEvent = class { constructor(type, value) { this.type = type; this.detail = value.detail; } };
   context.matchMedia = () => reduced;
   context.PrometheusAdaptive = {AdaptiveDisplay};
+  if(voice)context.window.PrometheusVoice={LocalVoice:class{constructor(){return voice;}}};
   context.Image = class { constructor() { this.complete = false; this.naturalWidth = 0; } };
   context.performance = {now: () => screen.now};
   context.localStorage = {getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key)};
@@ -54,10 +55,21 @@ async function fixture() {
   const runtime = vm.createContext(context);
   for (const name of ['transport.js', 'app.js']) vm.runInContext(fs.readFileSync(path.join(asset, name), 'utf8'), runtime, {filename: name});
   await settle();
-  async function select(name) { e.history.value = name; return e.history.onchange(); }
+  async function select(name) { await vm.runInContext('refreshHistory()', runtime); e.history.value = name; return e.history.onchange(); }
   return {...dom, requests, queued, jobs, storage, server, screen, reduced, documentEvents, select,
     run: expression => vm.runInContext(expression, runtime)};
 }
+
+test('Text only remains authoritative after an obsolete audio unlock finishes', async () => {
+ const ready=deferred();const voice={stop(){},unlock(){return ready.promise;}};const h=await fixture(voice);
+ const pending=h.run('selectVoice(true)');await settle();await h.run('selectVoice(false)');
+ ready.resolve();await pending;assert.equal(h.run('spokenMode'),false);
+ assert.equal(h.elements.textMode.getAttribute('aria-pressed'),'true');assert.equal(h.elements.spokenMode.getAttribute('aria-pressed'),'false');
+});
+
+test('fresh startup never fetches or restores saved conversations', async () => {
+ const h=await fixture();assert.equal(h.requests.some(r=>r.url==='/api/sessions'||r.url.startsWith('/api/history/')),false);assert.equal(h.run('session'),null);
+});
 
 test('newer history selection remains authoritative after an older request finishes late', async () => {
   const h = await fixture(), slow = deferred();

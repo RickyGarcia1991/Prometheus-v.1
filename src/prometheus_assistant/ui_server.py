@@ -179,6 +179,7 @@ class Interface:
         self.model_evidence = ModelEvidence(self.data_root/'Routing/evidence.sqlite3')
         self.last_backup = None
         self.cancel_event = threading.Event()
+        self.speech_lock = threading.Lock()
         self.next_maintenance = time.monotonic()+60
         self.token = secrets.token_urlsafe(32)
         self.jobs = {}
@@ -566,6 +567,9 @@ class Interface:
 
     def close(self):
         self.closing = True
+        # Let an owned speech subprocess observe closing and remove its temporary PCM.
+        with self.speech_lock:
+            pass
         self.remote.close()
         def release():
             if self.cache_context is not None:
@@ -665,6 +669,9 @@ class Handler(BaseHTTPRequestHandler):
         routes = {'/': ('index.html', 'text/html; charset=utf-8'),
                   '/owner-access': ('owner-access.html', 'text/html; charset=utf-8'),
                   '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                  '/folded-core.js': ('folded-core.js', 'text/javascript; charset=utf-8'),
+                  '/voice-player.js': ('voice-player.js', 'text/javascript; charset=utf-8'),
+                  '/folded-core.webp': ('folded-core.webp', 'image/webp'),
                   '/adaptive.js': ('adaptive.js', 'text/javascript; charset=utf-8'),
                   '/transport.js': ('transport.js', 'text/javascript; charset=utf-8'),
                   '/workspace.js': ('workspace.js', 'text/javascript; charset=utf-8'),
@@ -781,6 +788,25 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         raise ValueError('Unknown scoped grant action or fields.')
                 self.respond(200, result)
+            elif self.path == '/api/speech':
+                if not isinstance(body, dict) or set(body) != {'text'}:
+                    raise ValueError('Use only answer text for speech.')
+                app = self.server.app
+                if app.closing or not app.speech_lock.acquire(blocking=False):
+                    raise RuntimeError('Voice preparation is busy or closing.')
+                try:
+                    from .voice import synthesize_wav
+                    import base64
+                    app.last_seen = time.monotonic()
+                    audio = synthesize_wav(body['text'], cancelled=lambda: app.closing or not self.owner_unlocked())
+                    if not self.owner_unlocked():
+                        self.respond(401, {'error': 'Unlock Prometheus with your passkey.'})
+                    elif app.closing:
+                        raise RuntimeError('Prometheus is closing.')
+                    else:
+                        self.respond(200, {'encoding': 'wav-base64', 'audio': base64.b64encode(audio).decode('ascii')})
+                finally:
+                    app.speech_lock.release()
             elif self.path == '/api/jobs':
                 cookie = self.owner_session()
                 if isinstance(body, dict) and body.get('mode') == 'core':

@@ -18,3 +18,43 @@
 
 /* Read-only boundary inventory. */
 .permission-row summary{cursor:pointer;line-height:1.6;color:#ccdcf1}.permission-row p{overflow-wrap:anywhere}#permissionStatus{font-size:12px;line-height:1.7}#permissionArguments{min-height:100px;width:100%;font:12px/1.6 Consolas,monospace;background:#080f1b;color:#ccdcf1;border:1px solid #425571;padding:10px;border-radius:8px}#permissionSearch:focus-visible,#permissionArguments:focus-visible,.permission-row summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+/* Folded core home: the approved material with functional, separate controls. */
+.folded-home{background:#010506;color:#dcf5ef}
+.folded-home .shell{display:flex;flex-direction:column;min-height:100dvh;background:radial-gradient(ellipse at 50% 35%,#05221d60,transparent 65%)}
+.folded-home header{position:relative;min-height:70px;padding:16px 32px;border-bottom:1px solid #254c4130;background:transparent;gap:16px}
+.folded-home .brand{letter-spacing:.36em;font-weight:500;font-size:18px}
+.folded-home header .connection{margin-left:auto;font-size:11px;color:#86a59c}
+.folded-home #ownerPanel{position:fixed;z-index:10;right:20px;top:76px;width:min(340px,calc(100vw - 40px));max-height:calc(100dvh - 100px);overflow:auto;border:1px solid #386957;border-radius:20px;background:#051511f5;box-shadow:0 20px 80px #000b;padding:24px}
+.folded-home [hidden]{display:none!important}
+.folded-home main{height:calc(100dvh - 72px);min-height:600px;max-width:1100px;width:100%;margin:auto;padding:0 28px 16px;gap:0;display:flex;flex-direction:column;overflow:visible}
+.folded-home .presence{position:relative;min-height:220px;flex:0 1 440px;display:flex;align-items:center;justify-content:center;padding:0}
+.folded-home .orb{position:relative;width:min(100%,920px);height:auto;aspect-ratio:2.16376;border:0;border-radius:0;background:none;box-shadow:none;isolation:isolate;transform:none!important}
+.folded-home .orb::before,.folded-home .orb::after{display:none}
+.folded-home .orb .art{position:absolute;inset:0;border-radius:0;background-image:url('/folded-core.webp');background-size:111.111% 150.376%;background-position:50% 22.388%;filter:none;opacity:1;mask-image:linear-gradient(transparent,#000 3%,#000 95%,transparent)}
+.folded-home #fluid{position:absolute;inset:0;width:100%;height:100%;border-radius:0;mix-blend-mode:normal;opacity:0;filter:none}
+.folded-home .presence-caption{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;letter-spacing:.14em;color:#91b7aa;display:block;min-height:20px}
+.folded-home .messages{flex:1 1 20px;min-height:30px;max-height:35dvh;width:min(100%,840px);margin:10px auto 16px;padding:8px 2px;overflow:auto}
+.folded-home .message{background:#061915c7;border:1px solid #193c3280;border-radius:18px;padding:18px 20px;margin:10px 0}
+.folded-home .message.user{background:#10221fbd}
+.folded-home #compose{flex-shrink:0;position:relative;width:min(100%,840px);margin:0 auto;display:flex;align-items:center;border:1px solid #4b9b87;border-radius:28px;background:linear-gradient(110deg,#09312870,#091f3860);padding:7px 8px 7px 22px;box-shadow:0 0 32px #14795a12}
+.folded-home #prompt{border:0;background:transparent;resize:none;min-height:48px;padding:12px 6px;color:#e7fff6;outline-offset:2px}
+.folded-home #send{width:48px;height:48px;min-width:48px;border-radius:50%;background:#174f4a;border:1px solid #68c0b4;color:#e8fffc;font-size:25px}
+.folded-home .composerTools{flex-shrink:0;justify-content:center;display:flex;flex-wrap:wrap;gap:9px;margin:12px auto 4px;padding:0}
+.folded-home .composerTools button,.folded-home header button{border:1px solid #31584d;border-radius:24px;padding:10px 17px;background:#041511;color:#c5e6da;font-size:12px;min-height:42px}
+.folded-home button[aria-pressed=true]{border-color:#70d9ba;background:#0d3d2f;color:#eafff8;box-shadow:0 0 20px #44eeb512}
+.folded-home #dictate{border-color:#704260;color:#fbd8e6}
+.folded-home .notice{width:min(100%,840px);margin:8px auto;background:#263820;color:#e8f1d8}
+.folded-home footer{flex-shrink:0;text-align:center;font-size:10px;color:#7f9e93;border:0;padding:8px 0 0;margin:0}
+.folded-home .workbench{max-height:60dvh;overflow:auto;flex:1 1 auto}
+.folded-home main:has(.workbench:not([hidden])) .presence{display:none}
+.folded-home :focus-visible{outline:2px solid #8cefd6;outline-offset:4px}
+@media(max-width:650px){.folded-home header{padding:12px 16px;gap:8px;flex-wrap:wrap}.folded-home .brand{font-size:14px;letter-spacing:.2em}.folded-home header .connection{display:none}.folded-home #ownerPanelToggle{margin-left:auto}.folded-home main{padding:0 14px 16px;min-height:530px}.folded-home .presence{min-height:185px;flex-basis:310px}.folded-home .orb{width:125%;flex-shrink:0}.folded-home .presence{overflow:hidden}.folded-home .composerTools button{padding:9px 11px;font-size:11px}.folded-home .messages{max-height:32dvh}.folded-home #speak{font-size:10px}}
+
+.folded-home header{height:76px;flex-shrink:0}
+.folded-home main{height:calc(100dvh - 76px)}
+.folded-home main:not(:has(.message)) .presence{flex:1;min-height:220px;height:auto}
+.folded-home .presence-caption{position:static;margin-top:6px}
+.folded-home .messages:not(:has(.message)){flex:0;min-height:0;height:0;margin:0;padding:0}
+.folded-home .orb .art{mask-image:linear-gradient(transparent,#000 3%,#000 95%,transparent),linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-composite:intersect}
+.folded-home #ownerPanel{display:flex;flex-direction:column}
+.folded-home #requestTime{margin-left:0}

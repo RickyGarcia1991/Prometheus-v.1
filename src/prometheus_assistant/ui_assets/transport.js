@@ -10,7 +10,7 @@ class LocalClient{
  async request(path,data,retry=true){
   if(path==='/api/bootstrap')return this.bootstrap();
   if(!this.token)await this.bootstrap();
-  const headers={'X-Prometheus-Token':this.token};const options={headers,cache:'no-store',signal:AbortSignal.timeout(12000)};
+  const headers={'X-Prometheus-Token':this.token};const options={headers,cache:'no-store',signal:AbortSignal.timeout(path==='/api/speech'?55000:12000)};
   if(data!==undefined){headers['Content-Type']='application/json';options.method='POST';options.body=JSON.stringify(data);}
   const response=await this.fetcher(path,options);const result=await response.json();
   if(response.status===403&&retry){await this.bootstrap();return this.request(path,data,false);}

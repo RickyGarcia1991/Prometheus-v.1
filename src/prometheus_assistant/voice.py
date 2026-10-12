@@ -177,3 +177,60 @@ def speak(text):
     result=subprocess.run(['powershell.exe','-NoProfile','-Command',script],input=text[:4000],text=True,
                           capture_output=True,timeout=180,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if result.returncode:raise ValueError('Windows speech output failed; the answer remains visible in text.')
+
+
+def synthesize_wav(text, *, cancelled=lambda: False):
+    """Render installed Windows speech to bounded PCM; this never plays or records audio."""
+    from .application_policy import require_dispatch
+    require_dispatch('voice.speak')
+    if not isinstance(text, str) or not text.strip() or len(text) > 4000 or '\x00' in text:
+        raise ValueError('Speech requires 1–4000 characters of answer text.')
+    if os.name != 'nt':
+        raise ValueError('Local speech output requires Windows. The answer remains in text.')
+    if cancelled():
+        raise ValueError('Voice preparation stopped.')
+    # Text travels through stdin; neither answer text nor a request path becomes code.
+    script = """$ErrorActionPreference='Stop'
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
+Add-Type -AssemblyName System.Speech
+$voice=New-Object System.Speech.Synthesis.SpeechSynthesizer
+try {
+ $format=New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(16000,[System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen,[System.Speech.AudioFormat.AudioChannel]::Mono)
+ $voice.SetOutputToWaveFile($env:PROMETHEUS_SPEECH_OUTPUT,$format)
+ $voice.Speak([Console]::In.ReadToEnd())
+} finally { $voice.Dispose() }
+"""
+    with tempfile.TemporaryDirectory(prefix='prometheus-speech-') as temp:
+        destination = Path(temp)/'answer.wav'
+        env = {**os.environ, 'PROMETHEUS_SPEECH_OUTPUT': str(destination)}
+        with tempfile.TemporaryFile() as errors, tempfile.TemporaryFile() as input_stream:
+            input_stream.write(text.encode('utf-8'))
+            input_stream.seek(0)
+            process = subprocess.Popen(['powershell.exe', '-NoProfile', '-Command', script],
+                                       stdin=input_stream, stdout=subprocess.DEVNULL, stderr=errors,
+                                       text=True, encoding='utf-8', env=env,
+                                       creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            try:
+                deadline = time.monotonic()+45
+                while process.poll() is None:
+                    if cancelled():
+                        raise ValueError('Voice preparation stopped.')
+                    if time.monotonic() >= deadline or (destination.exists() and destination.stat().st_size > 9_600_256):
+                        raise ValueError('Local voice output exceeded its limit; use text or a shorter answer.')
+                    time.sleep(.05)
+                if process.returncode or cancelled() or not destination.is_file():
+                    raise ValueError('Local voice preparation failed; your answer remains in text.')
+                if destination.stat().st_size > 9_600_256:
+                    raise ValueError('Local voice output exceeded five minutes.')
+                with wave.open(str(destination), 'rb') as audio:
+                    if (audio.getnchannels(), audio.getsampwidth(), audio.getframerate()) != (1, 2, 16000) or not 0 < audio.getnframes() <= 4_800_000:
+                        raise ValueError('Invalid local voice output.')
+                return destination.read_bytes()
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=3)
