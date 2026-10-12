@@ -50,7 +50,7 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  assert.equal(chat.requests.findLast(r=>r.url==='/api/cancel').body.id,secondCapture);
  await finish(chat,{transcript:'late words after ending'},secondCapture);
  assert.equal(posts(chat).length,3);assert.equal(chat.elements.prompt.value,'','late discarded transcript is never sent or restored');
- assert.equal(chat.elements.notice.textContent,'Microphone off. Recording discarded.');
+ assert.equal(chat.elements.notice.textContent,'Voice chat ended. Microphone off.');
  output.end();await settle();assert.equal(posts(chat).length,3,'late audio callback cannot restart microphone');
 
  const waiting=await fixture({voice:fakeVoice()});await waiting.run('selectVoice(true)');await waiting.elements.dictate.click();await settle();
@@ -66,6 +66,8 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  assert.equal(hidden.run('voiceChat'),false);assert.equal(hidden.requests.findLast(r=>r.url==='/api/cancel').body.id,hiddenId);
  hidden.context.document.hidden=false;for(const callback of hidden.documentEvents.visibilitychange)callback();
  assert.equal(posts(hidden).length,1,'returning to a tab does not re-arm the microphone');
+ await finish(hidden,{transcript:'discarded while hidden'},hiddenId);
+ assert.match(hidden.elements.notice.textContent,/tab was hidden/,'the reason remains visible after cancellation completes');
 
  const pending=await fixture({voice:fakeVoice()});await pending.run('selectVoice(true)');
  const acceptance=deferred();pending.server.pendingPost=acceptance;
@@ -73,6 +75,9 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  pending.jobs.set('late-capture',{state:'running',recording:true});acceptance.resolve(response({id:'late-capture'}));await start;await settle();
  assert.equal(pending.run('voiceChat'),false);assert.equal(pending.run('dictationJob'),null);
  assert(pending.requests.some(r=>r.url==='/api/cancel'&&r.body.id==='late-capture'),'end during pending start cancels late acceptance');
+ await finish(pending,{transcript:'discarded pending input'},'late-capture');
+ assert.equal(pending.elements.prompt.value,'');
+ assert.equal(pending.elements.notice.textContent,'Voice chat ended. Microphone off.');
 
  const draft=await fixture({voice:fakeVoice()});await draft.run('selectVoice(true)');draft.elements.prompt.value='Do not discard my draft';
  await draft.elements.dictate.click();assert.equal(posts(draft).length,0);assert.equal(draft.elements.prompt.value,'Do not discard my draft');

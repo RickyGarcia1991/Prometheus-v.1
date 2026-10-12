@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev13-conversation-voice-20261012",
-  "version": "0.8.0.dev13",
-  "prepared_utc": "2026-10-12T15:43:27.296603+00:00",
-  "base_git_commit": "b95c88bd7fefeef779c2bd6d45466c760e417364",
+  "release": "Prometheus-v0.8.0-dev14-conversation-refinement-20261012",
+  "version": "0.8.0.dev14",
+  "prepared_utc": "2026-10-12T16:05:08.052076+00:00",
+  "base_git_commit": "d3a50773422c5ccee8d69d3837a2294492dfecbf",
   "source_branch": "feature/full-health-audit-20261012",
-  "base_release": "Prometheus-v0.8.0-dev12-health-audit-20261012",
-  "base_manifest_sha256": "3f63f2dd7ab950aa9066dd4f88a6b46732c6c56ee94d9306d90fb8ec46644baf",
-  "integration_scope": "Conversation flows with the page and a sticky composer; measured microphone waveform, continuous local capture, silence/manual finish, opt-in hands-free turns and lifecycle cleanup. Existing owner authority, SSD portability and memory preserved.",
+  "base_release": "Prometheus-v0.8.0-dev13-conversation-voice-20261012",
+  "base_manifest_sha256": "d6ac60a1f330588813d5609a9026fd97ae8df7f6f83f5b73888b3250c42206b8",
+  "integration_scope": "Fixed page with an independently scrolling conversation pane and persistent composer; bounded pre-speech audio keeps hands-free listening ready without a 30-second idle cutoff; clear normal End and hidden-tab states. SSD portability and owner memory preserved.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -23,6 +23,6 @@
     "Document converters are bundled for the existing portable Windows x64 Python 3.12 runtime. No local document upload to cloud services.",
     "PDF text and modern DOCX/PPTX/XLSX only, plus retained TXT/Markdown/CSV. No OCR, old binary Office formats or macro execution.",
     "Owner authority, versioned history and personal memory are preserved. Moving the installed package to another computer is not physically tested in this update.",
-    "Voice capture uses the Windows default microphone and local English Whisper model. Silence ending is amplitude based, not semantic turn prediction. No barge-in while the answer plays. Recording uses the existing 100 MiB local transcriber limit; silence without speech closes after 30 seconds."
+    "Voice uses the Windows default microphone and local English Whisper model. Two-second amplitude-based endpoint, no semantic turn prediction or playback barge-in. Initial silence is retained only in a bounded 0.8-second pre-roll; cancellation, hidden-tab/disconnection cleanup and the existing 100 MiB utterance boundary remain."
   ]
 }

@@ -59,7 +59,7 @@
 .folded-home #ownerPanel{display:flex;flex-direction:column}
 .folded-home #requestTime{margin-left:0}
 
-/* Replies flow with the document; the composer stays reachable at the bottom. */
+/* A bounded conversation pane keeps the composer and voice controls in view. */
 .folded-home main:has(.message) .presence{flex:0 0 104px;height:104px;min-height:104px}
 .folded-home main:has(.message) .orb{width:190px;max-height:88px}
 .folded-home main:has(.message) .presence-caption{margin-top:0}
@@ -73,10 +73,25 @@
  .folded-home .brand{font-size:12px;letter-spacing:.14em}
  .folded-home header button{padding:9px 11px}
 }
-.folded-home main{height:auto;min-height:calc(100dvh - 76px);flex:1}
-.folded-home .messages{flex:none;min-height:0;height:auto;overflow:visible;margin-bottom:12px;padding:0 2px}
-.folded-home .message{max-width:100%;scroll-margin-top:20px;scroll-margin-bottom:260px}
-.folded-home .conversation-dock{position:sticky;bottom:0;z-index:3;flex:none;margin-top:auto;padding:14px 0 8px;background:linear-gradient(transparent,#010907 14px,#010907);width:100%;isolation:isolate}
+.folded-home{height:100dvh;overflow:hidden}
+.folded-home .shell{height:100dvh;min-height:0;overflow:hidden}
+.folded-home main{height:auto;min-height:0;flex:1;overflow:hidden;padding-bottom:10px}
+.folded-home main:not(:has(.message)) .presence{flex:0 0 150px;min-height:0;height:150px}
+.folded-home main:not(:has(.message)) .orb{width:285px;max-height:128px}
+.folded-home .conversation-panel{display:flex;flex-direction:column;flex:1;min-height:0;width:min(100%,840px);margin:8px auto 0;border:1px solid #315a4d;border-radius:22px;background:linear-gradient(145deg,#09221bb3,#03110ed9);overflow:hidden;box-shadow:0 12px 40px #0003}
+.folded-home .conversation-heading{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:42px;padding:6px 16px;border-bottom:1px solid #294c3f;color:#a7c9ba;font-size:11px;letter-spacing:.08em}
+.folded-home #latestReply{font-size:11px;padding:5px 10px;border-color:#355e4c;background:#0b231a;color:#c3e6d5;letter-spacing:0}
+.folded-home .messages,.folded-home .messages:not(:has(.message)){flex:1;min-height:0;height:auto;width:100%;margin:0;padding:8px 16px 18px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-color:#4a7761 transparent}
+.folded-home #welcome{display:flex;min-height:100%;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;padding:20px;text-align:center}
+.folded-home #welcome p{margin:0 0 6px;color:#c0dbcf;font-size:16px}
+.folded-home #welcome small{color:#849f92;font-size:12px}
+.folded-home .message{max-width:100%;margin:10px 0 16px;background:#09251c;border-color:#284c3d}
+.folded-home .message.user{max-width:88%;margin-left:auto;background:#172e28;border-color:#3e5c50}
+.folded-home .message .label{color:#9dc8b4}
+.folded-home .conversation-dock{position:relative;flex:none;padding:10px 0 0;width:100%}
+.folded-home main:has(.workbench:not([hidden])) .conversation-panel{display:none}
+.folded-home .workbench{min-height:0;max-height:none;overflow:hidden}
+.folded-home .workbench-body{flex:1;min-height:0}
 .folded-home #compose{align-items:flex-end}
 .folded-home .voice-capture{width:min(100%,840px);margin:0 auto 10px;padding:12px 16px;border:1px solid #39745f;border-radius:22px;background:#071d17;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 .folded-home .voice-caption{display:flex;justify-content:space-between;width:100%;gap:12px;font-size:12px;color:#b6dfce}
@@ -86,4 +101,29 @@
 .folded-home #finishRecording{border-radius:20px;background:#214d3c;border-color:#88d1af;font-size:12px;min-height:40px}
 .folded-home #dictate[aria-pressed=true]{background:#512438;border-color:#df96b9;color:#ffe2f0}
 @media(prefers-reduced-motion:reduce){.folded-home .voice-wave span{transition:none}}
-@media(max-height:500px){.folded-home .conversation-dock{position:relative}}
+@media(max-width:650px){
+ .folded-home main{padding:0 12px 8px}
+ .folded-home .messages,.folded-home .messages:not(:has(.message)){padding:6px 10px 12px}
+ .folded-home .conversation-panel{border-radius:18px}
+ .folded-home footer{font-size:9px;padding-top:4px}
+ .folded-home .voice-capture{padding:9px 12px;gap:6px;margin-bottom:6px}
+ .folded-home .voice-caption{font-size:11px}
+ .folded-home .composerTools{gap:6px;margin-top:8px}
+ .folded-home #prompt{max-height:96px}
+}
+@media(max-height:650px){
+ .folded-home header{height:60px;min-height:60px;padding-top:8px;padding-bottom:8px}
+ .folded-home main .presence,.folded-home main:not(:has(.message)) .presence,.folded-home main:has(.message) .presence{flex:0 0 48px;min-height:0;height:48px;flex-direction:row;gap:12px}
+ .folded-home main .orb,.folded-home main:not(:has(.message)) .orb,.folded-home main:has(.message) .orb{width:90px;max-height:42px;flex-shrink:0}
+ .folded-home .presence-caption{margin:0;font-size:10px}
+ .folded-home .notice{padding:6px 10px;font-size:11px;margin:4px auto}
+ .folded-home .voice-capture{padding:7px 12px;gap:4px;margin-bottom:5px}
+ .folded-home .voice-wave{height:24px}
+ .folded-home #finishRecording{min-height:30px;padding:5px 10px;font-size:11px}
+ .folded-home footer{display:none}
+ .folded-home .composerTools{margin-top:6px;gap:5px}
+ .folded-home .composerTools button{min-height:34px;padding:6px 10px}
+ .folded-home #prompt{max-height:72px;min-height:40px;padding-top:8px;padding-bottom:8px}
+ .folded-home .conversation-dock{padding-top:6px}
+}
+@media(max-height:420px){.folded-home main .presence{display:none!important}.folded-home .conversation-heading{min-height:32px;padding-top:3px;padding-bottom:3px}.folded-home header{height:52px;min-height:52px}.folded-home .voice-caption{font-size:10px}.folded-home .voice-wave{height:16px}.folded-home .notice{max-height:42px;overflow:auto}}

@@ -305,10 +305,13 @@ test('appending a long reply scrolls to its beginning instead of its hidden end'
     if (tag === 'article') node.offsetTop = 1380;
     return node;
   };
-  e.messages.scrollHeight = 9000;
+  e.messages.scrollHeight = 9000; e.messages.clientHeight = 500; e.messages.scrollTop = 8500;
   h.run("append('assistant', 'First line\\n' + 'Long explanation\\n'.repeat(300))");
-  assert.equal(e.messages.scrollTop, undefined, 'conversation no longer scrolls inside a separate pane');
-  assert.equal(e.messages.children.at(-1).scrollRequest.block, 'start', 'the document reveals the beginning of the new answer');
+  assert.equal(e.messages.scrollTop, 1372, 'the conversation pane reveals the beginning of the answer');
+  assert.equal(e.messages.children.at(-1).scrollRequest, undefined, 'appending never scrolls the document');
+  e.messages.scrollTop = 20; h.run("append('assistant', 'Another answer')");
+  assert.equal(e.messages.scrollTop, 20, 'reading earlier messages preserves the scroll position');
+  await e.latestReply.click(); assert.equal(e.messages.scrollTop, 1372, 'Latest reply returns to the answer');
   assert.equal(e.messages.getAttribute('tabindex'), '0', 'conversation remains keyboard focusable');
 });
 

@@ -2,6 +2,7 @@
 import struct
 import threading
 import wave
+from itertools import chain, repeat
 
 import pytest
 
@@ -83,10 +84,10 @@ def test_manual_finish_keeps_audio_and_does_not_cancel(tmp_path, runtime):
     assert not cancel.is_set() and device.closed
 
 
-@pytest.mark.parametrize('reason', ['cancel', 'lease', 'silence', 'size', 'stalled'])
+@pytest.mark.parametrize('reason', ['cancel', 'lease', 'size', 'stalled'])
 def test_failures_close_microphone_and_remove_partial_audio(tmp_path, runtime, monkeypatch, reason):
     clock, install = runtime
-    install([pcm(0 if reason == 'silence' else 1000)]*400 if reason != 'stalled' else [])
+    install([pcm(1000)]*400 if reason != 'stalled' else [])
     event = threading.Event()
     if reason == 'size':
         monkeypatch.setattr(capture, 'MAX_AUDIO_BYTES', 64044)
@@ -104,8 +105,65 @@ def test_failures_close_microphone_and_remove_partial_audio(tmp_path, runtime, m
 def test_short_noise_is_not_accepted_as_speech(tmp_path, runtime):
     _, install = runtime
     install([pcm(1000)] + [pcm(0)]*350)
+    finish = threading.Event()
+    def update(level, elapsed):
+        if elapsed >= 34:
+            finish.set()
     with pytest.raises(ValueError, match='No audible speech'):
-        capture.record_continuous(tmp_path/'noise.wav')
+        capture.record_continuous(tmp_path/'noise.wav', finish_event=finish, on_level=update)
+
+
+def test_waits_past_thirty_seconds_and_preserves_initial_quiet_syllables(tmp_path, runtime):
+    _, install = runtime
+    onset = pcm(80)+pcm(120)+pcm(180)
+    install(chain(repeat(pcm(0), 400), [pcm(80), pcm(120), pcm(180)],
+                  repeat(pcm(1000), 10), repeat(pcm(0), 25)))
+    path = tmp_path/'delayed-speech.wav'
+    elapsed = []
+    capture.record_continuous(path, on_level=lambda level, seconds: elapsed.append(seconds))
+    with wave.open(str(path), 'rb') as audio:
+        assert 3 <= audio.getnframes()/16000 < 4
+        frames = audio.readframes(audio.getnframes())
+    assert onset+pcm(1000)*10 in frames
+    assert elapsed[-1] >= 43
+
+
+def test_long_idle_does_not_grow_wav_or_consume_audio_resource_limit(tmp_path, runtime, monkeypatch):
+    _, install = runtime
+    install(chain(repeat(pcm(0), 3000), repeat(pcm(1000), 10), repeat(pcm(0), 25)))
+    # Five minutes of input exceeds this cap; the actual short utterance fits it.
+    monkeypatch.setattr(capture, 'MAX_AUDIO_BYTES', 200000)
+    path = tmp_path/'idle-then-speech.wav'
+    checkpoints = []
+    def update(level, elapsed):
+        if 30 <= elapsed < 300:
+            assert path.stat().st_size <= 44
+            if elapsed in (60., 120., 240.):
+                checkpoints.append(elapsed)
+    capture.record_continuous(path, on_level=update)
+    assert checkpoints == [60., 120., 240.]
+    assert path.stat().st_size <= 128044
+
+
+@pytest.mark.parametrize('stop', ['cancel', 'lease', 'finish'])
+def test_end_or_disconnect_while_waiting_discards_idle_audio(tmp_path, runtime, stop):
+    clock, install = runtime
+    install(repeat(pcm(0), 1000))
+    finish = threading.Event()
+    cancel = threading.Event()
+    def update(level, elapsed):
+        if elapsed >= 45:
+            if stop == 'finish':
+                finish.set()
+            elif stop == 'cancel':
+                cancel.set()
+    path = tmp_path/'ended-idle.wav'
+    expected = ValueError if stop == 'finish' else GenerationCancelled
+    message = 'No audible speech' if stop == 'finish' else 'cancelled|disconnected'
+    with pytest.raises(expected, match=message):
+        capture.record_continuous(path, cancel_event=cancel, finish_event=finish,
+                                  on_level=update, lease_alive=lambda: stop != 'lease' or clock() < 45)
+    assert clock() > 44 and not path.exists()
 
 
 def test_cancelled_or_expired_request_does_not_open_microphone(tmp_path, monkeypatch):

@@ -20,7 +20,7 @@ from .ollama import GenerationCancelled
 RATE = 16000
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
 SILENCE_SECONDS = 2.0
-NO_SPEECH_SECONDS = 30.0
+PRE_ROLL_BYTES = int(RATE * 2 * .8)
 SPEECH_RMS = 200
 MIN_SPEECH_SECONDS = .24
 
@@ -150,8 +150,9 @@ def record_continuous(destination, *, cancel_event=None, finish_event=None,
     """Record until a normal speech pause or manual finish; cancellation discards.
 
 The 100 MiB transcriber/file limit is a resource limit, not a recording timer.
-Silence cannot keep the microphone open indefinitely. Level is measured RMS,
-scaled for display; it is never a generated animation or a transcription claim.
+Waiting for speech retains only a short PCM pre-roll, while cancellation and the
+visible-tab lease remain active. Level is measured RMS, scaled for display; it
+is never a generated animation or a transcription claim.
 """
     from .application_policy import require_dispatch
     require_dispatch('voice.record')
@@ -177,21 +178,32 @@ scaled for display; it is never a generated animation or a transcription claim.
             size = 44
             elapsed = speech_run = 0.
             last_speech = None
+            pre_roll = bytearray()
             with _WaveInput() as device:
-                started = last_data = time.monotonic()
+                last_data = time.monotonic()
                 if on_started:
                     on_started()
 
-                def consume(data):
-                    nonlocal size, elapsed, speech_run, last_speech, last_data
-                    if not data:
-                        return
+                def write(data):
+                    nonlocal size
                     if size+len(data) > MAX_AUDIO_BYTES:
                         raise ValueError('Recording reached the 100 MiB local audio limit; use a shorter recording.')
-                    if len(data) % 2:
-                        raise ValueError('The microphone returned incomplete PCM samples.')
                     audio.writeframesraw(data)
                     size += len(data)
+
+                def consume(data):
+                    nonlocal elapsed, speech_run, last_speech, last_data
+                    if not data:
+                        return
+                    if len(data) % 2:
+                        raise ValueError('The microphone returned incomplete PCM samples.')
+                    had_speech = last_speech is not None
+                    if not had_speech:
+                        # Keep the quiet onset and confirmation frames, but never
+                        # retain an idle session's accumulating silence in RAM/disk.
+                        pre_roll.extend(data[-PRE_ROLL_BYTES:])
+                        if len(pre_roll) > PRE_ROLL_BYTES:
+                            del pre_roll[:-PRE_ROLL_BYTES]
                     duration = len(data)/(RATE*2)
                     elapsed += duration
                     last_data = time.monotonic()
@@ -205,6 +217,11 @@ scaled for display; it is never a generated animation or a transcription claim.
                             last_speech = elapsed
                     else:
                         speech_run = 0.
+                    if had_speech:
+                        write(data)
+                    elif last_speech is not None:
+                        write(pre_roll)
+                        pre_roll.clear()
                     if on_level:
                         on_level(round(min(1., rms/4096), 4), round(elapsed, 2))
 
@@ -218,8 +235,6 @@ scaled for display; it is never a generated animation or a transcription claim.
                     now = time.monotonic()
                     if last_speech is not None and elapsed-last_speech >= SILENCE_SECONDS:
                         break
-                    if last_speech is None and max(elapsed, now-started) >= NO_SPEECH_SECONDS:
-                        raise ValueError('No audible speech detected for 30 seconds; microphone stopped and nothing was submitted.')
                     if now-last_data >= 5:
                         raise ValueError('The microphone stopped supplying audio; check the input device and try again.')
                     if not data:

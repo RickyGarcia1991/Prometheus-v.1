@@ -91,6 +91,18 @@ def test_abandoned_voice_turn_never_produces_transcript(app, monkeypatch, reason
         app.stop_dictation()
     row = wait(app, job)
     assert row['state'] == 'cancelled' and not row['recording'] and 'result' not in row
+    assert app.state == 'idle' and app.current is None
+
+
+def test_failed_dictation_keeps_error_state_and_closes_recording_status(app, monkeypatch):
+    def fail(*, on_started, **kwargs):
+        on_started()
+        raise ValueError('Microphone device failed')
+    monkeypatch.setattr(voice, 'capture_prompt_continuous', fail)
+    row = wait(app, app.submit({'mode': 'dictate', 'prompt': ''}))
+    assert row['state'] == 'error' and row['error'] == 'Microphone device failed'
+    assert row['recording'] is False and 'result' not in row
+    assert app.state == 'error' and app.current is None
 
 
 def test_controls_reject_wrong_job_and_non_dictation(app, monkeypatch):

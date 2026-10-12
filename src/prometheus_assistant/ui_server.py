@@ -405,7 +405,10 @@ class Interface:
                 if request['mode'] == 'dictate':
                     self.jobs[job_id].update(recording=False, level=0., elapsed=recorded_seconds)
                 self.current = None
-                self.state = 'idle' if background or result['state'] == 'done' else 'error'
+                # End/hidden-tab/shutdown discards a voice turn normally; it is
+                # not a failed microphone or decoder operation.
+                ended_dictation = request['mode'] == 'dictate' and result['state'] == 'cancelled'
+                self.state = 'idle' if background or result['state'] == 'done' or ended_dictation else 'error'
                 if background and result['state'] != 'done':
                     self.maintenance_error = result['error'][:400]
 
