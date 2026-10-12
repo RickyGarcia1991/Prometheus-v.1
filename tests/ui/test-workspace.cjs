@@ -80,7 +80,7 @@ function setup({runWorkspace = true} = {}) {
   const result = (action, details, extra = {}) => emit('prometheus-result', {action, details, ...extra});
   elements.provider.add(new Option('Crossref', 'crossref')); elements.provider.add(new Option('NASA', 'nasa'));
   const context = {
-    document: {getElementById: id => elements[id] || null, createElement: tag => new Element(tag)}, Option,
+    document: {getElementById: id => elements[id] || null, createElement: tag => new Element(tag)}, Option, URL,
     window: {addEventListener(name, fn) { (events[name] ||= []).push(fn); }},
     MutationObserver: class { observe() {} },
     FileReader: class { readAsDataURL(file) { this.result = 'data:application/octet-stream;base64,' + Buffer.from(file.content || '').toString('base64'); queueMicrotask(() => this.onload()); } },
@@ -102,10 +102,24 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   assert(e.cancelRequest.hidden, 'cancellation control starts hidden');
   assert(e.openProject.disabled, 'no mutations while disconnected');
   busy(false);
-  await e.openProject.click(); assert.equal(submitted.length, 0, 'empty project must not be submitted');
+  await e.openWorkbench.click(); assert.equal(e.workbench.hidden, false);
+  await e.tabCode.click(); assert.equal(e.panelCode.hidden, false); assert.equal(e.panelDocuments.hidden, true);
+  e.tabCode.dispatch('keydown', {key: 'ArrowRight'}); assert.equal(e.panelMaintenance.hidden, false);
+  e.tabMaintenance.dispatch('keydown', {key: 'End'}); assert.equal(e.panelPermissions.hidden, false);
+  e.tabPermissions.dispatch('keydown', {key: 'ArrowLeft'}); assert.equal(e.panelRemote.hidden, false);
+  e.tabRemote.dispatch('keydown', {key: 'ArrowRight'}); assert.equal(e.panelPermissions.hidden, false);
+  e.tabPermissions.dispatch('keydown', {key: 'Home'}); assert.equal(e.panelDocuments.hidden, false);
+  await e.closeWorkbench.click(); assert.equal(e.workbench.hidden, true);
+  for (const [control, mode] of [['listDocuments', 'document_list'], ['indexDocuments', 'document_index'],
+    ['checkReadiness', 'maintenance'], ['checkSources', 'check_sources']]) {
+    await e[control].click(); assert.deepEqual(last(), {mode}, control + ' dispatches its supported backend operation');
+    result(mode, {});
+  }
+  const initialRequests = submitted.length;
+  await e.openProject.click(); assert.equal(submitted.length, initialRequests, 'empty project must not be submitted');
   input('projectRoot', 'C:\\Projects\\demo'); await e.openProject.click();
   assert.deepEqual(last(), {mode: 'code_open', project: 'C:\\Projects\\demo'});
-  result('code_open', {project: 'C:\\Projects\\demo', files: [{path: 'app.py', size: 9}], test_presets: [{id: 'python-unittest', label: 'Python unittest', available: true}]});
+  result('code_open', {project: 'C:\\Projects\\demo', files: [{path: 'app.py', size: 9}, {path: 'other.py', size: 9}], test_presets: [{id: 'python-unittest', label: 'Python unittest', available: true}]});
   e.codeFile.value = 'app.py'; e.codeFile.dispatch('change');
   assert(!e.readCode.disabled, 'selecting a listed file enables Open file');
   await e.readCode.click(); assert.equal(last().file, 'app.py');
@@ -116,7 +130,24 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   assert.deepEqual(last(), {mode: 'code_preview', project: 'C:\\Projects\\demo', file: 'app.py', content: 'value = 2\n', expected_sha256: 'old-sha'});
   result('code_preview', {path: 'app.py', before_sha256: 'old-sha', changed: true, diff: '-value = 1\n+value = 2'});
   assert(!e.applyCode.disabled, 'matching diff permits Apply');
+  const beforeSelection = submitted.length;
+  e.codeFile.value = 'other.py'; e.codeFile.dispatch('change');
+  assert(e.applyCode.disabled && e.previewCode.disabled, 'a different selection cannot apply the opened file preview');
+  assert.equal(e.codeEditor.value, 'value = 2\n', 'file selection preserves the unapplied draft');
+  assert(e.codeFileStatus.textContent.includes('app.py'), 'editor explicitly identifies the opened file');
+  await e.applyCode.click(); await e.readCode.click();
+  assert.equal(submitted.length, beforeSelection, 'changing selection never applies or discards the old draft');
+  e.codeFile.value = 'app.py'; e.codeFile.dispatch('change');
+  assert(!e.previewCode.disabled && e.applyCode.disabled, 'restoring selection requires a fresh preview');
+  await e.previewCode.click();
+  result('code_preview', {path: 'app.py', before_sha256: 'old-sha', changed: true, diff: '-value = 1\n+value = 2'});
+  assert(!e.applyCode.disabled);
   input('codeEditor', 'value = 3\n'); assert(e.applyCode.disabled, 'editing after preview invalidates Apply');
+  result('code_open', {project: 'C:\\Other', files: []}, {origin: 'observed'});
+  result('code_read', {path: 'other.py', content: 'replace draft', sha256: 'other'}, {origin: 'observed'});
+  result('code_undo', {undone: true});
+  assert.equal(e.codeEditor.value, 'value = 3\n', 'unrequested project results must preserve the editor draft');
+  assert.equal(e.projectRoot.value, 'C:\\Projects\\demo');
   const count = submitted.length;
   await e.readCode.click(); await e.openProject.click();
   assert.equal(submitted.length, count, 'switching file/project preserves unapplied editor text');
@@ -151,6 +182,18 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   await e.benchmarkHelpers.click(); assert.deepEqual(last(), {mode: 'model_benchmark'});
   result('model_benchmark', {tested: 1, latency_seconds: 2});
   assert(e.benchmarkResults.children[0].textContent.includes('latency_seconds'));
+  busy(true); assert(e.runHealthCheck.disabled, 'health check shares the single-job lock');
+  busy(false); await e.runHealthCheck.click(); assert.deepEqual(last(), {mode: 'health_check'});
+  result('health_check', {checked_utc: '2026-10-10T00:00:00Z', counts: {pass: 1, fail: 1, blocked: 1, untested: 1}, checks: [
+    {title: 'Code files', status: 'fail', summary: '<script>literal</script>', next_step: 'Review the intended release.'},
+    {title: 'Available RAM', status: 'blocked', summary: 'Close unused applications.'},
+    {title: 'Microphone acceptance', status: 'untested', summary: 'No recording was performed.'}
+  ]});
+  assert(e.healthResults.children[0].textContent.includes('1 failed'));
+  assert.equal(e.healthResults.children[1].children[0].textContent, 'FAIL · Code files');
+  assert.equal(e.healthResults.children[1].children[1].textContent, '<script>literal</script>', 'health output is literal text');
+  assert(e.healthResults.children[1].children[2].textContent.includes('Review the intended release'));
+  assert(e.healthResults.children[3].children[0].textContent.startsWith('UNTESTED'));
   e.documentQuery.value = 'source history'; e.documentHistory.checked = true;
   await e.searchDocuments.click(); assert.deepEqual(last(), {mode: 'documents', prompt: 'source history', include_history: true});
   e.documentFile.files = [{name: 'large.txt', size: 8 * 1024 * 1024 + 1, content: ''}]; e.documentFile.dispatch('change');
@@ -162,6 +205,27 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   e.backupDestination.value = 'C:\\Backups'; await e.createBackup.click(); assert.deepEqual(last(), {mode: 'backup', destination: 'C:\\Backups'});
   e.restoreBackupPath.value = 'C:\\Backups\\saved'; e.restoreDestination.value = 'C:\\Backups\\new-restore'; await e.restoreCheck.click();
   assert.deepEqual(last(), {mode: 'restore_check', backup_path: 'C:\\Backups\\saved', destination: 'C:\\Backups\\new-restore'});
+  const sourceUrl = 'https://publisher.example/docs/pinned/revision?part=123&view=full#pinout';
+  const sourceRow = {title: 'Pinned interface guide', document_id: 'guide', version_id: 1, is_latest: true,
+    source_url: sourceUrl, excerpt: 'Exact source excerpt', location: 'lines 10-20'};
+  result('document_list', {documents: [sourceRow]});
+  result('documents', {results: [sourceRow]});
+  for (const holder of [e.documentList, e.documentResults]) {
+    const links = holder.querySelectorAll('.source-link');
+    assert.equal(links.length, 1, 'document list and search expose clickable source links');
+    assert.equal(links[0].href, sourceUrl); assert.equal(links[0].title, sourceUrl);
+    assert.equal(links[0].textContent, 'Source · publisher.example');
+    assert.equal(links[0].target, '_blank'); assert.equal(links[0].rel, 'noopener noreferrer');
+  }
+  for (const unsafe of ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>',
+    'https://name:secret@publisher.example/path', 'not a URL']) {
+    result('document_list', {documents: [{...sourceRow, source_url: unsafe}]});
+    result('documents', {results: [{...sourceRow, source_url: unsafe}]});
+    for (const holder of [e.documentList, e.documentResults]) {
+      assert.equal(holder.querySelectorAll('.source-link').length, 0, 'unsafe targets must stay literal');
+      assert.equal(holder.querySelectorAll('.source-location')[0].textContent, unsafe);
+    }
+  }
   console.log('Workspace DOM contract and 35+ behavior assertions passed; no browser or network used.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
 }

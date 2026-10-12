@@ -224,9 +224,15 @@ def create_backup(memory_path, destination_root, *, data_dirs=None, require_sepa
     if require_separate_volume and same_volume:
         raise ValueError('Choose a backup destination on a separate volume from Prometheus data.')
     directories = {}
-    for name, path in (data_dirs or {}).items():
-        if name not in {'Library', 'Coding', 'Maintenance', 'PublicHistory', 'Routing'}:
-            raise ValueError('Only Library, Coding, Maintenance, PublicHistory and Routing data may be added.')
+    selected_dirs = dict(data_dirs or {})
+    # OwnerAccess stores only public passkey records and a setup-ticket hash.
+    # Private authenticator keys and the plaintext setup ticket are never here.
+    owner_access = source.parent/'OwnerAccess'
+    if owner_access.exists():
+        selected_dirs['OwnerAccess'] = owner_access
+    for name, path in selected_dirs.items():
+        if name not in {'Library', 'Coding', 'Maintenance', 'PublicHistory', 'Routing', 'OwnerAccess'}:
+            raise ValueError('Only supported application data directories may be added.')
         directory = _plain_path(path)
         if directory == destination_root or directory in destination_root.parents:
             raise ValueError('Backup output cannot be inside a source data directory.')

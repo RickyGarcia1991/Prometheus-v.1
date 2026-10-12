@@ -67,6 +67,26 @@ class ToolRegistry:
             requests.append(self.get(row["worker"],row["tool"]).request(summary.strip(),row["arguments"]))
         return tuple(requests)
     def executors(self): return {key:spec.executor for key,spec in self._tools.items()}
+    def structured_catalog(self):
+        """Serializable discovery contract; metadata never grants execution rights."""
+        types = {str: 'string', int: 'integer', bool: 'boolean', float: 'number', dict: 'object', list: 'array'}
+        rows = []
+        for key, tool in sorted(self._tools.items()):
+            properties, required = {}, []
+            for name, spec in sorted(dict(tool.arguments or {}).items()):
+                if spec.kind not in types:
+                    raise ValueError('Tool argument type has no JSON schema representation.')
+                properties[name] = {'type': types[spec.kind]}
+                if spec.kind is str:
+                    properties[name].update(minLength=1, maxLength=spec.max_length)
+                if spec.required:
+                    required.append(name)
+            rows.append({'worker': key[0], 'name': key[1], 'description': tool.description,
+                         'inputSchema': {'type': 'object', 'properties': properties,
+                                         'required': required, 'additionalProperties': False},
+                         'risk': {'mutates_state': tool.mutates_state, 'external_network': tool.external_network,
+                                  'command_execution': tool.command_execution}})
+        return rows
     def catalog(self):
         if not self._tools:return "(no tools registered)"
         rows=[]

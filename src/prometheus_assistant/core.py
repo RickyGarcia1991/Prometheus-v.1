@@ -70,8 +70,13 @@ def _terms(text: str) -> set[str]:
 def retrieve_memory(memory, prompt: str, *, limit: int = 8) -> tuple[MemoryEvidence, ...]:
     """Return bounded, provenance-bearing knowledge relevant to the prompt."""
     prompt_terms = _terms(prompt)
+    from .owner_profile import profile_rows
+    owners = profile_rows(memory)
+    owner_ids = {row['id'] for row in owners}
     ranked = []
     for row in memory.knowledge():
+        if row['id'] in owner_ids:
+            continue
         haystack = _terms(f"{row['kind']} {row['subject']} {row['value']}")
         overlap = len(prompt_terms & haystack)
         subject_match = row["subject"].lower() in prompt.lower()
@@ -92,7 +97,7 @@ def retrieve_memory(memory, prompt: str, *, limit: int = 8) -> tuple[MemoryEvide
             source_type=row["source_type"], source_ref=row["source_ref"],
             confidence=float(row["confidence"]),
         )
-        for *_, row in ranked[:limit]
+        for row in (owners + [item[-1] for item in ranked])[:limit]
     )
 
 

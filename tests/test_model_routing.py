@@ -41,3 +41,18 @@ def test_coding_to_translation_switch_is_automatic():
     b=routing_record('translate into French',names,host)
     assert a[1].model=='qwen2.5-coder:1.5b' and b[1].model=='qwen3:1.7b'
     assert a[2]['automatic'] and b[2]['parallel_models']==1
+
+
+def test_candidate_names_retain_fitting_generic_fallback_and_vision_boundary():
+    from prometheus_assistant.model_routing import candidate_names
+    choices = candidate_names('translation')
+    assert choices[0] == 'qwen3:1.7b'
+    assert len(choices) == len(set(choices))
+    assert 'llama3.2:1b-instruct-q4_K_M' in choices
+    host = HardwareProfile(16, 8, 'Windows', 8)
+    available = {'llama3.2:1b-instruct-q4_K_M'}
+    profiles = [choose_helper({name}, host, 'translation') for name in choices if name in available]
+    assert [p.model for p in profiles if p] == ['llama3.2:1b-instruct-q4_K_M']
+    assert 'llama3.2:1b-instruct-q4_K_M' not in candidate_names('vision')
+    with pytest.raises(ValueError, match='Unknown'):
+        candidate_names('unknown')

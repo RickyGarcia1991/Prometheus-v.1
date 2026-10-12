@@ -1,5 +1,6 @@
 import json
 import io
+import pytest
 from pathlib import Path
 from prometheus_assistant import builtin_tools
 from prometheus_assistant.builtin_tools import build_builtin_registry
@@ -120,3 +121,77 @@ def test_project_tests_rejects_escape_target(tmp_path):
         import pytest
         with pytest.raises(ValueError,match="Invalid bounded test target"):
             spec.executor(req)
+
+
+def test_builtin_search_ranks_symbols_and_returns_separate_accurate_context(tmp_path, monkeypatch):
+    root=tmp_path/'project';root.mkdir()
+    (root/'a.py').write_text('# please find the function where it is defined\n')
+    (root/'b.py').write_text('# entry point\ndef run_agent():\n    return 1\n')
+    monkeypatch.setattr(builtin_tools,'_project_root',lambda:root)
+    with MemoryStore(tmp_path/'m.sqlite3') as memory:
+        tool=build_builtin_registry(memory).get('project','search')
+        data=json.loads(tool.executor(tool.request('find',{'query':'Please find where the run_agent function is defined'})))
+    hit=data['results'][0]
+    assert hit['path']=='b.py' and hit['line']==2
+    assert hit['excerpt']=='def run_agent():'
+    assert hit['context_start_line']==1 and hit['context_end_line']==3
+    assert hit['context']=='# entry point\ndef run_agent():\n    return 1'
+
+
+def test_builtin_read_and_search_refuse_private_paths(tmp_path, monkeypatch):
+    root=tmp_path/'project';root.mkdir()
+    private=root/'credentials.json';private.write_text('needle SECRET_VALUE')
+    (root/'public.py').write_text('needle = 1')
+    monkeypatch.setattr(builtin_tools,'_project_root',lambda:root)
+    original_open=Path.open
+    def guarded_open(path,*args,**kwargs):
+        assert path!=private, 'Credentials must not be opened.'
+        return original_open(path,*args,**kwargs)
+    monkeypatch.setattr(Path,'open',guarded_open)
+    with MemoryStore(tmp_path/'m.sqlite3') as memory:
+        registry=build_builtin_registry(memory)
+        spec=registry.get('project','search')
+        result=json.loads(spec.executor(spec.request('find',{'query':'needle'})))
+        assert [row['path'] for row in result['results']]==['public.py']
+        spec=registry.get('project','read')
+        with pytest.raises(ValueError,match='[Pp]rivate'):
+            spec.executor(spec.request('read',{'path':'credentials.json'}))
+
+
+def test_builtin_replace_requires_explicit_workspace_and_preserves_installed_source(tmp_path, monkeypatch):
+    installed=tmp_path/'installed';installed.mkdir()
+    source=installed/'app.py';source.write_text('before')
+    monkeypatch.setattr(builtin_tools,'_project_root',lambda:installed)
+    with MemoryStore(tmp_path/'m.sqlite3') as memory:
+        tool=build_builtin_registry(memory).get('project','replace')
+        with pytest.raises(ValueError,match='[Dd]evelopment workspace'):
+            tool.executor(tool.request('replace',{'path':'app.py','old':'before','new':'after'}))
+        tool=build_builtin_registry(memory,development_workspace=installed).get('project','replace')
+        with pytest.raises(ValueError,match='signed application'):
+            tool.executor(tool.request('replace',{'path':'app.py','old':'before','new':'after'}))
+    assert source.read_text()=='before'
+
+
+def test_builtin_replace_explicit_workspace_is_reversible_and_preserves_crlf(tmp_path):
+    from prometheus_assistant.coding_workspace import CodingWorkspace
+    project=tmp_path/'development';project.mkdir()
+    source=project/'app.py';source.write_bytes(b'before\r\n')
+    with MemoryStore(tmp_path/'m.sqlite3') as memory:
+        tool=build_builtin_registry(memory,development_workspace=project).get('project','replace')
+        result=json.loads(tool.executor(tool.request('replace',{'path':'app.py','old':'before','new':'after'})))
+    assert source.read_bytes()==b'after\r\n' and result['changed']
+    assert result['old_chars']==6 and result['new_chars']==5
+    CodingWorkspace(project,tmp_path/'Coding').undo_edit(result['edit_id'])
+    assert source.read_bytes()==b'before\r\n'
+
+
+def test_builtin_replace_rejects_a_separate_signed_release(tmp_path):
+    installed=tmp_path/'another-release';installed.mkdir()
+    (installed/'SHA256-MANIFEST.json').write_text('{}')
+    (installed/'SHA256-MANIFEST.sig').write_bytes(b'signature')
+    source=installed/'app.py';source.write_text('before')
+    with MemoryStore(tmp_path/'m.sqlite3') as memory:
+        tool=build_builtin_registry(memory,development_workspace=installed).get('project','replace')
+        with pytest.raises(ValueError,match='signed application'):
+            tool.executor(tool.request('replace',{'path':'app.py','old':'before','new':'after'}))
+    assert source.read_text()=='before'

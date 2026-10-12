@@ -9,6 +9,19 @@ DEFAULT_MODEL = "llama3.2:1b"
 MAX_RESPONSE_BYTES = 2_000_000
 
 
+def output_token_budget(model, num_predict=384):
+    """The actual output allowance, shared with input-context budgeting."""
+    return max(num_predict, 2048) if model.split(':', 1)[0] == 'gpt-oss' else num_predict
+
+
+def _idle_residency():
+    from .hardware import detect_hardware
+    hardware = detect_hardware()
+    short = (hardware.ram_gib < 12 or hardware.available_ram_gib is None
+             or hardware.available_ram_gib < 2)
+    return '30s' if short else '5m'
+
+
 class LocalModelError(RuntimeError):
     pass
 
@@ -114,6 +127,9 @@ class OllamaClient:
         import http.client
         import socket
         import time
+        # A reused client must not attribute an earlier request's measurements
+        # to a cancellation, disconnect or malformed response in this attempt.
+        self.last_metrics = {}
         endpoint = urlparse(self.base_url)
         connection = http.client.HTTPConnection(endpoint.hostname, endpoint.port, timeout=min(self.timeout, 1))
         started = time.monotonic()
@@ -124,15 +140,14 @@ class OllamaClient:
                 raise GenerationCancelled('Request cancelled; partial text was not saved.')
             if time.monotonic()-started > self.timeout:
                 raise LocalModelError('Local generation exceeded its time budget.')
-        payload = {'model': self.model, 'messages': messages, 'stream': True, 'keep_alive': '30s',
-                   'options': {'num_ctx': self.num_ctx, 'num_predict': num_predict, 'temperature': .2,
+        payload = {'model': self.model, 'messages': messages, 'stream': True, 'keep_alive': _idle_residency(),
+                   'options': {'num_ctx': self.num_ctx, 'num_predict': output_token_budget(self.model, num_predict), 'temperature': .2,
                                'num_thread': self.num_thread or 2, 'num_batch': 32 if self.num_ctx <= 2048 else 128}}
         family = self.model.split(':')[0]
         if family in {'qwen3', 'qwen3.5'}:
             payload['think'] = False
         if family == 'gpt-oss':
             payload['think'] = 'low'
-            payload['options']['num_predict'] = max(num_predict, 2048)
         total, parts, final = 0, [], None
         try:
             check()
@@ -172,16 +187,30 @@ class OllamaClient:
             if cancel_event is not None and cancel_event.is_set():
                 raise GenerationCancelled('Request cancelled; partial text was not saved.')
             reply = ''.join(parts).strip()
-            if final is None or not reply:
+            if final is None:
                 raise LocalModelError('The local stream ended without a complete answer.')
+            metrics = {'first_token_seconds': first, 'seconds': time.monotonic()-started,
+                       'model': self.model, 'context': self.num_ctx}
+            if 'load_duration' in final:
+                load = final['load_duration']
+                if type(load) not in (int, float) or not 0 <= load < 1e15:
+                    raise LocalModelError('Invalid local generation timing.')
+                metrics['load_seconds'] = load/1e9
+            for name in ('prompt_eval_duration', 'eval_duration'):
+                value = final.get(name)
+                if type(value) in (int,float) and 0 <= value < 1e15:
+                    metrics[name.replace('_duration', '_seconds')] = value/1e9
+            for name in ('prompt_eval_count', 'eval_count'):
+                value = final.get(name)
+                if type(value) is int and 0 <= value < 1_000_000_000:
+                    metrics[name] = value
+            # Valid final measurements remain useful when generation exhausted
+            # its budget. Recording timings never accepts or saves partial text.
+            self.last_metrics = metrics
             if final.get('done_reason') == 'length':
                 raise LocalModelError('The answer reached its output limit; partial text was not saved. Try a narrower question.')
-            load = final.get('load_duration', 0)
-            if type(load) not in (int, float) or load < 0:
-                raise LocalModelError('Invalid local generation timing.')
-            self.last_metrics = {'first_token_seconds': first, 'seconds': time.monotonic()-started,
-                                 'eval_count': final.get('eval_count'), 'model': self.model,
-                                 'context': self.num_ctx, 'load_seconds': load/1e9}
+            if not reply:
+                raise LocalModelError('The local stream ended without a complete answer.')
             return reply, final.get('eval_count')
         except (OSError, ValueError, http.client.HTTPException) as error:
             if cancel_event is not None and cancel_event.is_set():
@@ -245,23 +274,18 @@ class OllamaClient:
     def chat(self, messages, *, json_format=False, num_predict=256):
         # Release an idle model sooner on small or busy hosts. This changes
         # residency after a request, never interrupts an in-flight response.
-        from .hardware import detect_hardware
-        hardware = detect_hardware()
-        short_residency = (hardware.ram_gib < 12 or hardware.available_ram_gib is None
-                           or hardware.available_ram_gib < 2)
         payload = {
             "model": self.model,
             "messages": messages,
             "stream": False,
-            "keep_alive": "30s" if short_residency else "5m",
-            "options": {"num_ctx": self.num_ctx, "num_predict": num_predict, "temperature": 0.2},
+            "keep_alive": _idle_residency(),
+            "options": {"num_ctx": self.num_ctx, "num_predict": output_token_budget(self.model, num_predict), "temperature": 0.2},
         }
         if json_format:
             payload["format"] = "json"
         if self.model.split(":", 1)[0] == "gpt-oss":
             # GPT-OSS cannot disable reasoning. Leave room for a final answer.
             payload["think"] = "low"
-            payload["options"]["num_predict"] = max(num_predict, 2048)
         elif self.model.split(":",1)[0] in {"qwen3", "qwen3.5"}:
             payload["think"] = False
         if self.num_thread is not None:

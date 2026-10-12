@@ -1,0 +1,30 @@
+{
+  "base_manifest_sha256": "d454c9cf01fe2d1a3fd87dbad0d8eb68b6857f13eccffca27a25475a4d5fcb30",
+  "base_provenance": {
+    "base_manifest_sha256": "37abf640693ff6c8439051aa19f6f5be646bfc07ceb1dcddc5d1a34783265a5e",
+    "base_release": "Prometheus-Host-Agent-v0.6.6",
+    "base_source_commit": "441760facdfbb8cbf85c0202c0245dfef809a5f8",
+    "built_utc": "2026-10-10T02:59:57.3356925Z",
+    "changes": [
+      "Uninstall validates owned task actions, removes reconnect supervision and legacy Device Support Logon before dependencies, and refuses active eject or unverifiable cleanup.",
+      "Package source selection advances to 0.6.7; runtime engine files are identical to signed 0.6.6."
+    ],
+    "release": "Prometheus-Host-Agent-v0.6.7",
+    "source_status": "Local reviewed source correction; no new Git commit",
+    "verification": {
+      "activation": "requires original signer in the normal Windows account",
+      "baseline_signed_payloads": 21,
+      "mocked_uninstall_tests": 20,
+      "physical_eject": "not performed",
+      "real_task_uninstall": "not performed",
+      "unchanged_runtime_payloads": 19
+    }
+  },
+  "base_release": "Prometheus-Host-Agent-v0.6.7",
+  "changes": [
+    "Accept the original and main-PC signing certificates.",
+    "Advance package source selector to 0.6.8."
+  ],
+  "release": "Prometheus-Host-Agent-v0.6.8",
+  "signing": "Unsigned transition candidate; original signer must authorize it."
+}

@@ -1,0 +1,916 @@
+{
+  "schema_version": 1,
+  "historical_complete": false,
+  "sources": [
+    "https://highaltitudehacks.com/2013/06/15/backtrack-5-r3-walkthrough-part-1.html",
+    "https://cyberarms.wordpress.com/2012/08/15/backtrack-5-r3-list-of-some-of-the-new-tools-and-programs/"
+  ],
+  "tools": [
+    {
+      "name": "acccheck",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "aircrack-ng",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "android-sdk",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "apache-users",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "apktool",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "arduino",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "armitage",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "arp-scan",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "artemisa",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "autopsy",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bbqsql",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "beef-xss",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bettercap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "binwalk",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bluepot",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "blueranger",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bluez",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bulk-extractor",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "bully",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "burpsuite",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "cewl",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "cowpatty",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "creddump",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "crunch",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "cutycapt",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dbd",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "deblaze",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "ded",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "dex2jar",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dhcpig",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dirb",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dirbuster",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dnmap",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "dnsenum",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dnsmap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dnsrecon",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dotdotpwn",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "dradis",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "droidbox",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "edb-debugger",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "etherape",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "ettercap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "ewizard",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "exiftool",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "exploitdb",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "faraday",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "fern-wifi-cracker",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "foremost",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "gdb",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "ghidra",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "gnuradio",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "guymager",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "gvm",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "hackrf",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "hashcat",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "hping3",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "htexploit",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "hydra",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "intercepter-ng",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "intersect",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "inundator",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "iphoneanalyzer",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "jad",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "jadx",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "javasnoop",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "jboss-autopwn",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "jigsaw",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "john",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "johnny",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "joomscan",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "kautilya",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "kismet",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "laudanum",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "libcrafter",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "lynis",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "lynis-audit",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "macchanger",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "magictree",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "maltego",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "manglefizz",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "mdk3",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "mdk4",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "medusa",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "mercury",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "metasploit-framework",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "mitmproxy",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "multimac",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "nessus",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "netdiscover",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "netgear-telnetenable",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "netsniff-ng",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "nikto",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "nmap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "openvas",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "ophcrack",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "photorec",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "phrasendrescher",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "powersploit",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "proxmark3",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "radare2",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "rainbowcrack",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "rainbowcrack-mt",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "reaver",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "rfdump",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "rifiuti2",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sakis3g",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "scalpel",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "scapy",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "searchsploit",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "skipfish",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sleuthkit",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "smali",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "smartphone-pentest-framework",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "smbexec",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "spooftooph",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sqlmap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sqlninja",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sqlsus",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "sslcaudit",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "sslscan",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "statsprocessor",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "subterfuge",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "tcpdump",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "termineter",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "testdisk",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "theharvester",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "tnscmd10g",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "traceroute",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "trixd00r",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "truecrack",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "tshark",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "twofi",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "u3-pwn",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "uberharvest",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "unix-privesc-check",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "urlcrazy",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "voiphoney",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "w3af",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "wapiti",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "webhandler",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "webscarab",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "websploit",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "wfuzz",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "whatweb",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "whois",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "wifihoney",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": false,
+      "modern_kali_package_match": false
+    },
+    {
+      "name": "wifite",
+      "in_2012_additions_sample": true,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "wireshark",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "wpscan",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "zaproxy",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    },
+    {
+      "name": "zenmap",
+      "in_2012_additions_sample": false,
+      "in_classic_examples": true,
+      "modern_kali_package_match": true
+    }
+  ]
+}

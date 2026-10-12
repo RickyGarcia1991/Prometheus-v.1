@@ -1,0 +1,6646 @@
+{
+  "categories": {
+    "kali-linux-arm": [
+      "bluez",
+      "bluez-firmware",
+      "dphys-swapfile",
+      "ethtool",
+      "fake-hwclock",
+      "initramfs-tools",
+      "network-manager",
+      "pciutils",
+      "rkflashtool",
+      "sunxi-tools",
+      "triggerhappy",
+      "usbutils"
+    ],
+    "kali-linux-core": [
+      "netcat-traditional",
+      "tcpdump"
+    ],
+    "kali-linux-default": [
+      "autopsy",
+      "cutycapt",
+      "dirbuster",
+      "faraday",
+      "fern-wifi-cracker",
+      "gophish",
+      "guymager",
+      "hydra-gtk",
+      "legion",
+      "ophcrack",
+      "ophcrack-cli",
+      "sqlitebrowser",
+      "starkiller",
+      "zenmap"
+    ],
+    "kali-linux-everything": [
+      "adaptixc2",
+      "airgeddon",
+      "altdns",
+      "android-sdk",
+      "apple-bleee",
+      "arjun",
+      "arsenal-ng",
+      "assetfinder",
+      "autorecon",
+      "azurehound",
+      "b374k",
+      "berate-ap",
+      "bettercap-ui",
+      "bing-ip2hosts",
+      "bloodhound",
+      "bloodhound-ce-python",
+      "bloodhound.py",
+      "bloodyad",
+      "bopscrk",
+      "bpf-linker",
+      "bruteforce-luks",
+      "bruteforce-salted-openssl",
+      "bruteforce-wallet",
+      "bruteshark",
+      "brutespray",
+      "caido",
+      "caido-cli",
+      "calicoctl",
+      "capstone-tool",
+      "certgraph",
+      "certi",
+      "chainsaw",
+      "changeme",
+      "chaosreader",
+      "chisel",
+      "chisel-common-binaries",
+      "cilium-cli",
+      "cisco7crack",
+      "cloud-enum",
+      "cloudbrute",
+      "cmseek",
+      "cntlm",
+      "coercer",
+      "colly",
+      "cosign",
+      "crack",
+      "crackmapexec",
+      "cri-tools",
+      "crlfuzz",
+      "crowbar",
+      "cupid-hostapd",
+      "cupid-wpasupplicant",
+      "dalfox",
+      "defectdojo",
+      "detect-it-easy",
+      "dirsearch",
+      "dislocker",
+      "dnscat2",
+      "dnsgen",
+      "dnstwist",
+      "dnsx",
+      "donut",
+      "dscan",
+      "dufflebag",
+      "dumpsterdiver",
+      "dwarf2json",
+      "eaphammer",
+      "eksctl",
+      "email2phonenumber",
+      "emailharvester",
+      "enum4linux-ng",
+      "evil-ssdp",
+      "evil-winrm-py",
+      "evilginx2",
+      "exiflooter",
+      "exploitdb-bin-sploits",
+      "exploitdb-papers",
+      "faraday-agent-dispatcher",
+      "faraday-cli",
+      "fatcat",
+      "feroxbuster",
+      "finalrecon",
+      "findomain",
+      "fluxion",
+      "freeradius",
+      "gdb-peda",
+      "gef",
+      "gemini-cli",
+      "getallurls",
+      "getsploit",
+      "gitleaks",
+      "gitxray",
+      "godoh",
+      "golang-github-binject-go-donut",
+      "goldeneye",
+      "goofile",
+      "google-nexus-tools",
+      "goshs",
+      "gospider",
+      "gowitness",
+      "graudit",
+      "gsocket",
+      "gtkhash",
+      "h8mail",
+      "hak5-wifi-coconut",
+      "hashrat",
+      "havoc",
+      "hb-honeypot",
+      "hcxtools",
+      "hekatomb",
+      "hexstrike-ai",
+      "hexwalk",
+      "hoaxshell",
+      "horst",
+      "hostapd-mana",
+      "hosthunter",
+      "hostsman",
+      "htshells",
+      "httprobe",
+      "httpx-toolkit",
+      "hubble",
+      "humble",
+      "hurl",
+      "ibombshell",
+      "ident-user-enum",
+      "imhex",
+      "inspy",
+      "instaloader",
+      "ipv6toolkit",
+      "ismtp",
+      "ivre",
+      "joplin",
+      "jsp-file-browser",
+      "kali-community-wallpapers",
+      "kali-wallpapers-all",
+      "katana",
+      "kerberoast",
+      "knocker",
+      "koadic",
+      "krbrelayx",
+      "kubernetes-helm",
+      "kustomize",
+      "lapsdumper",
+      "ldeep",
+      "legba",
+      "ligolo-mp",
+      "ligolo-ng",
+      "ligolo-ng-common-binaries",
+      "linkedin2username",
+      "linux-exploit-suggester",
+      "llm-tools-nmap",
+      "maltego-teeth",
+      "maryam",
+      "massdns",
+      "mcp-kali-server",
+      "merlin-agent",
+      "merlin-server",
+      "metasploitmcp",
+      "mitm6",
+      "mongo-tools",
+      "mssqlpwner",
+      "multiforcer",
+      "mxcheck",
+      "naabu",
+      "name-that-hash",
+      "nbtscan-unixwiz",
+      "netscanner",
+      "nextnet",
+      "nmapsi4",
+      "nuclei",
+      "obsidian",
+      "odat",
+      "oletools",
+      "opentaxii",
+      "osrframework",
+      "owl",
+      "pacu",
+      "parsero",
+      "passdetective",
+      "patchleaks",
+      "payloadsallthethings",
+      "peirates",
+      "penelope",
+      "phishery",
+      "photon",
+      "phpggc",
+      "phpsploit",
+      "pnscan",
+      "pocsuite3",
+      "pompem",
+      "portspoof",
+      "poshc2",
+      "princeprocessor",
+      "proxify",
+      "proximoth",
+      "proxmark3",
+      "pskracker",
+      "pspy",
+      "pwncat",
+      "pyinstxtractor",
+      "python3-atomic-operator",
+      "python3-ciphey",
+      "python3-dploot",
+      "python3-ldapdomaindump",
+      "python3-pyinstaller",
+      "python3-wsgidav",
+      "qsreplace",
+      "quark-engine",
+      "raven",
+      "reconspider",
+      "redsnarf",
+      "rev-proxy-grapher",
+      "ridenum",
+      "rling",
+      "robotstxt",
+      "ropper",
+      "routerkeygenpc",
+      "routersploit",
+      "rubeus",
+      "ruby-pedump",
+      "rustscan",
+      "s3scanner",
+      "sara",
+      "sdrangel",
+      "sentrypeer",
+      "sharphound",
+      "sharpshooter",
+      "shed",
+      "shell-gpt",
+      "shellfire",
+      "sherlock",
+      "sickle-pdk",
+      "sigma-cli",
+      "silenttrinity",
+      "sippts",
+      "slimtoolkit",
+      "sliver",
+      "sn0int",
+      "snaffler-ng",
+      "snmpenum",
+      "snort",
+      "snowdrop",
+      "sparrow-wifi",
+      "spire",
+      "sploitscan",
+      "spray",
+      "sprayhound",
+      "sprayingtoolkit",
+      "spraykatz",
+      "sqlmc",
+      "sshuttle",
+      "sslstrip",
+      "sstimap",
+      "stegcracker",
+      "subfinder",
+      "subjack",
+      "sublist3r",
+      "syft",
+      "tailscale",
+      "teamsploit",
+      "terraform",
+      "testssl.sh",
+      "tetragon",
+      "tinja",
+      "tookie-osint",
+      "trivy",
+      "trufflehog",
+      "tundeep",
+      "unblob",
+      "unhide.rb",
+      "unicorn-magic",
+      "uro",
+      "villain",
+      "vopono",
+      "vwifi-tool",
+      "waybackpy",
+      "web-cache-vulnerability-scanner",
+      "websploit",
+      "wgetpaste",
+      "whatmask",
+      "wifiphisher",
+      "wifipumpkin3",
+      "wig",
+      "wig-ng",
+      "witnessme",
+      "wixl",
+      "wmi-client",
+      "wordlistraider",
+      "wotmate",
+      "wpa-sycophant",
+      "wpprobe",
+      "xclip",
+      "xsrfprobe",
+      "xsstrike",
+      "zonedb"
+    ],
+    "kali-linux-firmware": [
+      "bluez-firmware",
+      "firmware-ath9k-htc",
+      "firmware-atheros",
+      "firmware-brcm80211",
+      "firmware-intel-misc",
+      "firmware-intel-sound",
+      "firmware-iwlwifi",
+      "firmware-libertas",
+      "firmware-linux-free",
+      "firmware-mediatek",
+      "firmware-misc-nonfree",
+      "firmware-realtek",
+      "firmware-sof-signed",
+      "firmware-zd1211"
+    ],
+    "kali-linux-firmware-graphics": [
+      "firmware-amd-graphics",
+      "firmware-intel-graphics",
+      "firmware-nvidia-graphics"
+    ],
+    "kali-linux-headless": [
+      "7zip",
+      "aircrack-ng",
+      "amass",
+      "apache2",
+      "arp-scan",
+      "arping",
+      "atftpd",
+      "axel",
+      "bind9-dnsutils",
+      "binwalk",
+      "binwalk3",
+      "bluez",
+      "bulk-extractor",
+      "bully",
+      "cadaver",
+      "certipy-ad",
+      "cewl",
+      "chntpw",
+      "cifs-utils",
+      "clang",
+      "commix",
+      "creddump7",
+      "crunch",
+      "cryptcat",
+      "cryptsetup",
+      "cryptsetup-initramfs",
+      "cryptsetup-nuke-password",
+      "davtest",
+      "dbd",
+      "default-mysql-server",
+      "dirb",
+      "dmitry",
+      "dns2tcp",
+      "dnschef",
+      "dnsenum",
+      "dnsrecon",
+      "dos2unix",
+      "enum4linux",
+      "ethtool",
+      "evil-winrm",
+      "exe2hexbat",
+      "exiv2",
+      "expect",
+      "exploitdb",
+      "ffuf",
+      "fierce",
+      "fping",
+      "gdisk",
+      "git",
+      "gobuster",
+      "gpp-decrypt",
+      "hash-identifier",
+      "hashcat",
+      "hashcat-utils",
+      "hashdeep",
+      "hashid",
+      "hotpatch",
+      "hping3",
+      "hydra",
+      "i2c-tools",
+      "ifenslave",
+      "ike-scan",
+      "impacket-scripts",
+      "inetsim",
+      "iodine",
+      "iw",
+      "john",
+      "kismet",
+      "laudanum",
+      "lbd",
+      "libimage-exiftool-perl",
+      "macchanger",
+      "magicrescue",
+      "maskprocessor",
+      "masscan",
+      "metasploit-framework",
+      "mimikatz",
+      "minicom",
+      "miredo",
+      "mitmproxy",
+      "msfpc",
+      "multimac",
+      "nasm",
+      "nbtscan",
+      "ncrack",
+      "ncurses-hexedit",
+      "netdiscover",
+      "netexec",
+      "netmask",
+      "netsed",
+      "netsniff-ng",
+      "ngrep",
+      "nikto",
+      "nmap",
+      "onesixtyone",
+      "openvpn",
+      "passing-the-hash",
+      "patator",
+      "pdf-parser",
+      "pdfid",
+      "peass",
+      "php",
+      "php-mysql",
+      "pipal",
+      "pipx",
+      "pixiewps",
+      "plocate",
+      "powershell",
+      "powershell-empire",
+      "powersploit",
+      "proxychains4",
+      "proxytunnel",
+      "ptunnel",
+      "pwnat",
+      "python3-impacket",
+      "python3-pip",
+      "python3-scapy",
+      "python3-virtualenv",
+      "qsslcaudit",
+      "radare2",
+      "rake",
+      "reaver",
+      "rebind",
+      "recon-ng",
+      "redsocks",
+      "responder",
+      "rfkill",
+      "rsmangler",
+      "sakis3g",
+      "samba",
+      "samba-common-bin",
+      "samdump2",
+      "sbd",
+      "scalpel",
+      "screen",
+      "scrounge-ntfs",
+      "sendemail",
+      "set",
+      "skipfish",
+      "sleuthkit",
+      "smbmap",
+      "snmp",
+      "snmpcheck",
+      "snmpd",
+      "socat",
+      "spiderfoot",
+      "spike",
+      "spooftooph",
+      "sqlmap",
+      "ssldump",
+      "sslh",
+      "sslscan",
+      "sslsplit",
+      "sslyze",
+      "statsprocessor",
+      "stunnel4",
+      "swaks",
+      "tcpick",
+      "tcpreplay",
+      "telnet",
+      "testdisk",
+      "tftp-hpa",
+      "thc-ipv6",
+      "thc-pptp-bruter",
+      "theharvester",
+      "traceroute",
+      "udptunnel",
+      "unix-privesc-check",
+      "unrar",
+      "upx-ucl",
+      "vboot-kernel-utils",
+      "vboot-utils",
+      "vim",
+      "vlan",
+      "voiphopper",
+      "vpnc",
+      "wafw00f",
+      "wce",
+      "webshells",
+      "weevely",
+      "wfuzz",
+      "whatweb",
+      "whois",
+      "wifite",
+      "windows-binaries",
+      "wordlists",
+      "wpscan",
+      "xxd"
+    ],
+    "kali-linux-labs": [
+      "dvwa",
+      "juice-shop"
+    ],
+    "kali-linux-large": [
+      "0trace",
+      "afflib-tools",
+      "amap",
+      "apache-users",
+      "apktool",
+      "armitage",
+      "arpwatch",
+      "asleap",
+      "bed",
+      "beef-xss",
+      "bluelog",
+      "blueranger",
+      "bluesnarfer",
+      "braa",
+      "btscanner",
+      "bytecode-viewer",
+      "cabextract",
+      "caldera",
+      "cgpt",
+      "chirp",
+      "chkrootkit",
+      "cisco-auditing-tool",
+      "cisco-global-exploiter",
+      "cisco-ocs",
+      "cisco-torch",
+      "cloud-enum",
+      "cmospwd",
+      "code-oss",
+      "copy-router-config",
+      "cowpatty",
+      "cymothoa",
+      "darkstat",
+      "dbeaver",
+      "dc3dd",
+      "dcfldd",
+      "ddrescue",
+      "dex2jar",
+      "dhcpig",
+      "dnsmap",
+      "dnstracer",
+      "dnswalk",
+      "doona",
+      "dotdotpwn",
+      "dradis",
+      "driftnet",
+      "dsniff",
+      "dumpzilla",
+      "eapmd5pass",
+      "edb-debugger",
+      "enumiax",
+      "ettercap-graphical",
+      "ewf-tools",
+      "extundelete",
+      "fcrackzip",
+      "ferret-sidejack",
+      "fiked",
+      "foremost",
+      "fragrouter",
+      "framework2",
+      "ftester",
+      "galleta",
+      "gdb",
+      "ghidra",
+      "hackrf",
+      "hamster-sidejack",
+      "hexinject",
+      "httrack",
+      "iaxflood",
+      "intrace",
+      "inviteflood",
+      "irpas",
+      "jadx",
+      "javasnoop",
+      "jboss-autopwn",
+      "johnny",
+      "joomscan",
+      "jsql-injection",
+      "kismet-logtools",
+      "libfindrtp",
+      "libhivex-bin",
+      "libsmali-java",
+      "lynis",
+      "maltego",
+      "mc",
+      "mdbtools",
+      "mdk3",
+      "medusa",
+      "memdump",
+      "mercurial",
+      "missidentify",
+      "ncat-w32",
+      "netwag",
+      "nipper-ng",
+      "nishang",
+      "ohrwurm",
+      "ollydbg",
+      "oscanner",
+      "p0f",
+      "pack",
+      "pack2",
+      "padbuster",
+      "paros",
+      "pasco",
+      "perl-cisco-copyconfig",
+      "photon",
+      "polenum",
+      "protos-sip",
+      "pst-utils",
+      "rainbowcrack",
+      "rcracki-mt",
+      "readpe",
+      "recoverjpeg",
+      "recstudio",
+      "redfang",
+      "reglookup",
+      "regripper",
+      "rifiuti",
+      "rifiuti2",
+      "rtpbreak",
+      "rtpflood",
+      "rtpinsertsound",
+      "rtpmixsound",
+      "safecopy",
+      "sctpscan",
+      "seclists",
+      "sfuzz",
+      "sidguesser",
+      "siege",
+      "siparmyknife",
+      "sipcrack",
+      "sipp",
+      "sipvicious",
+      "smtp-user-enum",
+      "sniffjoke",
+      "sqldict",
+      "sqlninja",
+      "sqlsus",
+      "sslsniff",
+      "subversion",
+      "sucrack",
+      "t50",
+      "tcpflow",
+      "termineter",
+      "tftpd32",
+      "thc-ssl-dos",
+      "tlssled",
+      "tnscmd10g",
+      "truecrack",
+      "twofi",
+      "unicornscan",
+      "uniscan",
+      "urlcrazy",
+      "vim-gtk3",
+      "vinetto",
+      "wapiti",
+      "webacoo",
+      "webscarab",
+      "wifi-honey",
+      "xspy",
+      "xsser",
+      "yersinia",
+      "zaproxy",
+      "zerofree",
+      "zim"
+    ],
+    "kali-linux-nethunter": [],
+    "kali-linux-wsl": [
+      "dnsutils",
+      "host",
+      "locales-all",
+      "net-tools"
+    ],
+    "kali-tools-802-11": [
+      "aircrack-ng",
+      "airgeddon",
+      "asleap",
+      "bully",
+      "cowpatty",
+      "eapmd5pass",
+      "fern-wifi-cracker",
+      "freeradius-wpe",
+      "hashcat",
+      "hostapd-wpe",
+      "iw",
+      "kismet",
+      "macchanger",
+      "mdk3",
+      "mdk4",
+      "pixiewps",
+      "reaver",
+      "wifi-honey",
+      "wifite"
+    ],
+    "kali-tools-bluetooth": [
+      "blue-hydra",
+      "bluelog",
+      "blueranger",
+      "bluesnarfer",
+      "bluez",
+      "btscanner",
+      "crackle",
+      "redfang",
+      "spooftooph",
+      "ubertooth"
+    ],
+    "kali-tools-crypto-stego": [
+      "aesfix",
+      "aeskeyfind",
+      "ccrypt",
+      "steghide",
+      "stegosuite",
+      "stegsnow"
+    ],
+    "kali-tools-database": [
+      "jsql-injection",
+      "mdbtools",
+      "oscanner",
+      "sidguesser",
+      "sqldict",
+      "sqlitebrowser",
+      "sqlmap",
+      "sqlninja",
+      "sqlsus",
+      "tnscmd10g"
+    ],
+    "kali-tools-detect": [
+      "grokevt",
+      "sentrypeer"
+    ],
+    "kali-tools-exploitation": [
+      "armitage",
+      "beef-xss",
+      "exploitdb",
+      "metasploit-framework",
+      "msfpc",
+      "set",
+      "shellnoob",
+      "sqlmap",
+      "termineter"
+    ],
+    "kali-tools-forensics": [
+      "7zip",
+      "afflib-tools",
+      "apktool",
+      "autopsy",
+      "binwalk",
+      "binwalk3",
+      "bulk-extractor",
+      "bytecode-viewer",
+      "cabextract",
+      "chkrootkit",
+      "creddump7",
+      "dc3dd",
+      "dcfldd",
+      "ddrescue",
+      "dumpzilla",
+      "edb-debugger",
+      "ewf-tools",
+      "exifprobe",
+      "exiv2",
+      "ext3grep",
+      "ext4magic",
+      "extundelete",
+      "fcrackzip",
+      "firmware-mod-kit",
+      "foremost",
+      "forensic-artifacts",
+      "forensics-colorize",
+      "galleta",
+      "gdb",
+      "gpart",
+      "gparted",
+      "grokevt",
+      "guymager",
+      "hashdeep",
+      "inetsim",
+      "jadx",
+      "javasnoop",
+      "libhivex-bin",
+      "libsmali-java",
+      "lvm2",
+      "lynis",
+      "mac-robber",
+      "magicrescue",
+      "md5deep",
+      "mdbtools",
+      "memdump",
+      "metacam",
+      "missidentify",
+      "myrescue",
+      "nasm",
+      "nasty",
+      "ollydbg",
+      "parted",
+      "pasco",
+      "pdf-parser",
+      "pdfid",
+      "plaso",
+      "polenum",
+      "pst-utils",
+      "python3-capstone",
+      "python3-dfdatetime",
+      "python3-dfvfs",
+      "python3-dfwinreg",
+      "python3-distorm3",
+      "radare2",
+      "readpe",
+      "recoverdm",
+      "recoverjpeg",
+      "recstudio",
+      "reglookup",
+      "regripper",
+      "rephrase",
+      "rifiuti",
+      "rifiuti2",
+      "rizin-cutter",
+      "rkhunter",
+      "rsakeyfind",
+      "rz-ghidra",
+      "safecopy",
+      "samdump2",
+      "scalpel",
+      "scrounge-ntfs",
+      "sleuthkit",
+      "sqlitebrowser",
+      "ssdeep",
+      "tcpdump",
+      "tcpflow",
+      "tcpick",
+      "tcpreplay",
+      "truecrack",
+      "undbx",
+      "unhide",
+      "unrar",
+      "upx-ucl",
+      "vinetto",
+      "wce",
+      "winregfs",
+      "wireshark",
+      "xmount",
+      "xplico",
+      "yara"
+    ],
+    "kali-tools-fuzzing": [
+      "afl",
+      "sfuzz",
+      "spike",
+      "wfuzz"
+    ],
+    "kali-tools-gpu": [
+      "oclgausscrack",
+      "truecrack"
+    ],
+    "kali-tools-hardware": [
+      "binwalk",
+      "binwalk3",
+      "cutecom",
+      "flashrom",
+      "minicom",
+      "openocd",
+      "qemu-system-x86",
+      "qemu-user",
+      "radare2",
+      "rizin-cutter",
+      "rz-ghidra"
+    ],
+    "kali-tools-identify": [
+      "amass",
+      "assetfinder",
+      "cisco-auditing-tool",
+      "defectdojo",
+      "exploitdb",
+      "hb-honeypot",
+      "kali-autopilot",
+      "maltego",
+      "maryam",
+      "nipper-ng",
+      "osrframework",
+      "spiderfoot",
+      "tiger",
+      "wapiti",
+      "witnessme",
+      "zaproxy"
+    ],
+    "kali-tools-information-gathering": [
+      "0trace",
+      "arping",
+      "braa",
+      "dmitry",
+      "dnsenum",
+      "dnsmap",
+      "dnsrecon",
+      "dnstracer",
+      "dnswalk",
+      "enum4linux",
+      "fierce",
+      "firewalk",
+      "fping",
+      "fragrouter",
+      "ftester",
+      "hping3",
+      "ike-scan",
+      "intrace",
+      "irpas",
+      "lbd",
+      "legion",
+      "maltego",
+      "masscan",
+      "metagoofil",
+      "nbtscan",
+      "ncat",
+      "netdiscover",
+      "netmask",
+      "nmap",
+      "onesixtyone",
+      "p0f",
+      "qsslcaudit",
+      "recon-ng",
+      "smbmap",
+      "smtp-user-enum",
+      "snmpcheck",
+      "ssldump",
+      "sslh",
+      "sslscan",
+      "sslyze",
+      "swaks",
+      "thc-ipv6",
+      "theharvester",
+      "tlssled",
+      "twofi",
+      "unicornscan",
+      "urlcrazy",
+      "wafw00f",
+      "zenmap"
+    ],
+    "kali-tools-passwords": [
+      "cewl",
+      "chntpw",
+      "cisco-auditing-tool",
+      "cmospwd",
+      "crackle",
+      "creddump7",
+      "crunch",
+      "fcrackzip",
+      "freerdp3-x11",
+      "gpp-decrypt",
+      "hash-identifier",
+      "hashcat",
+      "hashcat-utils",
+      "hashid",
+      "hydra",
+      "hydra-gtk",
+      "john",
+      "johnny",
+      "maskprocessor",
+      "medusa",
+      "mimikatz",
+      "ncrack",
+      "onesixtyone",
+      "ophcrack",
+      "ophcrack-cli",
+      "pack",
+      "pack2",
+      "passing-the-hash",
+      "patator",
+      "pdfcrack",
+      "pipal",
+      "polenum",
+      "rainbowcrack",
+      "rarcrack",
+      "rcracki-mt",
+      "rsmangler",
+      "samdump2",
+      "seclists",
+      "sipcrack",
+      "sipvicious",
+      "smbmap",
+      "sqldict",
+      "statsprocessor",
+      "sucrack",
+      "thc-pptp-bruter",
+      "truecrack",
+      "twofi",
+      "wordlists"
+    ],
+    "kali-tools-post-exploitation": [
+      "cymothoa",
+      "dbd",
+      "dns2tcp",
+      "exe2hexbat",
+      "iodine",
+      "laudanum",
+      "mimikatz",
+      "miredo",
+      "nishang",
+      "powersploit",
+      "proxychains4",
+      "proxytunnel",
+      "ptunnel",
+      "pwnat",
+      "sbd",
+      "shellter",
+      "sslh",
+      "stunnel4",
+      "udptunnel",
+      "veil",
+      "webacoo",
+      "weevely"
+    ],
+    "kali-tools-protect": [
+      "clamav",
+      "cryptsetup",
+      "cryptsetup-initramfs",
+      "cryptsetup-nuke-password",
+      "fwbuilder"
+    ],
+    "kali-tools-recover": [
+      "ddrescue",
+      "ext3grep",
+      "extundelete",
+      "myrescue",
+      "recoverdm",
+      "recoverjpeg",
+      "scrounge-ntfs",
+      "undbx"
+    ],
+    "kali-tools-reporting": [
+      "cutycapt",
+      "dradis",
+      "eyewitness",
+      "faraday",
+      "maltego",
+      "metagoofil",
+      "pipal",
+      "recordmydesktop"
+    ],
+    "kali-tools-respond": [
+      "ewf-tools",
+      "ghidra",
+      "guymager",
+      "hashrat",
+      "impacket-scripts",
+      "netsniff-ng"
+    ],
+    "kali-tools-reverse-engineering": [
+      "apktool",
+      "bytecode-viewer",
+      "clang",
+      "dex2jar",
+      "edb-debugger",
+      "jadx",
+      "javasnoop",
+      "jd-gui",
+      "metasploit-framework",
+      "ollydbg",
+      "radare2",
+      "recstudio",
+      "rizin",
+      "rizin-cutter",
+      "rz-ghidra"
+    ],
+    "kali-tools-rfid": [
+      "gnuradio",
+      "proxmark3",
+      "rfdump"
+    ],
+    "kali-tools-sdr": [
+      "chirp",
+      "gnuradio",
+      "gqrx-sdr",
+      "gr-air-modes",
+      "gr-iqbal",
+      "gr-osmosdr",
+      "hackrf",
+      "inspectrum",
+      "kalibrate-rtl",
+      "multimon-ng",
+      "uhd-host",
+      "uhd-images"
+    ],
+    "kali-tools-sniffing-spoofing": [
+      "above",
+      "bettercap",
+      "darkstat",
+      "dnschef",
+      "driftnet",
+      "dsniff",
+      "ettercap-graphical",
+      "ferret-sidejack",
+      "fiked",
+      "hamster-sidejack",
+      "hexinject",
+      "isr-evilgrade",
+      "macchanger",
+      "mitmproxy",
+      "netsniff-ng",
+      "rebind",
+      "responder",
+      "sniffjoke",
+      "sslsniff",
+      "sslsplit",
+      "tcpflow",
+      "tcpreplay",
+      "wifi-honey",
+      "wireshark"
+    ],
+    "kali-tools-social-engineering": [
+      "beef-xss",
+      "maltego",
+      "msfpc",
+      "set",
+      "veil"
+    ],
+    "kali-tools-top10": [
+      "aircrack-ng",
+      "burpsuite",
+      "hydra",
+      "john",
+      "metasploit-framework",
+      "netexec",
+      "nmap",
+      "responder",
+      "sqlmap",
+      "wireshark"
+    ],
+    "kali-tools-voip": [
+      "enumiax",
+      "iaxflood",
+      "inviteflood",
+      "libfindrtp",
+      "nmap",
+      "ohrwurm",
+      "protos-sip",
+      "rtpbreak",
+      "rtpflood",
+      "rtpinsertsound",
+      "rtpmixsound",
+      "sctpscan",
+      "siparmyknife",
+      "sipcrack",
+      "sipp",
+      "sipvicious",
+      "voiphopper",
+      "wireshark"
+    ],
+    "kali-tools-vulnerability": [
+      "afl",
+      "bed",
+      "cisco-auditing-tool",
+      "cisco-global-exploiter",
+      "cisco-ocs",
+      "cisco-torch",
+      "copy-router-config",
+      "dhcpig",
+      "enumiax",
+      "gvm",
+      "iaxflood",
+      "inviteflood",
+      "legion",
+      "lynis",
+      "nikto",
+      "nmap",
+      "ohrwurm",
+      "peass",
+      "protos-sip",
+      "rtpbreak",
+      "rtpflood",
+      "rtpinsertsound",
+      "rtpmixsound",
+      "sctpscan",
+      "sfuzz",
+      "siege",
+      "siparmyknife",
+      "sipp",
+      "sipsak",
+      "sipvicious",
+      "slowhttptest",
+      "spike",
+      "t50",
+      "thc-ssl-dos",
+      "unix-privesc-check",
+      "voiphopper",
+      "yersinia"
+    ],
+    "kali-tools-web": [
+      "apache-users",
+      "apache2",
+      "beef-xss",
+      "burpsuite",
+      "cadaver",
+      "commix",
+      "cutycapt",
+      "davtest",
+      "default-mysql-server",
+      "dirb",
+      "dirbuster",
+      "dotdotpwn",
+      "eyewitness",
+      "ferret-sidejack",
+      "ftester",
+      "hakrawler",
+      "hamster-sidejack",
+      "heartleech",
+      "httprint",
+      "httrack",
+      "hydra",
+      "hydra-gtk",
+      "jboss-autopwn",
+      "joomscan",
+      "jsql-injection",
+      "laudanum",
+      "lbd",
+      "maltego",
+      "medusa",
+      "mitmproxy",
+      "ncrack",
+      "nikto",
+      "nishang",
+      "nmap",
+      "oscanner",
+      "owasp-mantra-ff",
+      "padbuster",
+      "paros",
+      "patator",
+      "php",
+      "php-mysql",
+      "proxychains4",
+      "proxytunnel",
+      "qsslcaudit",
+      "redsocks",
+      "sidguesser",
+      "siege",
+      "skipfish",
+      "slowhttptest",
+      "sqldict",
+      "sqlitebrowser",
+      "sqlmap",
+      "sqlninja",
+      "sqlsus",
+      "ssldump",
+      "sslh",
+      "sslscan",
+      "sslsniff",
+      "sslsplit",
+      "sslyze",
+      "stunnel4",
+      "thc-ssl-dos",
+      "tlssled",
+      "tnscmd10g",
+      "uniscan",
+      "wafw00f",
+      "wapiti",
+      "watobo",
+      "webacoo",
+      "webscarab",
+      "webshells",
+      "weevely",
+      "wfuzz",
+      "whatweb",
+      "wireshark",
+      "wpscan",
+      "xsser",
+      "zaproxy"
+    ],
+    "kali-tools-windows-resources": [
+      "dbd",
+      "dnschef",
+      "heartleech",
+      "hyperion",
+      "mimikatz",
+      "ncat-w32",
+      "ollydbg",
+      "powercat",
+      "regripper",
+      "sbd",
+      "secure-socket-funneling-windows-binaries",
+      "shellter",
+      "tftpd32",
+      "wce",
+      "windows-binaries",
+      "windows-privesc-check"
+    ],
+    "kali-tools-wireless": [
+      "rfcat",
+      "rfkill",
+      "sakis3g",
+      "wireshark"
+    ]
+  },
+  "generated_utc": "2026-10-11T05:16:44+00:00",
+  "package_count": 814,
+  "packages": [
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "0trace"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "7zip"
+    },
+    {
+      "categories": [
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "above"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "adaptixc2"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "aesfix"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "aeskeyfind"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "afflib-tools"
+    },
+    {
+      "categories": [
+        "kali-tools-fuzzing",
+        "kali-tools-vulnerability"
+      ],
+      "name": "afl"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11",
+        "kali-tools-top10"
+      ],
+      "name": "aircrack-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-802-11"
+      ],
+      "name": "airgeddon"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "altdns"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "amap"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-identify"
+      ],
+      "name": "amass"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "android-sdk"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "apache-users"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "apache2"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "apktool"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "apple-bleee"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "arjun"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-exploitation"
+      ],
+      "name": "armitage"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "arp-scan"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "arping"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "arpwatch"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "arsenal-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-802-11"
+      ],
+      "name": "asleap"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "assetfinder"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "atftpd"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-forensics"
+      ],
+      "name": "autopsy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "autorecon"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "axel"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "azurehound"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "b374k"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "bed"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-exploitation",
+        "kali-tools-social-engineering",
+        "kali-tools-web"
+      ],
+      "name": "beef-xss"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "berate-ap"
+    },
+    {
+      "categories": [
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "bettercap"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bettercap-ui"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "bind9-dnsutils"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bing-ip2hosts"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-hardware"
+      ],
+      "name": "binwalk"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-hardware"
+      ],
+      "name": "binwalk3"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bloodhound"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bloodhound-ce-python"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bloodhound.py"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bloodyad"
+    },
+    {
+      "categories": [
+        "kali-tools-bluetooth"
+      ],
+      "name": "blue-hydra"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-bluetooth"
+      ],
+      "name": "bluelog"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-bluetooth"
+      ],
+      "name": "blueranger"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-bluetooth"
+      ],
+      "name": "bluesnarfer"
+    },
+    {
+      "categories": [
+        "kali-linux-arm",
+        "kali-linux-headless",
+        "kali-tools-bluetooth"
+      ],
+      "name": "bluez"
+    },
+    {
+      "categories": [
+        "kali-linux-arm",
+        "kali-linux-firmware"
+      ],
+      "name": "bluez-firmware"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bopscrk"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bpf-linker"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "braa"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bruteforce-luks"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bruteforce-salted-openssl"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bruteforce-wallet"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "bruteshark"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "brutespray"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-bluetooth"
+      ],
+      "name": "btscanner"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "bulk-extractor"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "bully"
+    },
+    {
+      "categories": [
+        "kali-tools-top10",
+        "kali-tools-web"
+      ],
+      "name": "burpsuite"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "bytecode-viewer"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "cabextract"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "cadaver"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "caido"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "caido-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "caldera"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "calicoctl"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "capstone-tool"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "ccrypt"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "certgraph"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "certi"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "certipy-ad"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "cewl"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "cgpt"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "chainsaw"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "changeme"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "chaosreader"
+    },
+    {
+      "categories": [],
+      "name": "cherrytree"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sdr"
+      ],
+      "name": "chirp"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "chisel"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "chisel-common-binaries"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "chkrootkit"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "chntpw"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "cifs-utils"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cilium-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-identify",
+        "kali-tools-passwords",
+        "kali-tools-vulnerability"
+      ],
+      "name": "cisco-auditing-tool"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "cisco-global-exploiter"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "cisco-ocs"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "cisco-torch"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cisco7crack"
+    },
+    {
+      "categories": [
+        "kali-tools-protect"
+      ],
+      "name": "clamav"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "clang"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-linux-large"
+      ],
+      "name": "cloud-enum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cloudbrute"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "cmospwd"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cmseek"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cntlm"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "code-oss"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "coercer"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "colly"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "commix"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "copy-router-config"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cosign"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-802-11"
+      ],
+      "name": "cowpatty"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "crack"
+    },
+    {
+      "categories": [
+        "kali-tools-bluetooth",
+        "kali-tools-passwords"
+      ],
+      "name": "crackle"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "crackmapexec"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-passwords"
+      ],
+      "name": "creddump7"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cri-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "crlfuzz"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "crowbar"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "crunch"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "cryptcat"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-protect"
+      ],
+      "name": "cryptsetup"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-protect"
+      ],
+      "name": "cryptsetup-initramfs"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-protect"
+      ],
+      "name": "cryptsetup-nuke-password"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cupid-hostapd"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "cupid-wpasupplicant"
+    },
+    {
+      "categories": [],
+      "name": "curl"
+    },
+    {
+      "categories": [
+        "kali-tools-hardware"
+      ],
+      "name": "cutecom"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-reporting",
+        "kali-tools-web"
+      ],
+      "name": "cutycapt"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "cymothoa"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dalfox"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "darkstat"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "davtest"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-windows-resources"
+      ],
+      "name": "dbd"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "dbeaver"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "dc3dd"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "dcfldd"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "ddrescue"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "default-mysql-server"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "defectdojo"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "detect-it-easy"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "dex2jar"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "dhcpig"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "dirb"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-web"
+      ],
+      "name": "dirbuster"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dirsearch"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dislocker"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dmitry"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "dns2tcp"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dnscat2"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-windows-resources"
+      ],
+      "name": "dnschef"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dnsenum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dnsgen"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dnsmap"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dnsrecon"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dnstracer"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dnstwist"
+    },
+    {
+      "categories": [
+        "kali-linux-wsl"
+      ],
+      "name": "dnsutils"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "dnswalk"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dnsx"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "donut"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "doona"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "dos2unix"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "dotdotpwn"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "dphys-swapfile"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-reporting"
+      ],
+      "name": "dradis"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "driftnet"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dscan"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "dsniff"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dufflebag"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dumpsterdiver"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "dumpzilla"
+    },
+    {
+      "categories": [
+        "kali-linux-labs"
+      ],
+      "name": "dvwa"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "dwarf2json"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "eaphammer"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-802-11"
+      ],
+      "name": "eapmd5pass"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "edb-debugger"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "eksctl"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "email2phonenumber"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "emailharvester"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "enum4linux"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "enum4linux-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "enumiax"
+    },
+    {
+      "categories": [
+        "kali-linux-arm",
+        "kali-linux-headless"
+      ],
+      "name": "ethtool"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "ettercap-graphical"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "evil-ssdp"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "evil-winrm"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "evil-winrm-py"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "evilginx2"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-respond"
+      ],
+      "name": "ewf-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "exe2hexbat"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "exiflooter"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "exifprobe"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "exiv2"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "expect"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-exploitation",
+        "kali-tools-identify"
+      ],
+      "name": "exploitdb"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "exploitdb-bin-sploits"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "exploitdb-papers"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "ext3grep"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "ext4magic"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "extundelete"
+    },
+    {
+      "categories": [
+        "kali-tools-reporting",
+        "kali-tools-web"
+      ],
+      "name": "eyewitness"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "fake-hwclock"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-reporting"
+      ],
+      "name": "faraday"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "faraday-agent-dispatcher"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "faraday-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "fatcat"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-passwords"
+      ],
+      "name": "fcrackzip"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-802-11"
+      ],
+      "name": "fern-wifi-cracker"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "feroxbuster"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-web"
+      ],
+      "name": "ferret-sidejack"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "ffuf"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "fierce"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "fiked"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "finalrecon"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "findomain"
+    },
+    {
+      "categories": [
+        "kali-tools-information-gathering"
+      ],
+      "name": "firewalk"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware-graphics"
+      ],
+      "name": "firmware-amd-graphics"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-ath9k-htc"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-atheros"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-brcm80211"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware-graphics"
+      ],
+      "name": "firmware-intel-graphics"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-intel-misc"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-intel-sound"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-iwlwifi"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-libertas"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-linux-free"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-mediatek"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-misc-nonfree"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "firmware-mod-kit"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware-graphics"
+      ],
+      "name": "firmware-nvidia-graphics"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-realtek"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-sof-signed"
+    },
+    {
+      "categories": [
+        "kali-linux-firmware"
+      ],
+      "name": "firmware-zd1211"
+    },
+    {
+      "categories": [
+        "kali-tools-hardware"
+      ],
+      "name": "flashrom"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "fluxion"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "foremost"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "forensic-artifacts"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "forensics-colorize"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "fping"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "fragrouter"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "framework2"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "freeradius"
+    },
+    {
+      "categories": [
+        "kali-tools-802-11"
+      ],
+      "name": "freeradius-wpe"
+    },
+    {
+      "categories": [
+        "kali-tools-passwords"
+      ],
+      "name": "freerdp3-x11"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "ftester"
+    },
+    {
+      "categories": [],
+      "name": "ftp"
+    },
+    {
+      "categories": [
+        "kali-tools-protect"
+      ],
+      "name": "fwbuilder"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "galleta"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "gdb"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gdb-peda"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "gdisk"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gef"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gemini-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "getallurls"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "getsploit"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-respond"
+      ],
+      "name": "ghidra"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "git"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gitleaks"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gitxray"
+    },
+    {
+      "categories": [
+        "kali-tools-rfid",
+        "kali-tools-sdr"
+      ],
+      "name": "gnuradio"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "gobuster"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "godoh"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "golang-github-binject-go-donut"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "goldeneye"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "goofile"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "google-nexus-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-default"
+      ],
+      "name": "gophish"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "goshs"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gospider"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gowitness"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "gpart"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "gparted"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "gpp-decrypt"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "gqrx-sdr"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "gr-air-modes"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "gr-iqbal"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "gr-osmosdr"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "graudit"
+    },
+    {
+      "categories": [
+        "kali-tools-detect",
+        "kali-tools-forensics"
+      ],
+      "name": "grokevt"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gsocket"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "gtkhash"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-forensics",
+        "kali-tools-respond"
+      ],
+      "name": "guymager"
+    },
+    {
+      "categories": [
+        "kali-tools-vulnerability"
+      ],
+      "name": "gvm"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "h8mail"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sdr"
+      ],
+      "name": "hackrf"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hak5-wifi-coconut"
+    },
+    {
+      "categories": [
+        "kali-tools-web"
+      ],
+      "name": "hakrawler"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-web"
+      ],
+      "name": "hamster-sidejack"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "hash-identifier"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11",
+        "kali-tools-passwords"
+      ],
+      "name": "hashcat"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "hashcat-utils"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "hashdeep"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "hashid"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-respond"
+      ],
+      "name": "hashrat"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "havoc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "hb-honeypot"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hcxtools"
+    },
+    {
+      "categories": [
+        "kali-tools-web",
+        "kali-tools-windows-resources"
+      ],
+      "name": "heartleech"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hekatomb"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "hexinject"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hexstrike-ai"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hexwalk"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hoaxshell"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "horst"
+    },
+    {
+      "categories": [
+        "kali-linux-wsl"
+      ],
+      "name": "host"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hostapd-mana"
+    },
+    {
+      "categories": [
+        "kali-tools-802-11"
+      ],
+      "name": "hostapd-wpe"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hosthunter"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hostsman"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "hotpatch"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "hping3"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "htshells"
+    },
+    {
+      "categories": [
+        "kali-tools-web"
+      ],
+      "name": "httprint"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "httprobe"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "httpx-toolkit"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "httrack"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hubble"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "humble"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "hurl"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-top10",
+        "kali-tools-web"
+      ],
+      "name": "hydra"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-passwords",
+        "kali-tools-web"
+      ],
+      "name": "hydra-gtk"
+    },
+    {
+      "categories": [
+        "kali-tools-windows-resources"
+      ],
+      "name": "hyperion"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "i2c-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "iaxflood"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ibombshell"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ident-user-enum"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "ifenslave"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "ike-scan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "imhex"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-respond"
+      ],
+      "name": "impacket-scripts"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "inetsim"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "initramfs-tools"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "inspectrum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "inspy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "instaloader"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "intrace"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "inviteflood"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "iodine"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ipv6toolkit"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "irpas"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ismtp"
+    },
+    {
+      "categories": [
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "isr-evilgrade"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ivre"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "iw"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "jadx"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "javasnoop"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "jboss-autopwn"
+    },
+    {
+      "categories": [
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "jd-gui"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-top10"
+      ],
+      "name": "john"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "johnny"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "joomscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "joplin"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "jsp-file-browser"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "jsql-injection"
+    },
+    {
+      "categories": [
+        "kali-linux-labs"
+      ],
+      "name": "juice-shop"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "kalibrate-rtl"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "katana"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "kerberoast"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "kismet"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "kismet-logtools"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "knocker"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "koadic"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "krbrelayx"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "kubernetes-helm"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "kustomize"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "lapsdumper"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "laudanum"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "lbd"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ldeep"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "legba"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-information-gathering",
+        "kali-tools-vulnerability"
+      ],
+      "name": "legion"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip"
+      ],
+      "name": "libfindrtp"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "libhivex-bin"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "libimage-exiftool-perl"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "libsmali-java"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ligolo-mp"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ligolo-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ligolo-ng-common-binaries"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "linkedin2username"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "linux-exploit-suggester"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "llm-tools-nmap"
+    },
+    {
+      "categories": [
+        "kali-linux-wsl"
+      ],
+      "name": "locales-all"
+    },
+    {
+      "categories": [],
+      "name": "lsof"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "lvm2"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-vulnerability"
+      ],
+      "name": "lynis"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "mac-robber"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "macchanger"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "magicrescue"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-identify",
+        "kali-tools-information-gathering",
+        "kali-tools-reporting",
+        "kali-tools-social-engineering",
+        "kali-tools-web"
+      ],
+      "name": "maltego"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "maltego-teeth"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "maryam"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "maskprocessor"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "masscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "massdns"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "mc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "mcp-kali-server"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "md5deep"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-forensics"
+      ],
+      "name": "mdbtools"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-802-11"
+      ],
+      "name": "mdk3"
+    },
+    {
+      "categories": [
+        "kali-tools-802-11"
+      ],
+      "name": "mdk4"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords",
+        "kali-tools-web"
+      ],
+      "name": "medusa"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "memdump"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "mercurial"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "merlin-agent"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "merlin-server"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "metacam"
+    },
+    {
+      "categories": [
+        "kali-tools-information-gathering",
+        "kali-tools-reporting"
+      ],
+      "name": "metagoofil"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-exploitation",
+        "kali-tools-reverse-engineering",
+        "kali-tools-top10"
+      ],
+      "name": "metasploit-framework"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "metasploitmcp"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-post-exploitation",
+        "kali-tools-windows-resources"
+      ],
+      "name": "mimikatz"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-hardware"
+      ],
+      "name": "minicom"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "miredo"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "missidentify"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "mitm6"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-web"
+      ],
+      "name": "mitmproxy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "mongo-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-exploitation",
+        "kali-tools-social-engineering"
+      ],
+      "name": "msfpc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "mssqlpwner"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "multiforcer"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "multimac"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "multimon-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "mxcheck"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "myrescue"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "naabu"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "name-that-hash"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "nasm"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "nasty"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "nbtscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "nbtscan-unixwiz"
+    },
+    {
+      "categories": [
+        "kali-tools-information-gathering"
+      ],
+      "name": "ncat"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-windows-resources"
+      ],
+      "name": "ncat-w32"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-web"
+      ],
+      "name": "ncrack"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "ncurses-hexedit"
+    },
+    {
+      "categories": [
+        "kali-linux-wsl"
+      ],
+      "name": "net-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-core"
+      ],
+      "name": "netcat-traditional"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "netdiscover"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-top10"
+      ],
+      "name": "netexec"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "netmask"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "netscanner"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "netsed"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-respond",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "netsniff-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "netwag"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "network-manager"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "nextnet"
+    },
+    {
+      "categories": [],
+      "name": "nfs-common"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "ngrep"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-vulnerability",
+        "kali-tools-web"
+      ],
+      "name": "nikto"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-identify"
+      ],
+      "name": "nipper-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "nishang"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-top10",
+        "kali-tools-voip",
+        "kali-tools-vulnerability",
+        "kali-tools-web"
+      ],
+      "name": "nmap"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "nmapsi4"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "nuclei"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "obsidian"
+    },
+    {
+      "categories": [
+        "kali-tools-gpu"
+      ],
+      "name": "oclgausscrack"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "odat"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "ohrwurm"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "oletools"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering",
+        "kali-tools-windows-resources"
+      ],
+      "name": "ollydbg"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-passwords"
+      ],
+      "name": "onesixtyone"
+    },
+    {
+      "categories": [
+        "kali-tools-hardware"
+      ],
+      "name": "openocd"
+    },
+    {
+      "categories": [],
+      "name": "openssh-client"
+    },
+    {
+      "categories": [],
+      "name": "openssh-client-ssh1"
+    },
+    {
+      "categories": [],
+      "name": "openssh-server"
+    },
+    {
+      "categories": [],
+      "name": "openssl-provider-legacy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "opentaxii"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "openvpn"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-passwords"
+      ],
+      "name": "ophcrack"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-passwords"
+      ],
+      "name": "ophcrack-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "oscanner"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "osrframework"
+    },
+    {
+      "categories": [
+        "kali-tools-web"
+      ],
+      "name": "owasp-mantra-ff"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "owl"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "p0f"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "pack"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "pack2"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pacu"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "padbuster"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "paros"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "parsero"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "parted"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "pasco"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "passdetective"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "passing-the-hash"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-web"
+      ],
+      "name": "patator"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "patchleaks"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "payloadsallthethings"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "pciutils"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "pdf-parser"
+    },
+    {
+      "categories": [
+        "kali-tools-passwords"
+      ],
+      "name": "pdfcrack"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "pdfid"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-vulnerability"
+      ],
+      "name": "peass"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "peirates"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "penelope"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "perl-cisco-copyconfig"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "phishery"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-linux-large"
+      ],
+      "name": "photon"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "php"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "php-mysql"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "phpggc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "phpsploit"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords",
+        "kali-tools-reporting"
+      ],
+      "name": "pipal"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "pipx"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "pixiewps"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "plaso"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "plocate"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pnscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pocsuite3"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-passwords"
+      ],
+      "name": "polenum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pompem"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "portspoof"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "poshc2"
+    },
+    {
+      "categories": [
+        "kali-tools-windows-resources"
+      ],
+      "name": "powercat"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "powershell"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "powershell-empire"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "powersploit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "princeprocessor"
+    },
+    {
+      "categories": [],
+      "name": "procps"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "protos-sip"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "proxify"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "proximoth"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-rfid"
+      ],
+      "name": "proxmark3"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "proxychains4"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "proxytunnel"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pskracker"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pspy"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "pst-utils"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "ptunnel"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "pwnat"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pwncat"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "pyinstxtractor"
+    },
+    {
+      "categories": [],
+      "name": "python-is-python3"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-atomic-operator"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "python3-capstone"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-ciphey"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "python3-dfdatetime"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "python3-dfvfs"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "python3-dfwinreg"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "python3-distorm3"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-dploot"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "python3-impacket"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-ldapdomaindump"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "python3-pip"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-pyinstaller"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "python3-scapy"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "python3-virtualenv"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "python3-wsgidav"
+    },
+    {
+      "categories": [
+        "kali-tools-hardware"
+      ],
+      "name": "qemu-system-x86"
+    },
+    {
+      "categories": [
+        "kali-tools-hardware"
+      ],
+      "name": "qemu-user"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "qsreplace"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "qsslcaudit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "quark-engine"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-hardware",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "radare2"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "rainbowcrack"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "rake"
+    },
+    {
+      "categories": [
+        "kali-tools-passwords"
+      ],
+      "name": "rarcrack"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "raven"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "rcracki-mt"
+    },
+    {
+      "categories": [],
+      "name": "rdesktop"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "readpe"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "reaver"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "rebind"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "recon-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "reconspider"
+    },
+    {
+      "categories": [
+        "kali-tools-reporting"
+      ],
+      "name": "recordmydesktop"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "recoverdm"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "recoverjpeg"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "recstudio"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-bluetooth"
+      ],
+      "name": "redfang"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "redsnarf"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "redsocks"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "reglookup"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-windows-resources"
+      ],
+      "name": "regripper"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "rephrase"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-top10"
+      ],
+      "name": "responder"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "rev-proxy-grapher"
+    },
+    {
+      "categories": [
+        "kali-tools-wireless"
+      ],
+      "name": "rfcat"
+    },
+    {
+      "categories": [
+        "kali-tools-rfid"
+      ],
+      "name": "rfdump"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-wireless"
+      ],
+      "name": "rfkill"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ridenum"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "rifiuti"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "rifiuti2"
+    },
+    {
+      "categories": [
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "rizin"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-hardware",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "rizin-cutter"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "rkflashtool"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "rkhunter"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "rling"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "robotstxt"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ropper"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "routerkeygenpc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "routersploit"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "rsakeyfind"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "rsmangler"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "rtpbreak"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "rtpflood"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "rtpinsertsound"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "rtpmixsound"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "rubeus"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "ruby-pedump"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "rustscan"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-hardware",
+        "kali-tools-reverse-engineering"
+      ],
+      "name": "rz-ghidra"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "s3scanner"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "safecopy"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-wireless"
+      ],
+      "name": "sakis3g"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "samba"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "samba-common-bin"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-passwords"
+      ],
+      "name": "samdump2"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sara"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-windows-resources"
+      ],
+      "name": "sbd"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "scalpel"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "screen"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "scrounge-ntfs"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "sctpscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sdrangel"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "seclists"
+    },
+    {
+      "categories": [
+        "kali-tools-windows-resources"
+      ],
+      "name": "secure-socket-funneling-windows-binaries"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "sendemail"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-detect"
+      ],
+      "name": "sentrypeer"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-exploitation",
+        "kali-tools-social-engineering"
+      ],
+      "name": "set"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-fuzzing",
+        "kali-tools-vulnerability"
+      ],
+      "name": "sfuzz"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sharphound"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sharpshooter"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "shed"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "shell-gpt"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "shellfire"
+    },
+    {
+      "categories": [
+        "kali-tools-exploitation"
+      ],
+      "name": "shellnoob"
+    },
+    {
+      "categories": [
+        "kali-tools-post-exploitation",
+        "kali-tools-windows-resources"
+      ],
+      "name": "shellter"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sherlock"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sickle-pdk"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "sidguesser"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability",
+        "kali-tools-web"
+      ],
+      "name": "siege"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sigma-cli"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "silenttrinity"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "siparmyknife"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords",
+        "kali-tools-voip"
+      ],
+      "name": "sipcrack"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "sipp"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sippts"
+    },
+    {
+      "categories": [
+        "kali-tools-vulnerability"
+      ],
+      "name": "sipsak"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "sipvicious"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "skipfish"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "sleuthkit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "slimtoolkit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sliver"
+    },
+    {
+      "categories": [
+        "kali-tools-vulnerability",
+        "kali-tools-web"
+      ],
+      "name": "slowhttptest"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-passwords"
+      ],
+      "name": "smbmap"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "smtp-user-enum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sn0int"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "snaffler-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "sniffjoke"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "snmp"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "snmpcheck"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "snmpd"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "snmpenum"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "snort"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "snowdrop"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "socat"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sparrow-wifi"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-identify"
+      ],
+      "name": "spiderfoot"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-fuzzing",
+        "kali-tools-vulnerability"
+      ],
+      "name": "spike"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "spire"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sploitscan"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-bluetooth"
+      ],
+      "name": "spooftooph"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "spray"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sprayhound"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sprayingtoolkit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "spraykatz"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-passwords",
+        "kali-tools-web"
+      ],
+      "name": "sqldict"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-database",
+        "kali-tools-forensics",
+        "kali-tools-web"
+      ],
+      "name": "sqlitebrowser"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-database",
+        "kali-tools-exploitation",
+        "kali-tools-top10",
+        "kali-tools-web"
+      ],
+      "name": "sqlmap"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sqlmc"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "sqlninja"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "sqlsus"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "ssdeep"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sshuttle"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "ssldump"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "sslh"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "sslscan"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-web"
+      ],
+      "name": "sslsniff"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-web"
+      ],
+      "name": "sslsplit"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sslstrip"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "sslyze"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sstimap"
+    },
+    {
+      "categories": [
+        "kali-linux-default"
+      ],
+      "name": "starkiller"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "statsprocessor"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "stegcracker"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "steghide"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "stegosuite"
+    },
+    {
+      "categories": [
+        "kali-tools-crypto-stego"
+      ],
+      "name": "stegsnow"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "stunnel4"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "subfinder"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "subjack"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "sublist3r"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "subversion"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-passwords"
+      ],
+      "name": "sucrack"
+    },
+    {
+      "categories": [],
+      "name": "sudo"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "sunxi-tools"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "swaks"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "syft"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "t50"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "tailscale"
+    },
+    {
+      "categories": [],
+      "name": "tasksel"
+    },
+    {
+      "categories": [
+        "kali-linux-core",
+        "kali-tools-forensics"
+      ],
+      "name": "tcpdump"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "tcpflow"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "tcpick"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "tcpreplay"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "teamsploit"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "telnet"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-exploitation"
+      ],
+      "name": "termineter"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "terraform"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "testdisk"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "testssl.sh"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "tetragon"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "tftp-hpa"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-windows-resources"
+      ],
+      "name": "tftpd32"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "thc-ipv6"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "thc-pptp-bruter"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability",
+        "kali-tools-web"
+      ],
+      "name": "thc-ssl-dos"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering"
+      ],
+      "name": "theharvester"
+    },
+    {
+      "categories": [
+        "kali-tools-identify"
+      ],
+      "name": "tiger"
+    },
+    {
+      "categories": [],
+      "name": "tightvncserver"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "tinja"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "tlssled"
+    },
+    {
+      "categories": [],
+      "name": "tmux"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-database",
+        "kali-tools-web"
+      ],
+      "name": "tnscmd10g"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "tookie-osint"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "traceroute"
+    },
+    {
+      "categories": [],
+      "name": "tree"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "triggerhappy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "trivy"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics",
+        "kali-tools-gpu",
+        "kali-tools-passwords"
+      ],
+      "name": "truecrack"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "trufflehog"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "tundeep"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering",
+        "kali-tools-passwords"
+      ],
+      "name": "twofi"
+    },
+    {
+      "categories": [],
+      "name": "tzdata-legacy"
+    },
+    {
+      "categories": [
+        "kali-tools-bluetooth"
+      ],
+      "name": "ubertooth"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation"
+      ],
+      "name": "udptunnel"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "uhd-host"
+    },
+    {
+      "categories": [
+        "kali-tools-sdr"
+      ],
+      "name": "uhd-images"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "unblob"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-recover"
+      ],
+      "name": "undbx"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "unhide"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "unhide.rb"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "unicorn-magic"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "unicornscan"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "uniscan"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-vulnerability"
+      ],
+      "name": "unix-privesc-check"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "unrar"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics"
+      ],
+      "name": "upx-ucl"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-information-gathering"
+      ],
+      "name": "urlcrazy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "uro"
+    },
+    {
+      "categories": [
+        "kali-linux-arm"
+      ],
+      "name": "usbutils"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "vboot-kernel-utils"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "vboot-utils"
+    },
+    {
+      "categories": [
+        "kali-tools-post-exploitation",
+        "kali-tools-social-engineering"
+      ],
+      "name": "veil"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "villain"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "vim"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "vim-gtk3"
+    },
+    {
+      "categories": [],
+      "name": "vim-tiny"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-forensics"
+      ],
+      "name": "vinetto"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "vlan"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-voip",
+        "kali-tools-vulnerability"
+      ],
+      "name": "voiphopper"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "vopono"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "vpnc"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "vwifi-tool"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-information-gathering",
+        "kali-tools-web"
+      ],
+      "name": "wafw00f"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-identify",
+        "kali-tools-web"
+      ],
+      "name": "wapiti"
+    },
+    {
+      "categories": [
+        "kali-tools-web"
+      ],
+      "name": "watobo"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "waybackpy"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-forensics",
+        "kali-tools-windows-resources"
+      ],
+      "name": "wce"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "web-cache-vulnerability-scanner"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "webacoo"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "webscarab"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "webshells"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "websploit"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-post-exploitation",
+        "kali-tools-web"
+      ],
+      "name": "weevely"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-fuzzing",
+        "kali-tools-web"
+      ],
+      "name": "wfuzz"
+    },
+    {
+      "categories": [],
+      "name": "wget"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wgetpaste"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "whatmask"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "whatweb"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "whois"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-802-11",
+        "kali-tools-sniffing-spoofing"
+      ],
+      "name": "wifi-honey"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wifiphisher"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wifipumpkin3"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-802-11"
+      ],
+      "name": "wifite"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wig"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wig-ng"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-windows-resources"
+      ],
+      "name": "windows-binaries"
+    },
+    {
+      "categories": [
+        "kali-tools-windows-resources"
+      ],
+      "name": "windows-privesc-check"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "winregfs"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics",
+        "kali-tools-sniffing-spoofing",
+        "kali-tools-top10",
+        "kali-tools-voip",
+        "kali-tools-web",
+        "kali-tools-wireless"
+      ],
+      "name": "wireshark"
+    },
+    {
+      "categories": [
+        "kali-linux-everything",
+        "kali-tools-identify"
+      ],
+      "name": "witnessme"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wixl"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wmi-client"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wordlistraider"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-passwords"
+      ],
+      "name": "wordlists"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wotmate"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wpa-sycophant"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "wpprobe"
+    },
+    {
+      "categories": [
+        "kali-linux-headless",
+        "kali-tools-web"
+      ],
+      "name": "wpscan"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "xclip"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "xmount"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "xplico"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "xspy"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "xsrfprobe"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-web"
+      ],
+      "name": "xsser"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "xsstrike"
+    },
+    {
+      "categories": [],
+      "name": "xtightvncviewer"
+    },
+    {
+      "categories": [
+        "kali-linux-headless"
+      ],
+      "name": "xxd"
+    },
+    {
+      "categories": [
+        "kali-tools-forensics"
+      ],
+      "name": "yara"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-vulnerability"
+      ],
+      "name": "yersinia"
+    },
+    {
+      "categories": [
+        "kali-linux-large",
+        "kali-tools-identify",
+        "kali-tools-web"
+      ],
+      "name": "zaproxy"
+    },
+    {
+      "categories": [
+        "kali-linux-default",
+        "kali-tools-information-gathering"
+      ],
+      "name": "zenmap"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "zerofree"
+    },
+    {
+      "categories": [
+        "kali-linux-large"
+      ],
+      "name": "zim"
+    },
+    {
+      "categories": [
+        "kali-linux-everything"
+      ],
+      "name": "zonedb"
+    },
+    {
+      "categories": [],
+      "name": "zsh"
+    },
+    {
+      "categories": [],
+      "name": "zsh-autosuggestions"
+    },
+    {
+      "categories": [],
+      "name": "zsh-syntax-highlighting"
+    }
+  ],
+  "schema_version": 1,
+  "source_ref": "e86f126b0b8e2e3cd621e7c8c31ac6cc146db843",
+  "source_sha256": "6c73cd860e93c09f4ab61afc5ecb5140844d9ca7377124644610310897a7ca54",
+  "source_url": "https://gitlab.com/kalilinux/packages/kali-meta/-/raw/e86f126b0b8e2e3cd621e7c8c31ac6cc146db843/debian/control"
+}

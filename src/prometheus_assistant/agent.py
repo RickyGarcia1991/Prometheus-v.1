@@ -218,6 +218,11 @@ def _safe_conversation_fast_path(prompt, *, online_enabled=False, required_reque
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality(), required_requests=()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
+    from .owner_profile import load_profile, recall
+    owner_reply = recall(prompt, load_profile(memory)) if not online_enabled and not required_requests else None
+    if owner_reply is not None:
+        result = run_core(memory, prompt, responder=lambda plan, evidence: owner_reply, trace=trace)
+        return _finalize(result, 0, '{"route":"saved-owner-memory"}', prompt)
     expression=direct_expression(prompt) if not online_enabled and not required_requests else None
     if expression is not None:
         try:calculator=registry.get('math','calculate')

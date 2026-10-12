@@ -22,6 +22,10 @@ Close the interface to release its SSD session lock before opening a separate po
 
 Use **Close Prometheus** before safe removal. It lets an active request finish, closes reference-file handles and releases the portable lock. Closing the browser alone leaves a five-minute inactivity timeout. Do not unplug until Windows confirms safe removal. No camera capture, image rendering or physical device acceptance is implied by this interface release.
 
-The model router uses explicit roles and conservative memory estimates, not learned quality scores. Sources, generated answers and code still need the checks appropriate to your task. It cannot acquire all public knowledge, support every language perfectly or certify legal/medical advice. Existing signed recovery and memory protection remain active.
+The interface model router uses explicit roles, conservative memory estimates and recent task checks. A helper with at least four recent checks and fewer than 75% passes is paused for that role. These small samples do not certify general accuracy. Sources, generated answers and code still need the checks appropriate to your task. Existing signed recovery and memory protection remain active.
+
+Dictation checks its local runtime, model and available RAM before opening the microphone. **Cancel current request** stops recording or the owned transcription process. The microphone is closed before transcription starts, and its stage is shown separately. If free memory falls below 0.35 GiB while decoding, transcription stops. Cancelled recordings are not submitted or saved as a conversation; successful transcripts remain drafts for review.
+
+Offline article answers include the retrieved text, publisher link and dated ZIM snapshot citation. Native archive searches run in a separate process so they cannot hold up the interface's status requests. Searches have a 90-second limit and release their archive handles on completion. Archived evidence can be historical; its date is not a promise of current accuracy.
 
 Animation lifecycle follows [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) and [page visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API). Speech requires a [local browser voice](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesisVoice/localService).

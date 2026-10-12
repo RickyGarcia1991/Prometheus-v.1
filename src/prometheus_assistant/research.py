@@ -42,10 +42,11 @@ class ResearchResult:
         used = 0
         for index, source in enumerate(self.sources, 1):
             block = f"[Source {index}] {source.title}\nURL: {source.url}\nRetrieved: {source.retrieved_at}\nContent SHA-256: {source.content_hash}\n{source.excerpt}\n"
-            if used + len(block) > max_chars:
+            separator = 1 if blocks else 0
+            if used + separator + len(block) > max_chars:
                 break
             blocks.append(block)
-            used += len(block)
+            used += separator + len(block)
         return "\n".join(blocks)
 
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prometheus-control-center"
-version = "0.8.0.dev1"
+version = "0.8.0.dev5"
 description = "Local-first control, health, archive, and verification tooling for Project Prometheus."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,7 +23,7 @@ prometheusctl = "prometheus_control_center.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-prometheus_assistant = ["offline_collections.json", "source_indexes.json", "public_directory.json", "legal_rules.json", "ui_assets/*"]
+prometheus_assistant = ["offline_collections.json", "source_indexes.json", "public_directory.json", "legal_rules.json", "component_updates.json", "hf_curated_catalog.json", "hardware_814_reference.json", "kali_package_catalog.json", "backtrack_legacy_catalog.json", "ui_assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

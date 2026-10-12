@@ -1,5 +1,5 @@
 """Bounded built-in tools for Prometheus local agent workflows."""
-import json,re,subprocess,sys,os,tempfile
+import json,re,subprocess,sys,os
 from pathlib import Path
 from .articles import search_articles
 from .hardware import detect_hardware,resource_root
@@ -12,6 +12,10 @@ from .tool_registry import ArgSpec,ToolRegistry,ToolSpec
 from .public_resources import public_search,PROVIDERS
 from .legal import legal_plan,deadline_preview
 from .public_history import snapshot_history
+from .documents import private_search_name, search_query, ranked_lines, _safe_search_entry
+from .coding_workspace import CodingWorkspace, _no_links
+from .hf_resources import describe as curated_huggingface
+from .security_hardware_catalog import hardware_sources
 MAX_PROJECT_FILE=300_000
 PROJECT_EXTENSIONS={".py",".md",".txt",".json",".toml",".ps1",".cs",".xaml",".cmd"}
 def _project_root(): return Path(__file__).resolve().parents[2]
@@ -19,24 +23,25 @@ def _project_root(): return Path(__file__).resolve().parents[2]
 def _project_files(root):
     count=0
     for folder,directories,files in os.walk(root,followlinks=False):
-        directories[:]=sorted(d for d in directories if d not in {'.git','.venv','bin','obj','__pycache__','repair-history'}
-            and not Path(folder,d).is_symlink() and not getattr(Path(folder,d),'is_junction',lambda:False)())
+        directories[:]=sorted(d for d in directories if not d.startswith('.') and not private_search_name(d)
+            and d not in {'bin','obj','__pycache__','repair-history','vendor','target','dist','build'}
+            and _safe_search_entry(Path(folder,d)))
         for name in sorted(files):
             count+=1
             if count>1500:return
             yield Path(folder,name)
 def _safe_project_path(relative):
-    root=_project_root().resolve(); candidate=root/relative
-    for item in (candidate,*candidate.parents):
-        if item==root:break
-        if item.is_symlink() or getattr(item,'is_junction',lambda:False)():raise ValueError('Linked project paths are not accepted.')
+    raw_root=_project_root(); _no_links(raw_root)
+    root=raw_root.resolve(); candidate=root/relative
+    if any(private_search_name(part) for part in candidate.parts): raise ValueError('Private project paths are not readable by this tool.')
+    _no_links(candidate)
     path=candidate.resolve()
     if path==root or not path.is_relative_to(root): raise ValueError("Project path escapes the Prometheus source root.")
     if path.is_symlink() or not path.is_file(): raise ValueError("Project file is unavailable.")
     if path.suffix.lower() not in PROJECT_EXTENSIONS: raise ValueError("Project file type is not readable by this tool.")
     if path.stat().st_size>MAX_PROJECT_FILE: raise ValueError("Project file exceeds the bounded read limit.")
     return root,path
-def build_builtin_registry(memory):
+def build_builtin_registry(memory, *, development_workspace=None):
     def memory_lookup(request):
         words={w.lower().strip(".,!?") for w in request.arguments["query"].split() if len(w)>2}; rows=[]
         for row in memory.knowledge():
@@ -54,7 +59,7 @@ def build_builtin_registry(memory):
         root,path=_safe_project_path(request.arguments["path"]); text=path.read_text(encoding="utf-8-sig",errors="replace")
         return json.dumps({"path":path.relative_to(root).as_posix(),"content":text[:12000],"truncated":len(text)>12000},ensure_ascii=False)
     def project_search(request):
-        query=request.arguments["query"]; terms=set(re.findall(r"[A-Za-z0-9_]+",query.casefold())); hits=[]; root=_project_root().resolve(); scanned=0
+        query=request.arguments["query"]; query_spec=search_query(query); hits=[]; _no_links(_project_root()); root=_project_root().resolve(); scanned=0
         for path in _project_files(root):
             if scanned>=300: break
             try:
@@ -67,34 +72,39 @@ def build_builtin_registry(memory):
                 if len(data)>MAX_PROJECT_FILE: continue
                 text=data.decode("utf-8-sig",errors="replace"); scanned+=1
             except (OSError,ValueError): continue
-            for number,line in enumerate(text.splitlines(),1):
-                line_terms=set(re.findall(r"[A-Za-z0-9_]+",line.casefold())); score=len(terms & line_terms)
-                if score: hits.append({"path":path.relative_to(root).as_posix(),"line":number,"excerpt":line[:500],"score":score})
-        hits.sort(key=lambda x:(-x["score"],x["path"],x["line"])); return json.dumps({"query":query,"results":hits[:20],"files_scanned":scanned},ensure_ascii=False)
+            for row in ranked_lines(text,query_spec,excerpt_limit=500,context=True):
+                row['score']=row.pop('matched_terms')
+                hits.append({'path':path.relative_to(root).as_posix(),**row})
+                if len(hits)>40:
+                    hits.sort(key=lambda x:(-x['rank_score'],x['path'],x['line']));del hits[20:]
+        hits.sort(key=lambda x:(-x['rank_score'],x['path'],x['line'])); return json.dumps({'query':query,'results':hits[:20],'files_scanned':scanned},ensure_ascii=False)
     def project_list(request):
-        root=_project_root().resolve();candidate=root/request.arguments.get('path','')
-        for item in (candidate,*candidate.parents):
-            if item==root:break
-            if item.is_symlink() or getattr(item,'is_junction',lambda:False)():raise ValueError('Linked project directories are not accepted.')
+        _no_links(_project_root());root=_project_root().resolve();candidate=root/request.arguments.get('path','')
+        _no_links(candidate)
+        if any(private_search_name(part) for part in candidate.parts): raise ValueError('Private project paths are not readable by this tool.')
         base=candidate.resolve()
         if base!=root and not base.is_relative_to(root): raise ValueError("Project path escapes the Prometheus source root.")
         if not base.exists() or not base.is_dir(): raise ValueError("Project directory is unavailable.")
         rows=[]
         for item in sorted(base.iterdir(),key=lambda x:(not x.is_dir(),x.name.casefold()))[:100]:
-            if item.name in {".git",".venv","bin","obj","__pycache__"}: continue
+            if private_search_name(item.name) or item.name.startswith('.') or item.name in {'bin','obj','__pycache__'} or not _safe_search_entry(item): continue
             rows.append({"path":item.relative_to(root).as_posix(),"type":"directory" if item.is_dir() else "file","size":None if item.is_dir() else item.stat().st_size})
         return json.dumps(rows,ensure_ascii=False)
     def project_replace(request):
-        root,path=_safe_project_path(request.arguments["path"]); old=request.arguments["old"]; new=request.arguments["new"]; text=path.read_text(encoding="utf-8-sig",errors="strict")
+        if development_workspace is None:
+            raise ValueError('Select an explicit development workspace before replacing project text; installed application source is protected.')
+        selected=Path(development_workspace).expanduser().absolute()
+        _no_links(selected)
+        if any((folder/'SHA256-MANIFEST.sig').exists() and (folder/'SHA256-MANIFEST.json').exists()
+               for folder in (selected,*selected.parents)):
+            raise ValueError('Select a development workspace outside the signed application package.')
+        project=CodingWorkspace(development_workspace,memory.path.parent/'Coding',protected_roots=(_project_root(),))
+        path=request.arguments['path']; old=request.arguments['old']; new=request.arguments['new']
+        if any(private_search_name(part) for part in Path(path).parts): raise ValueError('Private project paths cannot be edited by this tool.')
+        opened=project.read_file(path); text=opened['content']
         if text.count(old)!=1: raise ValueError("Replacement requires exactly one matching block.")
-        with tempfile.NamedTemporaryFile(mode='w',encoding='utf-8',newline='',dir=path.parent,prefix='.prometheus-',suffix='.tmp',delete=False) as stream:
-            temp=Path(stream.name);stream.write(text.replace(old,new,1));stream.flush();os.fsync(stream.fileno())
-        try:
-            _safe_project_path(request.arguments['path'])
-            if path.read_text(encoding='utf-8-sig',errors='strict')!=text:raise ValueError('Project file changed during the approved edit.')
-            temp.replace(path)
-        finally:temp.unlink(missing_ok=True)
-        return json.dumps({"path":path.relative_to(root).as_posix(),"changed":True,"old_chars":len(old),"new_chars":len(new)})
+        result=project.apply_edit(path,text.replace(old,new,1),opened['sha256'])
+        return json.dumps({**result,'old_chars':len(old),'new_chars':len(new)})
     def project_tests(request):
         target=request.arguments.get("target","tests").replace("\\","/").strip("/")
         if not target or target.startswith(".") or ".." in target.split("/") or not re.fullmatch(r"[A-Za-z0-9_./-]+",target): raise ValueError("Invalid bounded test target.")
@@ -120,10 +130,12 @@ def build_builtin_registry(memory):
         ToolSpec("knowledge","openai","Search pinned public OpenAI source, SDK and Cookbook references offline. This retrieves code as text; it does not run examples or provide private model internals.",lambda r:json.dumps(search_sources(r.arguments['query'],profile='openai',root=resource_root(),collection=r.arguments.get('collection','all')),ensure_ascii=False),{"query":ArgSpec(max_length=400),"collection":ArgSpec(required=False,max_length=100)}),
         ToolSpec("knowledge","engineering","Search board, sensor, PCB and chip-design references offline. Match the board and software revision; retrieved commands are data, not authorization to flash hardware.",lambda r:json.dumps(search_sources(r.arguments['query'],profile='engineering',root=resource_root(),collection=r.arguments.get('collection','all')),ensure_ascii=False),{"query":ArgSpec(max_length=400),"collection":ArgSpec(required=False,max_length=100)}),
         ToolSpec("knowledge","resources","Inspect the local portable knowledge inventory.",resource_status,{}),
+        ToolSpec("knowledge","huggingface","Read a vetted, pinned Hugging Face model and dataset shortlist with local model inventory. No download, cloud inference, training or remote code execution.",lambda r:json.dumps(curated_huggingface(query=r.arguments.get("query",""),role=r.arguments.get("role",""),limit=8),ensure_ascii=False),{"query":ArgSpec(required=False,max_length=100),"role":ArgSpec(required=False,max_length=60)}),
+        ToolSpec("security","hardware","Read a preliminary, sourced hardware compatibility inventory for a pinned Kali package. No device access, purchase, scanning or installation.",lambda r:json.dumps(hardware_sources(package=r.arguments.get("package",""),limit=12),ensure_ascii=False),{"package":ArgSpec(required=False,max_length=100)}),
         ToolSpec("system","summary","Read basic local hardware and OS information.",host_summary,{}),
         ToolSpec("project","search","Search bounded text/code inside the Prometheus source tree.",project_search,{"query":ArgSpec(max_length=200)}),
         ToolSpec("project","read","Read one bounded relative text/code file inside the Prometheus source tree.",project_read,{"path":ArgSpec(max_length=240)}),
         ToolSpec("project","list","List one bounded directory inside the Prometheus source tree.",project_list,{"path":ArgSpec(required=False,max_length=240)}),
-        ToolSpec("project","replace","Atomically replace exactly one matching text block inside an approved Prometheus source file.",project_replace,{"path":ArgSpec(max_length=240),"old":ArgSpec(max_length=8000),"new":ArgSpec(max_length=8000)},mutates_state=True),
+        ToolSpec("project","replace","Replace exactly one matching text block in an explicitly selected development workspace with undo history. Installed application source and runtimes are protected.",project_replace,{"path":ArgSpec(max_length=240),"old":ArgSpec(max_length=8000),"new":ArgSpec(max_length=8000)},mutates_state=True),
         ToolSpec("project","tests","Run bounded pytest checks inside the Prometheus repository after explicit approval.",project_tests,{"target":ArgSpec(required=False,max_length=120)},command_execution=True),
     ])

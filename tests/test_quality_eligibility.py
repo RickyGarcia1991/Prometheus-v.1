@@ -53,3 +53,24 @@ def test_interface_uses_cited_evidence_when_only_fitting_role_failed(tmp_path,mo
         assert result['details']['paused_helpers'][0]['model']=='gemma3:270m'
         assert 'not a generated answer' in result['details']['memory_note']
     finally: app.close()
+
+
+def test_two_trivial_passes_do_not_promote_over_unmeasured_catalog_preference(tmp_path):
+    evidence = ModelEvidence(tmp_path/'evidence.sqlite3')
+    names = ['qwen3:1.7b', 'gemma3:270m']
+    record(evidence, 'gemma3:270m', 'general', [True, True])
+    assert evidence.order(names, 'general') == names
+    # Repeating the same cases is not independent new evidence.
+    record(evidence, 'gemma3:270m', 'general', [True, True])
+    assert evidence.order(names, 'general') == names
+    evidence.record_benchmark('gemma3:270m', 'general', '2', passed=True, seconds=.1)
+    evidence.record_benchmark('gemma3:270m', 'general', '3', passed=True, seconds=.1)
+    assert evidence.order(names, 'general') == names[::-1]
+
+
+def test_small_sample_failures_can_demote_without_claiming_sufficient_evidence(tmp_path):
+    evidence = ModelEvidence(tmp_path/'evidence.sqlite3')
+    names = ['qwen3:1.7b', 'gemma3:270m']
+    record(evidence, 'qwen3:1.7b', 'general', [False, False])
+    assert evidence.order(names, 'general') == names[::-1]
+    assert evidence.summary()['paused_roles'] == []

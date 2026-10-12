@@ -7,7 +7,8 @@ from .hardware import detect_hardware, resource_root
 
 MODES = {'documents', 'document_import', 'document_list', 'document_index', 'code_open', 'code_read',
          'code_preview', 'code_apply', 'code_undo', 'code_tests', 'maintenance', 'watch_source',
-         'check_sources', 'backup', 'restore_check', 'model_benchmark'}
+         'check_sources', 'backup', 'restore_check', 'model_benchmark', 'health_check',
+         'component_updates', 'check_updates', 'configure_updates'}
 FIELDS = {'content', 'name', 'source_url', 'source_date', 'document_id', 'include_history', 'file',
           'expected_sha256', 'edit_id', 'preset', 'target', 'destination', 'backup_path', 'enabled'}
 NO_PROMPT = MODES - {'documents', 'watch_source'}
@@ -23,22 +24,29 @@ def validate(body):
                 raise ValueError(name+' must be true or false.')
         elif not isinstance(value, str) or '\x00' in value:
             raise ValueError('Invalid '+name+'.')
-        elif len(value) > (12_000_000 if name == 'content' and body.get('mode') == 'document_import' else 256_000 if name == 'content' else 2000):
+        elif len(value) > (12_000_000 if name == 'content' and body.get('mode') in {'document_import', 'vision'} else 256_000 if name == 'content' else 2000):
             raise ValueError(name+' exceeds its size limit.')
 
 
-def library(app):
+def library(app, *, semantic=True):
     from .document_library import DocumentLibrary, OllamaEmbeddingClient
     def allowed():
         free = detect_hardware().available_ram_gib
         return free is not None and free >= 2.75
-    client = OllamaEmbeddingClient()
+    client = OllamaEmbeddingClient() if semantic else None
     return DocumentLibrary(app.data_root/'Library', embedding_client=client, embedding_allowed=allowed)
 
 
 def schedule(app):
     from .maintenance import FreshnessSchedule
     return FreshnessSchedule(app.data_root/'Maintenance/watches.sqlite3', app.data_root/'PublicHistory')
+
+
+def component_updates(app):
+    import json
+    from .component_updates import ComponentUpdates
+    catalog = json.loads(Path(__file__).with_name('component_updates.json').read_text(encoding='utf-8'))
+    return ComponentUpdates(app.data_root/'Maintenance/Updates', catalog)
 
 
 def workspace(app, request):
@@ -64,7 +72,7 @@ def execute(app, request):
             data = base64.b64decode(request.get('content', ''), validate=True)
         except (ValueError, binascii.Error) as error:
             raise ValueError('Invalid uploaded document encoding.') from error
-        result = library(app).import_bytes(request.get('name', ''), data,
+        result = library(app, semantic=False).import_bytes(request.get('name', ''), data,
             source_url=request.get('source_url') or None, source_date=request.get('source_date') or None,
             document_id=request.get('document_id') or None)
     elif mode == 'document_list':
@@ -95,6 +103,19 @@ def execute(app, request):
         elif mode == 'code_tests':
             result = project.run_tests(request.get('preset', ''), request.get('target', ''),
                                        cancel_event=app.cancel_event, on_output=app.append_partial)
+    elif mode == 'health_check':
+        from .health_check import run_health_check
+        result = run_health_check(app.memory_path, resource_root())
+    elif mode == 'component_updates':
+        result = component_updates(app).status()
+    elif mode == 'configure_updates':
+        if 'enabled' not in request:
+            raise ValueError('Choose whether automatic update checks are enabled.')
+        result = component_updates(app).configure(enabled=request['enabled'])
+    elif mode == 'check_updates':
+        app.progress('Checking one component for updates')
+        result = component_updates(app).run_due_checks(max_checks=1, force=request.get('enabled', False),
+            cancel_event=app.cancel_event, library=library(app, semantic=False))
     elif mode == 'maintenance':
         from .maintenance import readiness_report
         result = {'readiness': readiness_report(app.memory_path.parent, resource_root()), 'watches': schedule(app).status(),
@@ -115,4 +136,5 @@ def execute(app, request):
         from .maintenance import restore_backup
         result = restore_backup(request.get('backup_path', ''), request.get('destination', ''))
     from .ui_server import readable_result
-    return {'reply': readable_result(result), 'details': result, 'label': mode.replace('_', ' ').capitalize(), 'action': mode}
+    return {'reply': result['summary'] if mode == 'health_check' else readable_result(result),
+            'details': result, 'label': mode.replace('_', ' ').capitalize(), 'action': mode}

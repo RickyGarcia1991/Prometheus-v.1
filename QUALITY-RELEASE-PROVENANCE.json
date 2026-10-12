@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-10-10T02:19:49.713982+00:00",
+  "release": "Prometheus-v0.8.0-dev1-quality-20261009",
+  "base_release": "Prometheus-v0.8.0-dev1-voice-search-20261009",
+  "core_tests_passed": 670,
+  "core_tests_skipped": 2,
+  "javascript_tests_passed": 13,
+  "staged_HTTP_workflows_passed": 7,
+  "startup_regressions_passed": 23,
+  "changes": [
+    "Protect unsaved coding drafts from other browser tabs",
+    "Keep retained research within its storage budget",
+    "Align reported package version",
+    "Add explicit health check with actionable results"
+  ],
+  "limitations": [
+    "Requires original trusted signer for activation",
+    "Physical audio, eject/reconnect and another laptop are untested",
+    "Checksums do not establish general answer accuracy; model benchmarks require an available local runtime"
+  ],
+  "git_status": "Local tested source update; no Git commit, push or merge performed"
+}

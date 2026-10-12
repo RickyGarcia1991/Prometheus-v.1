@@ -9,6 +9,7 @@ let preparing = false, pending = null, selectedProject = '', opened = null, revi
 function message(text) { element('workspaceStatus').textContent = text; }
 function dirty() { return !!opened && element('codeEditor').value !== opened.content; }
 function projectMatches() { return !!selectedProject && element('projectRoot').value.trim() === selectedProject; }
+function openedFileMatches() { return projectMatches() && !!opened && element('codeFile').value === opened.path; }
 function textNode(tag, text, className) {
   const node = document.createElement(tag); node.textContent = text;
   if (className) node.className = className;
@@ -17,11 +18,24 @@ function textNode(tag, text, className) {
 function jsonResult(id, value) {
   element(id).replaceChildren(textNode('pre', JSON.stringify(value, null, 2).slice(0, 24000), 'code-output'));
 }
+function sourceLink(location) {
+  const line = textNode('p', location, 'fine source-location');
+  try {
+    const url = new URL(location);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return line;
+    const link = textNode('a', 'Source · ' + url.hostname, 'source-link');
+    link.href = url.href; link.title = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    line.textContent = ''; line.append(link);
+  } catch { /* Unknown source locations remain literal text. */ }
+  return line;
+}
 function controls() {
   const locked = state.busy || !state.online || state.closed || preparing;
   panel.querySelectorAll('[data-work-action]').forEach(button => { button.disabled = locked; });
-  panel.querySelectorAll('input, select').forEach(input => { input.disabled = locked; });
-  const fileReady = projectMatches() && !!opened;
+  ['panelDocuments', 'panelCode', 'panelMaintenance'].forEach(id => {
+    element(id).querySelectorAll('input, select').forEach(input => { input.disabled = locked; });
+  });
+  const fileReady = openedFileMatches();
   element('codeEditor').disabled = locked || !fileReady;
   element('readCode').disabled = locked || !projectMatches() || !element('codeFile').value;
   element('previewCode').disabled = locked || !fileReady || !dirty();
@@ -40,7 +54,7 @@ function showWorkbench(show) {
   else element('prompt').focus();
 }
 function switchPanel(name, focus = false) {
-  ['Documents', 'Code', 'Maintenance'].forEach(item => {
+  ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'].forEach(item => {
     const selected = item === name, tab = element('tab' + item);
     tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
     element('panel' + item).hidden = !selected;
@@ -70,7 +84,7 @@ function preserveDraft() {
 }
 function invalidatePreview() {
   reviewed = null; element('codeDiffPanel').hidden = true;
-  element('codeFileStatus').textContent = opened ? (dirty() ? '· unapplied editor changes' : '· matches opened file') : '';
+  element('codeFileStatus').textContent = opened ? opened.path + (dirty() ? ' · unapplied editor changes' : ' · matches opened file') : '';
   controls();
 }
 function syncProviders() {
@@ -91,7 +105,7 @@ function renderDocuments(rows) {
     const card = textNode('div', '', 'workspace-card');
     card.append(textNode('strong', row.title || row.original_filename || 'Document'));
     card.append(textNode('p', `Version ${row.version_id} · ${row.is_latest ? 'latest saved' : 'historical'} · source date ${row.source_date || 'unknown'} · ${row.passage_count || 0} passages`, 'fine'));
-    if (row.source_url) card.append(textNode('p', row.source_url, 'fine source-location'));
+    if (row.source_url) card.append(sourceLink(row.source_url));
     holder.append(card);
     if (!seen.has(row.document_id)) {
       seen.add(row.document_id); element('documentVersion').add(new Option(row.title || row.original_filename, row.document_id));
@@ -108,7 +122,7 @@ function renderSearch(data) {
     card.append(textNode('strong', row.title || 'Document'));
     card.append(textNode('p', `${row.location || 'Source passage'} · version ${row.version_id} · ${row.is_latest ? 'latest saved' : 'historical'} · source date ${row.source_date || 'unknown'}`, 'fine'));
     card.append(textNode('p', row.excerpt || '', 'document-excerpt'));
-    if (row.source_url) card.append(textNode('p', row.source_url, 'fine source-location'));
+    if (row.source_url) card.append(sourceLink(row.source_url));
     holder.append(card);
   }
 }
@@ -145,6 +159,39 @@ function renderReadiness(data) {
   holder.append(detail); renderWatches(data.watches);
   if (data.backup?.path) element('restoreBackupPath').value = data.backup.path;
 }
+function renderUpdates(data) {
+  const holder = element('componentUpdates'); holder.replaceChildren();
+  holder.append(textNode('p', `Automatic checks ${data.enabled ? 'enabled' : 'paused'} · ${data.due_count || 0} components due`, 'fine'));
+  if (data.disclosure) holder.append(textNode('p', data.disclosure, 'fine'));
+  for (const row of data.entries || []) {
+    const card = textNode('details', '', 'workspace-detail');
+    card.append(textNode('summary', `${row.label || row.id} · ${String(row.status || 'unchecked').replaceAll('_', ' ')}`));
+    card.append(textNode('p', `${row.category || 'Component'} · installed ${row.installed_revision || 'unrecorded'} · available ${row.available_revision || 'not checked'}`, 'fine'));
+    if (row.last_checked_utc) card.append(textNode('p', 'Checked ' + row.last_checked_utc, 'fine'));
+    if (row.reason) card.append(textNode('p', row.reason, 'fine'));
+    if (row.error) card.append(textNode('p', row.error, 'fine'));
+    if (row.source_url) card.append(sourceLink(row.source_url));
+    holder.append(card);
+  }
+  if (!data.entries?.length) holder.append(textNode('p', 'No component catalog is available.', 'fine'));
+}
+function renderHealth(data) {
+  const holder = element('healthResults'); holder.replaceChildren();
+  const counts = data.counts || {};
+  holder.append(textNode('p', `Checked ${data.checked_utc || 'now'} · ${counts.pass || 0} passed · ${counts.fail || 0} failed · ${counts.blocked || 0} blocked · ${counts.untested || 0} untested`, 'fine'));
+  for (const row of data.checks || []) {
+    const card = textNode('article', '', 'workspace-card');
+    const status = ['pass', 'fail', 'blocked', 'untested'].includes(row.status) ? row.status : 'untested';
+    card.append(textNode('strong', `${status.toUpperCase()} · ${row.title || 'Check'}`));
+    card.append(textNode('p', row.summary || 'No result available.'));
+    if (row.next_step) card.append(textNode('p', 'Next step: ' + row.next_step, 'fine'));
+    if (row.models?.length) card.append(textNode('p', 'Complete model files: ' + row.models.join(', '), 'fine'));
+    if (row.incomplete_models?.length) card.append(textNode('p', 'Models needing review: ' + row.incomplete_models.join(', '), 'fine'));
+    if (row.files_needing_review?.length) card.append(textNode('p', 'Files needing review: ' + row.files_needing_review.join(', '), 'fine source-location'));
+    if (row.scope) card.append(textNode('p', row.scope, 'fine'));
+    holder.append(card);
+  }
+}
 
 element('openWorkbench').onclick = () => showWorkbench(panel.hidden);
 element('closeWorkbench').onclick = () => showWorkbench(false);
@@ -152,9 +199,9 @@ panel.querySelectorAll('[data-panel]').forEach(button => {
   button.onclick = () => switchPanel(button.dataset.panel);
   button.onkeydown = event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance'];
+    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'];
     let index = names.indexOf(button.dataset.panel);
-    index = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (index + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+    index = event.key === 'Home' ? 0 : event.key === 'End' ? names.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : names.length - 1)) % names.length;
     switchPanel(names[index], true);
   };
 });
@@ -191,20 +238,27 @@ element('openProject').onclick = () => {
   action(projectBody('code_open'));
 };
 element('projectRoot').oninput = () => { reviewed = null; element('codeDiffPanel').hidden = true; controls(); };
-element('codeFile').onchange = controls;
+element('codeFile').onchange = () => {
+  invalidatePreview();
+  if (opened && element('codeFile').value !== opened.path) {
+    message('The editor still contains ' + opened.path + '. ' + (dirty()
+      ? 'Select it again to review your draft, or discard changes before opening another file.'
+      : 'Choose Open file to load the selected file.'));
+  }
+};
 element('readCode').onclick = () => {
   if (!preserveDraft()) action(projectBody('code_read', {file: element('codeFile').value}));
 };
 element('codeEditor').oninput = invalidatePreview;
 element('discardCode').onclick = () => { if (opened) { element('codeEditor').value = opened.content; invalidatePreview(); message('Editor changes discarded. The project file was not modified.'); } };
 element('previewCode').onclick = () => {
-  if (!opened) return;
+  if (!openedFileMatches()) return;
   const content = element('codeEditor').value;
   action(projectBody('code_preview', {file: opened.path, content, expected_sha256: opened.sha256}),
          {project: selectedProject, file: opened.path, content, sha256: opened.sha256});
 };
 element('applyCode').onclick = () => {
-  if (!reviewed || !opened || reviewed.content !== element('codeEditor').value || reviewed.sha256 !== opened.sha256) { invalidatePreview(); message('Preview these exact changes before applying them.'); return; }
+  if (!reviewed || !openedFileMatches() || reviewed.content !== element('codeEditor').value || reviewed.sha256 !== opened.sha256) { invalidatePreview(); message('Select the opened file and preview these exact changes before applying them.'); return; }
   action(projectBody('code_apply', {file: opened.path, content: reviewed.content, expected_sha256: opened.sha256}), {...reviewed});
 };
 element('undoCode').onclick = () => { if (lastEdit && !preserveDraft()) action(projectBody('code_undo', {edit_id: lastEdit.id}), {file: lastEdit.file}); };
@@ -214,6 +268,11 @@ element('runCodeTests').onclick = () => {
   action(projectBody('code_tests', {preset: element('testPreset').value, target: element('testTarget').value.trim()}));
 };
 element('checkReadiness').onclick = () => action({mode: 'maintenance'});
+element('refreshUpdates').onclick = () => action({mode: 'component_updates'});
+element('checkUpdates').onclick = () => action({mode: 'check_updates', enabled: true});
+element('enableUpdates').onclick = () => action({mode: 'configure_updates', enabled: true});
+element('disableUpdates').onclick = () => action({mode: 'configure_updates', enabled: false});
+element('runHealthCheck').onclick = () => action({mode: 'health_check'});
 element('benchmarkHelpers').onclick = () => action({mode: 'model_benchmark'});
 function watch(enabled) {
   const provider = element('watchProvider').value, prompt = element('watchQuery').value.trim();
@@ -241,6 +300,8 @@ window.addEventListener('prometheus-result', event => {
   const result = event.detail || {}, mode = result.action, data = result.details || {};
   if (!mode) return;
   const request = pending?.mode === mode ? pending : null;
+  // Another tab's completed project action must not replace this tab's draft.
+  if (mode.startsWith('code_') && (result.origin === 'observed' || !request)) return;
   if (result.error) {
     if (mode === 'code_apply' || mode === 'code_preview') invalidatePreview();
     if (mode === 'code_tests') element('codeTestOutput').textContent += '\n\n' + result.error;
@@ -287,6 +348,11 @@ window.addEventListener('prometheus-result', event => {
     element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}`;
     message('Project check ' + status.toLowerCase() + '.');
   } else if (mode === 'maintenance') { renderReadiness(data); message('Readiness refreshed. Physical checks remain separate from device detection.'); }
+  else if (mode === 'health_check') { renderHealth(data); message('Health check completed. Review failed, blocked and untested checks below.'); }
+  else if (['component_updates', 'check_updates', 'configure_updates'].includes(mode)) {
+    renderUpdates(data);
+    message(mode === 'check_updates' ? 'Component check finished. Review its result and any pending activation below.' : 'Component update settings refreshed.');
+  }
   else if (mode === 'model_benchmark') { jsonResult('benchmarkResults', data); message('Available-helper checks completed. Review measured timings and individual results below.'); }
   else if (mode === 'watch_source') { message(`${data.enabled ? 'Enabled' : 'Disabled'}: ${data.provider} · ${data.query}. Refresh readiness to see all watches.`); }
   else if (mode === 'check_sources') { jsonResult('sourceWatches', data); message('Due-source check completed. Earlier versions are retained.'); }

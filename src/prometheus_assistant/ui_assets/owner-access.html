@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unlock Prometheus</title><link rel="stylesheet" href="/style.css"></head>
+<body><main style="max-width:620px;margin:6vh auto;padding:28px">
+<span class="eyebrow">PROMETHEUS · PRIVATE WORKSPACE</span><h1 id="ownerTitle">Unlock Prometheus</h1>
+<p>Use your passkey to open your conversations, documents and controls.</p>
+<p class="fine">Your device may offer Windows Hello, a fingerprint, a PIN or a security key. A camera is optional. Photos and saved personal details cannot unlock this workspace.</p>
+<button id="ownerUnlock" class="primary" disabled>Unlock with passkey</button>
+<button id="ownerEnroll" class="primary" hidden>Set up owner passkey</button>
+<button id="ownerVerify" class="quiet" hidden>Lock to test a passkey</button>
+<p><a id="ownerReturn" href="/" hidden>Return to chat</a></p>
+<p id="ownerStatus" role="status" aria-live="polite">Checking owner access…</p>
+<p class="fine">Passkey enrollment is completed in your device's sign-in window. Prometheus stores the public credential, never your PIN or biometric template. After setup, verify the new passkey to unlock.</p>
+<p class="fine">This lock protects the Prometheus web interface. It does not encrypt the SSD or prevent another Windows account with disk access from reading its files. Keep your operating-system account and drive protected.</p>
+</main><script src="/owner-access.js"></script></body></html>

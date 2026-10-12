@@ -18,7 +18,7 @@ TEXT_ROLES = ('general', 'coding', 'translation', 'reasoning', 'writing')
 MIN_FREE_GIB = 0.5
 MAX_MODELS = 2
 OUTPUT_TOKENS = 128
-SCOPE = ('Two small deterministic checks per text role. Passing demonstrates those checks only; '
+SCOPE = ('Four small deterministic checks per text role. Passing demonstrates those checks only; '
          'writing checks cover stated constraints, and coding checks parse source without executing it. '
          'Vision requires an explicit image fixture and is not tested here.')
 
@@ -76,6 +76,13 @@ def _writing_line(answer):
             and '\n' not in answer.strip() and re.search(r'\d', answer) is None)
 
 
+def _writing_title(answer):
+    words = answer.strip().casefold().split()
+    return (len(words) == 3 and {'garden', 'rain'} <= set(words)
+            and all(re.fullmatch(r'[a-z]+', word) for word in words)
+            and '\n' not in answer.strip())
+
+
 @dataclass(frozen=True)
 class BenchmarkCase:
     role: str
@@ -114,6 +121,27 @@ CASES = (
                   'Preserves Monday and 9 AM, starts with Please, at most 18 words; not a prose quality score.', _reminder),
     BenchmarkCase('writing', 'v1.constrained_line', 'Write exactly one line of 6 to 12 words, including river and moon. Do not include any digits.',
                   'One line, 6–12 words, both requested words and no digits; not a literary quality score.', _writing_line),
+    BenchmarkCase('general', 'v2.extract_city', 'The parcel is addressed to Lima, Peru. Which city is it addressed to? Reply with the city only.',
+                  'Extracts the explicitly provided city: Lima.', lambda value: _word(value) == 'lima'),
+    BenchmarkCase('general', 'v2.largest_number', 'Which is largest: 11, 4, or 9? Reply with one integer only.',
+                  'Compares the supplied integers: 11.', lambda value: _word(value) == '11'),
+    BenchmarkCase('coding', 'v2.list_index', 'In Python, values = [2, 4, 6]. What does values[1] return? Reply with one integer.',
+                  'Zero-based indexing returns 4; generated code is not executed.', lambda value: _word(value) == '4'),
+    BenchmarkCase('coding', 'v2.undefined_name', 'In Python, def greet(name): return greeting. Which variable is undefined in this function, assuming no globals? Reply with its name only.',
+                  'Identifies the unresolved name greeting; generated code is not executed.', lambda value: _word(value) == 'greeting'),
+    BenchmarkCase('translation', 'v2.spanish_water', 'Translate water into Spanish. Reply with one word only.',
+                  'Exact Spanish noun: agua.', lambda value: _word(value) == 'agua'),
+    BenchmarkCase('translation', 'v2.german_morning', 'Translate good morning into German. Reply with the translation only.',
+                  'Exact standard German greeting: guten morgen.', lambda value: _word(value) == 'guten morgen'),
+    BenchmarkCase('reasoning', 'v2.relative_age', 'Ana is older than Ben. Ben is older than Chen. Who is oldest? Reply with the name only.',
+                  'Transitive ordering entails Ana.', lambda value: _word(value) == 'ana'),
+    BenchmarkCase('reasoning', 'v2.insufficient_evidence', 'Some musicians are painters. Does this establish that all painters are musicians? Reply yes or no only.',
+                  'A particular intersection does not establish universal inclusion: no.', lambda value: _word(value) == 'no'),
+    BenchmarkCase('writing', 'v2.two_bullets', 'Return exactly these two bullet lines and nothing else: first, - Bring water; second, - Wear boots.',
+                  'Exactly two requested bullet lines; a formatting check, not prose quality.',
+                  lambda value: value.strip().splitlines() == ['- Bring water', '- Wear boots']),
+    BenchmarkCase('writing', 'v2.three_word_title', 'Write a three-word title including garden and rain. Use letters and spaces only, on one line.',
+                  'Exactly three words, both requested words, no punctuation or digits; not a literary quality score.', _writing_title),
 )
 
 
@@ -247,8 +275,9 @@ def run_benchmarks(evidence, installed, hardware=None, *, base_url='http://127.0
         else:
             profiles.append(profile)
     measured = {(row['model'], row['role']): row['cases'] for row in evidence.summary()['benchmarks']}
+    case_counts = {role: sum(case.role == role for case in CASES) for role in TEXT_ROLES}
     def priority(profile):
-        missing = sum(max(0, 2-measured.get((profile.model, role), 0)) for role in TEXT_ROLES)
+        missing = sum(max(0, case_counts[role]-measured.get((profile.model, role), 0)) for role in TEXT_ROLES)
         return (-missing, profile.min_ram_gib, profile.context, profile.model)
     profiles.sort(key=priority)
     for profile in profiles[MAX_MODELS:]:

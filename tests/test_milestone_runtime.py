@@ -45,7 +45,15 @@ def streaming_server(scenarios, disconnected=None, *, http11=False):
                     deadline = time.monotonic()+3
                     while not release.is_set() and time.monotonic() < deadline:
                         readable, _, _ = select.select([self.connection], [], [], .02)
-                        if readable and not self.connection.recv(1):
+                        if not readable:
+                            continue
+                        try:
+                            closed = not self.connection.recv(1)
+                        except (ConnectionResetError, ConnectionAbortedError):
+                            # Windows may report reset/abort instead of EOF when
+                            # cancellation closes a socket with unread headers.
+                            closed = True
+                        if closed:
                             if disconnected is not None:
                                 disconnected.set()
                             return False
@@ -145,6 +153,44 @@ def test_cancel_interrupts_stalled_http_promptly(scenario, http11):
         assert results and isinstance(results[0], GenerationCancelled)
 
 
+@pytest.mark.parametrize('failure', [None, ConnectionResetError, ConnectionAbortedError])
+def test_stalled_publisher_observes_eof_reset_and_abort(monkeypatch, failure):
+    """Exercise the publisher observer without relying on an OS's FIN/RST choice."""
+    import io
+    handlers = []
+    class FixtureServer:
+        server_port = 12345
+        def __init__(self, address, handler):
+            handlers.append(handler)
+        def serve_forever(self, **kwargs):
+            pass
+        def shutdown(self):
+            pass
+        def server_close(self):
+            pass
+    class ClosedConnection:
+        def recv(self, count):
+            if failure is not None:
+                raise failure('The cancelling client disconnected.')
+            return b''
+    connection = ClosedConnection()
+    monkeypatch.setitem(globals(), 'ThreadingHTTPServer', FixtureServer)
+    monkeypatch.setattr(select, 'select', lambda *args: ([connection], [], []))
+    disconnected = threading.Event()
+    with streaming_server({'first:tiny': 'after_headers'}, disconnected) as (_, reached, _, _):
+        handler = object.__new__(handlers[0])
+        payload = json.dumps({'model': 'first:tiny'}).encode()
+        handler.headers = {'Content-Length': str(len(payload))}
+        handler.rfile, handler.wfile = io.BytesIO(payload), io.BytesIO()
+        handler.connection = connection
+        handler.send_response = lambda *args: None
+        handler.send_header = lambda *args: None
+        handler.end_headers = lambda: None
+        handler.do_POST()
+        assert reached.is_set()
+        assert disconnected.is_set(), 'EOF and connection reset/abort all prove the owned request closed.'
+
+
 def test_stalled_stream_obeys_total_deadline_and_disconnects():
     disconnected = threading.Event()
     with streaming_server({'first:tiny': 'after_headers'}, disconnected, http11=True) as (url, _, _, _):
@@ -188,9 +234,11 @@ def test_fallback_resets_partial_and_saves_only_completed_answer(tmp_path):
 
 def test_rank_uses_recorded_role_quality_then_timing_and_failure_backoff(tmp_path):
     evidence = ModelEvidence(tmp_path / 'evidence.db')
-    for index in range(2):
-        for name, passed, seconds in [('qwen3:0.6b', True, 1), ('llama3.2:1b', True, 4), ('hermes3:3b', False, .5)]:
+    for index in range(4):
+        for name, passed, seconds in [('qwen3:0.6b', True, 1), ('llama3.2:1b', True, 4)]:
             evidence.record_benchmark(name, 'general', str(index), passed=passed, seconds=seconds)
+    for index in range(2):
+        evidence.record_benchmark('hermes3:3b', 'general', str(index), passed=False, seconds=.5)
     names = ['hermes3:3b', 'unmeasured', 'llama3.2:1b', 'qwen3:0.6b']
     assert evidence.order(names, 'general') == ['qwen3:0.6b', 'llama3.2:1b', 'unmeasured', 'hermes3:3b']
     evidence.record_failure('qwen3:0.6b', 'Temporarily unavailable')

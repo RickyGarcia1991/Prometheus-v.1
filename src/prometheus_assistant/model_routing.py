@@ -13,6 +13,20 @@ ROLE_MODELS = {
 }
 
 
+def candidate_names(role):
+    """Role preferences followed by known text fallbacks, never text for images.
+
+    Apply runtime/quality exclusions to this complete list before selecting a
+    fitting profile, so a fallback cannot reintroduce a paused helper.
+    """
+    if role not in ROLE_MODELS:
+        raise ValueError('Unknown helper role.')
+    names = ROLE_MODELS[role]
+    if role != 'vision':
+        names += ROLE_MODELS['general']
+    return tuple(dict.fromkeys(names))
+
+
 def infer_role(prompt, task='general', *, image=False):
     if image:
         return 'vision'

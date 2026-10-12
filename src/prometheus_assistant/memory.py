@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
+import math
 import os
 from pathlib import Path
 import sqlite3
@@ -17,6 +19,116 @@ def default_memory_path():
 
 def utc_now():
     return datetime.now(timezone.utc).isoformat()
+
+
+MAX_TURN_METADATA_BYTES = 131072
+
+
+def _metadata_fields(value, *, strings=None, numbers=(), booleans=()):
+    """Copy named response fields only; never recursively persist arbitrary objects."""
+    if not isinstance(value, dict):
+        raise ValueError('Turn metadata must contain objects.')
+    result = {}
+    for key, limit in (strings or {}).items():
+        item = value.get(key)
+        if item is not None:
+            if not isinstance(item, str) or len(item) > limit:
+                raise ValueError('Turn metadata text exceeds its supported bounds.')
+            result[key] = item
+    for key in numbers:
+        item = value.get(key)
+        if item is not None:
+            if type(item) not in (int, float) or abs(item) > 1e15 or not math.isfinite(item):
+                raise ValueError('Turn metadata numbers must be finite and bounded.')
+            result[key] = item
+    for key in booleans:
+        item = value.get(key)
+        if item is not None:
+            if type(item) is not bool:
+                raise ValueError('Turn metadata flags must be booleans.')
+            result[key] = item
+    return result
+
+
+def _metadata_sources(value):
+    if not isinstance(value, list) or len(value) > 5:
+        raise ValueError('Turn metadata supports at most five source excerpts.')
+    result = []
+    for source in value:
+        row = _metadata_fields(source, strings={
+            'id': 32, 'title': 500, 'location': 2304, 'excerpt': 16384,
+            'source_date': 100, 'imported_at': 100, 'sha256': 128},
+            booleans=('is_latest', 'excerpt_truncated'))
+        for key in ('version', 'version_id'):
+            item = source.get(key)
+            if item is not None:
+                if not ((isinstance(item, str) and len(item) <= 100)
+                        or (type(item) is int and abs(item) <= 1e15)):
+                    raise ValueError('Turn metadata source version is invalid.')
+                row[key] = item
+        offsets = source.get('excerpt_characters')
+        if offsets is not None:
+            if (not isinstance(offsets, list) or len(offsets) != 2
+                    or any(type(v) is not int for v in offsets) or not 1 <= offsets[0] <= offsets[1] <= 400000):
+                raise ValueError('Invalid excerpt character offsets.')
+            row['excerpt_characters'] = list(offsets)
+        result.append(row)
+    return result
+
+
+def _metadata_search_results(value):
+    """Keep source provenance from the Documents/search result shape, not internal records."""
+    rows = _metadata_sources(value)
+    for original, saved in zip(value, rows):
+        saved.update(_metadata_fields(original, strings={
+            'document_id': 64, 'source': 2000, 'path': 2000, 'source_url': 2000, 'url': 2000,
+            'citation': 2304, 'revision': 200, 'license': 500, 'context': 4000,
+            'summary': 16384, 'snippet': 16384, 'description': 16384, 'text': 16384},
+            numbers=('line', 'context_start_line', 'context_end_line'), booleans=('context_truncated',)))
+    return rows
+
+
+def _response_metadata(details):
+    """Keep bounded provenance exactly as supplied, excluding request/auth/image fields."""
+    result = _metadata_fields(details, strings={
+        'model': 240, 'source': 100, 'retrieval': 500, 'reason': 2000, 'note': 2000,
+        'generation': 500, 'quality_scope': 1000},
+        booleans=('generated_answer', 'evidence_is_untrusted_data', 'model_used'))
+    if 'sources' in details:
+        result['sources'] = _metadata_sources(details['sources'])
+    if 'results' in details:
+        result['results'] = _metadata_search_results(details['results'])
+    if 'grounding' in details:
+        grounding = details['grounding']
+        saved = _metadata_fields(grounding, strings={'claim_verification': 500})
+        if 'sources' in grounding:
+            saved['sources'] = _metadata_sources(grounding['sources'])
+        for key in ('recognized_citations', 'unrecognized_citations'):
+            if key in grounding:
+                items = grounding[key]
+                if (not isinstance(items, list) or len(items) > 100
+                        or any(not isinstance(item, str) or len(item) > 32 for item in items)):
+                    raise ValueError('Turn metadata citation IDs are invalid.')
+                saved[key] = list(items)
+        result['grounding'] = saved
+    if 'metrics' in details:
+        result['metrics'] = _metadata_fields(details['metrics'], strings={'model': 240}, numbers=(
+            'seconds', 'first_token_seconds', 'eval_count', 'context', 'load_seconds', 'total_seconds',
+            'output_tokens', 'prompt_eval_count', 'prompt_eval_seconds', 'eval_seconds'))
+        if 'attempts' in details['metrics']:
+            attempts = details['metrics']['attempts']
+            if not isinstance(attempts, list) or len(attempts)>2:
+                raise ValueError('Invalid generation attempts.')
+            result['metrics']['attempts'] = [_metadata_fields(a, strings={'model':240,'status':30,'error':500},
+                numbers=('seconds','output_tokens')) for a in attempts]
+    if 'routing' in details:
+        result['routing'] = _metadata_fields(details['routing'],
+            strings={'role': 100, 'model': 240, 'reason': 2000},
+            numbers=('attempts',), booleans=('automatic',))
+    encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+    if len(encoded.encode('utf-8')) > MAX_TURN_METADATA_BYTES:
+        raise ValueError('Turn metadata exceeds the supported storage bound.')
+    return encoded
 
 
 class MemoryStore:
@@ -46,6 +158,11 @@ class MemoryStore:
                     created_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS turns_by_session ON turns(session_id, id);
+                CREATE TABLE IF NOT EXISTS turn_metadata (
+                    turn_id INTEGER PRIMARY KEY REFERENCES turns(id) ON DELETE CASCADE,
+                    label TEXT,
+                    details_json TEXT
+                );
                 CREATE TABLE IF NOT EXISTS model_events (
                     id INTEGER PRIMARY KEY,
                     session_id TEXT NOT NULL REFERENCES sessions(session_id),
@@ -76,7 +193,11 @@ class MemoryStore:
                     created_at TEXT NOT NULL
                 );
             """)
-            self.db.execute("PRAGMA user_version = 2")
+            # Optional turn metadata is additive: older v2 readers/backups remain compatible.
+            # Reassigning even the same version takes SQLite's writer lock.
+            # Existing history/session readers need no write when the schema is current.
+            if version != 2:
+                self.db.execute("PRAGMA user_version = 2")
             self.db.commit()
         except Exception:
             self.db.close()
@@ -100,14 +221,24 @@ class MemoryStore:
             raise ValueError("Unknown session ID. List saved sessions before resuming.")
         return dict(row)
 
-    def save_exchange(self, session_id, prompt, reply):
+    def save_exchange(self, session_id, prompt, reply, *, label=None, details=None):
         self.session(session_id)
+        if label is not None and (not isinstance(label, str) or len(label) > 240):
+            raise ValueError('Turn metadata label exceeds its supported bounds.')
+        encoded = _response_metadata(details) if details is not None else None
         now = utc_now()
         with self.db:
-            self.db.executemany(
+            self.db.execute(
                 "INSERT INTO turns (session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
-                [(session_id, "user", prompt, now), (session_id, "assistant", reply, now)],
+                (session_id, "user", prompt, now),
             )
+            assistant = self.db.execute(
+                "INSERT INTO turns (session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
+                (session_id, "assistant", reply, now),
+            )
+            if label is not None or encoded is not None:
+                self.db.execute('INSERT INTO turn_metadata (turn_id, label, details_json) VALUES (?, ?, ?)',
+                                (assistant.lastrowid, label, encoded))
 
     def record_model_use(self, session_id, model, context_tokens, cpu_threads):
         self.session(session_id)
@@ -117,19 +248,33 @@ class MemoryStore:
                 (session_id, model, context_tokens, cpu_threads, utc_now()),
             )
 
-    def history(self, session_id, limit=None):
+    def history(self, session_id, limit=None, *, include_metadata=False):
         self.session(session_id)
+        select = 'SELECT t.role, t.content, t.created_at'
+        if include_metadata:
+            select += ', m.label AS _label, m.details_json AS _details'
+        select += ' FROM turns t'
+        if include_metadata:
+            select += ' LEFT JOIN turn_metadata m ON m.turn_id = t.id'
+        select += ' WHERE t.session_id = ? ORDER BY t.id'
         if limit is None:
-            rows = self.db.execute(
-                "SELECT role, content, created_at FROM turns WHERE session_id = ? ORDER BY id",
-                (session_id,),
-            ).fetchall()
+            rows = self.db.execute(select, (session_id,)).fetchall()
         else:
-            rows = self.db.execute(
-                "SELECT role, content, created_at FROM turns WHERE session_id = ? ORDER BY id DESC LIMIT ?",
-                (session_id, limit),
-            ).fetchall()[::-1]
-        return [dict(row) for row in rows]
+            rows = self.db.execute(select+' DESC LIMIT ?', (session_id, limit)).fetchall()[::-1]
+        result = []
+        for row in rows:
+            item = dict(row)
+            label, encoded = item.pop('_label', None), item.pop('_details', None)
+            if include_metadata and item['role'] == 'assistant':
+                if isinstance(label, str) and len(label) <= 240:
+                    item['label'] = label
+                if isinstance(encoded, str) and len(encoded.encode('utf-8')) <= MAX_TURN_METADATA_BYTES:
+                    try:
+                        item['details'] = json.loads(_response_metadata(json.loads(encoded)))
+                    except (ValueError, TypeError, RecursionError):
+                        pass  # Damaged optional metadata must not hide the saved conversation.
+            result.append(item)
+        return result
 
     def remember(self, kind, subject, value, *, source_type, source_ref, confidence=1.0, retention="persistent"):
         fields = (kind, subject, value, source_type, source_ref)

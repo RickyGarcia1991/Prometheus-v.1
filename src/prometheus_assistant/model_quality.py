@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import sqlite3
 import time
 
+MIN_ROLE_CASES = 4
+
 
 class ModelEvidence:
     def __init__(self, path):
@@ -55,8 +57,8 @@ class ModelEvidence:
                 'failures': [dict(r) for r in db.execute('SELECT * FROM failures WHERE retry_after>?', (time.time(),))],
                 'scope': 'Small recorded task checks; not a general accuracy guarantee.'}
         report['paused_roles'] = [dict(model=r['model'], role=r['role'], cases=r['cases'], passed=r['passed'],
-            reason='Fewer than 75% of at least four recent task checks passed; automatic use of this role is paused.')
-            for r in report['benchmarks'] if r['cases'] >= 4 and r['passed']/r['cases'] < .75]
+            reason=f'Fewer than 75% of at least {MIN_ROLE_CASES} recent task checks passed; automatic use of this role is paused.')
+            for r in report['benchmarks'] if r['cases'] >= MIN_ROLE_CASES and r['passed']/r['cases'] < .75]
         return report
 
     def order(self, names, role):
@@ -66,8 +68,13 @@ class ModelEvidence:
         evidence = {r['model']: r for r in report['benchmarks'] if r['role'] == role}
         def score(name):
             row = evidence.get(name)
-            measured = bool(row and row['cases'] >= 2)
-            # Demonstrated failures rank behind unmeasured candidates; latency breaks quality ties.
-            ratio = row['passed']/row['cases'] if measured else .5
-            return (-ratio, 0 if measured else 1, row['seconds'] if measured else 0, names.index(name))
+            # A pair of easy checks cannot promote a tiny helper above the
+            # catalog preference. Distinct case IDs count; repeated runs do not.
+            if row and row['cases'] >= MIN_ROLE_CASES:
+                return (0, -row['passed']/row['cases'], row['seconds'], names.index(name))
+            # Even an incomplete sample can reveal mistakes, without treating
+            # that sample as a sufficient basis for automatic promotion.
+            if row and row['cases'] >= 2 and row['passed'] < row['cases']:
+                return (2, -row['passed']/row['cases'], row['seconds'], names.index(name))
+            return (1, 0, 0, names.index(name))
         return sorted((n for n in names if n not in blocked), key=score)

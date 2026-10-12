@@ -14,7 +14,7 @@ $src=Join-Path $rootPath $name
 $manifest=Join-Path $src 'SHA256-MANIFEST.json'
 $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2((Join-Path $src 'MANIFEST-PUBLIC.cer'))
 try {
- if($cert.Thumbprint -ne '898F702114B0F889763589C4057DC19CF1657CD5'){throw 'Controller certificate is not trusted'}
+ if(@('898F702114B0F889763589C4057DC19CF1657CD5','1E0F99439DD072E014D81C5574B325C97EA4AC98') -notcontains $cert.Thumbprint){throw 'Controller certificate is not trusted'}
  $rsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert)
  try {$valid=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes((Join-Path $src 'SHA256-MANIFEST.sig')),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)}finally{$rsa.Dispose()}
  if(!$valid){throw 'Controller manifest signature is invalid'}

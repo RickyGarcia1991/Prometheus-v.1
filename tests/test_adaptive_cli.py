@@ -7,6 +7,7 @@ def install_fixture(monkeypatch, hardware):
     class Model:
         def __init__(self, base_url, model, **options):
             self.model, self.base_url, self.options = model, base_url, options
+            self.timeout = options.get('timeout', 120)
             clients.append(self)
         def local_models(self):
             return [{'name': 'llama3.2:1b'}, {'name': 'llama3.2:1b-instruct-q4_K_M'}, {'name': 'gemma4:26b'}]
@@ -23,7 +24,7 @@ def test_default_auto_applies_context_and_cpu_budget(monkeypatch, tmp_path):
     clients = install_fixture(monkeypatch, HardwareProfile(16, 8, 'Windows', 10))
     assert cli.main(['--memory', str(tmp_path/'m.db'), 'doctor', '--json']) == 0
     assert clients[-1].model == 'llama3.2:1b-instruct-q4_K_M'
-    assert clients[-1].options == {'num_ctx': 4096, 'num_thread': 6}
+    assert clients[-1].options == {'num_ctx': 4096, 'num_thread': 6, 'timeout': 3}
 
 
 def test_explicit_model_is_not_silently_changed(monkeypatch, tmp_path):

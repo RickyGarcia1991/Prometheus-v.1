@@ -1,6 +1,6 @@
 param([Parameter(Mandatory=$true)][string]$Root,[string]$Recovery,[switch]$Repair)
 $ErrorActionPreference='Stop'
-$trusted='898F702114B0F889763589C4057DC19CF1657CD5'
+$trusted=@('898F702114B0F889763589C4057DC19CF1657CD5','1E0F99439DD072E014D81C5574B325C97EA4AC98')
 function SafePath([string]$base,[string]$relative){
  if(!$relative -or $relative -match '(^|[/\\])\.\.?([/\\]|$)|[:\x00-\x1f]' -or [IO.Path]::IsPathRooted($relative)){throw 'Unsafe manifest path'}
  foreach($part in ($relative -split '[/\\]')){if(!$part -or $part -match '[. ]$|^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.|$)'){throw 'Invalid manifest component'}}
@@ -19,7 +19,7 @@ function Manifest([string]$directory){
  $certPath=SafePath $directory 'MANIFEST-PUBLIC.cer'
  $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2($certPath)
  try{
-  if($cert.Thumbprint -ne $trusted){throw 'Untrusted core signing identity'}
+  if($trusted -notcontains $cert.Thumbprint){throw 'Untrusted core signing identity'}
   $rsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert)
   try{$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($path),[IO.File]::ReadAllBytes((SafePath $directory 'SHA256-MANIFEST.sig')),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)}finally{$rsa.Dispose()}
   if(!$ok){throw 'Invalid core manifest signature'}

@@ -1,8 +1,34 @@
-# Prometheus v0.8.0-dev1 — local agent core, portable knowledge, and federated research
+# Prometheus 0.8.0.dev5 - read-only permissions and boundaries
+
+The Boundaries workbench tab and CLI expose registered Core default-policy decisions,
+owner observations and separately enforced limits without granting or executing actions.
+This source integrates the verified dev4 catalogs and the reviewed permissions feature.
+See [release notes](RELEASE_NOTES_0.8.0.dev5.md) and [scope](docs/PERMISSIONS-BOUNDARIES.md).
+Signing, installed state and owner/model/physical acceptance are recorded separately.
+
+Earlier release notes below retain their original historical wording.
+
+# Prometheus 0.8.0.dev2 — capability upgrade candidate
+
+This candidate adds **Ask with evidence**, local image questions, capability
+discovery and routing/search improvements. See [capabilities](docs/CAPABILITIES-0.8.0.dev2.md)
+and [architecture](docs/ARCHITECTURE.md). The SSD still starts its existing signed
+release until the [signing and activation handoff](docs/CAPABILITY-UPDATE.md) is
+completed; editing this development checkout does not update that deployed copy.
 
 Prometheus now provides a small local text assistant using Ollama, plus the original health-check and verified-backup foundation. No new cloud account or paid service is required.
 
 ## Start on Windows
+
+For the portable SSD, open `START-PROMETHEUS-SSD.cmd` in the drive root. It opens
+the orb interface using the active signed release and the drive's saved memory.
+Open **Documents, code & maintenance**, then **Maintenance**, to run the health
+check or the bounded helper benchmarks. The health check explains what passed,
+what is blocked, and which physical or model checks still need to be performed.
+Use the root `START-PROMETHEUS-PORTABLE.cmd` for command-line operations.
+
+The commands below describe a standalone source installation. Its default
+memory location differs from the SSD launcher, which uses `Prometheus-Data`.
 
 Keep Ollama running and double-click START_PROMETHEUS.cmd. On the configured laptop, double-click Start_Prometheus_Offline.cmd on the Desktop instead.
 
@@ -44,7 +70,7 @@ py -3 -m pytest -q
 
 Optional coverage tooling: coverage 7.16.0; run coverage run -m pytest -q, coverage combine, then coverage report. The supplied .coveragerc measures assistant subprocesses.
 
-Opt-in online research routing with source provenance is implemented for configured HTTPS research providers. Structured schema-v2 knowledge storage is explicit and provenance-bearing; conversation text is not automatically promoted to trusted knowledge. Voice, autonomous tools, semantic search, and model retraining remain future work. See docs/STATUS.md and docs/ai for scope and verification evidence.
+Opt-in online research routing with source provenance is implemented for configured HTTPS research providers. Structured knowledge storage remains explicit; conversation text is not automatically promoted to trusted knowledge. The current portable interface also provides cancellable local dictation, bounded tool use, document versions, optional semantic indexing, coding previews/apply/undo, and verified data backup/restore. These features depend on their installed runtimes, available memory, and configuration. Model-weight retraining has not been performed. Older status documents record historical checkpoints; use the current release provenance and fresh health/benchmark results for current evidence.
 
 ## Vocabulary guidance
 

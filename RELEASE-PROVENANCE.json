@@ -1,20 +1,26 @@
 {
-  "release": "Prometheus-v0.8.0-dev1-retest-20261009",
-  "created_utc": "2026-10-09T21:15:28.601470+00:00",
-  "base_release": "Prometheus-v0.8.0-dev1-milestones-20261009",
-  "core_tests_passed": 621,
-  "core_tests_skipped": 2,
-  "javascript_tests_passed": 13,
-  "changes": [
-    "Browser fetch binding repaired",
-    "Smart home mode and restricted Home Assistant bridge on standby",
-    "Host-bound hub credentials and private browser control key",
-    "Packaged UI regression tests"
+  "schema_version": 2,
+  "release": "Prometheus-v0.8.0-dev5-permissions-20261012",
+  "version": "0.8.0.dev5",
+  "prepared_utc": "2026-10-12T01:46:17.159315+00:00",
+  "base_git_commit": "e907112f7f1dec60b00c8905dcbc631f52f72821",
+  "source_branch": "release/dell-permissions-20261012",
+  "base_release": "Prometheus-v0.8.0-dev4-hf-security-r3-20261011",
+  "base_manifest_sha256": "ee65de1d432e87e821d7c3f8d8faba30cd0c474e92fdc4a9324a2d1d0fbeccfb",
+  "reviewed_permissions_patch_sha256": "306840c9d22032edb208d3edcb3ec56e3a1d6454276cfe3077105c720147827a",
+  "integration_scope": "Verified dev4 project source plus read-only permissions inventory and independent-review fixes F1/F2",
+  "source_commit_resolution": "Build receipt binds the final commit and every release file; this file does not assert activation.",
+  "private_memory_included": false,
+  "private_signing_material_included": false,
+  "owner_encrypted_backup_verification": "Existing owner recovery receipt verified 2026-10-11; no password or raw key belongs in source.",
+  "public_source_exclusions": [
+    "tools/Prometheus.HostAgent/host-memory-backup.ps1",
+    "tools/Prometheus.HostAgent/ssd-memory-backup.ps1"
   ],
-  "limits": [
-    "No physical smart-home pairing or device test",
-    "Microphone/speaker and eject/reconnect need physical acceptance",
-    "Two Windows link-creation tests skipped for host privileges",
-    "No universal Alexa Drop In API integrated"
+  "exclusion_reason": "Host-specific legacy paths; preserved unchanged in signed baseline runtime, excluded from newly published source. Generic RemoteBackup helpers remain available.",
+  "acceptance_limits": [
+    "Full common policy and persistent scoped grants are not implemented.",
+    "Real owner passkey acceptance must use the normal installed flow.",
+    "No model qualification, hardware-answer acceptance or physical cross-host reinsertion is claimed."
   ]
 }

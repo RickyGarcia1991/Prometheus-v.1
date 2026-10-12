@@ -19,6 +19,16 @@ ANSWERS = {
     'v1.two_colors': '3',
     'v1.polite_reminder': 'Please remember our meeting is Monday at 9 AM.',
     'v1.constrained_line': 'The quiet river reflects the bright moon tonight.',
+    'v2.extract_city': 'Lima',
+    'v2.largest_number': '11',
+    'v2.list_index': '4',
+    'v2.undefined_name': 'greeting',
+    'v2.spanish_water': 'Agua',
+    'v2.german_morning': 'Guten Morgen',
+    'v2.relative_age': 'Ana',
+    'v2.insufficient_evidence': 'No',
+    'v2.two_bullets': '- Bring water\n- Wear boots',
+    'v2.three_word_title': 'Rain Soaked Garden',
 }
 
 
@@ -47,6 +57,14 @@ def test_exact_json_rejects_duplicate_keys_even_if_last_value_is_expected():
     check = next(case for case in module.CASES if case.case_id == 'v1.exact_json')
     assert not check.evaluate('{"ready": false, "ready": true, "count": 3}')
     assert not check.evaluate('{"ready": true, "count": true}')
+
+
+def test_every_role_has_enough_independent_cases_for_quality_gate():
+    from collections import Counter
+    counts = Counter(case.role for case in module.CASES)
+    assert set(counts) == set(module.TEXT_ROLES)
+    assert all(count >= 4 for count in counts.values())
+    assert len({(case.role, case.case_id) for case in module.CASES}) == len(module.CASES)
 
 
 @pytest.fixture
@@ -106,9 +124,9 @@ def test_actual_stream_contract_two_models_all_text_roles_and_sqlite_evidence(ri
     report = module.run_benchmarks(evidence, {'qwen2.5-coder:0.5b', 'qwen3:0.6b', 'llama3.2:1b'},
         on_stage=lambda value, **kwargs: stages.append(value), on_token=tokens.append)
     assert report['state'] == 'complete' and len(report['models']) == 2
-    assert report['checked'] == report['passed'] == 20
-    assert len(state['calls']) == 20 and len(state['checks']) == 2
-    assert len(tokens) == 20 and stages
+    assert report['checked'] == report['passed'] == 40
+    assert len(state['calls']) == 40 and len(state['checks']) == 2
+    assert len(tokens) == 40 and stages
     assert {row['role'] for row in report['cases']} == set(module.TEXT_ROLES)
     assert report['skipped_roles'][0]['role'] == 'vision'
     assert any('Run limit' in row['reason'] for row in report['skipped_models'])
@@ -136,10 +154,18 @@ def test_incorrect_answers_are_scored_false_without_runtime_failure_penalty(rig)
     state, evidence = rig
     state['wrong'] = True
     report = module.run_benchmarks(evidence, {'qwen3:0.6b'})
-    assert report['checked'] == 10 and report['passed'] == 0
+    assert report['checked'] == 20 and report['passed'] == 0
     assert all(row['state'] == 'checked' and not row['passed'] for row in report['cases'])
     assert all(row['passed'] == 0 for row in evidence.summary()['benchmarks'])
     assert not evidence.summary()['failures']
+
+
+def test_real_benchmark_cases_can_pause_a_consistently_incorrect_helper(rig):
+    state, evidence = rig
+    state['wrong'] = True
+    report = module.run_benchmarks(evidence, {'qwen3:0.6b'})
+    assert report['state'] == 'complete'
+    assert {row['role'] for row in evidence.summary()['paused_roles']} == set(module.TEXT_ROLES)
 
 
 def test_generation_failure_is_recorded_and_remaining_model_cases_stop(rig):
@@ -220,7 +246,7 @@ def test_cleanup_failure_is_reported_without_falsifying_answer_scores(rig):
     state, evidence = rig
     state['cleanup_failure'] = True
     report = module.run_benchmarks(evidence, {'qwen3:0.6b'})
-    assert report['state'] == 'complete' and report['passed'] == report['checked'] == 10
+    assert report['state'] == 'complete' and report['passed'] == report['checked'] == 20
     assert report['model_cleanup'][0]['state'] == 'unconfirmed'
     assert 'unavailable' in report['model_cleanup'][0]['error']
     assert not evidence.summary()['failures']

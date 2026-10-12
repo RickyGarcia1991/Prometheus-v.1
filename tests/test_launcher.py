@@ -44,15 +44,19 @@ def test_configured_runtime_with_spaces(tmp_path):
     import sys
     # Use a path containing spaces through a directory junction to the real runtime.
     runtime = tmp_path / "portable python"
+    # A venv's Windows python.exe is a redirector; retain its parent pyvenv.cfg
+    # when exercising a relocated interpreter path.
+    source = Path(sys.prefix) if sys.prefix != sys.base_prefix else Path(sys.executable).parent
+    executable = Path(sys.executable).relative_to(source)
     result = subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(runtime),
-                             str(Path(sys.executable).parent)], capture_output=True)
+                             str(source)], capture_output=True)
     if result.returncode:
         # Restricted Windows hosts can deny junction creation. A real copy
         # exercises the same launcher quoting without requiring that privilege.
         import shutil
-        shutil.copytree(Path(sys.executable).parent, runtime,
+        shutil.copytree(source, runtime,
                         ignore=shutil.ignore_patterns('__pycache__'))
-    env = dict(os.environ, PROMETHEUS_PYTHON=str(runtime / Path(sys.executable).name))
+    env = dict(os.environ, PROMETHEUS_PYTHON=str(runtime / executable))
     result = subprocess.run(["cmd.exe", "/d", "/c", str(ROOT / "START_PROMETHEUS.cmd"), "--help"],
                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr

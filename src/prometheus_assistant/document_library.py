@@ -292,20 +292,27 @@ class OllamaEmbeddingClient:
 
 
 class DocumentLibrary:
-    def __init__(self, data_dir, embedding_client=None, embedding_allowed=None):
+    def __init__(self, data_dir, embedding_client=None, embedding_allowed=None, *, read_only=False):
         requested = Path(data_dir).absolute()
         _no_links(requested)
-        requested.mkdir(parents=True, exist_ok=True)
+        self.read_only = bool(read_only)
+        if not self.read_only:
+            requested.mkdir(parents=True, exist_ok=True)
         self.root = requested.resolve()
         self.path = self.root / 'documents.sqlite3'
         self.originals = self.root / 'originals'
         _no_links(self.path)
         _no_links(self.originals)
-        self.originals.mkdir(exist_ok=True)
+        if not self.read_only:
+            self.originals.mkdir(exist_ok=True)
         self.embedding_client = embedding_client
         self.embedding_allowed = embedding_allowed or (lambda: True)
         with closing(self._connect()) as db:
             version = db.execute('PRAGMA user_version').fetchone()[0]
+            if self.read_only:
+                if version != 2:
+                    raise ValueError('Open the document workbench to upgrade this saved library before reading it.')
+                return
             if version not in (0, 1, 2):
                 raise ValueError('Unsupported document library schema.')
             db.executescript('''
@@ -332,7 +339,8 @@ class DocumentLibrary:
     def _connect(self):
         _no_links(self.root)
         _no_links(self.path)
-        db = sqlite3.connect(self.path, timeout=10)
+        db = (sqlite3.connect(self.path.as_uri()+'?mode=ro', uri=True, timeout=10) if self.read_only
+              else sqlite3.connect(self.path, timeout=10))
         db.row_factory = sqlite3.Row
         db.execute('PRAGMA foreign_keys=ON')
         db.execute('PRAGMA cache_size=-2048')
@@ -355,6 +363,8 @@ class DocumentLibrary:
     @staticmethod
     def _record(row):
         result = dict(row)
+        if 'is_latest' in result:
+            result['is_latest'] = bool(result['is_latest'])
         if 'id' in result:
             result['version_id'] = result.pop('id')
         return result
@@ -380,13 +390,16 @@ class DocumentLibrary:
             content = stream.read(MAX_FILE_BYTES + 1)
         return self.import_bytes(source.name, content, **metadata)
 
-    def import_bytes(self, name, content, *, source_url=None, source_date=None, document_id=None):
+    def import_bytes(self, name, content, *, source_url=None, source_date=None, document_id=None,
+                     expected_version_id=None):
         name = _name(name)
         _metadata(source_url, source_date)
         if not isinstance(content, bytes) or not 1 <= len(content) <= MAX_FILE_BYTES:
             raise ValueError('Document must contain 1 byte to 8 MiB.')
         if document_id is not None and (not isinstance(document_id, str) or not re.fullmatch(r'[a-f0-9]{32}', document_id)):
             raise ValueError('Invalid document ID.')
+        if expected_version_id is not None and (type(expected_version_id) is not int or expected_version_id < 1 or document_id is None):
+            raise ValueError('A conditional import needs an explicit document ID and positive expected version ID.')
         try:
             sections = _extract(content, Path(name).suffix.lower(), self.root)
         except subprocess.TimeoutExpired as error:
@@ -405,6 +418,10 @@ class DocumentLibrary:
                                   (document_id or name.casefold(),)).fetchone()
             if document_id and not existing:
                 raise ValueError('Unknown document ID.')
+            latest = db.execute('SELECT * FROM versions WHERE document_id=? ORDER BY id DESC LIMIT 1',
+                                (existing['id'],)).fetchone() if existing else None
+            if expected_version_id is not None and (latest is None or latest['id'] != expected_version_id):
+                raise ValueError('The document changed since this update was prepared; the newer version was preserved.')
             if original.exists():
                 if original.stat().st_size != len(content) or hashlib.sha256(original.read_bytes()).hexdigest() != digest:
                     raise ValueError('A retained original failed its checksum; restore it before importing.')
@@ -417,7 +434,6 @@ class DocumentLibrary:
             else:
                 document_id = uuid.uuid4().hex
                 db.execute('INSERT INTO documents VALUES (?,?,?)', (document_id, name, name.casefold()))
-            latest = db.execute('SELECT * FROM versions WHERE document_id=? ORDER BY id DESC LIMIT 1', (document_id,)).fetchone()
             duplicate = bool(latest and latest['sha256'] == digest and latest['source_url'] == source_url
                              and latest['source_date'] == source_date and latest['original_filename'] == original_name)
             if duplicate:
@@ -488,16 +504,33 @@ class DocumentLibrary:
         return result
 
     def search(self, query, *, limit=5, include_history=False, semantic=True):
+        from .evidence_text import terms as query_terms, exact_designators, focused_terms, plural_variants
         if not isinstance(query, str) or not query.strip() or len(query) > 4000:
             raise ValueError('Use a document query of 1–4000 characters.')
         if type(limit) is not int or not 1 <= limit <= 20:
             raise ValueError('Search result limit must be 1–20.')
-        terms = list(dict.fromkeys(word.casefold() for word in re.findall(r'[^\W_]+', query)
-                                   if word.casefold() not in _STOP))[:24]
+        terms = query_terms(query)
         if not terms:
             raise ValueError('The query needs at least one meaningful search term.')
-        match = ' OR '.join('"' + term + '"' for term in terms)
+        focused = focused_terms(query)
+        match = ' OR '.join('('+' OR '.join('"'+variant+'"' for variant in plural_variants(term,query))+')'
+                            for term in focused)
         with closing(self._connect()) as db:
+            missing = []
+            for designator in exact_designators(query):
+                hit = db.execute('''SELECT 1 FROM passage_search
+                    JOIN passages p ON p.id=passage_search.rowid JOIN versions v ON v.id=p.version_id
+                    WHERE passage_search MATCH ? AND
+                    (? OR v.id=(SELECT max(v2.id) FROM versions v2 WHERE v2.document_id=v.document_id)) LIMIT 1''',
+                    ('"'+designator+'"', bool(include_history))).fetchone()
+                if not hit:
+                    missing.append(designator)
+            if missing:
+                return {'query':query, 'search_terms':terms, 'retrieval':'keyword', 'semantic_status':'not_needed',
+                        'generated_answer':False, 'evidence_is_untrusted_data':True, 'results':[],
+                        'note':'No indexed passage mentions '+', '.join(missing)+'. To establish an exact value or repair, '
+                               'provide the board identity/revision, schematic and component location, fault observations '
+                               'and measurements. These resources cannot establish a value or guarantee a repair.'}
             keyword = db.execute('''SELECT p.id,bm25(passage_search,2.0,1.0) AS rank
                 FROM passage_search JOIN passages p ON p.id=passage_search.rowid JOIN versions v ON v.id=p.version_id
                 WHERE passage_search MATCH ? AND (? OR v.id=(SELECT max(v2.id) FROM versions v2 WHERE v2.document_id=v.document_id))
@@ -557,7 +590,8 @@ class DocumentLibrary:
                     'semantic' if signal['semantic_score'] is not None else 'keyword')
                 results.append({**record, **signal, 'excerpt': body, 'score': scores[passage_id], 'retrieval': mode})
         retrieval = 'hybrid' if keyword and semantic_ranked else 'semantic' if semantic_ranked else 'keyword'
-        return {'query': query, 'search_terms': terms, 'retrieval': retrieval, 'semantic_status': semantic_status,
+        return {'query': query, 'search_terms': terms, 'focused_search_terms': focused,
+                'retrieval': retrieval, 'semantic_status': semantic_status,
                 'model_identity': identity, 'semantic_passages_scanned': scanned,
                 'semantic_scan_limit': MAX_SEMANTIC_PASSAGES, 'include_history': bool(include_history),
                 'generated_answer': False, 'evidence_is_untrusted_data': True, 'results': results}

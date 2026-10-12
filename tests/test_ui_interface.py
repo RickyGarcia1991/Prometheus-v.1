@@ -49,6 +49,7 @@ def test_auto_exact_helper_does_not_start_model(app,monkeypatch):
 
 
 def test_low_ram_returns_cited_evidence_not_generated_claim(app,monkeypatch):
+    monkeypatch.setattr(ui.OllamaClient,'resident_memory_gib',lambda self:0)
     monkeypatch.setattr(ui,'detect_hardware',lambda:HardwareProfile(8,8,'Windows',.8))
     monkeypatch.setattr(ui,'installed_models',lambda:{'qwen3:0.6b'})
     calls=[]
@@ -118,6 +119,9 @@ def test_http_real_requests_and_boundaries(app):
         assert code==200 and b'Helpers' in raw and 'frame-ancestors' in headers['Content-Security-Policy']
         assert request('/api/status',headers={'Host':'evil.invalid'})[0]==403
         assert request('/api/status',headers={'X-Prometheus-Token':'bad'})[0]==403
+        assert request('/api/capabilities',headers={'X-Prometheus-Token':'bad'})[0]==403
+        code, raw, _ = request('/api/capabilities')
+        assert code == 200 and json.loads(raw)['schema_version'] == 1
         assert request('/api/bootstrap',headers={'Sec-Fetch-Site':'cross-site'})[0]==403
         assert request('/api/jobs',{'mode':'calculate','prompt':'2+2'},headers={'Origin':'https://evil.invalid'})[0]==403
         assert request('/api/jobs',{'mode':'calculate','prompt':'x'*25000})[0]==413
@@ -157,3 +161,40 @@ def test_ui_parser_does_not_need_model(monkeypatch,tmp_path):
     monkeypatch.setattr(ui,'serve',lambda path,**options:calls.append(options) or 0)
     assert cli.main(['--memory',str(tmp_path/'m.db'),'ui','--no-browser','--port','0'])==0
     assert calls==[{'port':0,'open_browser':False,'shutdown_request':None}]
+
+
+def test_archive_answer_shows_text_and_snapshot_citation():
+    value={'results':[{'title':'Photosynthesis','text':'Plants convert light energy into chemical energy.',
+                      'source_url':'https://en.wikipedia.org/wiki/Photosynthesis',
+                      'citation':'zim://biology/Photosynthesis@2026-06', 'archive_version':'2026-06'}]}
+    result=ui.readable_result(value)
+    assert 'Plants convert light energy into chemical energy.' in result
+    assert 'zim://biology/Photosynthesis@2026-06' in result
+    assert 'https://en.wikipedia.org/wiki/Photosynthesis' in result
+
+
+def test_long_conversation_can_use_bounded_archive_query(monkeypatch):
+    from prometheus_assistant import archive_worker
+    seen=[]
+    monkeypatch.setattr(archive_worker,'search',lambda root,query,project:seen.append(query) or {'results':[]})
+    ui.reference_query('photosynthesis '*25,'general')
+    assert seen and 1<=len(seen[0])<=256
+
+
+def test_dictation_can_cancel_without_saving_a_transcript(app,monkeypatch):
+    from prometheus_assistant import voice
+    entered=threading.Event()
+    def capture(*,cancel_event=None,on_stage=None):
+        entered.set()
+        if cancel_event is None:
+            return 'Missing cancellation signal'
+        assert cancel_event.wait(2)
+        raise ui.GenerationCancelled('Dictation cancelled; no transcript was submitted.')
+    monkeypatch.setattr(voice,'capture_prompt',capture)
+    job=app.submit({'mode':'dictate','prompt':''})
+    assert entered.wait(2)
+    app.cancel(job['id'])
+    result=wait(app,job)
+    assert result['state']=='cancelled'
+    assert 'transcript' not in result and 'result' not in result
+    assert wait(app,app.submit({'mode':'calculate','prompt':'6*7'}))['result']['details']['exact']=='42'

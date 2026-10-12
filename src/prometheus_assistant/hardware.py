@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+import math
 import os
 import platform
 import shutil
@@ -70,6 +71,39 @@ def detect_hardware() -> HardwareProfile:
             pass
     return HardwareProfile(round(ram / 1024**3, 2), os.cpu_count() or 1, platform.system(),
                            round(available / 1024**3, 2) if available is not None else None)
+
+
+def grounded_profile(profile: ModelProfile, hardware: HardwareProfile,
+                     resident_model_gib: float = 0) -> ModelProfile:
+    """Return bounded Qwen context eligibility, not answer-quality qualification.
+
+    Development-only helper: existing routing does not call this function.
+    CPU/batch128 Qwen3:1.7b measured about 2.589 GiB resident at context12288,
+    with minimum sampled free memory 3.843 GiB. Its FP16 KV cache adds 448 MiB
+    per 4096 context tokens; the 3.0/3.5 GiB allowances include extra headroom.
+    Reserve another 2 GiB for the host. Resident credit must describe only the
+    single idle runtime model that the caller can reuse or release. Unknown or
+    invalid memory pressure never authorizes a larger context. Qualification
+    and cancellation under changing memory pressure remain caller obligations.
+    """
+    if profile.model != "qwen3:1.7b":
+        return profile
+    ram, available = hardware.ram_gib, hardware.available_ram_gib
+    try:
+        if any(isinstance(value, bool) or not isinstance(value, (int, float))
+               or not math.isfinite(value) or value < 0
+               for value in (ram, available, resident_model_gib)):
+            return profile
+        reclaimable = available + resident_model_gib
+        if not math.isfinite(reclaimable):
+            return profile
+    except OverflowError:
+        return profile
+    if ram < 12 or available > ram or resident_model_gib > ram:
+        return profile
+    budget = min(ram, reclaimable) - 2.0
+    context = 12288 if budget >= 3.5 else 8192 if budget >= 3.0 else profile.context
+    return replace(profile, context=context) if context > profile.context else profile
 
 
 def select_model(installed: set[str], hardware: HardwareProfile,

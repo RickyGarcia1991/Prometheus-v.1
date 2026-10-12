@@ -30,6 +30,7 @@ async function fixture() {
   context.requestAnimationFrame = () => 1; context.cancelAnimationFrame = () => {};
   context.setTimeout = (fn, delay) => { timers.push({fn, delay}); return timers.length; };
   context.AbortSignal = {timeout: () => ({})};
+  context.URL = URL;
   context.fetch = async (url, options = {}) => {
     requests.push({url, options, body: options.body ? JSON.parse(options.body) : null});
     const queue = queued.get(url);
@@ -64,6 +65,8 @@ async function fixture() {
 
 (async () => {
   const app = await fixture(), {run, elements: e, server, requests, jobs, queued, timers, context} = app;
+  const results = [];
+  context.window.addEventListener('prometheus-result', event => results.push(event.detail));
   const postCount = () => requests.filter(item => item.url === '/api/jobs').length;
   const heldPost = deferred(); server.pendingPost = heldPost;
   const firstSubmit = run("submitAction({mode:'chat',prompt:'first'})"); await settle();
@@ -83,6 +86,8 @@ async function fixture() {
   assert.equal(await nestedSubmission, false, 'second submit denied until final result handlers finish');
   assert.equal(run('busy'), false); assert.equal(run('job'), null);
   assert(e.messages.children.some(item => item.querySelector('.text')?.textContent === 'final answer'));
+  assert.equal(results.at(-1).origin, 'local', 'accepted actions belong to this browser tab');
+  assert.equal(results.at(-1).job_id, 'held-job', 'result origin is bound to its accepted job');
 
   await run("submitAction({mode:'chat',prompt:'cancel this'})"); await settle(); const cancelId = run('job');
   assert.equal(e.cancelRequest.hidden, false); e.cancelRequest.dispatch('click'); await settle();
@@ -93,6 +98,8 @@ async function fixture() {
   await run(`pollJob('${cancelId}')`); await settle();
   assert.equal(run('busy'), false); assert.equal(run('job'), null); assert(e.cancelRequest.hidden);
   assert(e.messages.children.some(item => item.querySelector('.label')?.textContent === 'Incomplete · not saved'));
+  assert.equal(results.at(-1).origin, 'local', 'failed local actions keep their origin');
+  assert.equal(results.at(-1).job_id, cancelId);
 
   await run("submitAction({mode:'chat',prompt:'temporary disconnect'})"); await settle(); const lostId = run('job');
   queued.set('/api/job/' + lostId, [Promise.reject(new Error('temporary network loss'))]);
@@ -130,6 +137,47 @@ async function fixture() {
   assert.equal(retried.options.headers['X-Prometheus-Token'], 'replacement-token');
   await run('status()'); assert.equal(run('busy'), false, 'next status makes restarted interface usable');
   assert.equal(e.send.disabled, false);
+  // The server allows multiple local tabs. Observing another tab's work must
+  // not replace this tab's editor draft or pretend the action originated here.
+  const editor = await fixture(), ee = editor.elements, editorResults = [];
+  editor.context.window.addEventListener('prometheus-result', event => editorResults.push(event.detail));
+  editor.run(fs.readFileSync(path.join(asset, 'workspace.js'), 'utf8'));
+  editor.run('setBusy(false)');
+  async function finishEditor(action, details) {
+    await settle(); const id = editor.run('job');
+    editor.jobs.set(id, {state: 'done', seconds: 0, result: {action, details}});
+    await editor.run(`pollJob('${id}')`); await settle();
+  }
+  ee.projectRoot.value = 'C:\\Projects\\demo'; ee.openProject.click();
+  await finishEditor('code_open', {project: ee.projectRoot.value, files: [{path: 'app.py', size: 10}], test_presets: []});
+  ee.codeFile.value = 'app.py'; ee.codeFile.dispatch('change'); ee.readCode.click();
+  await finishEditor('code_read', {path: 'app.py', content: 'value = 1\n', sha256: 'original'});
+  const draft = 'value = 999  # unsaved local draft\n';
+  ee.codeEditor.value = draft; ee.codeEditor.dispatch('input');
+  editor.statusData.busy = true; editor.statusData.job = 'other-tab-read';
+  editor.jobs.set('other-tab-read', {state: 'running', cancellable: false});
+  await editor.run('status()'); await settle();
+  editor.jobs.set('other-tab-read', {state: 'done', seconds: 0, result: {action: 'code_read', details: {path: 'app.py', content: 'value = 2\n', sha256: 'other'}}});
+  await editor.run("pollJob('other-tab-read')"); await settle();
+  assert.equal(editorResults.at(-1).origin, 'observed', 'status-adopted work is explicitly observed');
+  assert.equal(editorResults.at(-1).job_id, 'other-tab-read');
+  assert.equal(ee.codeEditor.value, draft, 'another tab reading a file cannot discard this tab\'s draft');
+  // A status poll between server acceptance and the POST response must leave
+  // result ownership to that response instead of adopting the pending job.
+  const accepting = await fixture(), hold = deferred();
+  accepting.server.pendingPost = hold;
+  const acceptingPost = accepting.run("submitAction({mode:'code_read',project:'C:\\\\Projects\\\\demo',file:'app.py'})");
+  await settle(); accepting.statusData.busy = true; accepting.statusData.job = 'accepted-late';
+  accepting.jobs.set('accepted-late', {state: 'running', cancellable: false});
+  await accepting.run('status()'); await settle();
+  assert.equal(accepting.run('job'), null, 'status does not adopt a job while its local submission is pending');
+  hold.resolve(response({id: 'accepted-late'})); assert.equal(await acceptingPost, true); await settle();
+  const acceptingResults = [];
+  accepting.context.window.addEventListener('prometheus-result', event => acceptingResults.push(event.detail));
+  accepting.jobs.set('accepted-late', {state: 'done', seconds: 0, result: {action: 'code_read', details: {}}});
+  await accepting.run("pollJob('accepted-late')"); await settle();
+  assert.equal(acceptingResults.at(-1).origin, 'local');
+  assert.equal(acceptingResults.at(-1).job_id, 'accepted-late');
   const home = await fixture(), he = home.elements;
   const secret = 'fixture-control-key-123456789';
   he.mode.value = 'home'; home.run('updateFields()');
@@ -155,6 +203,104 @@ async function fixture() {
   assert(!JSON.stringify(home.storageWrites).includes(secret), 'control key never enters localStorage');
   home.run('transport.onRestart()'); assert.equal(he.homeKey.value, '');
   he.homeKey.value = secret; await he.close.onclick(); assert.equal(he.homeKey.value, '');
+  const grounded = await fixture(), ge = grounded.elements;
+  ge.mode.value = 'ask'; ge.evidenceSource.value = 'project'; ge.project.value = 'C:\\Projects\\demo';
+  grounded.run('updateFields()');
+  assert.equal(ge.sourceField.hidden, false); assert.equal(ge.projectField.hidden, false);
+  assert.equal(ge.profileField.hidden, true); assert.equal(ge.imageField.hidden, true);
+  ge.prompt.value = 'Where is the timeout configured?';
+  await grounded.run('submit()'); await settle();
+  assert.equal(grounded.requests.findLast(r => r.url === '/api/jobs').body.source, 'project');
+  grounded.run('transport.onRestart(); setBusy(false)');
+  ge.evidenceSource.value = 'offline'; grounded.run('updateFields()');
+  assert.equal(ge.profileField.hidden, false); assert.equal(ge.projectField.hidden, true);
+  ge.mode.value = 'chat'; grounded.run('updateFields()'); ge.prompt.value = 'Hello';
+  await grounded.run('submit()'); await settle();
+  assert.equal(grounded.requests.findLast(r => r.url === '/api/jobs').body.source, undefined);
+  grounded.run('transport.onRestart(); setBusy(false)'); ge.prompt.value = '';
+  await ge.capabilities.onclick(); await settle();
+  assert.equal(grounded.requests.findLast(r => r.url === '/api/jobs').body.mode, 'capabilities');
+  grounded.run('transport.onRestart(); setBusy(false)');
+  ge.mode.value = 'vision'; ge.prompt.value = 'Describe this image'; grounded.run('updateFields()');
+  assert.equal(ge.imageField.hidden, false);
+  const beforeImage = grounded.requests.filter(r => r.url === '/api/jobs').length;
+  ge.questionImage.files = [{size: 8*1024*1024+1}];
+  await grounded.run('submit()'); await settle();
+  assert.equal(grounded.requests.filter(r => r.url === '/api/jobs').length, beforeImage);
+  assert(ge.notice.textContent.includes('8 MiB'));
+  grounded.context.FileReader = class {readAsDataURL() {this.result = 'data:image/png;base64,aGVhZGVy'; this.onload();}};
+  ge.questionImage.files = [{size: 6}]; ge.questionImage.value = 'image.png';
+  await grounded.run('submit()'); await settle();
+  assert.equal(grounded.requests.findLast(r => r.url === '/api/jobs').body.content, 'aGVhZGVy');
+  assert.equal(ge.questionImage.value, '');
+  assert(!JSON.stringify(grounded.storageWrites).includes('aGVhZGVy'), 'image is never saved in browser storage');
+  console.log('Evidence and image UI passed: explicit source, bounded image selection, image clearing, capability discovery.');
   console.log('App lifecycle tests passed: submission/result races, cancel, disconnect, 404, stale polls and 403 token restart.');
   console.log('Smart home UI passed: masked key, Home-only submission, dictation review, no localStorage, close/restart clearing.');
+  const links = await fixture();
+  const sourceUrl = 'https://github.com/FrameworkComputer/Framework-Laptop-12/blob/pinned/Mainboard/README.md?plain=1#rtc';
+  const footer = 'Documented answer [S1].\n\nSources supplied:\n[S1] Mainboard reference — '+sourceUrl+' | text, characters 5610-6829';
+  links.context.sourceFooter = footer;
+  links.run("append('assistant', sourceFooter)");
+  let shown = links.elements.messages.children.at(-1).querySelector('.text');
+  let anchors = shown.querySelectorAll('.source-link');
+  assert.equal(anchors.length, 1);
+  assert.equal(anchors[0].textContent, 'Mainboard reference', 'short document label replaces the long URL');
+  assert.equal(anchors[0].href, sourceUrl, 'full pinned URL, query and fragment are preserved');
+  assert.equal(anchors[0].title, sourceUrl);
+  assert.equal(anchors[0].target, '_blank');
+  assert.equal(anchors[0].rel, 'noopener noreferrer');
+  const visible = shown.children.map(n=>n.textContent).join('');
+  assert(visible.includes('[S1] Mainboard reference | text, characters 5610-6829'));
+  assert(!visible.includes('https://'), 'source footer contains no expanded URL');
+  links.elements.history.add(new links.context.Option('Saved evidence', 'saved-evidence'));
+  links.elements.history.value = 'saved-evidence';
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([{role:'assistant',content:footer}]))]);
+  await links.elements.history.onchange();
+  assert.equal(links.elements.messages.children[0].querySelectorAll('.source-link')[0].href, sourceUrl, 'saved conversations get the same clickable source');
+  const savedDetails = {model: 'saved-model', generated_answer: true, grounding: {
+    sources: [{id: 'S1', title: 'Mainboard reference', location: sourceUrl,
+               excerpt: 'The exact saved excerpt <script>must remain literal</script>.', sha256: 'a'.repeat(64)}],
+    recognized_citations: ['S1'], unrecognized_citations: [], claim_verification: 'not performed'}};
+  links.elements.workLabel.textContent = 'Unrelated previous model';
+  links.elements.requestTime.textContent = '999 s';
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([
+    {role: 'user', content: 'What does the source say?'},
+    {role: 'assistant', content: footer, label: 'Saved evidence model', details: savedDetails}]))]);
+  await links.elements.history.onchange();
+  const restoredReply = links.elements.messages.children.at(-1);
+  assert.equal(restoredReply.querySelector('.label').textContent, 'Saved evidence model');
+  const restoredPanel = restoredReply.children.find(node => node.tagName === 'DETAILS');
+  assert.equal(restoredPanel.children.find(node => node.tagName === 'SUMMARY').textContent, 'Sources and result details');
+  const restoredMetadata = restoredPanel.children.find(node => node.tagName === 'PRE');
+  assert.deepEqual(JSON.parse(restoredMetadata.textContent), savedDetails);
+  assert.equal(restoredMetadata.children.length, 0, 'metadata is literal text, never HTML');
+  assert.equal(restoredReply.querySelectorAll('.source-link')[0].href, sourceUrl);
+  assert.equal(links.elements.workLabel.textContent, 'Saved evidence model');
+  assert.equal(links.elements.requestTime.textContent, '', 'prior request time is cleared on history navigation');
+  assert.equal(links.elements.saveStatus.textContent, 'Saved locally');
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([{role: 'assistant', content: footer}]))]);
+  await links.elements.history.onchange();
+  assert.equal(links.elements.workLabel.textContent, 'Saved conversation', 'legacy history never inherits another model label');
+  assert(!links.elements.messages.children.at(-1).children.some(node => node.tagName === 'DETAILS'), 'legacy sources are not fabricated');
+  links.elements.requestTime.textContent = '42 s';
+  links.elements.newChat.onclick();
+  assert.equal(links.elements.messages.children.length, 0);
+  assert.equal(links.elements.workLabel.textContent, 'Ready for your next idea');
+  assert.equal(links.elements.requestTime.textContent, '');
+  assert.equal(links.elements.saveStatus.textContent, 'Ready · nothing sent');
+  for (const unsafe of ['javascript:alert(1)', 'data:text/html,hi', 'file:///C:/secret', 'https://user:password@example.com/private', 'https://']) {
+    links.context.badFooter = '[S2] <img src=x onerror=alert(1)> — '+unsafe;
+    links.run("append('assistant',badFooter)");
+    const box = links.elements.messages.children.at(-1).querySelector('.text');
+    assert.equal(box.querySelectorAll('.source-link').length,0, 'unsafe or malformed targets remain plain text');
+    assert.equal(box.textContent,links.context.badFooter);
+  }
+  links.run("append('user',sourceFooter)");
+  assert.equal(links.elements.messages.children.at(-1).querySelectorAll('.source-link').length,0,'user input remains literal');
+  links.context.bareSource='https://example.com/manual.pdf | page 12';
+  links.run("append('assistant',bareSource)");
+  assert.equal(links.elements.messages.children.at(-1).querySelectorAll('.source-link')[0].textContent,'example.com','standalone excerpt source URLs use a compact domain label');
+  console.log('Source links passed: live/saved replies, exact destination, compact label, safe new tab, literal unsafe input.');
+  console.log('Saved evidence passed: exact metadata, labels, literal rendering, legacy history, and conversation status reset.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1,4 +1,20 @@
-# Prometheus v0.2.0 — recovery and local document search
+# Prometheus 0.8.0.dev3 — main workstation and capability upgrade
+
+Adds an explicitly pinned main-PC signer alongside the original signer, with an original-key-authorized migration and portable recovery. Private signing keys remain on their Windows hosts. See `docs/CAPABILITY-UPDATE.md`.
+
+Adds source-based answers in the interface, explicit local image questions and
+capability/schema discovery. Improves project search, citation provenance, model
+fallbacks, output budgeting, benchmark eligibility and warm-model reuse. Protects
+installed source from default replacement tools and preserves undo in selected
+development workspaces. Imports remain immediately keyword-searchable without
+automatically loading an embedding model; use the indexing action when needed.
+
+This is a development candidate. Activation requires the original signing
+identity and a coordinated update of the SSD bootstrap and recovery references.
+No model weights were trained. See `docs/CAPABILITIES-0.8.0.dev2.md`,
+`docs/ARCHITECTURE.md` and `docs/CAPABILITY-UPDATE.md`.
+
+# Historical milestone: v0.2.0 — recovery and local document search
 
 Local chat now ships with a portable Python runtime, verified conversation backup/restore,
 and local UTF-8 document search with exact file and line citations.

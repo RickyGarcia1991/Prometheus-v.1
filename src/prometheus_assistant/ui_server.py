@@ -9,6 +9,7 @@ import json
 import os
 import re
 import secrets
+import socket
 import subprocess
 import tempfile
 import threading
@@ -22,8 +23,10 @@ from .model_routing import routing_record, ROLE_MODELS, choose_helper
 from . import ui_workspace
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
+from .request_timing import RequestTiming, stage, timed
 
 ASSETS = Path(__file__).with_name('ui_assets')
+BROWSER_PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=()'
 LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 'C',
              'C++', 'C#', 'Java', 'Kotlin', 'Swift', 'Go', 'Rust', 'Ruby', 'PHP',
              'R', 'Julia', 'MATLAB / Octave', 'Dart / Flutter', 'Lua', 'Perl',
@@ -31,7 +34,7 @@ LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 
              'Clojure', 'OCaml', 'Zig', 'Assembly', 'Fortran', 'COBOL',
              'Solidity', 'VHDL / Verilog', 'Arduino', 'YAML / JSON / TOML',
              'Dockerfile / Terraform', 'GraphQL', 'Protobuf')
-MODES = {'chat', 'coding', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home'}
+MODES = {'chat', 'coding', 'ask', 'vision', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home'}
 MODES |= ui_workspace.MODES
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -81,8 +84,8 @@ def reference_query(query, profile):
     if profile == 'math':
         from .mathematics import search_math
         return search_math(query)
-    from .articles import search_articles
-    return search_articles(resource_root(), query, project='auto')
+    from .archive_worker import search
+    return search(resource_root(), query[:256], project='auto')
 
 
 def readable_result(value):
@@ -101,12 +104,14 @@ def readable_result(value):
             for row in rows[:5]:
                 if isinstance(row, dict):
                     title = row.get('title') or row.get('source') or row.get('path') or 'Reference'
-                    excerpt = row.get('excerpt') or row.get('summary') or row.get('snippet') or row.get('description') or ''
+                    excerpt = row.get('excerpt') or row.get('summary') or row.get('snippet') or row.get('description') or row.get('text') or ''
                     location = row.get('url') or row.get('source_url') or row.get('path') or row.get('location') or ''
                     if row.get('line'):
                         location += f" line {row['line']}"
                     if row.get('location') and row['location'] != location:
                         location += ' | '+row['location']
+                    if row.get('citation') and row['citation'] != location:
+                        location += ' | '+row['citation']
                     if 'is_latest' in row:
                         location += ' | '+('Current saved version' if row['is_latest'] else 'Historical saved version')
                     if row.get('imported_at'):
@@ -118,18 +123,24 @@ def readable_result(value):
 
 
 def validate_job(body):
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
         raise ValueError('Choose an available workspace mode.')
+    from .capabilities import SOURCES
+    if 'source' in body and (mode != 'ask' or not isinstance(body['source'], str) or body['source'] not in SOURCES):
+        raise ValueError('Choose a valid source in Ask with evidence mode.')
+    if mode == 'vision':
+        from .vision import validate_upload
+        validate_upload(body.get('content', ''))
     if 'home_key' in body and (mode != 'home' or not isinstance(body['home_key'], str)
                                or len(body['home_key']) > 128 or '\x00' in body['home_key']):
         raise ValueError('Use a valid control key only in Smart home mode.')
     prompt = body.get('prompt', '')
     if not isinstance(prompt, str) or len(prompt) > 4000 or ('\x00' in prompt):
         raise ValueError('Use a prompt of at most 4000 characters.')
-    if mode not in {'dictate', 'tools', 'models'} | ui_workspace.NO_PROMPT and not prompt.strip():
+    if mode not in {'dictate', 'tools', 'models', 'capabilities'} | ui_workspace.NO_PROMPT and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if body.get('profile', 'public') not in PROFILES:
         raise ValueError('Unknown reference collection.')
@@ -144,6 +155,8 @@ def validate_job(body):
     project = body.get('project', '')
     if not isinstance(project, str) or len(project) > 500 or '\x00' in project:
         raise ValueError('Invalid project directory.')
+    if mode == 'ask' and body.get('source') == 'project' and not project.strip():
+        raise ValueError('Select the project folder to use as evidence.')
     ui_workspace.validate(body)
     return {**body, 'prompt': prompt.strip()}
 
@@ -151,6 +164,7 @@ def validate_job(body):
 class Interface:
     def __init__(self, memory_path):
         self.memory_path = Path(memory_path)
+        self.preview = os.environ.get('PROMETHEUS_DEVELOPMENT_PREVIEW') == '1'
         self.data_root = self.memory_path.parent/'Interface/Data'
         self.model_evidence = ModelEvidence(self.data_root/'Routing/evidence.sqlite3')
         self.last_backup = None
@@ -166,12 +180,16 @@ class Interface:
         self.state = 'idle'
         self.cache_context = None
         self.maintenance_error = None
+        self.maintenance_turn = 1
+        from .remote_access import RemoteAccess
+        self.remote = RemoteAccess()
 
     def status(self):
         self.last_seen = time.monotonic()
         return {'hardware': hardware_status(), 'state': self.state,
                 'busy': self.current is not None, 'closing': self.closing,
-                'job': self.current, 'saved_locally': True, 'maintenance_error': self.maintenance_error}
+                'job': self.current, 'saved_locally': True, 'development_preview': self.preview,
+                'maintenance_error': self.maintenance_error}
 
     def append_partial(self, text):
         with self.lock:
@@ -198,9 +216,26 @@ class Interface:
         if time.monotonic() < self.next_maintenance or self.closing:
             return
         self.next_maintenance = time.monotonic()+60
+        if self.current is not None:
+            return
+        errors = []
+        source_due = update_due = False
         try:
-            if self.current is None and any(r.get('enabled') and r.get('due') for r in ui_workspace.schedule(self).status().get('watches', [])):
+            source_due = any(r.get('enabled') and r.get('due') for r in ui_workspace.schedule(self).status().get('watches', []))
+        except Exception as error:
+            errors.append('Source watch: '+str(error)[:180])
+        try:
+            update_due = ui_workspace.component_updates(self).status().get('due_count', 0) > 0
+        except Exception as error:
+            errors.append('Component updates: '+str(error)[:180])
+        self.maintenance_error = '; '.join(errors) or None
+        try:
+            # Alternate when both queues are due, so neither can starve the other.
+            if update_due and (not source_due or self.maintenance_turn % 2 == 0):
+                self.submit({'mode': 'check_updates', 'prompt': ''})
+            elif source_due:
                 self.submit({'mode': 'check_sources', 'prompt': ''})
+            self.maintenance_turn += 1
         except Exception as error:
             self.maintenance_error = str(error)[:400]
 
@@ -259,7 +294,7 @@ class Interface:
                 del self.jobs[next(iter(self.jobs))]
             self.cancel_event.clear()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '',
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'code_tests', 'model_benchmark'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request)
@@ -267,35 +302,73 @@ class Interface:
 
     def _work(self, job_id, request):
         start = time.monotonic()
-        try:
-            # Only the single worker owns the reference cache and its read locks.
-            if self.cache_context is None:
-                self.cache_context = reference_session()
-                self.cache_context.__enter__()
-            result = self.execute(request)
-            result = {'state': 'done', 'result': result}
-        except GenerationCancelled as error:
-            result = {'state': 'cancelled', 'error': str(error)}
-        except Exception as error:
-            result = {'state': 'error', 'error': str(error)[:1600]}
-        with self.lock:
-            self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'], 'seconds': round(time.monotonic() - start, 3)}
-            self.current = None
-            self.state = 'idle' if result['state'] == 'done' else 'error'
+        with RequestTiming(started=start, clock=time.monotonic,
+                           cancelled_exceptions=(GenerationCancelled,)) as timing:
+            try:
+                # Only the single worker owns the reference cache and its read locks.
+                if self.cache_context is None:
+                    with stage('reference_cache'):
+                        self.cache_context = reference_session()
+                        self.cache_context.__enter__()
+                result = self.execute(request)
+                result = {'state': 'done', 'result': result}
+            except GenerationCancelled as error:
+                result = {'state': 'cancelled', 'error': str(error)}
+            except Exception as error:
+                result = {'state': 'error', 'error': str(error)[:1600]}
+            with self.lock:
+                diagnostics = timing.snapshot({'done': 'completed', 'error': 'failed',
+                                               'cancelled': 'cancelled'}[result['state']])
+                payload = result.get('result')
+                if isinstance(payload, dict) and isinstance(payload.get('details'), dict):
+                    # The existing result-details panel can show final timing.
+                    # Copy after persistence so stored evidence and its metrics
+                    # stay untouched, and final persistence is measured too.
+                    result['result'] = {**payload, 'details': {
+                        **payload['details'], 'request_timing': diagnostics}}
+                self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'],
+                                    'seconds': round(diagnostics['worker_total_seconds'], 3),
+                                    'diagnostics': diagnostics}
+                self.current = None
+                self.state = 'idle' if result['state'] == 'done' else 'error'
 
     def save(self, request, data, label, model='references'):
-        if self.cancel_event.is_set() and request['mode'] in {'chat', 'coding'}:
+        if self.cancel_event.is_set() and request['mode'] in {'chat', 'coding', 'ask', 'vision'}:
             raise GenerationCancelled('Request cancelled before saving the result.')
         reply = readable_result(data)
-        with MemoryStore(self.memory_path) as memory:
+        with stage('history_persistence'), MemoryStore(self.memory_path) as memory:
             session = request.get('session') or memory.create_session(model)
             memory.session(session)
-            memory.save_exchange(session, request['prompt'], reply)
+            memory.save_exchange(session, request['prompt'], reply, label=label, details=data)
         return {'reply': reply, 'details': data, 'label': label, 'session': session}
 
     def execute(self, request):
         mode, prompt = request['mode'], request['prompt']
         self.progress(mode.replace('_', ' ').capitalize())
+        if mode == 'chat':
+            from .owner_profile import load_profile, recall
+            with MemoryStore(self.memory_path) as memory:
+                reply = recall(prompt, load_profile(memory))
+            if reply is not None:
+                return self.save(request, {'reply': reply, 'source': 'user-declared owner memory',
+                                 'identity_verified': False, 'generated_answer': False}, 'Saved owner memory')
+        if mode == 'capabilities':
+            from .capabilities import catalog
+            data = catalog(self)
+            return {'reply': '\n\n'.join(row['title']+'\n'+row['conditions'] for row in data['capabilities']),
+                    'details': data, 'label': 'Capabilities and requirements'}
+        if mode == 'ask':
+            return self.answer_with_evidence(request)
+        if mode == 'vision':
+            from .vision import describe_upload
+            from .owner_profile import load_profile, context as owner_context
+            with MemoryStore(self.memory_path) as memory:
+                profile_context = owner_context(load_profile(memory))
+            self.ensure_runtime()
+            data = describe_upload(request['content'], prompt, on_token=self.append_partial,
+                                   on_stage=self.progress, cancel_event=self.cancel_event, owner_context=profile_context)
+            return self.save({k: v for k, v in request.items() if k != 'content'}, data,
+                             'Local image answer · '+data['model'], model=data['model'])
         if mode in ui_workspace.MODES:
             return ui_workspace.execute(self, request)
         if mode == 'home':
@@ -325,14 +398,25 @@ class Interface:
                     'label': 'Your local helpers · automatic selection'}
         if mode == 'dictate':
             from .voice import capture_prompt
-            return {'transcript': capture_prompt(), 'label': 'Local dictation · review before sending'}
+            def voice_stage(stage):
+                self.state = 'thinking' if stage.startswith('Microphone off') else 'listening'
+                self.progress(stage)
+            return {'transcript': capture_prompt(cancel_event=self.cancel_event,on_stage=voice_stage),
+                    'label': 'Local dictation · review before sending'}
         if mode == 'tools':
             from .coding import coding_status
+            from .hf_resources import describe as curated_huggingface
+            from .security_hardware_catalog import hardware_sources
+            tool_details = coding_status()
+            tool_details['huggingface_catalog'] = curated_huggingface(limit=8)
+            tool_details['security_hardware_catalog'] = hardware_sources(limit=5)
             return {'reply': 'Local coding uses the installed coding model when memory permits. '
                     'For a full project agent, close this interface to release the SSD session, then open '
                     'START-PROMETHEUS-CODING.cmd or START-PROMETHEUS-EXTRA-CODING.cmd on the drive. '
                     'Provider tools use your configured accounts. Language selection guides the model; '
-                    'it does not install a compiler or guarantee correct code.', 'details': coding_status(),
+                    'it does not install a compiler or guarantee correct code. '
+                    'Curated Hugging Face models and security hardware sources are available for read-only review.',
+                    'details': tool_details,
                     'label': 'Installed coding tools'}
         if mode == 'calculate':
             from .exact_math import calculate
@@ -357,11 +441,12 @@ class Interface:
             return self.save(request, {'reply': f'RAM: {hardware.ram_gib} GiB total, {hardware.available_ram_gib} GiB available. CPU threads: {hardware.cpu_threads}. OS: {hardware.system}.',
                             'hardware': asdict(hardware)}, 'Measured computer status')
         from .compact_chat import candidates, generate, ModelMemoryPressure
-        client = OllamaClient(timeout=.5)
-        hardware = detect_hardware()
-        resident = client.resident_memory_gib()
-        role, profiles = candidates(prompt, installed_models(), hardware, self.model_evidence,
-                                    task='coding' if mode == 'coding' else 'general', resident=resident)
+        client = timed('runtime_client_setup', OllamaClient, timeout=.5)
+        hardware = timed('hardware', detect_hardware)
+        resident = timed('resident_memory', client.resident_memory_gib)
+        names = timed('model_inventory', installed_models)
+        role, profiles = timed('eligibility', candidates, prompt, names, hardware, self.model_evidence,
+                               task='coding' if mode == 'coding' else 'general', resident=resident)
         profile = profiles[0] if profiles else None
         route = {'role': role, 'model': profile.model if profile else None, 'automatic': True}
         if profile is None:
@@ -378,9 +463,12 @@ class Interface:
             data['paused_helpers'] = paused
             data['routing'] = route
             return self.save(request, data, 'Source evidence · helper quality and memory' if paused else 'Low-memory reference mode · no model')
-        self.ensure_runtime()
-        role, profiles = candidates(prompt, installed_models(), detect_hardware(), self.model_evidence,
-                                    task='coding' if mode=='coding' else 'general', resident=client.resident_memory_gib())
+        timed('runtime_readiness', self.ensure_runtime)
+        names = timed('model_inventory', installed_models)
+        hardware = timed('hardware', detect_hardware)
+        resident = timed('resident_memory', client.resident_memory_gib)
+        role, profiles = timed('eligibility', candidates, prompt, names, hardware, self.model_evidence,
+                               task='coding' if mode=='coding' else 'general', resident=resident)
         if not profiles:
             data = reference_query(prompt, 'engineering' if mode=='coding' else choose_reference(prompt))
             data['memory_note'] = 'Available memory changed during startup. Source excerpts remain available; no model answer was generated.'
@@ -394,8 +482,44 @@ class Interface:
             data['memory_note'] = str(error)+' These are source excerpts, not a generated answer.'
             return self.save(request, data, 'Automatic memory recovery · source evidence')
 
+    def answer_with_evidence(self, request):
+        from .capabilities import retrieve, excerpt_reply
+        from .compact_chat import candidates, generate, EvidenceContextError
+        from .ollama import LocalModelError
+        self.progress('Searching the selected source')
+        data = timed('retrieval', retrieve, self, request)
+        def excerpts(reason):
+            return self.save(request, {**data, 'reply': excerpt_reply(data, reason), 'reason': reason},
+                             'Selected source evidence · no generated answer')
+        if not data['sources']:
+            return excerpts('No matching source evidence.')
+        client = timed('runtime_client_setup', OllamaClient, timeout=.5)
+        def fitting():
+            names = timed('model_inventory', installed_models)
+            hardware = timed('hardware', detect_hardware)
+            resident = timed('resident_memory', client.resident_memory_gib)
+            return timed('eligibility', candidates, request['prompt'], names, hardware, self.model_evidence,
+                         task='coding' if data['source'] == 'project' else 'general', resident=resident)
+        role, profiles = fitting()
+        if not profiles:
+            return excerpts('No eligible local helper fits available memory. These are source excerpts.')
+        try:
+            timed('runtime_readiness', self.ensure_runtime)
+            role, profiles = fitting()
+            if not profiles:
+                return excerpts('Available memory changed. These are source excerpts.')
+            return generate(request, self.memory_path, profiles, role, self.model_evidence,
+                            on_token=self.append_partial, on_stage=self.progress, cancel_event=self.cancel_event,
+                            source_evidence=data['sources'])
+        except GenerationCancelled:
+            raise
+        except (LocalModelError, EvidenceContextError) as error:
+            self.progress('Showing source excerpts', reset=True)
+            return excerpts(str(error)+' A generated answer is unavailable; these are source excerpts.')
+
     def close(self):
         self.closing = True
+        self.remote.close()
         def release():
             if self.cache_context is not None:
                 self.cache_context.__exit__(None, None, None)
@@ -411,6 +535,9 @@ class Server(ThreadingHTTPServer):
         self.app = app
         super().__init__(address, Handler)
         self.origin = f'http://127.0.0.1:{self.server_port}'
+        from .owner_access import OwnerAccess
+        self.owner_origin = f'http://localhost:{self.server_port}'
+        self.owner_access = OwnerAccess(app.memory_path.parent/'OwnerAccess', self.owner_origin)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -424,6 +551,12 @@ class Handler(BaseHTTPRequestHandler):
         pass  # Prompts and tokens never go into access logs.
 
     def respond(self, status, data, kind='application/json; charset=utf-8'):
+        try:
+            self._respond(status, data, kind)
+        except (ConnectionError, TimeoutError):
+            pass  # A tab may close/reload while response headers are being sent.
+
+    def _respond(self, status, data, kind):
         body = data if isinstance(data, bytes) else json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', kind)
@@ -431,8 +564,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Referrer-Policy', 'no-referrer')
-        self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
-        self.send_header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+        self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+        self.send_header('Permissions-Policy', BROWSER_PERMISSIONS_POLICY)
+        if getattr(self, 'owner_cookie', None) is not None:
+            value = self.owner_cookie
+            self.send_header('Set-Cookie', 'prometheus_owner='+value+'; HttpOnly; SameSite=Strict; Path=/; Max-Age='+('1800' if value else '0'))
+        if getattr(self, 'redirect_to_owner', False):
+            self.send_header('Location', self.server.owner_origin+'/')
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -440,7 +578,7 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
     def allowed(self, *, token=False, post=False):
-        origin = self.server.origin
+        origin = self.server.owner_origin if self.headers.get('Host') == self.server.owner_origin.removeprefix('http://') else self.server.origin
         if self.headers.get('Host') != origin.removeprefix('http://'):
             return False
         if self.headers.get('Sec-Fetch-Site') not in {None, 'none', 'same-origin'}:
@@ -452,15 +590,40 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def owner_session(self):
+        from http.cookies import SimpleCookie, CookieError
+        try:
+            cookies = SimpleCookie(self.headers.get('Cookie', ''))
+            value = cookies.get('prometheus_owner')
+            return value.value if value else None
+        except CookieError:
+            return None
+
+    def owner_unlocked(self):
+        return self.server.owner_access.authenticated(self.owner_session())
+
     def do_GET(self):
         app = self.server.app
         if not self.allowed(token=self.path.startswith('/api/') and self.path != '/api/bootstrap'):
             self.respond(403, {'error': 'Open this interface from its local address.'}); return
+        access = self.server.owner_access
+        if access.required and self.path == '/' and self.headers.get('Host') != self.server.owner_origin.removeprefix('http://'):
+            self.redirect_to_owner = True
+            self.respond(302, b''); return
+        if self.path.startswith('/api/') and self.path not in {'/api/bootstrap', '/api/owner/state'} and not self.owner_unlocked():
+            self.respond(401, {'error': 'Unlock Prometheus with your passkey.'}); return
+        if self.path == '/' and not self.owner_unlocked():
+            app.last_seen = time.monotonic()
+            self.respond(200, (ASSETS/'owner-access.html').read_bytes(), 'text/html; charset=utf-8'); return
         routes = {'/': ('index.html', 'text/html; charset=utf-8'),
+                  '/owner-access': ('owner-access.html', 'text/html; charset=utf-8'),
                   '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                   '/adaptive.js': ('adaptive.js', 'text/javascript; charset=utf-8'),
                   '/transport.js': ('transport.js', 'text/javascript; charset=utf-8'),
                   '/workspace.js': ('workspace.js', 'text/javascript; charset=utf-8'),
+                  '/remote.js': ('remote.js', 'text/javascript; charset=utf-8'),
+                  '/permissions.js': ('permissions.js', 'text/javascript; charset=utf-8'),
+                  '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
                   '/style.css': ('style.css', 'text/css; charset=utf-8'),
                   '/approved-orb.png': ('approved-orb.png', 'image/png')}
         try:
@@ -469,9 +632,22 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200, (ASSETS / name).read_bytes(), kind)
             elif self.path == '/api/bootstrap':
                 from .public_resources import provider_catalog
-                self.respond(200, {'token': app.token, 'languages': LANGUAGES, 'providers': provider_catalog()})
+                self.respond(200, {'token': app.token, 'languages': LANGUAGES, 'providers': provider_catalog(),
+                                  'owner_access': access.state(self.owner_session())})
+            elif self.path == '/api/owner/state':
+                app.last_seen = time.monotonic()
+                self.respond(200, access.state(self.owner_session()))
             elif self.path == '/api/status':
                 self.respond(200, app.status())
+            elif self.path == '/api/capabilities':
+                from .capabilities import catalog
+                self.respond(200, catalog(app))
+            elif self.path == '/api/permissions':
+                from .permissions_inventory import snapshot
+                self.respond(200, snapshot(owner=access.boundary_state(self.owner_session())))
+            elif self.path == '/api/remote/state':
+                app.last_seen = time.monotonic()
+                self.respond(200, app.remote.state())
             elif self.path == '/api/sessions':
                 with MemoryStore(app.memory_path) as memory:
                     self.respond(200, memory.sessions()[:80])
@@ -480,7 +656,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not re.fullmatch(r'[a-f0-9]{32}', session):
                     raise ValueError('Invalid conversation identifier.')
                 with MemoryStore(app.memory_path) as memory:
-                    self.respond(200, memory.history(session, limit=40))
+                    self.respond(200, memory.history(session, limit=40, include_metadata=True))
             elif self.path.startswith('/api/job/'):
                 with app.lock:
                     job = app.jobs.get(self.path.rsplit('/', 1)[-1])
@@ -492,18 +668,55 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.allowed(token=True, post=True):
-            self.respond(403, {'error': 'This action requires your local interface session.'}); return
+            self.reject(403, {'error': 'This action requires your local interface session.'}); return
+        if not self.path.startswith('/api/owner/') and not self.owner_unlocked():
+            self.reject(401, {'error': 'Unlock Prometheus with your passkey.'}); return
         if self.headers.get('Content-Type') != 'application/json' or self.headers.get('Transfer-Encoding'):
-            self.respond(415, {'error': 'Use a JSON request.'}); return
+            self.reject(415, {'error': 'Use a JSON request.'}); return
         try:
             size = int(self.headers.get('Content-Length', '-1'))
+        except ValueError:
+            self.reject(400, {'error': 'Use a valid Content-Length.'}); return
+        try:
             if not 0 < size <= 12_000_000:
-                self.respond(413, {'error': 'Request exceeds the interface limit.'}); return
+                self.reject(413, {'error': 'Request exceeds the interface limit.'}); return
+            if self.path == '/api/remote/action' and size > 150000:
+                self.reject(413, {'error': 'Remote request exceeds its size limit.'}); return
+            if self.path.startswith('/api/owner/') and size > 20000:
+                self.reject(413, {'error': 'Verification request is too large.'}); return
             body = json.loads(self.rfile.read(size))
-            if size > 24576 and isinstance(body, dict) and body.get('mode') not in {'document_import', 'code_preview', 'code_apply'}:
+            if self.path != '/api/remote/action' and size > 24576 and isinstance(body, dict) and body.get('mode') not in {'document_import', 'vision', 'code_preview', 'code_apply'}:
                 self.respond(413, {'error': 'Request exceeds the interface limit.'}); return
-            if self.path == '/api/jobs':
+            if self.path.startswith('/api/owner/'):
+                self.server.app.last_seen = time.monotonic()
+                if self.headers.get('Origin') != self.server.owner_origin:
+                    raise ValueError('Use the localhost owner sign-in page.')
+                if not isinstance(body, dict):
+                    raise ValueError('Invalid verification request.')
+                access = self.server.owner_access
+                if self.path == '/api/owner/begin' and set(body) <= {'kind', 'setup_ticket'}:
+                    if not isinstance(body.get('kind'), str) or not isinstance(body.get('setup_ticket', ''), str):
+                        raise ValueError('Invalid verification request.')
+                    self.respond(200, access.begin(body['kind'], self.owner_session(), body.get('setup_ticket', '')))
+                elif self.path == '/api/owner/complete' and set(body) == {'request_id', 'response'} and isinstance(body['request_id'], str):
+                    result, session = access.complete(body['request_id'], body['response'], self.owner_session())
+                    if session:
+                        self.owner_cookie = session
+                    self.respond(200, result)
+                elif self.path == '/api/owner/lock' and body == {}:
+                    access.logout(self.owner_session())
+                    self.owner_cookie = ''
+                    self.respond(200, {'locked': True})
+                else:
+                    raise ValueError('Unknown verification action.')
+            elif self.path == '/api/permissions/preview':
+                from .permissions_inventory import preview_core
+                self.respond(200, preview_core(body))
+            elif self.path == '/api/jobs':
                 self.respond(202, self.server.app.submit(body))
+            elif self.path == '/api/remote/action':
+                self.server.app.last_seen = time.monotonic()
+                self.respond(200, self.server.app.remote.action(body))
             elif self.path == '/api/cancel' and isinstance(body, dict) and set(body) == {'id'} and isinstance(body['id'], str):
                 self.respond(200, self.server.app.cancel(body['id']))
             elif self.path == '/api/close' and body == {}:
@@ -515,6 +728,32 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(400, {'error': str(error)[:500]})
         except RuntimeError as error:
             self.respond(409, {'error': str(error)})
+
+    def reject(self, status, data):
+        """Send the refusal before a bounded, protocol-agnostic lingering close.
+
+        On Windows, closing with a body still arriving can reset the connection
+        and discard the error response. Reject first, finish the response side,
+        then discard at most 24 KiB for at most 250 ms. Never interpret untrusted
+        Content-Length/chunk framing or dispatch any of these discarded bytes.
+        """
+        self.respond(status, data)
+        self.close_connection = True
+        timeout = self.connection.gettimeout()
+        try:
+            self.connection.shutdown(socket.SHUT_WR)
+            remaining = 24576
+            deadline = time.monotonic()+.25
+            while remaining and time.monotonic() < deadline:
+                self.connection.settimeout(max(.001, deadline-time.monotonic()))
+                chunk = self.rfile.read1(remaining)
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+        except (OSError, TimeoutError):
+            pass
+        finally:
+            self.connection.settimeout(timeout)
 
 
 def serve(memory_path, *, port=54555, open_browser=True, shutdown_request=None):
