@@ -184,13 +184,13 @@ def test_long_conversation_can_use_bounded_archive_query(monkeypatch):
 def test_dictation_can_cancel_without_saving_a_transcript(app,monkeypatch):
     from prometheus_assistant import voice
     entered=threading.Event()
-    def capture(*,cancel_event=None,on_stage=None):
+    def capture(*,cancel_event=None,on_stage=None,**kwargs):
         entered.set()
         if cancel_event is None:
             return 'Missing cancellation signal'
         assert cancel_event.wait(2)
         raise ui.GenerationCancelled('Dictation cancelled; no transcript was submitted.')
-    monkeypatch.setattr(voice,'capture_prompt',capture)
+    monkeypatch.setattr(voice,'capture_prompt_continuous',capture)
     job=app.submit({'mode':'dictate','prompt':''})
     assert entered.wait(2)
     app.cancel(job['id'])

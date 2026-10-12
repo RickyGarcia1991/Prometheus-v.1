@@ -184,6 +184,8 @@ class Interface:
         self.model_evidence = ModelEvidence(self.data_root/'Routing/evidence.sqlite3')
         self.last_backup = None
         self.cancel_event = threading.Event()
+        self.dictation_finish = threading.Event()
+        self.dictation_last_pulse = 0.
         self.speech_lock = threading.Lock()
         self.next_maintenance = time.monotonic()+60
         self.token = secrets.token_urlsafe(32)
@@ -233,6 +235,33 @@ class Interface:
             self.cancel_event.set()
             self.jobs[job_id]['stage'] = 'Stopping current request…'
         return {'cancel_requested': True}
+
+    def dictation_control(self, job_id, *, finish=False):
+        with self.lock:
+            row = self.jobs.get(job_id, {})
+            if (self.closing or job_id != self.current or row.get('action') != 'dictate'
+                    or row.get('state') != 'running' or not row.get('recording')
+                    or self.cancel_event.is_set()
+                    or time.monotonic()-self.dictation_last_pulse >= 20):
+                raise ValueError('This dictation is no longer recording.')
+            if finish:
+                self.dictation_finish.set()
+                row['stage'] = 'Finishing recording…'
+                return {'finish_requested': True}
+            self.dictation_last_pulse = time.monotonic()
+            self.last_seen = self.dictation_last_pulse
+            return {'recording': True}
+
+    def dictation_alive(self, job_id):
+        with self.lock:
+            return (not self.closing and job_id == self.current
+                    and time.monotonic()-self.dictation_last_pulse < 20)
+
+    def stop_dictation(self):
+        """Shutdown/owner lock discards an active voice turn without affecting other work."""
+        with self.lock:
+            if self.jobs.get(self.current, {}).get('action') == 'dictate':
+                self.cancel_event.set()
 
     def idle_maintenance(self):
         if time.monotonic() < self.next_maintenance or self.closing:
@@ -324,8 +353,13 @@ class Interface:
             if len(self.jobs) >= 12:
                 del self.jobs[next(iter(self.jobs))]
             self.cancel_event.clear()
+            self.dictation_finish.clear()
+            self.dictation_last_pulse = time.monotonic()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
+                                 'action': request['mode'],
                                  'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
+            if request['mode'] == 'dictate':
+                self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request, grant_owner)
@@ -355,6 +389,7 @@ class Interface:
                 result = {'state': 'error', 'error': str(error)[:1600]}
             with self.lock:
                 background = self.jobs.get(job_id, {}).get('background', False)
+                recorded_seconds = self.jobs.get(job_id, {}).get('elapsed', 0.)
                 diagnostics = timing.snapshot({'done': 'completed', 'error': 'failed',
                                                'cancelled': 'cancelled'}[result['state']])
                 payload = result.get('result')
@@ -367,6 +402,8 @@ class Interface:
                 self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'], 'background': background,
                                     'seconds': round(diagnostics['worker_total_seconds'], 3),
                                     'diagnostics': diagnostics}
+                if request['mode'] == 'dictate':
+                    self.jobs[job_id].update(recording=False, level=0., elapsed=recorded_seconds)
                 self.current = None
                 self.state = 'idle' if background or result['state'] == 'done' else 'error'
                 if background and result['state'] != 'done':
@@ -466,12 +503,33 @@ class Interface:
                     'note': 'Installed files and memory estimates do not certify answer quality. Embedding models do not generate chat answers.'},
                     'label': 'Your local helpers · automatic selection'}
         if mode == 'dictate':
-            from .voice import capture_prompt
+            from .voice import capture_prompt_continuous
+            job_id = self.current
+            def voice_started():
+                with self.lock:
+                    if self.current == job_id:
+                        self.jobs[job_id]['recording'] = True
+            def voice_level(level, elapsed):
+                with self.lock:
+                    if self.current == job_id:
+                        self.jobs[job_id].update(level=level, elapsed=elapsed)
             def voice_stage(stage):
                 self.state = 'thinking' if stage.startswith('Microphone off') else 'listening'
                 self.progress(stage)
-            return {'transcript': capture_prompt(cancel_event=self.cancel_event,on_stage=voice_stage),
+                if stage.startswith('Microphone off'):
+                    with self.lock:
+                        if self.current == job_id:
+                            self.jobs[job_id].update(recording=False, level=0.)
+            try:
+                return {'transcript': capture_prompt_continuous(
+                    cancel_event=self.cancel_event, finish_event=self.dictation_finish,
+                    on_stage=voice_stage, on_started=voice_started, on_level=voice_level,
+                    lease_alive=lambda: self.dictation_alive(job_id)),
                     'label': 'Local dictation · review before sending'}
+            finally:
+                with self.lock:
+                    if self.current == job_id:
+                        self.jobs[job_id].update(recording=False, level=0.)
         if mode == 'tools':
             from .coding import coding_status
             from .hf_resources import describe as curated_huggingface
@@ -600,6 +658,7 @@ class Interface:
 
     def close(self):
         self.closing = True
+        self.stop_dictation()
         # Let an owned speech subprocess observe closing and remove its temporary PCM.
         with self.speech_lock:
             pass
@@ -796,6 +855,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, result)
                 elif self.path == '/api/owner/lock' and body == {}:
                     access.logout(self.owner_session())
+                    self.server.app.stop_dictation()
                     self.owner_cookie = ''
                     self.respond(200, {'locked': True})
                 else:
@@ -851,8 +911,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200, self.server.app.remote.action(body))
             elif self.path == '/api/cancel' and isinstance(body, dict) and set(body) == {'id'} and isinstance(body['id'], str):
                 self.respond(200, self.server.app.cancel(body['id']))
+            elif self.path in {'/api/dictation/finish', '/api/dictation/pulse'}:
+                if not isinstance(body, dict) or set(body) != {'id'} or not isinstance(body['id'], str):
+                    raise ValueError('Use only the current dictation id.')
+                self.respond(200, self.server.app.dictation_control(body['id'], finish=self.path.endswith('/finish')))
             elif self.path == '/api/close' and body == {}:
                 self.server.app.closing = True
+                self.server.app.stop_dictation()
                 self.respond(200, {'closing': True, 'busy': self.server.app.current is not None})
             else:
                 self.respond(404, {'error': 'Unknown action.'})
@@ -911,6 +976,8 @@ def serve(memory_path, *, port=54555, open_browser=True, shutdown_request=None):
                 app.closing = True
             if time.monotonic() - app.last_seen > 300:
                 app.closing = True
+            if app.closing:
+                app.stop_dictation()
             if app.closing and app.current is None:
                 break
     except KeyboardInterrupt:

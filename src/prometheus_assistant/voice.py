@@ -169,6 +169,34 @@ def capture_prompt(*, cancel_event=None, on_stage=None):
     return result['text']
 
 
+def capture_prompt_continuous(*, cancel_event=None, finish_event=None, on_stage=None,
+                              on_level=None, on_started=None, lease_alive=lambda: True):
+    """UI voice turn: local capture, silence/manual finish, then local transcription."""
+    from .application_policy import require_dispatch
+    from .continuous_capture import record_continuous
+    cancel_event = cancel_event if cancel_event is not None else threading.Event()
+    _cancelled(cancel_event)
+    # Refuse disabled transcription before opening a microphone or collecting audio.
+    require_dispatch('voice.record')
+    require_dispatch('voice.transcribe')
+    _transcriber('auto')
+    with tempfile.TemporaryDirectory(prefix='prometheus-capture-') as temp:
+        audio = Path(temp)/'capture.wav'
+        def started():
+            if on_started:
+                on_started()
+            if on_stage:
+                on_stage('Listening · pause when finished, or press Stop recording')
+        record_continuous(audio, cancel_event=cancel_event, finish_event=finish_event,
+                          lease_alive=lease_alive, on_level=on_level, on_started=started)
+        # Device context has closed before status changes or Whisper is invoked.
+        if on_stage:
+            on_stage('Microphone off · transcribing locally')
+        result = transcribe(audio, cancel_event=cancel_event)
+    _cancelled(cancel_event)
+    return result['text']
+
+
 def speak(text):
     from .application_policy import require_dispatch
     require_dispatch('voice.speak')

@@ -10,7 +10,7 @@ function deferred() { let resolve, reject; const promise = new Promise((a, b) =>
 function response(data, status = 200) { return {ok: status >= 200 && status < 300, status, json: async () => data}; }
 async function settle() { for (let index = 0; index < 40; index++) await Promise.resolve(); }
 
-async function fixture() {
+async function fixture({voice = null} = {}) {
   const dom = setup({runWorkspace: false}), {elements, context, documentRoot} = dom;
   const requests = [], timers = [], storageWrites = [], jobs = new Map(), queued = new Map();
   let serial = 0;
@@ -19,7 +19,9 @@ async function fixture() {
     hardware: {ram_gib: 8, available_ram_gib: 2, cpu_threads: 4, chat_ready: true}};
   context.document.hidden = false;
   context.document.querySelectorAll = selector => documentRoot.querySelectorAll(selector);
-  context.document.addEventListener = () => {};
+  const documentEvents = {};
+  context.document.addEventListener = (name, callback) => { (documentEvents[name] ||= []).push(callback); };
+  if (voice) context.window.PrometheusVoice = {LocalVoice: class {constructor() {return voice;}}};
   context.window.dispatchEvent = event => dom.emit(event.type, event.detail);
   context.CustomEvent = class { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } };
   context.matchMedia = () => ({matches: false, addEventListener() {}});
@@ -51,6 +53,8 @@ async function fixture() {
       return row ? response(row) : response({error: 'Job not found'}, 404);
     }
     if (url === '/api/cancel') return response({cancel_requested: true});
+    if (url === '/api/dictation/finish') return response({finish_requested: true});
+    if (url === '/api/dictation/pulse') return response({recording: true});
     if (url === '/api/close') return response({closing: true, busy: false});
     throw new Error('Unexpected test request: ' + url);
   };
@@ -60,10 +64,11 @@ async function fixture() {
   await settle();
   const run = expression => vm.runInContext(expression, runtime);
   assert.equal(run('online'), true, 'fixture initialized');
-  return {...dom, run, server, statusData, requests, timers, jobs, queued, storageWrites};
+  return {...dom, run, server, statusData, requests, timers, jobs, queued, storageWrites, documentEvents};
 }
 
-(async () => {
+module.exports = {fixture, settle, deferred, response};
+if (require.main === module) (async () => {
   const app = await fixture(), {run, elements: e, server, requests, jobs, queued, timers, context} = app;
   const results = [];
   context.window.addEventListener('prometheus-result', event => results.push(event.detail));

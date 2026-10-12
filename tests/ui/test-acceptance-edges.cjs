@@ -307,8 +307,9 @@ test('appending a long reply scrolls to its beginning instead of its hidden end'
   };
   e.messages.scrollHeight = 9000;
   h.run("append('assistant', 'First line\\n' + 'Long explanation\\n'.repeat(300))");
-  assert.equal(e.messages.scrollTop, 1380, 'scroll targets the new message start, not the content bottom');
-  assert.equal(e.messages.getAttribute('tabindex'), '0', 'the scrollable conversation is keyboard focusable');
+  assert.equal(e.messages.scrollTop, undefined, 'conversation no longer scrolls inside a separate pane');
+  assert.equal(e.messages.children.at(-1).scrollRequest.block, 'start', 'the document reveals the beginning of the new answer');
+  assert.equal(e.messages.getAttribute('tabindex'), '0', 'conversation remains keyboard focusable');
 });
 
 test('manual read-aloud control is absent while opted-in Spoken + text still plays a completed reply', async () => {

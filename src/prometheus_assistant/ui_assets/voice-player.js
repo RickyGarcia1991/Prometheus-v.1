@@ -13,7 +13,7 @@ class LocalVoice {
  async unlock(){
   const AC=root.AudioContext||root.webkitAudioContext;if(!AC)throw Error('Audio playback is unavailable. Your answer stays in text.');
   if(!this.context||this.context.state==='closed')this.context=new AC({latencyHint:'interactive'});
-  await this.context.resume();if(this.context.state!=='running')throw Error('Choose Read answer to enable local voice playback.');
+  await this.context.resume();if(this.context.state!=='running')throw Error('Choose Spoken + text to enable local voice playback.');
  }
  stop(){this.epoch++;if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();}this.source=null;this.samples=null;this.value=0;this.last=0;}
  async play(text,request,onstart,onend){

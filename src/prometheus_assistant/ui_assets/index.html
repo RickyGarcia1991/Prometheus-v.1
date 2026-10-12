@@ -83,8 +83,11 @@
 </section>
 </div></section>
 <section id="messages" class="messages" tabindex="0" aria-label="Current conversation" aria-live="polite"><div id="welcome" aria-hidden="true"></div></section>
+<div id="conversationDock" class="conversation-dock">
 <div id="notice" role="status" class="notice" hidden></div>
+<div id="voiceCapture" class="voice-capture" hidden><div class="voice-caption"><span id="voiceState" role="status">Microphone off</span><span id="voiceElapsed"></span></div><div id="voiceWave" class="voice-wave" aria-hidden="true"></div><button id="finishRecording" type="button" hidden>Stop recording</button></div>
 <form id="compose"><label class="sr-only" for="prompt">Message to Prometheus</label><textarea id="prompt" placeholder="Speak your mind…" maxlength="4000" rows="2" required></textarea><button id="send" type="submit" class="send" aria-label="Send message">↗</button></form>
-<div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record 8 seconds</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
+<div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
 <footer>Answers and code can need checking. Source excerpts retain their citations. <span id="saveStatus">Ready · nothing sent</span></footer>
+</div>
 </main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script></body></html>

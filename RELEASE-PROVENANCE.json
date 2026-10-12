@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev12-health-audit-20261012",
-  "version": "0.8.0.dev12",
-  "prepared_utc": "2026-10-12T14:39:45.042377+00:00",
-  "base_git_commit": "02226343546fa02b19cef398a3c2a7b5f1f7b789",
+  "release": "Prometheus-v0.8.0-dev13-conversation-voice-20261012",
+  "version": "0.8.0.dev13",
+  "prepared_utc": "2026-10-12T15:43:27.296603+00:00",
+  "base_git_commit": "b95c88bd7fefeef779c2bd6d45466c760e417364",
   "source_branch": "feature/full-health-audit-20261012",
-  "base_release": "Prometheus-v0.8.0-dev11-search-documents-20261012",
-  "base_manifest_sha256": "d108993486dcd184358b355deb56e5b7e7410507a0347088f7e87766ed906209",
-  "integration_scope": "Audit repairs: keep scheduled maintenance reports out of chat, readable responsive conversation layout, removal of manual Read answer aloud control, reveal chat when submitting from the workbench, non-destructive doctor probes, checksum failure preservation across timeout, PPTX/XLSX browser upload acceptance, and portable Windows CI coverage. Existing authority and data are preserved.",
+  "base_release": "Prometheus-v0.8.0-dev12-health-audit-20261012",
+  "base_manifest_sha256": "3f63f2dd7ab950aa9066dd4f88a6b46732c6c56ee94d9306d90fb8ec46644baf",
+  "integration_scope": "Conversation flows with the page and a sticky composer; measured microphone waveform, continuous local capture, silence/manual finish, opt-in hands-free turns and lifecycle cleanup. Existing owner authority, SSD portability and memory preserved.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -22,6 +22,7 @@
     "Web search returns source links and snippets; no automatic crawling, browser operation, social sign-in or page rendering.",
     "Document converters are bundled for the existing portable Windows x64 Python 3.12 runtime. No local document upload to cloud services.",
     "PDF text and modern DOCX/PPTX/XLSX only, plus retained TXT/Markdown/CSV. No OCR, old binary Office formats or macro execution.",
-    "Owner authority, versioned history and personal memory are preserved. Moving the installed package to another computer is not physically tested in this update."
+    "Owner authority, versioned history and personal memory are preserved. Moving the installed package to another computer is not physically tested in this update.",
+    "Voice capture uses the Windows default microphone and local English Whisper model. Silence ending is amplitude based, not semantic turn prediction. No barge-in while the answer plays. Recording uses the existing 100 MiB local transcriber limit; silence without speech closes after 30 seconds."
   ]
 }

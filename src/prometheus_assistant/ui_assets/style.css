@@ -59,8 +59,7 @@
 .folded-home #ownerPanel{display:flex;flex-direction:column}
 .folded-home #requestTime{margin-left:0}
 
-/* Replies take priority over decoration, with a scrollable, keyboard-focusable
-   conversation. Very short viewports can scroll the page to reach controls. */
+/* Replies flow with the document; the composer stays reachable at the bottom. */
 .folded-home main:has(.message) .presence{flex:0 0 104px;height:104px;min-height:104px}
 .folded-home main:has(.message) .orb{width:190px;max-height:88px}
 .folded-home main:has(.message) .presence-caption{margin-top:0}
@@ -74,3 +73,17 @@
  .folded-home .brand{font-size:12px;letter-spacing:.14em}
  .folded-home header button{padding:9px 11px}
 }
+.folded-home main{height:auto;min-height:calc(100dvh - 76px);flex:1}
+.folded-home .messages{flex:none;min-height:0;height:auto;overflow:visible;margin-bottom:12px;padding:0 2px}
+.folded-home .message{max-width:100%;scroll-margin-top:20px;scroll-margin-bottom:260px}
+.folded-home .conversation-dock{position:sticky;bottom:0;z-index:3;flex:none;margin-top:auto;padding:14px 0 8px;background:linear-gradient(transparent,#010907 14px,#010907);width:100%;isolation:isolate}
+.folded-home #compose{align-items:flex-end}
+.folded-home .voice-capture{width:min(100%,840px);margin:0 auto 10px;padding:12px 16px;border:1px solid #39745f;border-radius:22px;background:#071d17;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.folded-home .voice-caption{display:flex;justify-content:space-between;width:100%;gap:12px;font-size:12px;color:#b6dfce}
+.folded-home #voiceElapsed{font-variant-numeric:tabular-nums;color:#88b3a1}
+.folded-home .voice-wave{flex:1;min-width:100px;height:40px;display:flex;align-items:center;justify-content:space-between;gap:3px;overflow:hidden}
+.folded-home .voice-wave span{display:block;flex:1;max-width:9px;min-width:2px;height:3px;border-radius:5px;background:#84dfbd;transition:height .15s ease}
+.folded-home #finishRecording{border-radius:20px;background:#214d3c;border-color:#88d1af;font-size:12px;min-height:40px}
+.folded-home #dictate[aria-pressed=true]{background:#512438;border-color:#df96b9;color:#ffe2f0}
+@media(prefers-reduced-motion:reduce){.folded-home .voice-wave span{transition:none}}
+@media(max-height:500px){.folded-home .conversation-dock{position:relative}}

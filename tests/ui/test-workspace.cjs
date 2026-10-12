@@ -32,6 +32,7 @@ class Element {
   setAttribute(name, value) { this.attrs[name] = String(value); }
   getAttribute(name) { return this.attrs[name]; }
   focus() { this.focused = true; }
+  scrollIntoView(options) { this.scrollRequest = options; }
   closest(tag) { let item = this; while (item && item.tagName !== tag.toUpperCase()) item = item.parentElement; return item; }
   querySelectorAll(selector) {
     const all = [];

@@ -86,7 +86,7 @@ def inventory():
              'archive.search':'archive_worker.search','remote.transport':'MCPBridge.__init__ before process creation',
              'ollama.request':'OllamaClient._request','ollama.stream':'OllamaClient.chat_stream',
              'coding.launch':'coding.launch_coding','media.launch':'media.launch_media','media.inspect':'media.nvidia_devices','ollama.start':'Interface.ensure_runtime before helper launch','home.request':'HomeClient.request',
-             'voice.record':'voice.record_windows','voice.transcribe':'voice.transcribe','voice.speak':'voice.speak',
+             'voice.record':'voice.record_windows / continuous_capture.record_continuous','voice.transcribe':'voice.transcribe','voice.speak':'voice.speak',
              'maintenance.sources':'FreshnessSchedule.run_due_checks','maintenance.source.dispatch':'FreshnessSchedule.run_due_checks after lease/target selection',
              'maintenance.updates':'ComponentUpdates.run_due_checks','maintenance.update.dispatch':'ComponentUpdates.run_due_checks after lease/entry selection',
              'backup.create':'maintenance.create_backup','backup.restore':'maintenance.restore_backup',
