@@ -47,6 +47,8 @@ def catalog() -> dict:
 
 def ollama_inventory() -> dict[str, str]:
     """Loopback only, with no proxies and no bearer tokens."""
+    from .application_policy import require_dispatch
+    require_dispatch('ollama.request')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open("http://127.0.0.1:11434/api/tags", timeout=2) as response:
         if response.geturl() != "http://127.0.0.1:11434/api/tags":
@@ -139,6 +141,8 @@ def describe(*, query: str = "", role: str = "", limit=12, inspect_host=True) ->
 
 def compare_remote(repo_id: str) -> dict:
     """Opt-in metadata-only check against one of the curated Hugging Face repos."""
+    from .application_policy import require_dispatch
+    require_dispatch('hf.metadata')
     if not isinstance(repo_id, str) or len(repo_id) > 120:
         raise ValueError("Choose one pinned Hugging Face resource.")
     entry = next((r for r in catalog()["resources"] if r["repo_id"] == repo_id), None)

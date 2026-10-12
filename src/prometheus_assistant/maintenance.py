@@ -124,6 +124,8 @@ class FreshnessSchedule:
                 'freshness_scope': 'Watched search results only; this does not certify that all sources, laws or deadlines are current.'}
 
     def run_due_checks(self, *, online=False, max_checks=1, now=None, search=None):
+        from .application_policy import require_dispatch
+        require_dispatch('maintenance.sources')
         if not online:
             return {'checks': [], 'network_used': False, 'reason': 'Online source checks are disabled.'}
         if type(max_checks) is not int or not 1 <= max_checks <= 3:
@@ -140,6 +142,7 @@ class FreshnessSchedule:
                 db.execute('UPDATE watches SET lease_until=?,lease_token=? WHERE id=?', (stamp + 300, token, row['id']))
             result = {'id': row['id'], 'provider': row['provider'], 'query': row['query']}
             try:
+                require_dispatch('maintenance.source.dispatch', scope={'provider': row['provider'], 'query': row['query']})
                 response = (search or public_search)(row['query'], provider=row['provider'], online=True, limit=5)
                 if response.get('provider') != row['provider'] or response.get('query', '').strip() != row['query']:
                     raise ValueError('Publisher response does not match this watch.')
@@ -216,6 +219,8 @@ def create_backup(memory_path, destination_root, *, data_dirs=None, require_sepa
     online backup API includes committed WAL contents without copying live WALs.
     The destination is normally a host-local folder on a different volume.
     """
+    from .application_policy import require_dispatch
+    require_dispatch('backup.create')
     source = _plain_path(memory_path)
     destination_root = _plain_path(destination_root)
     if not source.is_file():
@@ -346,6 +351,8 @@ def verify_backup(folder):
 
 def restore_backup(folder, destination):
     """Restore to a new folder only, never over the live SSD or an existing tree."""
+    from .application_policy import require_dispatch
+    require_dispatch('backup.restore')
     folder = _plain_path(folder)
     verification = verify_backup(folder)
     destination = _plain_path(destination)

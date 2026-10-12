@@ -126,6 +126,15 @@ def test_preview_is_not_target_validation_or_a_replayable_grant(tmp_path):
     assert permissions.preview_core(body) == first
 
 
+def test_host_denial_is_consistent_in_preview_inventory_and_shared_rows(monkeypatch):
+    monkeypatch.setenv('PROMETHEUS_DENY_CAPABILITIES','core.system.summary,ui.chat')
+    assert permissions.preview_core({'worker':'system','tool':'summary','arguments':{}})['outcome']=='deny'
+    data=permissions.snapshot()
+    assert next(row for row in data['rows'] if row['id']=='core.system.summary')['outcome']=='deny'
+    assert next(row for row in data['rows'] if row['id']=='shared.ui.chat')['outcome']=='deny'
+    assert data['policy_revision']==data['shared_application_policy']['revision']
+
+
 @pytest.mark.parametrize('state, expected', [
     ({'required': False, 'ready': False, 'unlocked': True, 'expires_in_seconds': None}, 'not_configured'),
     ({'required': True, 'ready': False, 'unlocked': False, 'expires_in_seconds': None}, 'unavailable'),

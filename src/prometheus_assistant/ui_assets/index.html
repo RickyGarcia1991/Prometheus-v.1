@@ -45,18 +45,27 @@
 </section>
 <section id="panelPermissions" role="tabpanel" aria-labelledby="tabPermissions" hidden>
 <h2>Permissions and boundaries</h2>
-<p class="fine">Read the current policy layer and its limits. This view does not change settings, create grants, run tools or probe devices. Browser actions and Core tools have separate checks.</p>
+<p class="fine">Inspect application policy and its independent owner, target and host boundaries. Inventory and preview are read-only. Scoped grants require a separate explicit review below.</p>
 <button id="refreshPermissions" disabled>Refresh boundary inventory</button>
 <p id="permissionStatus" role="status" aria-live="polite">Open this tab to read the inventory.</p>
 <details class="workspace-detail"><summary>Coverage and policy revision</summary><pre id="permissionCoverage" class="code-output" tabindex="0"></pre></details>
 <div class="workspace-columns"><label for="permissionSearch">Search boundaries<input id="permissionSearch" type="search" maxlength="200"></label><label for="permissionCategory">Boundary type<select id="permissionCategory"><option value="">All types</option><option value="application">Application permissions</option><option value="authentication_integrity">Authentication and integrity</option><option value="advisory">Advisory behavior</option><option value="external">External limits</option></select></label></div>
 <p id="permissionCount" class="fine" aria-live="polite"></p><div id="permissionRows" class="workspace-results"></div>
 <details class="workspace-detail"><summary>Preview a Core policy decision</summary>
-<p class="fine">Checks registered arguments and default Core policy only. No plan approvals or custom guardrails are supplied. This does not check a file, contact a provider or authorize execution. Use sample arguments; do not enter secrets.</p>
+<p class="fine">Checks registered arguments, default Core policy and shared host denials. No plan approvals or custom guardrails are supplied. This does not check a file, contact a provider or authorize execution. Use sample arguments; do not enter secrets.</p>
 <label for="permissionTool">Core tool<select id="permissionTool" disabled></select></label>
 <details><summary>Argument schema</summary><pre id="permissionSchema" class="code-output" tabindex="0"></pre></details>
 <label for="permissionArguments">Arguments as JSON</label><textarea id="permissionArguments" rows="4" maxlength="12000" spellcheck="false" disabled>{}</textarea>
 <button id="previewPermission" disabled>Preview policy only</button><pre id="permissionPreview" class="code-output" tabindex="0" aria-live="polite"></pre>
+</details>
+<details class="workspace-detail"><summary>Exact scoped grants</summary>
+<p class="fine">A configured, unlocked owner can authorize one exact public search or bounded project test for up to 15 minutes and 5 attempts. Grants stay on this host across app restarts. Every use still requires the owner and existing target checks. Failures spend an attempt. Revocation waits for an action already dispatched; it cannot undo its effects.</p>
+<label for="grantCapability">Capability<select id="grantCapability"><option value="project/tests">Project tests · runs local project code</option><option value="research/public">Public search · sends exact query to publisher</option></select></label>
+<label for="grantArguments">Exact arguments as JSON (do not enter secrets)</label><textarea id="grantArguments" rows="4" maxlength="2000" spellcheck="false">{"target":"tests"}</textarea>
+<div class="workspace-columns"><label for="grantSeconds">Duration in seconds<input id="grantSeconds" type="number" min="1" max="900" value="300"></label><label for="grantUses">Maximum attempts<input id="grantUses" type="number" min="1" max="5" value="1"></label></div>
+<div class="workspace-actions"><button id="grantReview" disabled>Review exact grant</button><button id="grantIssue" disabled>Create reviewed grant</button><button id="grantRefresh" disabled>Inspect grants</button></div>
+<pre id="grantReviewText" class="code-output" tabindex="0" aria-live="polite"></pre><p id="grantStatus" role="status"></p><div id="grantRows" class="workspace-results"></div>
+<label for="grantRunId">Grant ID to use with the exact arguments above<input id="grantRunId" type="text" maxlength="48" autocomplete="off"></label><button id="grantRun" disabled>Run exact action once</button>
 </details></section>
 <section id="panelRemote" role="tabpanel" aria-labelledby="tabRemote" hidden>
 <h2>Connected computers</h2><p class="fine">Use the connected provider's file and terminal tools on a computer you select. Review the exact target and arguments before each action.</p>
@@ -77,4 +86,4 @@
 <form id="compose"><label class="sr-only" for="prompt">Message to Prometheus</label><textarea id="prompt" placeholder="Speak your mind…" maxlength="4000" rows="2" required></textarea><button id="send" type="submit" class="send" aria-label="Send message">↗</button></form>
 <div class="composerTools"><button id="dictate">◉ Record 8 seconds</button><button id="speak" disabled>Read answer aloud</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
 <footer>Answers and code can need checking. Source excerpts retain their citations. <span id="saveStatus">Ready · nothing sent</span></footer>
-</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script></body></html>
+</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script></body></html>

@@ -130,6 +130,10 @@ def _diverse_passages(rows, query):
 
 
 def retrieve(app, request):
+    from .application_policy import require_dispatch
+    require_dispatch('evidence.retrieve')
+    from .application_policy import require_dispatch
+    require_dispatch('evidence.retrieve')
     source = request.get('source', 'documents')
     if source not in SOURCES:
         raise ValueError('Choose documents, a project, or offline references.')

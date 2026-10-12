@@ -12,15 +12,17 @@ from pathlib import Path
 from .guardrails import ToolRequest, evaluate_tool_request
 
 SCHEMA_VERSION = 1
-POLICY_SCOPE = 'Built-in Core default policy only; no plan approvals or custom guardrails supplied.'
+POLICY_SCOPE = 'Registered Core risk policy plus host deny restrictions; no plan approvals, scoped grants or custom guardrails supplied.'
 GAPS = [
-    'Browser handlers do not share Core authorization; their outcomes remain conditional on action-specific validators.',
-    'CLI/headless commands, HTTP routes, background workers and host helpers are not fully mapped to a common policy.',
-    'No persistent scoped grant store, argument-bound approval, expiry or revocation migration is implemented here.',
+    'Shared application checks supplement existing Core/browser/CLI and provider boundaries; target checks remain separate.',
+    'Signed host/bootstrap/controller/signing/recovery helpers retain independent OS/signature authority and cannot use application grants.',
+    'Persistent grants are limited to exact research/public and project/tests requests, with a configured authenticated owner on the issuing host.',
+    'Generic in-process Python extension executors remain trusted application code; this is not an OS sandbox for arbitrary Python callers.',
     'OS privileges, disk encryption, provider accounts, devices, installed models and physical portability are not probed.',
     'Update preferences, watch schedules, smart-home credentials and remote pending actions are not read by this view.',
 ]
 SOURCE_FILES = (
+    'application_policy.py', 'scoped_grants.py', 'host_authority.py',
     'guardrails.py', 'core.py', 'tool_registry.py', 'builtin_tools.py',
     'capabilities.py', 'ui_server.py', 'ui_workspace.py', 'owner_access.py',
     'coding_workspace.py', 'public_http.py', 'ollama.py', 'hosted_preview.py',
@@ -69,7 +71,8 @@ def preview_core(body):
         request = spec.request('Read-only policy preview', body['arguments'])
     except (ValueError, TypeError):
         return {**refusal, 'reason': 'Arguments do not match the registered tool schema.'}
-    result = evaluate_tool_request(request)
+    from .application_policy import registered_decision
+    result = registered_decision(spec, request)
     return {**refusal, 'outcome': result.decision.value,
             'capability': spec.worker+'/'+spec.name,
             'reason': result.reason or 'Default Core policy allows this risk class.',
@@ -85,6 +88,10 @@ def snapshot(*, owner=None):
     for entry in core_catalog:
         request = ToolRequest(entry['worker'], entry['name'], 'Inventory', **entry['risk'])
         result = evaluate_tool_request(request)
+        from .application_policy import decision
+        overlay = decision('core.'+entry['worker']+'.'+entry['name'])
+        if overlay.decision.value == 'deny':
+            result = overlay
         rows.append(_row('core.'+entry['worker']+'.'+entry['name'],
             entry['worker']+'/'+entry['name'], 'application', result.decision.value,
             result.reason or 'Default Core policy allows this risk class.',
@@ -168,10 +175,23 @@ def snapshot(*, owner=None):
     fingerprints = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                     for name in SOURCE_FILES}
     revision = hashlib.sha256(json.dumps(fingerprints, sort_keys=True).encode()).hexdigest()
+    from .application_policy import inventory
+    shared = inventory()
+    for entry in shared['dispatch']:
+        rows.append(_row('shared.'+entry['capability'], 'Application: '+entry['capability'],
+                         'application', entry['outcome'], entry['reason'],
+                         'application_policy.py:require_dispatch', entry['enforcement'],
+                         scope='Shared application layer; explicit workflow authority and target checks remain',
+                         requirements='No readiness, owner, provider or OS authority is conferred by this outcome.',
+                         basis='runtime_evaluator', grant='unsupported'))
     return {'schema_version': SCHEMA_VERSION, 'generated_at_utc': datetime.now(timezone.utc).isoformat(),
-            'policy_revision': revision, 'source_sha256': fingerprints,
+            'policy_revision': shared['revision'], 'source_sha256': fingerprints,
             'read_only': True, 'authorizes_execution': False, 'rows': rows,
             'preview_tools': core_catalog,
+            'shared_application_policy': shared,
+            'grant_management': {'supported_capabilities': ['research/public', 'project/tests'],
+                                 'requires_enrolled_owner': True, 'max_seconds': 900, 'max_uses': 5,
+                                 'storage': 'Host-local authority database with independent continuity witness; excluded from portable backups'},
             'coverage': {'complete': False, 'core_tools_evaluated': len(core_catalog),
                          'evidence_tools_listed': len(evidence.structured_catalog()),
                          'browser_modes_listed': len(MODES), 'boundary_rows': len(rows),

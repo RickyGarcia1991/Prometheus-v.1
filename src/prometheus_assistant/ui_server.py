@@ -34,7 +34,7 @@ LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 
              'Clojure', 'OCaml', 'Zig', 'Assembly', 'Fortran', 'COBOL',
              'Solidity', 'VHDL / Verilog', 'Arduino', 'YAML / JSON / TOML',
              'Dockerfile / Terraform', 'GraphQL', 'Protobuf')
-MODES = {'chat', 'coding', 'ask', 'vision', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home'}
+MODES = {'chat', 'coding', 'ask', 'vision', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home', 'core'}
 MODES |= ui_workspace.MODES
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -123,6 +123,16 @@ def readable_result(value):
 
 
 def validate_job(body):
+    if isinstance(body, dict) and body.get('mode') == 'core':
+        if set(body) != {'mode', 'worker', 'tool', 'arguments', 'grant_id', 'invocation_id'}:
+            raise ValueError('Use exactly the scoped Core job fields.')
+        if any(not isinstance(body[k], str) or len(body[k]) > 80 for k in ('worker', 'tool', 'grant_id', 'invocation_id')):
+            raise ValueError('Invalid scoped Core identifiers.')
+        from .builtin_tools import build_builtin_registry
+        from .scoped_grants import scope
+        spec = build_builtin_registry(None).get(body['worker'], body['tool'])
+        request, _ = scope(spec, body['arguments'])
+        return {**body, 'arguments': dict(request.arguments)}
     if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
@@ -183,6 +193,9 @@ class Interface:
         self.maintenance_turn = 1
         from .remote_access import RemoteAccess
         self.remote = RemoteAccess()
+        from .scoped_grants import GrantStore
+        from .host_authority import authority_path
+        self.grants = GrantStore(authority_path())
 
     def status(self):
         self.last_seen = time.monotonic()
@@ -240,6 +253,8 @@ class Interface:
             self.maintenance_error = str(error)[:400]
 
     def ensure_runtime(self):
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.request')
         client = OllamaClient(timeout=2)
         try:
             client.local_models()
@@ -248,6 +263,8 @@ class Interface:
             root = resource_root()
             if not root:
                 raise ValueError('Start Prometheus from its SSD launcher.')
+        require_dispatch('ollama.request')
+        require_dispatch('ollama.start')
         self.progress('Starting local model runtime')
         helper = Path(root)/'Tools/wait-ollama.ps1'
         # A background runtime can inherit pipe handles from its launcher. Read
@@ -264,6 +281,7 @@ class Interface:
                         raise GenerationCancelled('Request cancelled while starting the local runtime.')
                     if time.monotonic() > deadline:
                         raise RuntimeError('The local runtime did not become ready in time.')
+                    require_dispatch('ollama.request')
                     try:
                         client.local_models()
                         return
@@ -284,8 +302,10 @@ class Interface:
                         process.kill()
                         process.wait(timeout=5)
 
-    def submit(self, request):
+    def submit(self, request, *, grant_owner=None):
         request = validate_job(request)
+        from .application_policy import require_dispatch
+        require_dispatch('ui.'+request['mode'])
         with self.lock:
             if self.current is not None or self.closing:
                 raise RuntimeError('Finish the current request before starting another.')
@@ -297,10 +317,10 @@ class Interface:
                                  'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
-        self.executor.submit(self._work, job_id, request)
+        self.executor.submit(self._work, job_id, request, grant_owner)
         return {'id': job_id, 'state': 'running'}
 
-    def _work(self, job_id, request):
+    def _work(self, job_id, request, grant_owner=None):
         start = time.monotonic()
         with RequestTiming(started=start, clock=time.monotonic,
                            cancelled_exceptions=(GenerationCancelled,)) as timing:
@@ -310,7 +330,13 @@ class Interface:
                     with stage('reference_cache'):
                         self.cache_context = reference_session()
                         self.cache_context.__enter__()
-                result = self.execute(request)
+                if request['mode'] == 'core':
+                    if grant_owner is None:
+                        raise ValueError('A current authenticated owner is required for grant execution.')
+                    with grant_owner() as owner:
+                        result = self.execute_core(request, owner=owner)
+                else:
+                    result = self.execute(request)
                 result = {'state': 'done', 'result': result}
             except GenerationCancelled as error:
                 result = {'state': 'cancelled', 'error': str(error)}
@@ -343,6 +369,11 @@ class Interface:
         return {'reply': reply, 'details': data, 'label': label, 'session': session}
 
     def execute(self, request):
+        request = validate_job(request)
+        from .application_policy import require_dispatch
+        require_dispatch('ui.'+request['mode'])
+        if request['mode'] == 'core':
+            raise ValueError('Scoped Core execution requires the authenticated job path.')
         mode, prompt = request['mode'], request['prompt']
         self.progress(mode.replace('_', ' ').capitalize())
         if mode == 'chat':
@@ -436,6 +467,10 @@ class Interface:
         expression = direct_expression(prompt)
         if expression is not None:
             return self.save(request, calculate(expression), 'Automatic helper · exact calculation')
+        from .grounding import device_presence_question, DEVICE_UNCERTAINTY
+        if device_presence_question(prompt):
+            return self.save(request, {'reply': DEVICE_UNCERTAINTY, 'generated_answer': False,
+                                      'device_presence_verified': False}, 'Device presence · not verified')
         if re.search(r'\b(?:this|my|your) (?:computer|system|hardware)\b', prompt, re.I) and re.search(r'\b(?:ram|memory|cpu|operating system)\b', prompt, re.I):
             hardware = detect_hardware()
             return self.save(request, {'reply': f'RAM: {hardware.ram_gib} GiB total, {hardware.available_ram_gib} GiB available. CPU threads: {hardware.cpu_threads}. OS: {hardware.system}.',
@@ -481,6 +516,18 @@ class Interface:
             data = reference_query(prompt, 'engineering' if mode=='coding' else choose_reference(prompt))
             data['memory_note'] = str(error)+' These are source excerpts, not a generated answer.'
             return self.save(request, data, 'Automatic memory recovery · source evidence')
+
+    def execute_core(self, request, *, owner):
+        from .application_policy import require_dispatch
+        from .builtin_tools import build_builtin_registry
+        request = validate_job(request)
+        require_dispatch('ui.core')
+        with MemoryStore(self.memory_path) as memory:
+            spec = build_builtin_registry(memory).get(request['worker'], request['tool'])
+            result = self.grants.run(request['grant_id'], request['invocation_id'], spec,
+                                     request['arguments'], owner=owner)
+        return {'reply': str(result), 'label': 'Exact scoped Core action',
+                'details': {'capability': spec.worker+'/'+spec.name, 'generated_answer': False}}
 
     def answer_with_evidence(self, request):
         from .capabilities import retrieve, excerpt_reply
@@ -623,6 +670,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/workspace.js': ('workspace.js', 'text/javascript; charset=utf-8'),
                   '/remote.js': ('remote.js', 'text/javascript; charset=utf-8'),
                   '/permissions.js': ('permissions.js', 'text/javascript; charset=utf-8'),
+                  '/grants.js': ('grants.js', 'text/javascript; charset=utf-8'),
                   '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
                   '/style.css': ('style.css', 'text/css; charset=utf-8'),
                   '/approved-orb.png': ('approved-orb.png', 'image/png')}
@@ -645,6 +693,9 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/permissions':
                 from .permissions_inventory import snapshot
                 self.respond(200, snapshot(owner=access.boundary_state(self.owner_session())))
+            elif self.path == '/api/permissions/grants':
+                with access.grant_owner(self.owner_session()) as owner:
+                    self.respond(200, {'grants': app.grants.inspect(owner=owner)})
             elif self.path == '/api/remote/state':
                 app.last_seen = time.monotonic()
                 self.respond(200, app.remote.state())
@@ -712,8 +763,30 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/permissions/preview':
                 from .permissions_inventory import preview_core
                 self.respond(200, preview_core(body))
+            elif self.path.startswith('/api/permissions/grants/'):
+                if not isinstance(body, dict):
+                    raise ValueError('Invalid scoped grant request.')
+                from .builtin_tools import build_builtin_registry
+                with self.server.owner_access.grant_owner(self.owner_session()) as owner:
+                    grants = self.server.app.grants
+                    if self.path.endswith('/review') and set(body) == {'worker', 'tool', 'arguments', 'seconds', 'uses'}:
+                        if not isinstance(body['worker'], str) or not isinstance(body['tool'], str):
+                            raise ValueError('Invalid capability.')
+                        spec = build_builtin_registry(None).get(body['worker'], body['tool'])
+                        result = grants.review(spec, body['arguments'], owner=owner, seconds=body['seconds'], uses=body['uses'])
+                    elif self.path.endswith('/issue') and set(body) == {'review_id', 'scope_sha256'} and all(isinstance(v, str) for v in body.values()):
+                        result = grants.issue(body['review_id'], body['scope_sha256'], owner=owner)
+                    elif self.path.endswith('/revoke') and set(body) == {'id'} and isinstance(body['id'], str):
+                        result = grants.revoke(body['id'], owner=owner)
+                    else:
+                        raise ValueError('Unknown scoped grant action or fields.')
+                self.respond(200, result)
             elif self.path == '/api/jobs':
-                self.respond(202, self.server.app.submit(body))
+                cookie = self.owner_session()
+                if isinstance(body, dict) and body.get('mode') == 'core':
+                    self.respond(202, self.server.app.submit(body, grant_owner=lambda: self.server.owner_access.grant_owner(cookie)))
+                else:
+                    self.respond(202, self.server.app.submit(body))
             elif self.path == '/api/remote/action':
                 self.server.app.last_seen = time.monotonic()
                 self.respond(200, self.server.app.remote.action(body))

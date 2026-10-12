@@ -199,6 +199,8 @@ def _pdf_worker(path):
 
 
 def _extract(content, suffix, temp_dir=None):
+    from .application_policy import require_dispatch
+    require_dispatch('documents.extract')
     if suffix == '.docx':
         return [('document', _docx_text(content))]
     if suffix != '.pdf':
@@ -392,6 +394,8 @@ class DocumentLibrary:
 
     def import_bytes(self, name, content, *, source_url=None, source_date=None, document_id=None,
                      expected_version_id=None):
+        from .application_policy import require_dispatch
+        require_dispatch('documents.import')
         name = _name(name)
         _metadata(source_url, source_date)
         if not isinstance(content, bytes) or not 1 <= len(content) <= MAX_FILE_BYTES:
@@ -453,6 +457,8 @@ class DocumentLibrary:
                 'embedding_status': embedded['status'], 'embeddings': embedded}
 
     def index_missing_embeddings(self, *, limit=32, document_id=None, force=False):
+        from .application_policy import require_dispatch
+        require_dispatch('documents.index')
         if type(limit) is not int or not 1 <= limit <= 128:
             raise ValueError('Embedding indexing limit must be 1–128 passages.')
         if document_id is not None and (not isinstance(document_id, str) or not re.fullmatch(r'[a-f0-9]{32}', document_id)):

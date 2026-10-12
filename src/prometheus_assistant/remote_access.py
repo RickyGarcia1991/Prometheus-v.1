@@ -387,6 +387,7 @@ class RemoteAccess:
             self.result = None
 
     def _execute(self, generation, pending):
+        from .application_policy import require_dispatch
         dispatched = False
         try:
             client = self.client
@@ -402,6 +403,10 @@ class RemoteAccess:
             with self.lock:
                 if generation != self.generation:
                     return
+                if pending['expires_at'] <= self.clock():
+                    raise ValueError('Reviewed action expired before dispatch.')
+                require_dispatch('remote.dispatch', scope={'account': self.pending_account_id,
+                    'device': pending['device_id'], 'tool': pending['tool'], 'arguments_sha256': digest})
             dispatched = True
             result = client.request('tools/call', {'name': pending['tool'], 'arguments': pending['arguments']}, timeout=60)
             # Only a structured control envelope identifies an owned background call.
@@ -434,6 +439,8 @@ class RemoteAccess:
             self._finish(generation, phase='error', message=message)
 
     def action(self, body):
+        from .application_policy import require_dispatch
+        require_dispatch('remote.action')
         if not isinstance(body, dict):
             raise ValueError('Invalid remote action.')
         action = body.get('action')

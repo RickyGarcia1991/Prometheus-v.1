@@ -77,7 +77,11 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
     if not evidence and cached and _cached_research_request(plan.prompt):
         return "Cached research evidence (unverified; stored excerpts):\n" + "\n\n".join(item.value for item in cached[:3])
     complete_system=[e for e in evidence if e.worker=="system" and e.tool=="summary" and e.status=="complete"]
-    if len(evidence)==1 and complete_system:
+    host_question = bool(re.search(r'\b(?:operating system|ram|cpu|processor|hardware|computer resources|system status)\b', plan.prompt, re.I))
+    if len(evidence)==1 and complete_system and host_question:
+        from .grounding import device_presence_question, DEVICE_UNCERTAINTY
+        if device_presence_question(plan.prompt):
+            return DEVICE_UNCERTAINTY
         try:
             data=json.loads(complete_system[0].output)
             return f"Operating system: {data['system']}; RAM: {data['ram_gib']} GiB; CPU threads: {data['cpu_threads']}."
@@ -156,6 +160,16 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
                     text+="\n\nResearch sources (retrieved evidence): "+", ".join(urls)
         except LocalModelError:
             pass  # Keep the original answer; self-evaluation exposes the failure.
+    # A model refusal must not conceal relevant records already retrieved by the
+    # application. Present them as attributed stored data, never verified truth
+    # or instructions. Do not substitute this for an explicit output format.
+    if (plan.memory and not problems and
+            re.search(r"\b(?:i (?:can't|cannot|can not|am unable to)|i don't (?:know|have)|i do not (?:know|have))\b", text, re.I) and
+            not re.search(r'\b(?:json|csv|xml|only|exactly)\b', plan.prompt, re.I)):
+        from .grounding import memory_evidence_excerpt
+        excerpt = memory_evidence_excerpt(plan.prompt, plan.memory)
+        if excerpt:
+            text += '\n\n'+excerpt
     return text
 
 
@@ -218,6 +232,10 @@ def _safe_conversation_fast_path(prompt, *, online_enabled=False, required_reque
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality(), required_requests=()):
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
+    from .grounding import device_presence_question, DEVICE_UNCERTAINTY
+    if device_presence_question(prompt) and not online_enabled and not required_requests:
+        result = run_core(memory, prompt, responder=lambda plan, evidence: DEVICE_UNCERTAINTY, trace=trace)
+        return _finalize(result, 0, '{"route":"device-presence-unverified"}', prompt)
     from .owner_profile import load_profile, recall
     owner_reply = recall(prompt, load_profile(memory)) if not online_enabled and not required_requests else None
     if owner_reply is not None:
@@ -257,13 +275,13 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
     planner_attempts = 1
     try:
         requests, raw_plan = model_plan(client, registry, prompt, seed.memory, recent_turns)
-    except (AgentPlanError, ValueError) as first_error:
+    except (AgentPlanError, ValueError, LocalModelError) as first_error:
         planner_attempts = 2
         repair_prompt = (prompt + "\n\nYour previous tool plan was invalid: " + str(first_error) +
                          " Return one corrected JSON plan using only exact catalog worker/tool names, or {\"tools\":[]}.")
         try:
             requests, raw_plan = model_plan(client, registry, repair_prompt, seed.memory, recent_turns)
-        except (AgentPlanError, ValueError):
+        except (AgentPlanError, ValueError, LocalModelError):
             requests = _deterministic_readonly_fallback(registry, prompt)
             raw_plan = '{"tools":[]}' if not requests else '{"fallback":"deterministic-readonly"}'
     requests = tuple(requests) + tuple(r for r in required_requests if r not in requests)

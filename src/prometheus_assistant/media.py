@@ -12,6 +12,8 @@ PACKAGE = Path('Media/ComfyUI-v0.39.0-Windows-NVIDIA')
 
 
 def nvidia_devices():
+    from .application_policy import require_dispatch
+    require_dispatch('media.inspect')
     candidates = [Path(os.environ.get('SystemRoot', 'C:/Windows'))/'System32/nvidia-smi.exe',
                   Path(os.environ.get('ProgramFiles', 'C:/Program Files'))/'NVIDIA Corporation/NVSMI/nvidia-smi.exe']
     exe = next((p for p in candidates if p.is_file()), None)
@@ -58,6 +60,10 @@ def media_status(cpu=False):
 
 
 def launch_media(*, cpu=False, port=8188, shutdown_request=None):
+    from .application_policy import require_dispatch
+    require_dispatch('media.launch')
+    from .application_policy import require_dispatch
+    require_dispatch('media.launch')
     if not 1024 <= port <= 65535:
         raise ValueError('Choose a port between 1024 and 65535.')
     state = media_status(cpu)

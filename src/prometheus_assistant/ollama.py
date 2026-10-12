@@ -124,6 +124,10 @@ class OllamaClient:
 
     def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384):
         """Bounded NDJSON streaming; disconnect the owned request on cancellation."""
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.stream')
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.stream')
         import http.client
         import socket
         import time
@@ -227,6 +231,10 @@ class OllamaClient:
             connection.close()
 
     def _request(self, path, payload=None):
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.request')
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.request')
         data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = Request(self.base_url + path, data=data, headers={"Content-Type": "application/json"})
         try:

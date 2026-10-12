@@ -8,6 +8,8 @@ import tempfile
 
 
 def search(root, query, *, project='auto', limit=5):
+    from .application_policy import require_dispatch
+    require_dispatch('archive.search')
     if not root or not isinstance(query,str) or not 1<=len(query)<=256:
         raise ValueError('Archive search requires a resource directory and a query of 1–256 characters.')
     payload=json.dumps({'root':str(root),'query':query,'project':project,'limit':limit}).encode('utf-8')
@@ -37,6 +39,8 @@ def main():
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
     from prometheus_assistant.articles import search_articles
     try:
+        from prometheus_assistant.application_policy import require_dispatch
+        require_dispatch('archive.search')
         raw=sys.stdin.buffer.read(4097)
         if len(raw)>4096:raise ValueError('Archive query payload is too large.')
         value=json.loads(raw)

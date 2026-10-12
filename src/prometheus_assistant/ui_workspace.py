@@ -63,6 +63,10 @@ def workspace(app, request):
 
 def execute(app, request):
     mode = request['mode']
+    from .application_policy import require_dispatch
+    if mode not in MODES:
+        raise ValueError('Unmapped workspace capability.')
+    require_dispatch('ui.'+mode)
     result = None
     if mode == 'documents':
         result = library(app).search(request['prompt'], include_history=request.get('include_history', False))

@@ -334,6 +334,8 @@ class ComponentUpdates:
         return _text(revision), body, url
 
     def run_due_checks(self, max_checks=1, force=False, cancel_event=None, library=None):
+        from .application_policy import require_dispatch
+        require_dispatch('maintenance.updates')
         if type(max_checks) is not int or not 1 <= max_checks <= 3 or type(force) is not bool:
             raise ValueError('Run one to three bounded component checks.')
         checks, seen = [], set()
@@ -358,9 +360,11 @@ class ComponentUpdates:
             entry = self.entries[identity]
             check = dict(id=identity, network_used=False)
             try:
+                require_dispatch('maintenance.update.dispatch', scope={'id': identity, 'policy': _policy_digest(entry)})
                 if row['pending']:
                     self._recover(entry, token, json.loads(row['pending']), library)
                 _cancel(cancel_event)
+                require_dispatch('maintenance.update.dispatch', scope={'id': identity, 'policy': _policy_digest(entry)})
                 check['network_used'] = True
                 revision, body, url = self._discover(entry, cancel_event)
                 _cancel(cancel_event)
@@ -408,6 +412,8 @@ class ComponentUpdates:
         return {**self.status(), 'checks': checks, 'network_used': any(check['network_used'] for check in checks)}
 
     def _document(self, entry, row, token, revision, event, library):
+        from .application_policy import require_dispatch
+        require_dispatch('maintenance.update.dispatch', scope={'id': entry['id'], 'policy': _policy_digest(entry)})
         base = 'https://raw.githubusercontent.com/'+entry['repo']+'/'+revision+'/'
         url = base+quote(entry['path'], safe='/')
         license_url = base+quote(entry['license_path'], safe='/')
@@ -456,6 +462,7 @@ class ComponentUpdates:
             db.execute('UPDATE components SET pending=? WHERE id=?', (_json(pending).decode(), entry['id']))
         try:
             _cancel(event)
+            require_dispatch('maintenance.update.dispatch', scope={'id': entry['id'], 'policy': _policy_digest(entry)})
             imported_record = library.import_bytes(entry['import_name'], imported, source_url=url, source_date=None,
                                                   document_id=old['document_id'], expected_version_id=old['version_id'])
             pending['new_version_id'] = imported_record['version_id']

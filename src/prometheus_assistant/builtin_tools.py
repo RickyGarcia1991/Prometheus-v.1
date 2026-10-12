@@ -108,7 +108,7 @@ def build_builtin_registry(memory, *, development_workspace=None):
     def project_tests(request):
         target=request.arguments.get("target","tests").replace("\\","/").strip("/")
         if not target or target.startswith(".") or ".." in target.split("/") or not re.fullmatch(r"[A-Za-z0-9_./-]+",target): raise ValueError("Invalid bounded test target.")
-        root=_project_root().resolve(); selected=(root/target).resolve()
+        _no_links(_project_root()); root=_project_root().resolve(); _no_links(root/target); selected=(root/target).resolve()
         if selected!=root and not selected.is_relative_to(root): raise ValueError("Test target escapes the Prometheus source root.")
         if not selected.exists(): raise ValueError("Test target is unavailable.")
         proc=subprocess.run([sys.executable,"-m","pytest",target,"-q"],cwd=root,text=True,capture_output=True,timeout=120)

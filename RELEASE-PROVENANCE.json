@@ -1,26 +1,26 @@
 {
-  "schema_version": 2,
-  "release": "Prometheus-v0.8.0-dev5-permissions-20261012",
-  "version": "0.8.0.dev5",
-  "prepared_utc": "2026-10-12T01:46:17.159315+00:00",
-  "base_git_commit": "e907112f7f1dec60b00c8905dcbc631f52f72821",
-  "source_branch": "release/dell-permissions-20261012",
-  "base_release": "Prometheus-v0.8.0-dev4-hf-security-r3-20261011",
-  "base_manifest_sha256": "ee65de1d432e87e821d7c3f8d8faba30cd0c474e92fdc4a9324a2d1d0fbeccfb",
-  "reviewed_permissions_patch_sha256": "306840c9d22032edb208d3edcb3ec56e3a1d6454276cfe3077105c720147827a",
-  "integration_scope": "Verified dev4 project source plus read-only permissions inventory and independent-review fixes F1/F2",
-  "source_commit_resolution": "Build receipt binds the final commit and every release file; this file does not assert activation.",
+  "schema_version": 3,
+  "release": "Prometheus-v0.8.0-dev6-scoped-policy-20261012",
+  "version": "0.8.0.dev6",
+  "prepared_utc": "2026-10-12T03:20:04.432949+00:00",
+  "base_git_commit": "46c98578d6b2f24f1e5ed1aa4ca169f0b877876f",
+  "source_branch": "release/dell-scoped-policy-20261012",
+  "base_release": "Prometheus-v0.8.0-dev5-permissions-20261012",
+  "base_manifest_sha256": "5457a00bf79b860e260b64d9ffe421abd98aa26ebc4a870ee0c688ba2c14749d",
+  "integration_scope": "Shared application policy dispatch, persistent exact owner grants, evidence-grounding repairs and qualification",
+  "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
-  "owner_encrypted_backup_verification": "Existing owner recovery receipt verified 2026-10-11; no password or raw key belongs in source.",
+  "live_grants_created": false,
   "public_source_exclusions": [
     "tools/Prometheus.HostAgent/host-memory-backup.ps1",
     "tools/Prometheus.HostAgent/ssd-memory-backup.ps1"
   ],
-  "exclusion_reason": "Host-specific legacy paths; preserved unchanged in signed baseline runtime, excluded from newly published source. Generic RemoteBackup helpers remain available.",
+  "exclusion_reason": "Unchanged host-specific legacy scripts remain only in trusted signed baseline runtime.",
   "acceptance_limits": [
-    "Full common policy and persistent scoped grants are not implemented.",
-    "Real owner passkey acceptance must use the normal installed flow.",
-    "No model qualification, hardware-answer acceptance or physical cross-host reinsertion is claimed."
+    "Grants cover only research/public and project/tests; signed host/OS/provider authority remains independent.",
+    "Same-OS-account full authority rollback before restart is outside the host-local continuity guarantee.",
+    "Real model qualification is a limited sample with retained failures, not model promotion.",
+    "Human acoustic acceptance, physical removal/reinsertion and second-host checks remain separate."
   ]
 }

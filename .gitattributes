@@ -1,1 +1,2 @@
 *.sig binary
+tools/Verify-Repair-Core.ps1 text eol=lf

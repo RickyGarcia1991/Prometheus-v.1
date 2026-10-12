@@ -29,6 +29,18 @@ def test_watch_is_explicit_persistent_and_offline_by_default(tmp_path):
     assert not reopened.run_due_checks(online=True, now=10, search=response)['checks']
 
 
+def test_selected_source_target_policy_denial_precedes_provider(tmp_path,monkeypatch):
+    from prometheus_assistant.application_policy import scope_digest
+    schedule=FreshnessSchedule(tmp_path/'state.db',tmp_path/'history')
+    schedule.watch('nasa','Moon',now=100)
+    calls=[]
+    monkeypatch.setenv('PROMETHEUS_DENY_SCOPES','maintenance.source.dispatch:'+scope_digest({'provider':'nasa','query':'Moon'}))
+    result=schedule.run_due_checks(online=True,now=100,search=lambda *a,**k:calls.append(1))
+    assert not calls
+    assert result['checks'][0]['ok'] is False
+    assert 'exact selected target' in result['checks'][0]['error']
+
+
 def test_success_retains_versions_and_compares_content_not_time(tmp_path):
     schedule = FreshnessSchedule(tmp_path / 'maintenance.sqlite3', tmp_path / 'history')
     schedule.watch('nasa', 'Moon', interval_days=1, now=100)

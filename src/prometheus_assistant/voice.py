@@ -52,6 +52,8 @@ def _transcriber(model):
 
 
 def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.transcribe')
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
     audio = Path(audio).resolve(strict=True)
@@ -120,6 +122,8 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
 
 
 def record_windows(destination, seconds=8, *, cancel_event=None):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.record')
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
     if os.name!='nt':raise ValueError('Microphone capture currently supports Windows.')
@@ -166,6 +170,8 @@ def capture_prompt(*, cancel_event=None, on_stage=None):
 
 
 def speak(text):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.speak')
     if os.name!='nt':raise ValueError('Speech output currently supports Windows SAPI.')
     script="$ErrorActionPreference='Stop'; $voice=New-Object -ComObject SAPI.SpVoice; $utterance=[Console]::In.ReadToEnd(); [void]$voice.Speak($utterance)"
     result=subprocess.run(['powershell.exe','-NoProfile','-Command',script],input=text[:4000],text=True,

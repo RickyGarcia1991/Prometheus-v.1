@@ -59,6 +59,10 @@ async function load() {
     element('permissionCoverage').textContent = 'Coverage is partial: ' + coverage.core_tools_evaluated +
       ' Core tools evaluated, ' + coverage.evidence_tools_listed + ' evidence tools and ' + coverage.browser_modes_listed +
       ' browser modes listed. Policy revision: ' + result.policy_revision + '\n' + coverage.unmapped_surfaces.join('\n');
+    if (result.shared_application_policy) {
+      element('permissionCoverage').textContent += '\n' + result.shared_application_policy.dispatch.length +
+        ' shared application dispatch checks are included in the table. Host denials are reflected; target-specific, owner, provider and OS checks still apply.';
+    }
     element('permissionTool').replaceChildren(...result.preview_tools.map(tool => {
       const option = node('option', tool.worker + '/' + tool.name); option.value = tool.worker + '/' + tool.name; return option;
     }));

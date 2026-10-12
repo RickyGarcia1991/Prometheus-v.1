@@ -214,6 +214,8 @@ class CodingWorkspace:
                     'diff': diff, 'changed': before != after}
 
     def apply_edit(self, path, content, expected_sha256):
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.apply')
         with self.lock:
             resolved, before, after, _, _ = self._proposal(path, content, expected_sha256)
             relative = resolved.relative_to(self.root).as_posix()
@@ -235,6 +237,8 @@ class CodingWorkspace:
             return {'edit_id': edit_id, 'path': relative, 'sha256': _sha(after), 'changed': True}
 
     def undo_edit(self, edit_id):
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.undo')
         if not isinstance(edit_id, str) or not re.fullmatch(r'[a-f0-9]{32}', edit_id):
             raise ValueError('Invalid edit identifier.')
         with self.lock:
@@ -310,6 +314,8 @@ class CodingWorkspace:
 
     def run_tests(self, preset, target='', *, timeout=120, cancel_event=None, on_output=None):
         """Run an explicit preset. Never call this automatically from model output."""
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.tests')
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 600:
             raise ValueError('Test timeout must be greater than zero and at most 600 seconds.')
         argv = self._command(preset, target)

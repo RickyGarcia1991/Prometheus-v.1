@@ -429,6 +429,8 @@ def main(argv=None):
             stream.reconfigure(encoding="utf-8")
     args = build_parser().parse_args(argv)
     command = args.command or "chat"
+    from .application_policy import require_dispatch
+    require_dispatch('cli.'+command)
     if command == "permissions":
         from .permissions_inventory import snapshot
         emit_json(snapshot())

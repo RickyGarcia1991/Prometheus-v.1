@@ -16,6 +16,8 @@ def ollama_executable() -> str | None:
 
 
 def launch_integrations(executable: str | None = None) -> set[str]:
+    from .application_policy import require_dispatch
+    require_dispatch('integrations.inspect')
     exe = executable or ollama_executable()
     if not exe:
         return set()

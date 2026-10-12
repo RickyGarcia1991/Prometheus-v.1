@@ -155,6 +155,10 @@ def _watch_request(connection,limit,finished):
 
 def fetch_public_bytes(url,allowed_hosts,*,timeout=20,max_bytes=MAX_PUBLIC_BYTES,accept='application/json',
                        cancel_event=None,overall_timeout=45):
+    from .application_policy import require_dispatch
+    require_dispatch('public.fetch')
+    from .application_policy import require_dispatch
+    require_dispatch('public.fetch')
     if type(max_bytes) is not int or not 1<=max_bytes<=20_000_000:
         raise ValueError('Invalid public download limit.')
     if timeout is not None and (isinstance(timeout,bool) or not isinstance(timeout,(int,float))

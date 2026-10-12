@@ -24,6 +24,10 @@ def coding_status():
 
 
 def launch_coding(provider, project, *, prompt=None, setup=False):
+    from .application_policy import require_dispatch
+    require_dispatch('coding.launch')
+    from .application_policy import require_dispatch
+    require_dispatch('coding.launch')
     if provider not in PORTABLE_AGENTS:
         raise ValueError('Choose hermes or codex.')
     if platform.system() != 'Windows' or platform.machine().lower() not in ('amd64','x86_64'):

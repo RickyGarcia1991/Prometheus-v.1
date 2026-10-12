@@ -66,7 +66,7 @@ class ToolRegistry:
             if not isinstance(summary,str) or not summary.strip() or len(summary)>300: raise ValueError("Invalid tool summary.")
             requests.append(self.get(row["worker"],row["tool"]).request(summary.strip(),row["arguments"]))
         return tuple(requests)
-    def executors(self): return {key:spec.executor for key,spec in self._tools.items()}
+    def executors(self): return RegisteredExecutors(self._tools)
     def structured_catalog(self):
         """Serializable discovery contract; metadata never grants execution rights."""
         types = {str: 'string', int: 'integer', bool: 'boolean', float: 'number', dict: 'object', list: 'array'}
@@ -94,3 +94,18 @@ class ToolRegistry:
             args={name:{"type":spec.kind.__name__,"required":spec.required,"max_length":spec.max_length} for name,spec in dict(x.arguments or {}).items()}
             rows.append(f"- {x.worker}/{x.name}: {x.description}; arguments={args}; state_change={x.mutates_state}; network={x.external_network}; command={x.command_execution}")
         return "\n".join(rows)
+
+
+class RegisteredExecutors(dict):
+    """Trusted Python registrations accompanying the concrete execution map."""
+    def __init__(self, specs):
+        self.specs = MappingProxyType(dict(specs))
+        super().__init__((key, spec.executor) for key, spec in specs.items())
+
+    def validate(self, requests):
+        from .application_policy import registered_decision
+        for request in requests:
+            spec = self.specs.get((request.worker, request.tool))
+            if spec is None:
+                raise ValueError('Unmapped registered capability.')
+            registered_decision(spec, request)
