@@ -312,5 +312,14 @@ async function fixture() {
   await reach.run('submit()'); await settle();
   assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.reach_action, 'github-releases');
   assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.mode, 'reach');
-  console.log('Public reach UI passed: explicit online mode, operation, input guidance and exact job fields.');
+  const webSearch = await fixture();
+  webSearch.elements.mode.value = 'reach'; webSearch.elements.reachAction.value = 'web-search';
+  webSearch.elements.mode.onchange();
+  assert.equal(webSearch.elements.prompt.placeholder, 'Search the web for a topic…');
+  webSearch.elements.prompt.value = 'portable document readers';
+  await webSearch.run('submit()'); await settle();
+  const searchBody = webSearch.requests.findLast(r=>r.url==='/api/jobs').body;
+  assert.equal(searchBody.reach_action, 'web-search');
+  assert.equal(searchBody.prompt, 'portable document readers');
+  console.log('Public reach UI passed: explicit online mode, Firecrawl search, operation guidance and exact job fields.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

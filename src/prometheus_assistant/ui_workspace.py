@@ -78,7 +78,7 @@ def execute(app, request):
             raise ValueError('Invalid uploaded document encoding.') from error
         result = library(app, semantic=False).import_bytes(request.get('name', ''), data,
             source_url=request.get('source_url') or None, source_date=request.get('source_date') or None,
-            document_id=request.get('document_id') or None)
+            document_id=request.get('document_id') or None, cancel_event=app.cancel_event)
     elif mode == 'document_list':
         result = {'documents': library(app).list_documents(include_history=True)}
     elif mode == 'document_index':

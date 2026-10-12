@@ -135,13 +135,13 @@ def test_version_one_metadata_migrates_without_losing_content(tmp_path):
 
 
 def test_pdf_deadline_removes_temporary_source(tmp_path, monkeypatch):
+    from prometheus_assistant import markitdown_documents as converter
     library = DocumentLibrary(tmp_path)
-    def timeout(*args, **kwargs):
-        raise module.subprocess.TimeoutExpired(args[0], 20)
-    monkeypatch.setattr(module.subprocess, 'run', timeout)
-    with pytest.raises(ValueError, match='20-second'):
+    monkeypatch.setattr(converter, 'TIMEOUT', 0)
+    monkeypatch.setattr(converter.tempfile, 'tempdir', str(tmp_path))
+    with pytest.raises(ValueError, match='time limit'):
         library.import_bytes('slow.pdf', b'%PDF-1.7\nslow')
-    assert not list(tmp_path.glob('prometheus-pdf-*'))
+    assert not list(tmp_path.glob('prometheus-markitdown-*'))
     assert not library.list_documents()
 
 

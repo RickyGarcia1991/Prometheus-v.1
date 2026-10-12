@@ -130,6 +130,52 @@ def test_none_socket_timeout_still_has_an_overall_bound(network):
     assert http.fetch_public_bytes(URL, HOSTS, timeout=None, overall_timeout=1) == b'abc'
 
 
+def test_json_post_uses_same_pinned_transport_and_bounded_body(network):
+    response(network, b'{}', b'Content-Length: 2\r\n')
+    assert http.post_public_json(URL, HOSTS, {'query': 'portable tools'},
+                                bearer_token='fc-test-only', overall_timeout=1) == b'{}'
+    assert network.address == (PUBLIC_IP, 443) and network.server_hostname == 'example.org'
+    assert network.request.startswith(b'POST /resource HTTP/1.1\r\n')
+    assert b'Authorization: Bearer fc-test-only\r\n' in network.request
+    assert b'Content-Type: application/json\r\n' in network.request
+    assert network.request.endswith(b'{"query": "portable tools"}')
+
+
+@pytest.mark.parametrize('key', ['x\r\nInjected: yes', 'x y', 'x' * 513])
+def test_post_rejects_bad_credentials_before_network(network, key):
+    with pytest.raises(ValueError, match='key format'):
+        http.post_public_json(URL, HOSTS, {}, bearer_token=key)
+    assert not network.requested.is_set()
+
+
+def test_post_refuses_redirect_without_resending_credentials(network):
+    response(network, b'', b'Location: https://other.example/path\r\n', b'302 Found')
+    with pytest.raises(RuntimeError, match='redirect'):
+        http.post_public_json(URL, HOSTS, {}, bearer_token='fc-test-only')
+    assert network.request.count(b'POST /resource') == 1 and network.closed.is_set()
+
+
+def test_post_http_error_does_not_expose_provider_body(network):
+    response(network, b'secret provider details', b'', b'429 Too Many Requests')
+    with pytest.raises(http.PublicHTTPError) as error:
+        http.post_public_json(URL, HOSTS, {})
+    assert error.value.status == 429 and 'secret' not in str(error.value)
+
+
+def test_search_with_cancel_event_allows_service_response_time(network):
+    def provider():
+        assert network.requested.wait(1)
+        time.sleep(2.15)
+        response(network, b'{}', b'Content-Length: 2\r\n')
+    worker = threading.Thread(target=provider)
+    worker.start()
+    try:
+        assert http.post_public_json(URL, HOSTS, {'query': 'documents'},
+            cancel_event=threading.Event(), timeout=3, overall_timeout=4) == b'{}'
+    finally:
+        worker.join(3)
+
+
 @pytest.mark.parametrize(('body', 'headers', 'status', 'message'), [
     (b'123456', b'', b'200 OK', 'size limit'),
     (b'123456', b'Content-Length: 6\r\n', b'200 OK', 'size limit'),

@@ -8,31 +8,20 @@ from __future__ import annotations
 from contextlib import closing
 from datetime import date, datetime, timezone
 import hashlib
-import io
-import json
 import math
-import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import sqlite3
-import stat
 import struct
-import subprocess
-import sys
-import tempfile
 from urllib.parse import urlsplit
 import uuid
-import zipfile
-from xml.etree import ElementTree
 
 MAX_FILE_BYTES = 8 * 1024 * 1024
 MAX_TEXT_CHARS = 400_000
-MAX_DOCX_EXPANDED = 16 * 1024 * 1024
-MAX_XML_BYTES = 4 * 1024 * 1024
 MAX_PASSAGES = 384
 MAX_VECTOR_DIMENSION = 4096
 MAX_SEMANTIC_PASSAGES = 5000
-SUPPORTED_EXTENSIONS = ('.txt', '.md', '.csv', '.pdf', '.docx')
+SUPPORTED_EXTENSIONS = ('.txt', '.md', '.csv', '.pdf', '.docx', '.pptx', '.xlsx')
 _STOP = frozenset('a an the how what where when why can could do does did i you we is are was were to of for in on with please me my about use using explain show find'.split())
 
 
@@ -54,7 +43,7 @@ def _name(value):
             or re.match(r'(?i)^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)', value)):
         raise ValueError('Use a plain portable filename, without folders or special path characters.')
     if Path(value).suffix.lower() not in SUPPORTED_EXTENSIONS:
-        raise ValueError('Supported documents: UTF-8 TXT, Markdown, CSV, PDF and DOCX.')
+        raise ValueError('Supported documents: UTF-8 TXT, Markdown, CSV, PDF, DOCX, PPTX and XLSX.')
     return value
 
 
@@ -84,152 +73,17 @@ def _validate_text(text):
     return text
 
 
-def _docx_text(content):
-    try:
-        with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            entries = archive.infolist()
-            if len(entries) > 256 or sum(e.file_size for e in entries) > MAX_DOCX_EXPANDED:
-                raise ValueError('DOCX archive exceeds the expanded size or entry limit.')
-            names = set()
-            for entry in entries:
-                path = PurePosixPath(entry.filename)
-                if (entry.filename in names or path.is_absolute() or '..' in path.parts
-                        or '\\' in entry.orig_filename or ':' in entry.filename
-                        or any(ord(char) < 32 for char in entry.orig_filename)
-                        or stat.S_ISLNK(entry.external_attr >> 16) or entry.flag_bits & 1):
-                    raise ValueError('DOCX contains unsafe, duplicate or encrypted archive entries.')
-                names.add(entry.filename)
-                if entry.file_size > max(1, entry.compress_size) * 100:
-                    raise ValueError('DOCX compression ratio exceeds the import limit.')
-            if 'word/document.xml' not in names:
-                raise ValueError('DOCX has no main document XML.')
-            entry = archive.getinfo('word/document.xml')
-            if entry.file_size > MAX_XML_BYTES:
-                raise ValueError('DOCX document XML exceeds the import limit.')
-            with archive.open(entry) as member:
-                data = member.read(MAX_XML_BYTES + 1)
-            try:
-                xml_text = data.decode('utf-16' if data.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig')
-            except UnicodeError as error:
-                raise ValueError('DOCX XML must use UTF-8 or BOM-marked UTF-16.') from error
-            if len(data) > MAX_XML_BYTES or re.search(r'<!\s*(?:DOCTYPE|ENTITY)', xml_text, re.I):
-                raise ValueError('DOCX XML declarations or size are unsupported.')
-            # All relationships, images, embedded objects and macros are ignored.
-            root = ElementTree.fromstring(xml_text)
-            ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
-            paragraphs = []
-            for paragraph in root.iter(ns + 'p'):
-                paragraphs.append(''.join(node.text or '' for node in paragraph.iter(ns + 't')))
-            return _validate_text('\n'.join(paragraphs))
-    except (zipfile.BadZipFile, ElementTree.ParseError, RuntimeError, OSError) as error:
-        raise ValueError('The DOCX archive or document XML is invalid.') from error
-
-
-def _limit_pdf_process():
-    """Bound the short-lived parser's address space/commit, including malformed input."""
-    budget = 192 * 1024 * 1024
-    if os.name != 'nt':
-        import resource
-        resource.setrlimit(resource.RLIMIT_AS, (budget, budget))
-        return
-    import ctypes
-    from ctypes import wintypes
-
-    class BasicLimit(ctypes.Structure):
-        _fields_ = [('process_time', ctypes.c_longlong), ('job_time', ctypes.c_longlong),
-                    ('flags', wintypes.DWORD), ('min_working_set', ctypes.c_size_t),
-                    ('max_working_set', ctypes.c_size_t), ('active_processes', wintypes.DWORD),
-                    ('affinity', ctypes.c_size_t), ('priority', wintypes.DWORD), ('scheduling', wintypes.DWORD)]
-
-    class IOCounters(ctypes.Structure):
-        _fields_ = [(name, ctypes.c_ulonglong) for name in ('reads', 'writes', 'other', 'read_bytes', 'write_bytes', 'other_bytes')]
-
-    class ExtendedLimit(ctypes.Structure):
-        _fields_ = [('basic', BasicLimit), ('io', IOCounters), ('process_memory', ctypes.c_size_t),
-                    ('job_memory', ctypes.c_size_t), ('peak_process_memory', ctypes.c_size_t), ('peak_job_memory', ctypes.c_size_t)]
-
-    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
-    kernel.CreateJobObjectW.argtypes = (ctypes.c_void_p, wintypes.LPCWSTR)
-    kernel.CreateJobObjectW.restype = wintypes.HANDLE
-    kernel.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
-    kernel.SetInformationJobObject.restype = wintypes.BOOL
-    kernel.GetCurrentProcess.restype = wintypes.HANDLE
-    kernel.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
-    kernel.AssignProcessToJobObject.restype = wintypes.BOOL
-    job = kernel.CreateJobObjectW(None, None)
-    limits = ExtendedLimit()
-    limits.basic.flags = 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
-    limits.process_memory = budget
-    if (not job or not kernel.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits))
-            or not kernel.AssignProcessToJobObject(job, kernel.GetCurrentProcess())):
-        raise ValueError('Cannot establish the PDF parser memory limit on this host.')
-    # This worker holds the handle until process exit; closing it here would drop the limit.
-
-
-def _pdf_worker(path):
-    """Run only in a short-lived child; stream decompression is explicitly capped."""
-    _limit_pdf_process()
-    try:
-        import pypdf
-        import pypdf.filters as filters
-    except ImportError as error:
-        raise ValueError('PDF import needs the bundled pypdf package.') from error
-    for setting in ('ZLIB_MAX_OUTPUT_LENGTH', 'LZW_MAX_OUTPUT_LENGTH', 'RUN_LENGTH_MAX_OUTPUT_LENGTH',
-                    'MAX_ARRAY_BASED_STREAM_OUTPUT_LENGTH', 'MAX_DECLARED_STREAM_LENGTH'):
-        if not hasattr(filters, setting):
-            raise ValueError('The installed PDF parser does not provide required decompression limits.')
-        setattr(filters, setting, MAX_XML_BYTES)
-    reader = pypdf.PdfReader(path, strict=True)
-    if reader.is_encrypted:
-        raise ValueError('Encrypted PDFs must be decrypted before importing.')
-    if len(reader.pages) > 100:
-        raise ValueError('PDF import is limited to 100 pages per document.')
-    sections = []
-    total = 0
-    for index, page in enumerate(reader.pages, 1):
-        text = page.extract_text(extraction_mode='plain') or ''
-        total += len(text)
-        if total > MAX_TEXT_CHARS:
-            raise ValueError('PDF extracted text exceeds the import limit.')
-        if text.strip():
-            sections.append((f'page {index}', text))
-    if not sections:
-        raise ValueError('The PDF has no extractable text. Scanned PDFs need OCR before import.')
-    return sections
-
-
-def _extract(content, suffix, temp_dir=None):
+def _extract(content, suffix, temp_dir=None, *, cancel_event=None):
     from .application_policy import require_dispatch
     require_dispatch('documents.extract')
-    if suffix == '.docx':
-        return [('document', _docx_text(content))]
-    if suffix != '.pdf':
-        try:
-            text = content.decode('utf-8-sig')
-        except UnicodeError as error:
-            raise ValueError('Text, Markdown and CSV imports must use UTF-8 encoding.') from error
-        return [('text', _validate_text(text))]
-    if not content.startswith(b'%PDF-'):
-        raise ValueError('The file does not have a PDF header.')
-    # Separate process bounds parser duration and isolates parser failures. Files
-    # are never opened in a viewer, and embedded actions are never executed.
-    with tempfile.TemporaryDirectory(prefix='prometheus-pdf-', dir=temp_dir) as folder:
-        path = Path(folder) / 'source.pdf'
-        path.write_bytes(content)
-        result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve()), '--extract-pdf', str(path)],
-            capture_output=True, timeout=20,
-            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
-        )
-    if result.returncode != 0:
-        try:
-            message = json.loads(result.stdout).get('error', 'PDF extraction failed.')
-        except (ValueError, AttributeError):
-            message = 'PDF extraction failed.'
-        raise ValueError(str(message)[:500])
-    if len(result.stdout) > MAX_TEXT_CHARS * 8:
-        raise ValueError('PDF extraction output exceeds the import limit.')
-    return json.loads(result.stdout)['sections']
+    from .markitdown_documents import EXTENSIONS, extract_document
+    if suffix in EXTENSIONS:
+        return extract_document(content, suffix, cancel_event=cancel_event)
+    try:
+        text = content.decode('utf-8-sig')
+    except UnicodeError as error:
+        raise ValueError('Text, Markdown and CSV imports must use UTF-8 encoding.') from error
+    return [('text', _validate_text(text))]
 
 
 def _passages(sections):
@@ -393,9 +247,12 @@ class DocumentLibrary:
         return self.import_bytes(source.name, content, **metadata)
 
     def import_bytes(self, name, content, *, source_url=None, source_date=None, document_id=None,
-                     expected_version_id=None):
+                     expected_version_id=None, cancel_event=None):
         from .application_policy import require_dispatch
         require_dispatch('documents.import')
+        if cancel_event is not None and cancel_event.is_set():
+            from .ollama import GenerationCancelled
+            raise GenerationCancelled('Document import cancelled.')
         name = _name(name)
         _metadata(source_url, source_date)
         if not isinstance(content, bytes) or not 1 <= len(content) <= MAX_FILE_BYTES:
@@ -404,11 +261,11 @@ class DocumentLibrary:
             raise ValueError('Invalid document ID.')
         if expected_version_id is not None and (type(expected_version_id) is not int or expected_version_id < 1 or document_id is None):
             raise ValueError('A conditional import needs an explicit document ID and positive expected version ID.')
-        try:
-            sections = _extract(content, Path(name).suffix.lower(), self.root)
-        except subprocess.TimeoutExpired as error:
-            raise ValueError('PDF extraction exceeded its 20-second time limit.') from error
+        sections = _extract(content, Path(name).suffix.lower(), self.root, cancel_event=cancel_event)
         passages = _passages(sections)
+        if cancel_event is not None and cancel_event.is_set():
+            from .ollama import GenerationCancelled
+            raise GenerationCancelled('Document import cancelled.')
         digest = hashlib.sha256(content).hexdigest()
         original_name = name
         original = self.originals / (digest + Path(name).suffix.lower())
@@ -417,6 +274,9 @@ class DocumentLibrary:
         with closing(self._connect()) as db, db:
             # Serialize naming and version updates across multiple local callers.
             db.execute('BEGIN IMMEDIATE')
+            if cancel_event is not None and cancel_event.is_set():
+                from .ollama import GenerationCancelled
+                raise GenerationCancelled('Document import cancelled.')
             existing = db.execute('SELECT * FROM documents WHERE id=?' if document_id else
                                   'SELECT * FROM documents WHERE name_key=?',
                                   (document_id or name.casefold(),)).fetchone()
@@ -601,15 +461,3 @@ class DocumentLibrary:
                 'model_identity': identity, 'semantic_passages_scanned': scanned,
                 'semantic_scan_limit': MAX_SEMANTIC_PASSAGES, 'include_history': bool(include_history),
                 'generated_answer': False, 'evidence_is_untrusted_data': True, 'results': results}
-
-
-if __name__ == '__main__':
-    # Add only this release's signed source directory for its bundled pypdf.
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    try:
-        if len(sys.argv) != 3 or sys.argv[1] != '--extract-pdf':
-            raise ValueError('Unsupported document helper operation.')
-        print(json.dumps({'sections': _pdf_worker(sys.argv[2])}))
-    except Exception as error:
-        print(json.dumps({'error': str(error)[:500]}))
-        raise SystemExit(1)

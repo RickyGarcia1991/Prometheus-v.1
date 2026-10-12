@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev10-public-reach-20261012",
-  "version": "0.8.0.dev10",
-  "prepared_utc": "2026-10-12T13:22:04.982304+00:00",
-  "base_git_commit": "666b0bcdb4671b3f51d68f2e567adc43a06b23ad",
-  "source_branch": "feature/public-reach-20261012",
-  "base_release": "Prometheus-v0.8.0-dev9-reliability-repair-20261012",
-  "base_manifest_sha256": "ec533f7eff4806f59531c059362ef8a7112f8293facf774685988f784d4a456f",
-  "integration_scope": "Explicit public web/RSS/GitHub/YouTube metadata and English captions, adapted from Agent-Reach channel architecture; pinned yt-dlp, no upstream installer or account access.",
+  "release": "Prometheus-v0.8.0-dev11-search-documents-20261012",
+  "version": "0.8.0.dev11",
+  "prepared_utc": "2026-10-12T14:08:25.824794+00:00",
+  "base_git_commit": "e97abac264898e37e9e637b4f25493f0f554d4c5",
+  "source_branch": "feature/search-documents-20261012",
+  "base_release": "Prometheus-v0.8.0-dev10-public-reach-20261012",
+  "base_manifest_sha256": "778bbf2217d5626756c4efef1b67cbc89e4bf0b9b0ed203f1bab78719dd2321d",
+  "integration_scope": "Explicit Firecrawl web search and offline portable MarkItDown PDF/DOCX/PPTX/XLSX import through existing document history and retrieval.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -18,10 +18,10 @@
   ],
   "exclusion_reason": "Unchanged host-specific legacy scripts remain only in trusted signed baseline runtime.",
   "acceptance_limits": [
-    "No general web search provider or JavaScript browser is added. Existing public research providers remain available.",
-    "Public English YouTube captions only, subject to upstream availability. No account cookies, downloaded video, transcription service, browser plugins, or remote code components.",
-    "Web/feed reader supports bounded public UTF-8 HTTPS sources. Redirects and private network addresses are refused.",
-    "New Core reach/read tool retains external-network approval. The existing browser scoped-grant feature supports only research/public and project/tests; Public reach has its own explicit owner UI mode.",
-    "No physical audio, drive removal/reinsertion or second-host tests were performed."
+    "Firecrawl is an external service. Limited keyless access is the default; an optional host-configured API key may consume its plan.",
+    "Web search returns source links and snippets; no automatic crawling, browser operation, social sign-in or page rendering.",
+    "Document converters are bundled for the existing portable Windows x64 Python 3.12 runtime. No local document upload to cloud services.",
+    "PDF text and modern DOCX/PPTX/XLSX only, plus retained TXT/Markdown/CSV. No OCR, old binary Office formats or macro execution.",
+    "Owner authority, versioned history and personal memory are preserved. Moving the installed package to another computer is not physically tested in this update."
   ]
 }

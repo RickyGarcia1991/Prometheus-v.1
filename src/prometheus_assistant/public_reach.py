@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 from .public_http import fetch_public_bytes, validate_public_url
 from .public_resources import text_only, safe_reference_url
 
-ACTIONS = {'web', 'feed', 'github-repo', 'github-releases', 'github-search', 'youtube', 'youtube-transcript'}
+ACTIONS = {'web-search', 'web', 'feed', 'github-repo', 'github-releases', 'github-search', 'youtube', 'youtube-transcript'}
 MAX_BYTES = 2_000_000
 
 
@@ -84,6 +84,9 @@ def validate_request(action, target):
         repository(target)
     elif action in {'youtube', 'youtube-transcript'}:
         youtube_url(target)
+    elif action == 'web-search':
+        if not target.strip() or len(target) > 400:
+            raise ValueError('Use a web search query of 1–400 characters.')
     elif len(target) > 200:
         raise ValueError('Use a repository search of at most 200 characters.')
 
@@ -155,6 +158,9 @@ def read_public(action, target, *, online=False, cancel_event=None):
         raise ValueError('Public reads require explicit online selection or approval.')
     validate_request(action, target)
     _check_cancel(cancel_event)
+    if action == 'web-search':
+        from .firecrawl_search import search
+        return search(target, cancel_event=cancel_event)
     if action == 'youtube-transcript':
         from .public_transcripts import read_transcript
         data = read_transcript(target, cancel_event=cancel_event)

@@ -320,7 +320,7 @@ class Interface:
                 del self.jobs[next(iter(self.jobs))]
             self.cancel_event.clear()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '',
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request, grant_owner)
