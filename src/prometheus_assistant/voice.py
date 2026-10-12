@@ -21,8 +21,10 @@ def voice_paths():
 
 
 def voice_status():
+    from .speech_activity import detector_status
     executable, models = voice_paths()
     return {'transcriber_installed': executable.is_file(),
+            'speech_detector': detector_status(),
             'models': {name:(models/f'ggml-{name}.bin').is_file() for name in ('tiny.en','base.en')},
             'speech_recognition':'OpenAI Whisper via whisper.cpp, local English models',
             'microphone':'off; starts only when requested in voice-chat',

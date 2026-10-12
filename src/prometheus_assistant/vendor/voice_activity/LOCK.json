@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "engine": "whisper.cpp b5454 streaming CPU VAD",
+  "model": "Silero v6.2.0",
+  "runtime_source": "https://github.com/ggml-org/whisper.cpp/releases/tag/b5454",
+  "runtime_archive_sha256": "6ba69e3482d7826214f90a6a9c84ca07782aec1e1d0c6a7c30c994fd5d816ccb",
+  "header_source": "https://github.com/ggml-org/whisper.cpp/blob/b5454/include/whisper.h",
+  "model_source": "https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v6.2.0.bin",
+  "model_license_source": "https://raw.githubusercontent.com/snakers4/silero-vad/v6.2/LICENSE",
+  "license": "MIT",
+  "platform": "Windows x64; baseline CPU backend; no GPU or host installation required",
+  "files": [
+    {
+      "path": "ggml-base.dll",
+      "size_bytes": 693248,
+      "sha256": "bede0d6b2d387236ecd2b5dd676d51c8984b5b6e0ae461a12174e9c01345c5f0"
+    },
+    {
+      "path": "ggml-cpu-x64.dll",
+      "size_bytes": 866816,
+      "sha256": "4b4b05caba40d4309b5d710ef74c59ba190516b8489f27bdb1ba11ae33c6e9d3"
+    },
+    {
+      "path": "ggml-silero-v6.2.0.bin",
+      "size_bytes": 885098,
+      "sha256": "2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987"
+    },
+    {
+      "path": "ggml.dll",
+      "size_bytes": 62464,
+      "sha256": "31fe18616d872af9b6134b47a6dff8072ae4ecbe5df0273f4f8dc36766c9db8e"
+    },
+    {
+      "path": "LICENSE-silero.txt",
+      "size_bytes": 1075,
+      "sha256": "2e63e9a38b6e8fc0c7bc37ce174caca1862870856c6daf5697cfb785e925520b"
+    },
+    {
+      "path": "LICENSE-whisper-cpp.txt",
+      "size_bytes": 1078,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "path": "whisper.dll",
+      "size_bytes": 1370112,
+      "sha256": "034396d75bb5720c1851674ff64a96192b58f6927b68d334ebd254ce6cad9674"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "origin": "Locally synthesized Windows SAPI default voice; resampled mono PCM16 at16kHz; no human microphone recording",
+  "generated_utc": "2026-10-12T17:28:21.920063+00:00",
+  "phrases": [
+    "Prometheus, what is six times seven?",
+    "Now add eight to that.",
+    "Yes."
+  ],
+  "files": [
+    {
+      "path": "speech-0.wav",
+      "sha256": "7eb1bb6b021984502bbf61c4394885e950a24295a7b8eb1f4f5f594569acadd8"
+    },
+    {
+      "path": "speech-1.wav",
+      "sha256": "be3eb0c123abe3f8963147d69b19b826c5e6c4cf1439771bc4bc4a3c2bf75db8"
+    },
+    {
+      "path": "speech-2.wav",
+      "sha256": "bb96a7bd82a4c063c96b1a7bd330dd659a1e0190369e634fd7b44d166fe3f99a"
+    }
+  ]
+}

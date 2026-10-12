@@ -16,13 +16,12 @@ import time
 import wave
 
 from .ollama import GenerationCancelled
+from .speech_activity import SpeechDetector
 
 RATE = 16000
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
-SILENCE_SECONDS = 2.0
+SILENCE_SECONDS = 1.6
 PRE_ROLL_BYTES = int(RATE * 2 * .8)
-SPEECH_RMS = 200
-MIN_SPEECH_SECONDS = .24
 
 
 class EmptyRecording(GenerationCancelled):
@@ -171,6 +170,12 @@ is never a generated animation or a transcription claim.
 
     check_cancel()
     destination = Path(destination)
+    def open_device():
+        # Model loading can take time. End/disconnection during it must not open
+        # the microphone even briefly; the detector context still closes.
+        check_cancel()
+        return _WaveInput()
+
     # Exclusive creation prevents deleting/overwriting an owner's existing audio.
     output = destination.open('xb')
     completed = False
@@ -180,10 +185,10 @@ is never a generated animation or a transcription claim.
             audio.setsampwidth(2)
             audio.setframerate(RATE)
             size = 44
-            elapsed = speech_run = 0.
+            elapsed = 0.
             last_speech = None
             pre_roll = bytearray()
-            with _WaveInput() as device:
+            with SpeechDetector() as detector, open_device() as device:
                 last_data = time.monotonic()
                 if on_started:
                     on_started()
@@ -195,12 +200,23 @@ is never a generated animation or a transcription claim.
                     audio.writeframesraw(data)
                     size += len(data)
 
-                def consume(data):
-                    nonlocal elapsed, speech_run, last_speech, last_data
-                    if not data:
-                        return
+                def consume(data, *, final=False):
+                    nonlocal elapsed, last_speech, last_data
                     if len(data) % 2:
                         raise ValueError('The microphone returned incomplete PCM samples.')
+                    if data:
+                        last_data = time.monotonic()
+                    for frame, speech in detector.feed(data, final=final):
+                        consume_frame(frame, speech)
+                    if data and on_level:
+                        samples = array.array('h', data)
+                        if sys.byteorder != 'little':
+                            samples.byteswap()
+                        rms = math.sqrt(sum(sample*sample for sample in samples)/len(samples))
+                        on_level(round(min(1., rms/4096), 4), round(elapsed, 2))
+
+                def consume_frame(data, speech):
+                    nonlocal elapsed, last_speech
                     had_speech = last_speech is not None
                     if not had_speech:
                         # Keep the quiet onset and confirmation frames, but never
@@ -210,29 +226,18 @@ is never a generated animation or a transcription claim.
                             del pre_roll[:-PRE_ROLL_BYTES]
                     duration = len(data)/(RATE*2)
                     elapsed += duration
-                    last_data = time.monotonic()
-                    samples = array.array('h', data)
-                    if sys.byteorder != 'little':
-                        samples.byteswap()
-                    rms = math.sqrt(sum(sample*sample for sample in samples)/len(samples))
-                    if rms >= SPEECH_RMS:
-                        speech_run += duration
-                        if speech_run >= MIN_SPEECH_SECONDS or last_speech is not None:
-                            last_speech = elapsed
-                    else:
-                        speech_run = 0.
+                    if speech:
+                        last_speech = elapsed
                     if had_speech:
                         write(data)
                     elif last_speech is not None:
                         write(pre_roll)
                         pre_roll.clear()
-                    if on_level:
-                        on_level(round(min(1., rms/4096), 4), round(elapsed, 2))
 
                 while True:
                     check_cancel()
                     if finish_event.is_set():
-                        consume(device.finish())
+                        consume(device.finish(), final=True)
                         break
                     data = device.read()
                     consume(data)
