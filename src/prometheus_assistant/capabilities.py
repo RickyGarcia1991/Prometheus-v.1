@@ -192,6 +192,7 @@ def catalog(app):
         ('coding', 'Project editing and checks', 'Select a development project; preview and apply changes with undo. Running project checks executes its code.', True, False),
         ('voice', 'Local dictation and speech', 'Dictation needs installed whisper.cpp, a speech model and a working microphone. Playback needs an installed local browser voice.', False, False),
         ('math', 'Exact mathematics', 'Bounded rational arithmetic is available without a model; symbolic helpers are also exposed through the CLI tool registry.', False, False),
+        ('reach', 'Public reach: web, feeds, GitHub and YouTube', 'Choose an online operation and a public URL or repository. Direct text and feed reads, public GitHub metadata/releases/search, and YouTube metadata/public English captions. No sign-in, browser sessions or video downloads.', True, True),
         ('research', 'Public research and saved versions', 'Explicit online search sends the query to the selected publisher. Source watches must be enabled individually.', True, True),
         ('remote', 'Connected computers', 'Requires a configured connection, identity review and specific action authorization.', True, True),
         ('home', 'Smart home', 'Requires a configured Home Assistant hub, named devices and the control key.', True, True),

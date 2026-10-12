@@ -303,4 +303,14 @@ async function fixture() {
   assert.equal(links.elements.messages.children.at(-1).querySelectorAll('.source-link')[0].textContent,'example.com','standalone excerpt source URLs use a compact domain label');
   console.log('Source links passed: live/saved replies, exact destination, compact label, safe new tab, literal unsafe input.');
   console.log('Saved evidence passed: exact metadata, labels, literal rendering, legacy history, and conversation status reset.');
+  const reach = await fixture();
+  reach.elements.mode.value = 'reach'; reach.elements.reachAction.value = 'github-releases';
+  reach.elements.mode.onchange();
+  assert.equal(reach.elements.reachField.hidden, false);
+  assert.equal(reach.elements.prompt.placeholder, 'Panniantong/Agent-Reach');
+  reach.elements.prompt.value = 'Panniantong/Agent-Reach';
+  await reach.run('submit()'); await settle();
+  assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.reach_action, 'github-releases');
+  assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.mode, 'reach');
+  console.log('Public reach UI passed: explicit online mode, operation, input guidance and exact job fields.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

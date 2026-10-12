@@ -34,7 +34,7 @@ LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 
              'Clojure', 'OCaml', 'Zig', 'Assembly', 'Fortran', 'COBOL',
              'Solidity', 'VHDL / Verilog', 'Arduino', 'YAML / JSON / TOML',
              'Dockerfile / Terraform', 'GraphQL', 'Protobuf')
-MODES = {'chat', 'coding', 'ask', 'vision', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home', 'core'}
+MODES = {'chat', 'coding', 'ask', 'vision', 'reach', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home', 'core'}
 MODES |= ui_workspace.MODES
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -133,7 +133,7 @@ def validate_job(body):
         spec = build_builtin_registry(None).get(body['worker'], body['tool'])
         request, _ = scope(spec, body['arguments'])
         return {**body, 'arguments': dict(request.arguments)}
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
@@ -152,6 +152,11 @@ def validate_job(body):
         raise ValueError('Use a prompt of at most 4000 characters.')
     if mode not in {'dictate', 'tools', 'models', 'capabilities'} | ui_workspace.NO_PROMPT and not prompt.strip():
         raise ValueError('Enter a question or expression.')
+    if mode == 'reach' or 'reach_action' in body:
+        from .public_reach import validate_request
+        if mode != 'reach':
+            raise ValueError('Select Public reach to use its online operations.')
+        validate_request(body.get('reach_action'), prompt)
     if body.get('profile', 'public') not in PROFILES:
         raise ValueError('Unknown reference collection.')
     from .public_resources import PROVIDERS
@@ -315,7 +320,7 @@ class Interface:
                 del self.jobs[next(iter(self.jobs))]
             self.cancel_event.clear()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '',
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request, grant_owner)
@@ -360,7 +365,7 @@ class Interface:
                 self.state = 'idle' if result['state'] == 'done' else 'error'
 
     def save(self, request, data, label, model='references'):
-        if self.cancel_event.is_set() and request['mode'] in {'chat', 'coding', 'ask', 'vision'}:
+        if self.cancel_event.is_set() and request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach'}:
             raise GenerationCancelled('Request cancelled before saving the result.')
         reply = readable_result(data)
         with stage('history_persistence'), MemoryStore(self.memory_path) as memory:
@@ -482,6 +487,10 @@ class Interface:
             if not request.get('project'):
                 raise ValueError('Enter the project directory you want to search.')
             return self.save(request, search_documents(Path(request['project']), prompt, include_code=True), 'Project file evidence · no execution')
+        if mode == 'reach':
+            from .public_reach import read_public
+            data = read_public(request['reach_action'], prompt, online=True, cancel_event=self.cancel_event)
+            return self.save(request, data, 'Public reach · retrieved source evidence')
         if mode == 'research':
             from .public_resources import public_search
             data = public_search(prompt, provider=request.get('provider', 'crossref'), online=True)
