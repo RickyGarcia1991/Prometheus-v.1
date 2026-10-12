@@ -32,7 +32,9 @@ def evaluate_agent_result(core):
     prompt=core.plan.prompt.casefold()
     grounding=1.0
     system_claim=any(word in prompt for word in ("version","running","current status","system status","core status","operating system","hardware","ram","memory available","cpu","processor","resources available","computer resources"))
-    if system_claim and not statuses:
+    from .structured_data import explicit_json_reply
+    supplied_data = explicit_json_reply(core.plan.prompt) == core.reply
+    if system_claim and not statuses and not supplied_data:
         grounding=0.0; reasons.append("current system/hardware/status claim lacks tool evidence")
     overall=round((authorization+execution+evidence+response+grounding)/5,3)
     passed=bool(core.evaluation.passed and response==1.0 and authorization==1.0 and evidence==1.0 and grounding==1.0)

@@ -6,6 +6,7 @@ from .memory import MemoryStore
 from .owner_profile import load_profile, context as owner_context
 from .evidence_text import window as evidence_window
 from .request_timing import stage, timed
+from .response_checks import output_issues, requests_json, json_output_format
 import json
 import re
 import time
@@ -160,6 +161,7 @@ def generate(request, memory_path, profiles, role, evidence, *, base_url='http:/
     attempted = 0
     context_error = None
     memory_signal = MemorySignal(cancel_event)
+    structured = requests_json(request['prompt'])
     for profile in profiles:
         if attempted >= 2:
             break
@@ -190,7 +192,12 @@ def generate(request, memory_path, profiles, role, evidence, *, base_url='http:/
                 timed('model_readiness', client.ensure_local_model)
                 client.timeout = 120
                 reply, _ = timed('generation', client.chat_stream, messages, on_token=on_token,
-                                 cancel_event=memory_signal, num_predict=budget)
+                                 cancel_event=memory_signal, num_predict=budget,
+                                 **({'json_format': json_output_format(request['prompt'])} if structured else {}))
+                problems = output_issues(request['prompt'], reply) if structured else ()
+                if problems:
+                    raise LocalModelError('The local answer failed the requested output checks: '+
+                                          '; '.join(problems)+'. This answer was not saved.')
             except GenerationCancelled:
                 try:
                     client.timeout = 2
@@ -211,7 +218,9 @@ def generate(request, memory_path, profiles, role, evidence, *, base_url='http:/
                 raise GenerationCancelled('Request cancelled; partial text was not saved.')
             grounding = None
             if source_evidence is not None:
-                reply, grounding = annotate_sources(reply, supplied)
+                annotated, grounding = annotate_sources(reply, supplied)
+                if not structured:
+                    reply = annotated
             attempts.append({'model':profile.model, 'seconds':round(time.monotonic()-attempt_started,3),
                              'output_tokens':budget, 'status':'completed'})
             label = f'Automatic {role} helper · {client.model}'

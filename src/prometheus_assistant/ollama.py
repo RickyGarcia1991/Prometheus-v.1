@@ -122,7 +122,7 @@ class OllamaClient:
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
         self.last_metrics = {}
 
-    def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384):
+    def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384, json_format=False):
         """Bounded NDJSON streaming; disconnect the owned request on cancellation."""
         from .application_policy import require_dispatch
         require_dispatch('ollama.stream')
@@ -147,6 +147,8 @@ class OllamaClient:
         payload = {'model': self.model, 'messages': messages, 'stream': True, 'keep_alive': _idle_residency(),
                    'options': {'num_ctx': self.num_ctx, 'num_predict': output_token_budget(self.model, num_predict), 'temperature': .2,
                                'num_thread': self.num_thread or 2, 'num_batch': 32 if self.num_ctx <= 2048 else 128}}
+        if json_format:
+            payload['format'] = json_format if isinstance(json_format, dict) else 'json'
         family = self.model.split(':')[0]
         if family in {'qwen3', 'qwen3.5'}:
             payload['think'] = False
@@ -242,7 +244,13 @@ class OllamaClient:
                 body = response.read(MAX_RESPONSE_BYTES + 1)
         except HTTPError as error:
             raise LocalModelError(f"Ollama HTTP error {error.code}; no cloud fallback was used.") from error
-        except (URLError, OSError, TimeoutError) as error:
+        except TimeoutError as error:
+            raise LocalModelError("Local model request exceeded its time budget; no completed answer was returned.") from error
+        except URLError as error:
+            if isinstance(error.reason, TimeoutError):
+                raise LocalModelError("Local model request exceeded its time budget; no completed answer was returned.") from error
+            raise LocalModelError("Cannot reach local Ollama. Open Ollama and retry; no cloud fallback was used.") from error
+        except OSError as error:
             raise LocalModelError("Cannot reach local Ollama. Open Ollama and retry; no cloud fallback was used.") from error
         if len(body) > MAX_RESPONSE_BYTES:
             raise LocalModelError("Ollama response exceeded the safe size limit.")
@@ -290,7 +298,7 @@ class OllamaClient:
             "options": {"num_ctx": self.num_ctx, "num_predict": output_token_budget(self.model, num_predict), "temperature": 0.2},
         }
         if json_format:
-            payload["format"] = "json"
+            payload["format"] = json_format if isinstance(json_format, dict) else "json"
         if self.model.split(":", 1)[0] == "gpt-oss":
             # GPT-OSS cannot disable reasoning. Leave room for a final answer.
             payload["think"] = "low"

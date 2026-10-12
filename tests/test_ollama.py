@@ -93,7 +93,8 @@ def test_streaming_idle_residency_matches_memory_policy(monkeypatch):
     for total, available, expected in [(8, 5, '30s'), (16, 1, '30s'), (16, 6, '5m'), (64, None, '30s')]:
         monkeypatch.setattr('prometheus_assistant.hardware.detect_hardware',
                             lambda: HardwareProfile(total, 8, 'Windows', available))
-        assert client.chat_stream([{'role': 'user', 'content': 'Hello'}])[0] == 'Ready.'
+        assert client.chat_stream([{'role': 'user', 'content': 'Hello'}], json_format=True)[0] == 'Ready.'
+        assert sent[-1]['format'] == 'json'
         assert sent[-1]['keep_alive'] == expected
 
 

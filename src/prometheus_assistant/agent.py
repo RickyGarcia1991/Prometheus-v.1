@@ -23,7 +23,11 @@ class AgentResult:
 def _finalize(result, attempts, raw_plan, prompt):
     evaluation=evaluate_agent_result(result)
     if "current system/hardware/status claim lacks tool evidence" in evaluation.reasons:
+        if requests_json(prompt):
+            raise LocalModelError("Structured response lacks verified current-system evidence.")
         result=replace(result, reply="I do not have verified local evidence for the requested current system, hardware, version, or runtime information, so I will not guess.")
+    if requests_json(prompt) and output_issues(prompt, result.reply):
+        raise LocalModelError("Final response failed requested JSON checks.")
     return AgentResult(result, attempts, raw_plan, evaluation, detect_emotional_state(prompt))
 
 
@@ -69,32 +73,21 @@ def model_plan(client, registry, prompt, memory_items=(), recent_turns=()):
     return registry.requests_from_plan(value["tools"]), text
 
 def _direct_source_request(registry, prompt):
-    """Only an explicit, complete definition lookup; all execution uses Core."""
-    match = re.fullmatch(
-        r"\s*search (?:the )?(?:prometheus |project )?source for (?:the )?definition of "
-        r"([a-z_][a-z0-9_]{0,99})[.]?(?:\s+report (?:its|the matching) file(?: and line)?[.]?)?\s*",
-        prompt, re.I)
-    if not match:
-        return None
-    try:
-        spec = registry.get('project', 'search')
-    except ValueError:
-        return None
-    if spec.mutates_state or spec.external_network or spec.command_execution:
-        return None
-    return spec.request('Find the requested definition in the registered project.', {'query': match[1]})
+    from .shared_readonly import direct_source_request
+    return direct_source_request(registry, prompt)
 
 def _cached_research_request(prompt):
     text = prompt.casefold()
     return any(term in text for term in ("cached", "saved research", "previous research"))
 
 def model_response(client, plan, evidence, recent_turns=(), personality=Personality()):
+    structured_request = requests_json(plan.prompt)
     cached = [item for item in plan.memory if item.source_type == "untrusted_research"]
-    if not evidence and cached and _cached_research_request(plan.prompt):
+    if not structured_request and not evidence and cached and _cached_research_request(plan.prompt):
         return "Cached research evidence (unverified; stored excerpts):\n" + "\n\n".join(item.value for item in cached[:3])
     complete_system=[e for e in evidence if e.worker=="system" and e.tool=="summary" and e.status=="complete"]
     host_question = bool(re.search(r'\b(?:operating system|ram|cpu|processor|hardware|computer resources|system status)\b', plan.prompt, re.I))
-    if len(evidence)==1 and complete_system and host_question:
+    if not structured_request and len(evidence)==1 and complete_system and host_question:
         from .grounding import device_presence_question, DEVICE_UNCERTAINTY
         if device_presence_question(plan.prompt):
             return DEVICE_UNCERTAINTY
@@ -104,16 +97,13 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
         except (TypeError,ValueError,KeyError):
             return "Verified system evidence was returned in an unreadable format."
     complete_search=[e for e in evidence if e.worker=="project" and e.tool=="search" and e.status=="complete"]
-    if len(evidence)==1 and complete_search:
-        try:
-            data=json.loads(complete_search[0].output); rows=data.get("results",[])[:5]
-            if not rows: return "No matching source lines were found in the bounded Prometheus project search."
-            rendered="; ".join(f"{row['path']}:{row['line']} - {row['excerpt'].strip()}" for row in rows)
-            return "Verified project matches: "+rendered
-        except (TypeError,ValueError,KeyError):
-            return "Verified project-search evidence was returned in an unreadable format."
+    if not structured_request and len(evidence)==1 and complete_search:
+        from .shared_readonly import project_search_reply
+        return project_search_reply(evidence)
+    # A planner's proposed summary is not observed evidence. Only the actual
+    # tool status and output may ground the answer.
     rows = [{"worker":e.worker,"tool":e.tool,"status":e.status,
-             "summary":e.summary,"output":e.output[:4000]} for e in evidence]
+             "output":e.output[:4000]} for e in evidence]
     system = (
         "You are Prometheus. Answer using only the supplied request, memory evidence, and tool evidence. "
         "Follow every explicit output requirement in the user's request, including requested explanations, formatting, and number of items. Before finishing, verify the reply satisfies those requirements. "
@@ -127,15 +117,16 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
     if context: payload += "\n\n" + context
     payload += "\n\nTOOL EVIDENCE:\n" + json.dumps(rows, ensure_ascii=False)
     research_turn = any(e.worker == "research" and e.tool == "evidence" and e.status == "complete" for e in evidence)
-    structured = requests_json(plan.prompt) and not research_turn
+    structured = structured_request
     def answer(messages):
         if structured:
+            from .response_checks import json_output_format
             try:
-                return client.chat(messages, json_format=True, num_predict=384)
+                return client.chat(messages, json_format=json_output_format(plan.prompt), num_predict=384)
             except TypeError:
                 pass  # Compatibility with simple local/test adapters.
         return client.chat(messages)
-    if research_turn:
+    if research_turn and not structured:
         system += (" Summarize only explicitly stated evidence in at most three short sentences. "
                    "Bibliographic metadata without an abstract cannot support claims about findings or improvements. "
                    "Do not infer a publication history or relationships between sources. "
@@ -171,7 +162,7 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
     if urls and not structured:
         text += ("\n\nResearch sources (retrieved evidence): " if research_turn else "\n\nSources (retrieved evidence): ") + ", ".join(urls)
     problems=output_issues(plan.prompt,text)
-    if problems and not research_turn:
+    if problems and (not research_turn or structured):
         # Repair only the answer, never re-run tools or broaden authorization.
         messages=[{"role":"system","content":system},{"role":"user","content":payload},
                   {"role":"assistant","content":text},
@@ -184,6 +175,8 @@ def model_response(client, plan, evidence, recent_turns=(), personality=Personal
                     text+="\n\nResearch sources (retrieved evidence): "+", ".join(urls)
         except LocalModelError:
             pass  # Keep the original answer; self-evaluation exposes the failure.
+    if structured and output_issues(plan.prompt, text):
+        raise LocalModelError('The local answer failed the requested JSON checks; no completed answer was returned.')
     # A model refusal must not conceal relevant records already retrieved by the
     # application. Present them as attributed stored data, never verified truth
     # or instructions. Do not substitute this for an explicit output format.
@@ -255,6 +248,11 @@ def _safe_conversation_fast_path(prompt, *, online_enabled=False, required_reque
 
 def run_agent(memory, client, registry, prompt, *, online_enabled=False,
               approved_request_ids=(), trace=None, recent_turns=(), personality=Personality(), required_requests=()):
+    from .structured_data import explicit_json_reply
+    supplied = explicit_json_reply(prompt) if not online_enabled and not required_requests else None
+    if supplied is not None:
+        result = run_core(memory, prompt, responder=lambda plan, evidence: supplied, trace=trace)
+        return _finalize(result, 0, '{"route":"explicit-json-data"}', prompt)
     seed = build_plan(memory, prompt, online_enabled=online_enabled)
     from .grounding import device_presence_question, DEVICE_UNCERTAINTY
     if device_presence_question(prompt) and not online_enabled and not required_requests:
@@ -265,16 +263,11 @@ def run_agent(memory, client, registry, prompt, *, online_enabled=False,
     if owner_reply is not None:
         result = run_core(memory, prompt, responder=lambda plan, evidence: owner_reply, trace=trace)
         return _finalize(result, 0, '{"route":"saved-owner-memory"}', prompt)
-    from .grounding import direct_memory_lookup
-    stored_reply = direct_memory_lookup(prompt, seed.memory) if not online_enabled and not required_requests else None
-    if stored_reply is not None:
-        result = run_core(memory, prompt, responder=lambda plan, evidence: stored_reply, trace=trace)
-        return _finalize(result, 0, '{"route":"exact-stored-subject"}', prompt)
-    source_request = _direct_source_request(registry, prompt) if not online_enabled and not required_requests else None
-    if source_request is not None:
-        result = run_core(memory, prompt, tool_requests=(source_request,), executors=registry.executors(),
-                          responder=lambda plan, evidence: model_response(client, plan, evidence, recent_turns, personality), trace=trace)
-        return _finalize(result, 0, '{"route":"registered-definition-search"}', prompt)
+    from .shared_readonly import grounded_readonly
+    grounded = grounded_readonly(memory, prompt, registry=registry, memory_items=seed.memory,
+                                 online_enabled=online_enabled, required_requests=required_requests, trace=trace)
+    if grounded is not None:
+        return _finalize(grounded.core, 0, json.dumps({'route': grounded.route}), prompt)
     expression=direct_expression(prompt) if not online_enabled and not required_requests else None
     if expression is not None:
         try:calculator=registry.get('math','calculate')

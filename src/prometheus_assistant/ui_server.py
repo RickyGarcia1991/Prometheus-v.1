@@ -377,6 +377,12 @@ class Interface:
             raise ValueError('Scoped Core execution requires the authenticated job path.')
         mode, prompt = request['mode'], request['prompt']
         self.progress(mode.replace('_', ' ').capitalize())
+        if mode in {'chat', 'coding'}:
+            from .structured_data import explicit_json_reply
+            supplied = explicit_json_reply(prompt)
+            if supplied is not None:
+                return self.save(request, {'reply': supplied, 'generated_answer': False,
+                                          'source': 'explicitly supplied data'}, 'Supplied JSON data')
         if mode == 'chat':
             from .owner_profile import load_profile, recall
             with MemoryStore(self.memory_path) as memory:
@@ -384,6 +390,24 @@ class Interface:
             if reply is not None:
                 return self.save(request, {'reply': reply, 'source': 'user-declared owner memory',
                                  'identity_verified': False, 'generated_answer': False}, 'Saved owner memory')
+        if mode in {'chat', 'coding'}:
+            from .grounding import device_presence_question, DEVICE_UNCERTAINTY
+            if device_presence_question(prompt):
+                return self.save(request, {'reply': DEVICE_UNCERTAINTY, 'generated_answer': False,
+                                          'device_presence_verified': False}, 'Device presence – not verified')
+            from .shared_readonly import grounded_readonly
+            with MemoryStore(self.memory_path) as memory:
+                grounded = grounded_readonly(memory, prompt)
+            if grounded is not None:
+                core = grounded.core.as_dict()
+                data = {'reply': grounded.core.reply or
+                        'The registered local lookup did not complete. Its evidence records the denial or error.',
+                        'generated_answer': False, 'grounding': {'route': grounded.route,
+                        'evidence': core['evidence'], 'evaluation': core['evaluation']}}
+                label = {'exact-stored-subject': 'Stored local evidence',
+                         'registered-definition-search': 'Registered project evidence',
+                         'registered-host-summary': 'Measured computer status'}[grounded.route]
+                return self.save(request, data, label)
         if mode == 'capabilities':
             from .capabilities import catalog
             data = catalog(self)
@@ -468,14 +492,6 @@ class Interface:
         expression = direct_expression(prompt)
         if expression is not None:
             return self.save(request, calculate(expression), 'Automatic helper · exact calculation')
-        from .grounding import device_presence_question, DEVICE_UNCERTAINTY
-        if device_presence_question(prompt):
-            return self.save(request, {'reply': DEVICE_UNCERTAINTY, 'generated_answer': False,
-                                      'device_presence_verified': False}, 'Device presence · not verified')
-        if re.search(r'\b(?:this|my|your) (?:computer|system|hardware)\b', prompt, re.I) and re.search(r'\b(?:ram|memory|cpu|operating system)\b', prompt, re.I):
-            hardware = detect_hardware()
-            return self.save(request, {'reply': f'RAM: {hardware.ram_gib} GiB total, {hardware.available_ram_gib} GiB available. CPU threads: {hardware.cpu_threads}. OS: {hardware.system}.',
-                            'hardware': asdict(hardware)}, 'Measured computer status')
         from .compact_chat import candidates, generate, ModelMemoryPressure
         client = timed('runtime_client_setup', OllamaClient, timeout=.5)
         hardware = timed('hardware', detect_hardware)

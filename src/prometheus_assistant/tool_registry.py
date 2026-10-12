@@ -64,7 +64,10 @@ class ToolRegistry:
             if not isinstance(row,dict) or set(row)!={"worker","tool","summary","arguments"}: raise ValueError("Invalid planned tool schema.")
             summary=row["summary"]
             if not isinstance(summary,str) or not summary.strip() or len(summary)>300: raise ValueError("Invalid tool summary.")
-            requests.append(self.get(row["worker"],row["tool"]).request(summary.strip(),row["arguments"]))
+            spec = self.get(row["worker"], row["tool"])
+            # Model prose is retained in the raw plan, never promoted to the
+            # description of an observed tool result or an approval action.
+            requests.append(spec.request(spec.description[:300], row["arguments"]))
         return tuple(requests)
     def executors(self): return RegisteredExecutors(self._tools)
     def structured_catalog(self):

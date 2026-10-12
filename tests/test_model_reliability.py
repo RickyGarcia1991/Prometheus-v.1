@@ -33,7 +33,7 @@ def test_explicit_json_response_uses_json_mode(tmp_path, city, number):
             return json.dumps({'city': city, 'number': number}), 0
     with MemoryStore(tmp_path/'memory.db') as memory:
         result = run_agent(memory, Model(), ToolRegistry(),
-                           f'Return only JSON with keys city and number. Set city to {city} and number to {number}.')
+                           f'Return only JSON naming {city} under city and integer {number} under number.')
     assert json.loads(result.core.reply) == {'city': city, 'number': number}
 
 
