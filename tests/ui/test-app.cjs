@@ -15,7 +15,7 @@ async function fixture({voice = null} = {}) {
   const requests = [], timers = [], storageWrites = [], jobs = new Map(), queued = new Map();
   let serial = 0;
   const server = {token: 'first-token', statusFailure: false, pendingPost: null};
-  const statusData = {busy: false, job: null, state: 'idle', closing: false,
+  const statusData = {version: '0.8.0.fixture', busy: false, job: null, state: 'idle', closing: false,
     hardware: {ram_gib: 8, available_ram_gib: 2, cpu_threads: 4, chat_ready: true}};
   context.document.hidden = false;
   context.document.querySelectorAll = selector => documentRoot.querySelectorAll(selector);
@@ -31,6 +31,7 @@ async function fixture({voice = null} = {}) {
   context.localStorage = {getItem: () => null, setItem(key, value) {storageWrites.push({key, value});}, removeItem() {}};
   context.requestAnimationFrame = () => 1; context.cancelAnimationFrame = () => {};
   context.setTimeout = (fn, delay) => { timers.push({fn, delay}); return timers.length; };
+  context.clearTimeout = id => { if(timers[id-1])timers[id-1].cancelled=true; };
   context.AbortSignal = {timeout: () => ({})};
   context.URL = URL;
   context.fetch = async (url, options = {}) => {
@@ -71,6 +72,13 @@ async function fixture({voice = null} = {}) {
 module.exports = {fixture, settle, deferred, response};
 if (require.main === module) (async () => {
   const app = await fixture(), {run, elements: e, server, requests, jobs, queued, timers, context} = app;
+  assert.equal(e.runtimeVersion.textContent, '0.8.0.fixture', 'footer uses the running server version');
+  app.statusData.version = '0.9.0.updated';
+  await run('status()');
+  assert.equal(e.runtimeVersion.textContent, '0.9.0.updated', 'footer follows a new runtime version');
+  delete app.statusData.version;
+  await run('status()');
+  assert.equal(e.runtimeVersion.textContent, 'Unavailable', 'missing version cannot retain a stale release label');
   const results = [];
   context.window.addEventListener('prometheus-result', event => results.push(event.detail));
   const postCount = () => requests.filter(item => item.url === '/api/jobs').length;
@@ -327,5 +335,26 @@ if (require.main === module) (async () => {
   const searchBody = webSearch.requests.findLast(r=>r.url==='/api/jobs').body;
   assert.equal(searchBody.reach_action, 'web-search');
   assert.equal(searchBody.prompt, 'portable document readers');
+  for (const query of ['', 'coding assistant']) {
+    const catalogue = await fixture();
+    catalogue.elements.mode.value = 'reach'; catalogue.elements.reachAction.value = 'agent-resources';
+    catalogue.elements.reachAction.onchange();
+    assert.equal(catalogue.elements.prompt.placeholder, 'Project, capability, or all');
+    assert.equal(catalogue.elements.prompt.required, false, 'native form validation permits browsing without a query');
+    assert.equal(catalogue.elements.prompt.maxLength, 240);
+    assert.match(catalogue.elements.reachHelp.textContent, /local.*catalogue.*No web access is required/);
+    catalogue.elements.prompt.value = query;
+    await catalogue.run('submit()'); await settle();
+    const body = catalogue.requests.findLast(r=>r.url==='/api/jobs').body;
+    assert.equal(body.reach_action, 'agent-resources');
+    assert.equal(body.prompt, query || 'all', 'only an empty catalogue query becomes all');
+  }
+  const emptyWeb = await fixture();
+  emptyWeb.elements.mode.value = 'reach'; emptyWeb.elements.reachAction.value = 'agent-resources'; emptyWeb.elements.mode.onchange();
+  emptyWeb.elements.reachAction.value = 'web-search'; emptyWeb.elements.reachAction.onchange();
+  assert.equal(emptyWeb.elements.prompt.required, true); assert.equal(emptyWeb.elements.prompt.maxLength, 4000);
+  assert.match(emptyWeb.elements.reachHelp.textContent, /sends your query to Firecrawl/);
+  await emptyWeb.run('submit()');
+  assert(!emptyWeb.requests.some(r=>r.url==='/api/jobs'), 'empty online search never becomes an all query');
   console.log('Public reach UI passed: explicit online mode, Firecrawl search, operation guidance and exact job fields.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

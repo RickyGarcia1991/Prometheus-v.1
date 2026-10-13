@@ -32,7 +32,10 @@ const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
  assert.equal(formatted.startsWith('##'),true,'speech cleanup never changes the displayed source answer');
  player.stop();
  const long='The first sentence is complete. '+('One more sentence ends here. '.repeat(180));
- await player.play(long,async(_path,body)=>{spoken=body.text;return reply;},()=>{},()=>{});
+ const spokenParts=[];
+ await player.play(long,async(_path,body)=>{spokenParts.push(body.text);return reply;},()=>{},()=>{});
+ for(let index=0;player.source&&index<30;index++){player.source.onended();await settle();}
+ spoken=spokenParts.join('');
  assert(spoken.length<=4000&&spoken.endsWith('The rest of the answer is in the conversation.'));
  assert(/ends here\. The rest/.test(spoken),'long speech stops at a complete sentence and announces omitted text');
  player.stop();

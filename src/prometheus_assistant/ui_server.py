@@ -222,10 +222,11 @@ class Interface:
         self.grants = GrantStore(authority_path())
 
     def status(self):
+        from prometheus_control_center import __version__
         self.last_seen = time.monotonic()
         hardware = hardware_status()
         with self.lock:
-            return {'hardware': hardware, 'state': self.state,
+            return {'version': __version__, 'hardware': hardware, 'state': self.state,
                     'busy': self.current is not None, 'closing': self.closing,
                     'job': self.current, 'job_background': self.jobs.get(self.current, {}).get('background', False),
                     'saved_locally': True, 'development_preview': self.preview,
@@ -581,7 +582,8 @@ class Interface:
         if mode == 'reach':
             from .public_reach import read_public
             data = read_public(request['reach_action'], prompt, online=True, cancel_event=self.cancel_event)
-            return self.save(request, data, 'Public reach · retrieved source evidence')
+            label = 'Agent resources · local catalogue' if data.get('offline') else 'Public reach · retrieved source evidence'
+            return self.save(request, data, label)
         if mode == 'research':
             from .public_resources import public_search
             data = public_search(prompt, provider=request.get('provider', 'crossref'), online=True)
@@ -788,7 +790,6 @@ class Handler(BaseHTTPRequestHandler):
                   '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                   '/folded-core.js': ('folded-core.js', 'text/javascript; charset=utf-8'),
                   '/voice-player.js': ('voice-player.js', 'text/javascript; charset=utf-8'),
-                  '/folded-core.webp': ('folded-core.webp', 'image/webp'),
                   '/adaptive.js': ('adaptive.js', 'text/javascript; charset=utf-8'),
                   '/transport.js': ('transport.js', 'text/javascript; charset=utf-8'),
                   '/workspace.js': ('workspace.js', 'text/javascript; charset=utf-8'),
@@ -797,8 +798,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/grants.js': ('grants.js', 'text/javascript; charset=utf-8'),
                   '/self-improvement.js': ('self-improvement.js', 'text/javascript; charset=utf-8'),
                   '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
-                  '/style.css': ('style.css', 'text/css; charset=utf-8'),
-                  '/approved-orb.png': ('approved-orb.png', 'image/png')}
+                  '/style.css': ('style.css', 'text/css; charset=utf-8')}
         try:
             if self.path in routes:
                 name, kind = routes[self.path]
@@ -927,14 +927,15 @@ class Handler(BaseHTTPRequestHandler):
                     import base64
                     app.last_seen = time.monotonic()
                     audio = synthesize_wav(body['text'], cancelled=lambda: app.closing or not self.owner_unlocked())
-                    if not self.owner_unlocked():
-                        self.respond(401, {'error': 'Unlock Prometheus with your passkey.'})
-                    elif app.closing:
-                        raise RuntimeError('Prometheus is closing.')
-                    else:
-                        self.respond(200, {'encoding': 'wav-base64', 'audio': base64.b64encode(audio).decode('ascii')})
                 finally:
                     app.speech_lock.release()
+                # The client may request its next chunk as soon as this response arrives.
+                if not self.owner_unlocked():
+                    self.respond(401, {'error': 'Unlock Prometheus with your passkey.'})
+                elif app.closing:
+                    raise RuntimeError('Prometheus is closing.')
+                else:
+                    self.respond(200, {'encoding': 'wav-base64', 'audio': base64.b64encode(audio).decode('ascii')})
             elif self.path == '/api/jobs':
                 cookie = self.owner_session()
                 self.respond(202, self.server.app.submit(body,

@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev18-portable-refinement-20261012",
-  "version": "0.8.0.dev18",
-  "prepared_utc": "2026-10-13T02:49:05.037538+00:00",
-  "base_git_commit": "179ea779874a2ac1b2623380339daf34f7fc3a98",
+  "release": "Prometheus-v0.8.0-dev19-interface-refinement-20261013",
+  "version": "0.8.0.dev19",
+  "prepared_utc": "2026-10-13T04:25:13.861743+00:00",
+  "base_git_commit": "73d6fc674bb7bea7d3f45b0f791667d4c917c426",
   "source_branch": "feature/full-health-audit-20261012",
-  "base_release": "Prometheus-v0.8.0-dev17-maintenance-review-20261012",
-  "base_manifest_sha256": "27d44a6aad489dc04c5310b171b1fd84420e76c7365359f961b156865539fbaa",
-  "integration_scope": "Compatible portable Python, Ollama and PDF-reader updates; reviewed reference summaries; JSON response-contract repairs; compact independent conversation scrolling and live voice waveform; longer finite model residency when memory allows; owner-reviewed model-generated implementation edits with full regression checks, text/voice confirmation, signed activation and recovery.",
+  "base_release": "Prometheus-v0.8.0-dev18-portable-refinement-20261012",
+  "base_manifest_sha256": "a034ffe47fba092afa35c495aabd7fd014f5638b970ada7e9d5e857845cb2f88",
+  "integration_scope": "Lightweight measured waveform with explicit conversation toggle; Owner icon and version/creator footer; bounded sequential voice prefetch; intent-routing repairs; offline agent-resource catalogue; host-only verified restoration candidate preparation.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -26,6 +26,10 @@
     "Voice uses the Windows default microphone and local English Whisper transcription. Silero v6.2.0 classifies speech locally in 32 ms frames; three speech votes within 160 ms confirm speech, and 1.6 seconds without confirmed speech ends the turn. No semantic turn prediction, playback barge-in or exact ChatGPT parity. No new recording or idle timer; bounded 0.8-second pre-roll, manual Stop/End, cancellation, hidden-tab/disconnection cleanup, the existing 100 MiB utterance boundary and transcription processing limit remain. Dev16 automatic pause ending, spoken 42/50 replies, return to Listening and End microphone cleanup were confirmed by the owner. This release preserves that implementation.",
     "Model-generated updates change one existing bounded implementation file. Larger files, multiple-file changes, tests, dependencies and approval/signing/policy code require a separate development update.",
     "Self-improvement activation requires this host's configured signing identity and fixed tested tools. These host credentials are not placed on the SSD; another host must configure its own tools.",
-    "Regression execution uses isolated test directories and process guards with the host user permissions. It is not an OS sandbox for hostile generated code."
+    "Regression execution uses isolated test directories and process guards with the host user permissions. It is not an OS sandbox for hostile generated code.",
+    "The agent-resource catalogue is searchable reference data. It does not install or execute the listed third-party projects, their services, models, hooks or credentials.",
+    "Verified core restoration prepares an owner-approved host candidate from a matching signed recovery. It does not autonomously detect faults, activate recovery or move live files.",
+    "Speech prefetch begins after an accepted complete model answer, with one upcoming audio chunk. It is not token-streaming speech or simultaneous listening during playback.",
+    "Physical voice acceptance was established before this edition. This edition separately checks software state transitions and the native speech runtime; audible quality still requires a listener."
   ]
 }

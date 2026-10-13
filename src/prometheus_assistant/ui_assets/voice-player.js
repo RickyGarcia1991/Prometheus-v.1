@@ -31,6 +31,23 @@ function speechText(text){
  else {const space=prefix.lastIndexOf(' ');if(space>=prefix.length*.5)prefix=prefix.slice(0,space);prefix=prefix.trimEnd().replace(/[,;:]$/,'')+'…';}
  return prefix.trimEnd()+suffix;
 }
+function speechChunks(text){
+ // Normalize once, so Markdown/code boundaries and the total speech cap apply
+ // to the complete accepted answer rather than independently to each chunk.
+ let rest=speechText(text);const chunks=[];
+ while(rest){
+  const limit=chunks.length?700:240,points=Array.from(rest);
+  if(points.length<=limit){chunks.push(rest);break;}
+  const prefix=points.slice(0,limit).join('');
+  const boundaries=[...prefix.matchAll(/[.!?](?:["'”’)]*)(?=\s)/g)].filter(match=>
+   !/\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|e\.g|i\.e)\.$/i.test(prefix.slice(0,match.index+1)));
+  const sentence=chunks.length?boundaries.at(-1):boundaries[0];
+  let end=sentence?sentence.index+sentence[0].length:prefix.lastIndexOf(' ');
+  if(end<1)end=prefix.length;
+  chunks.push(rest.slice(0,end));rest=rest.slice(end);
+ }
+ return chunks;
+}
 const INTERRUPTED='Audio playback was interrupted. Choose Spoken + text and start voice chat again; your answer stays in text.';
 async function resumeContext(context){
  if(context.state==='running')return;
@@ -58,25 +75,45 @@ class LocalVoice {
  stop(){this.epoch++;if(this.contextListener){const {context,listener}=this.contextListener;context.removeEventListener('statechange',listener);this.contextListener=null;}if(this.source){this.source.onended=null;try{this.source.stop();}catch{}this.source.disconnect();}this.source=null;this.samples=null;this.value=0;this.last=0;}
  async play(text,request,onstart,onend,onerror=()=>{}){
   this.stop();const epoch=this.epoch;await this.unlock();if(epoch!==this.epoch)return false;
-  const result=await request('/api/speech',{text:speechText(text)});if(epoch!==this.epoch)return false;
-  if(result.encoding!=='wav-base64'||typeof result.audio!=='string'||result.audio.length>14000000)throw Error('Invalid local voice response.');
-  const bytes=Uint8Array.from(atob(result.audio),c=>c.charCodeAt(0));
-  const context=this.context,buffer=await context.decodeAudioData(bytes.buffer);if(epoch!==this.epoch)return false;
-  if(buffer.duration>300||buffer.numberOfChannels!==1)throw Error('Local voice output exceeded its limit.');
-  // Synthesis/decoding can outlive a browser or device interruption.
-  await resumeContext(context);if(epoch!==this.epoch)return false;
-  this.samples=envelope(buffer);const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);
-  this.source=source;this.start=context.currentTime+.04;this.last=0;
-  let recovering=false;
+  const context=this.context,chunks=speechChunks(text);let duration=0;
   const fail=error=>{if(epoch!==this.epoch)return;this.stop();onerror(error);};
-  const listener=()=>{
-   if(epoch!==this.epoch||context.state==='running'||recovering)return;
-   recovering=true;
-   resumeContext(context).then(()=>{recovering=false;},fail);
+  const prepare=async part=>{
+   if(epoch!==this.epoch)return null;
+   const result=await request('/api/speech',{text:part});if(epoch!==this.epoch)return null;
+   if(result.encoding!=='wav-base64'||typeof result.audio!=='string'||result.audio.length>14000000)throw Error('Invalid local voice response.');
+   const bytes=Uint8Array.from(atob(result.audio),c=>c.charCodeAt(0));
+   const buffer=await context.decodeAudioData(bytes.buffer);if(epoch!==this.epoch)return null;
+   duration+=buffer.duration;
+   if(!Number.isFinite(buffer.duration)||buffer.duration<=0||duration>300||buffer.numberOfChannels!==1)throw Error('Local voice output exceeded its limit.');
+   return buffer;
   };
-  this.contextListener={context,listener};context.addEventListener('statechange',listener);
-  source.onended=()=>{if(epoch!==this.epoch)return;if(context.state!=='running'){fail(Error(INTERRUPTED));return;}this.stop();onend();};
-  source.start(this.start);onstart();return true;
+  const start=async(buffer,index)=>{
+   if(epoch!==this.epoch||!buffer)return false;
+   // Synthesis/decoding can outlive a browser or device interruption.
+   await resumeContext(context);if(epoch!==this.epoch)return false;
+   this.samples=envelope(buffer);const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);
+   this.source=source;this.start=context.currentTime+.04;this.last=0;
+   let recovering=false,next=null;
+   const listener=()=>{
+    if(epoch!==this.epoch||context.state==='running'||recovering)return;
+    recovering=true;resumeContext(context).then(()=>{recovering=false;},fail);
+   };
+   this.contextListener={context,listener};context.addEventListener('statechange',listener);
+   source.onended=()=>{
+    if(epoch!==this.epoch||this.source!==source)return;
+    if(context.state!=='running'){fail(Error(INTERRUPTED));return;}
+    source.onended=null;source.disconnect();this.source=null;this.samples=null;this.value=0;this.last=0;
+    context.removeEventListener('statechange',listener);this.contextListener=null;
+    if(index===chunks.length-1){this.stop();onend();return;}
+    // Only the final audio completion may return a hands-free session to input.
+    Promise.resolve(next).then(prepared=>start(prepared,index+1)).catch(fail);
+   };
+   source.start(this.start);if(index===0)onstart();
+   // One current buffer plus one pending/decoded next buffer; no parallel TTS.
+   if(epoch===this.epoch&&index+1<chunks.length)next=prepare(chunks[index+1]).catch(error=>{fail(error);return null;});
+   return true;
+  };
+  return start(await prepare(chunks[0]),0);
  }
  level(now){
   if(!this.source||!this.samples||this.context.state!=='running')return 0;
@@ -90,6 +127,6 @@ class LocalVoice {
  }
  suspend(){this.stop();if(this.context?.state==='running')this.context.suspend().catch(()=>{});}
 }
-root.PrometheusVoice={LocalVoice,envelope,speechText};
+root.PrometheusVoice={LocalVoice,envelope,speechText,speechChunks};
 if(typeof module!=='undefined')module.exports=root.PrometheusVoice;
 })(typeof window!=='undefined'?window:globalThis);

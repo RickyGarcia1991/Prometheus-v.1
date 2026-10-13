@@ -29,6 +29,13 @@ def test_speech_http_boundaries_and_cleanup(tmp_path, monkeypatch):
             raise ValueError('Synthetic voice failure')
         return b'RIFF synthetic PCM'
     monkeypatch.setattr(voice, 'synthesize_wav', synthesize)
+    response_lock_states = []
+    original_respond = ui.Handler.respond
+    def observe_response(handler, status, payload, *args, **kwargs):
+        if handler.path == '/api/speech' and status == 200:
+            response_lock_states.append(app.speech_lock.locked())
+        return original_respond(handler, status, payload, *args, **kwargs)
+    monkeypatch.setattr(ui.Handler, 'respond', observe_response)
     def request(body, **headers):
         fields = {'Content-Type':'application/json', 'Origin':server.origin, 'X-Prometheus-Token':app.token, **headers}
         req = Request(server.origin+'/api/speech', data=json.dumps(body).encode(), headers=fields)
@@ -52,6 +59,7 @@ def test_speech_http_boundaries_and_cleanup(tmp_path, monkeypatch):
         status, result = request({'text':'literal $(text)'})
         assert status == 200 and base64.b64decode(result['audio']) == b'RIFF synthetic PCM'
         assert calls == ['fail', 'literal $(text)']
+        assert response_lock_states == [False], 'The next speech chunk must be able to prepare as soon as this response arrives.'
         app.closing = True
         assert request({'text':'closed'})[0] == 409
     finally:

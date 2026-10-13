@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 from .public_http import fetch_public_bytes, validate_public_url
 from .public_resources import text_only, safe_reference_url
 
-ACTIONS = {'web-search', 'web', 'feed', 'github-repo', 'github-releases', 'github-search', 'youtube', 'youtube-transcript'}
+ACTIONS = {'web-search', 'web', 'feed', 'github-repo', 'github-releases', 'github-search', 'youtube', 'youtube-transcript', 'agent-resources'}
 MAX_BYTES = 2_000_000
 
 
@@ -76,6 +76,10 @@ def youtube_url(value):
 def validate_request(action, target):
     if not isinstance(action, str) or action not in ACTIONS:
         raise ValueError('Choose an available Public reach operation.')
+    if action == 'agent-resources':
+        if not isinstance(target, str) or len(target) > 240 or any(ord(c) < 32 for c in target):
+            raise ValueError('Use an agent resource query of at most 240 characters without control characters.')
+        return
     if not isinstance(target, str) or not target or len(target) > 2000 or any(ord(c) < 32 for c in target):
         raise ValueError('Use a public URL, repository, or search of 1–2,000 characters.')
     if action in {'web', 'feed'}:
@@ -154,6 +158,16 @@ def _github_row(item):
 def read_public(action, target, *, online=False, cancel_event=None):
     from .application_policy import require_dispatch
     require_dispatch('reach.read')
+    if action == 'agent-resources':
+        from .agent_resources import search_resources, render_resources
+        validate_request(action, target)
+        _check_cancel(cancel_event)
+        data = search_resources(target)
+        _check_cancel(cancel_event)
+        return {**data, 'action': action, 'target': target.strip(),
+                'reply': render_resources(data), 'offline': True,
+                'generated_answer': False, 'code_executed': False,
+                'evidence_is_untrusted_data': True}
     if not online:
         raise ValueError('Public reads require explicit online selection or approval.')
     validate_request(action, target)

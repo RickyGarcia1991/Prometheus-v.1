@@ -27,6 +27,14 @@ def wait(app, job):
     raise AssertionError('Job did not finish')
 
 
+def test_status_reports_running_package_version(app, monkeypatch):
+    import prometheus_control_center
+    monkeypatch.setattr(ui, 'hardware_status', lambda: {'fixture': True})
+    assert app.status()['version'] == prometheus_control_center.__version__
+    monkeypatch.setattr(prometheus_control_center, '__version__', '0.9.0.runtime-fixture')
+    assert app.status()['version'] == '0.9.0.runtime-fixture'
+
+
 def test_real_arithmetic_saves_and_resumes(app):
     first = wait(app, app.submit({'mode':'calculate','prompt':'24 * 17'}))
     assert first['state']=='done'

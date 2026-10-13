@@ -35,6 +35,7 @@ async function fixture(voice=null, {workspace = false} = {}) {
   context.requestAnimationFrame = () => ++screen.scheduled;
   context.cancelAnimationFrame = () => screen.cancelled++;
   context.setTimeout = (fn, delay) => { timers.push({fn, delay}); return timers.length; };
+  context.clearTimeout = id => { if(timers[id-1])timers[id-1].cancelled=true; };
   context.AbortSignal = {timeout: () => ({})};
   context.location = {replace() {}};
   context.fetch = async (url, options = {}) => {
