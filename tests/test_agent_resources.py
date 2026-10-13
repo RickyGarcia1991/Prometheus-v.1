@@ -9,7 +9,7 @@ def test_exact_lookup_is_case_insensitive_and_precedes_other_memory_results():
     result = agent_resources.search_resources('aGeNtMeMoRy')
     assert result['results'][0]['id'] == 'agentmemory-rohitg00'
     assert result['results'][0]['publisher'] == 'Rohit Ghumare / rohitg00'
-    assert 'other projects' in result['results'][0]['limitations']
+    assert result['results'][0]['source_url'] == 'https://github.com/rohitg00/agentmemory'
 
 
 def test_partial_lookup_normalizes_punctuation_and_matches_multiple_terms():
@@ -34,10 +34,14 @@ def test_reference_discovery_does_not_contact_network_or_launch_processes(monkey
 def test_catalogue_does_not_claim_uninstalled_services_are_working():
     names = ('browser-use', 'agentmemory-rohitg00', 'openviking', 'bolt-new', 'agent-reach')
     rows = {name: agent_resources.search_resources(name)['results'][0] for name in names}
-    for name in ('browser-use', 'agentmemory-rohitg00', 'openviking'):
+    for name in ('openviking',):
         assert rows[name]['availability'] == 'requires-setup'
         assert ('not installed' in rows[name]['limitations']
                 or 'No Prometheus' in rows[name]['limitations'])
+    for name in ('browser-use', 'agentmemory-rohitg00'):
+        assert rows[name]['availability'] == 'reviewed-adapter'
+        assert 'Dev20 includes' in rows[name]['limitations']
+        assert 'Integrations' in rows[name]['next_step']
     assert rows['bolt-new']['availability'] == 'reference'
     assert rows['agent-reach']['availability'] == 'existing-public-adapter'
     assert 'complete upstream package' in rows['agent-reach']['limitations']
@@ -83,10 +87,12 @@ def test_invalid_limits_are_rejected(limit):
 
 def test_rendering_keeps_capability_and_setup_distinct():
     rendered = agent_resources.render_resources(agent_resources.search_resources('browser-use', limit=1))
-    assert 'Requires setup; adapter not installed' in rendered
+    assert 'Owner-reviewed adapter' in rendered
+    assert 'check runtime in Integrations' in rendered
     assert 'Navigate interactive websites' in rendered
     assert 'Requirements:' in rendered and 'License:' in rendered and 'Source: https://' in rendered
-    assert 'No Prometheus runnable adapter is installed' in rendered
+    assert 'public HTTPS reader' in rendered
+    assert 'no account flows or qualified model-driven actions' in rendered
 
 
 def test_invalid_availability_fails_closed(tmp_path, monkeypatch):

@@ -6,6 +6,7 @@
   const node=document.createElement(tag);node.textContent=String(value||'');if(className)node.className=className;return node;
  }
  function render(approval){
+  approval=approval?.kind==='self_improve'?approval:null;
   pending=approval;const box=element('improvementReview');box.replaceChildren();box.hidden=!approval;
   element('improvementDecisions').hidden=!approval;
   if(!approval)return;
@@ -25,7 +26,7 @@
  };
  element('refreshApproval').onclick=async()=>{
   try{const result=await api('/api/approvals/pending');render(result.approval);
-   element('improvementStatus').textContent=result.approval?'Review the exact proposal below.':'No pending approval in this owner session.';
+   element('improvementStatus').textContent=pending?'Review the exact proposal below.':result.approval?'An integration proposal is awaiting approval in Integrations.':'No pending approval in this owner session.';
   }catch(error){element('improvementStatus').textContent=error.message;}
  };
  async function decide(decision){
@@ -56,9 +57,9 @@
  window.addEventListener('prometheus-busy',event=>{if(event.detail.online&&!activationLoaded){activationLoaded=true;activation();}});
  window.addEventListener('prometheus-result',event=>{
   const result=event.detail;if(result.origin!=='local')return;
-  if(result.details?.approval){render(result.details.approval);element('improvementStatus').textContent='Tests passed. Review the exact change before approving installation.';}
-  if(result.details?.approval_resolved){render(null);element('improvementStatus').textContent=result.reply;if(result.details?.self_improvement)activation();}
-  else if(['self_improve','approval_decision'].includes(result.action)&&result.error)element('improvementStatus').textContent=result.error;
+  if(result.details?.approval){render(result.details.approval);if(pending)element('improvementStatus').textContent='Tests passed. Review the exact change before approving installation.';}
+  if(result.details?.approval_resolved&&(pending?.id===result.details.approval_resolved||result.details?.self_improvement)){render(null);element('improvementStatus').textContent=result.reply;if(result.details?.self_improvement)activation();}
+  else if((result.action==='self_improve'||result.action==='approval_decision'&&pending)&&result.error)element('improvementStatus').textContent=result.error;
   else if(result.action==='self_improve'&&result.details?.self_improvement&&!result.details?.approval)element('improvementStatus').textContent=result.reply;
  });
 })();

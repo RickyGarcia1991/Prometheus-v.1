@@ -243,7 +243,7 @@
       "label": "Prometheus signed application",
       "category": "application",
       "provider": "pinned",
-      "installed_revision": "Prometheus-v0.8.0-dev19-interface-refinement-20261013",
+      "installed_revision": "Prometheus-v0.8.0-dev20-approved-integrations-20261013",
       "source_url": "",
       "reason": "No authenticated public release feed is configured. Use the existing verified build, signing, backup, activation and recovery workflow on the main workstation."
     },

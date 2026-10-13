@@ -236,7 +236,7 @@ def create_backup(memory_path, destination_root, *, data_dirs=None, require_sepa
     if owner_access.exists():
         selected_dirs['OwnerAccess'] = owner_access
     for name, path in selected_dirs.items():
-        if name not in {'Library', 'Coding', 'Maintenance', 'PublicHistory', 'Routing', 'OwnerAccess'}:
+        if name not in {'Library', 'Coding', 'Maintenance', 'PublicHistory', 'Routing', 'OwnerAccess', 'AgentMemory'}:
             raise ValueError('Only supported application data directories may be added.')
         directory = _plain_path(path)
         if directory == destination_root or directory in destination_root.parents:

@@ -52,7 +52,8 @@ def test_interface_catalogue_result_is_labelled_local_and_retains_metadata(tmp_p
         assert result['label'] == 'Agent resources · local catalogue'
         assert result['details']['network_used'] is False
         assert result['details']['offline'] is True
-        assert result['details']['results'][0]['availability'] == 'requires-setup'
-        assert 'adapter not installed' in result['reply']
+        assert result['details']['results'][0]['availability'] == 'reviewed-adapter'
+        assert 'Owner-reviewed adapter' in result['reply']
+        assert 'check runtime in Integrations' in result['reply']
     finally:
         app.close()

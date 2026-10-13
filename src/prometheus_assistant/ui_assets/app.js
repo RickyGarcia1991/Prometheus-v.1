@@ -5,7 +5,7 @@ const policy=new PrometheusAdaptive.AdaptiveDisplay();
 let token='',session=null,job=null,localJob=null,busy=false,closed=false,online=false,lastReply='',speaking=false,partialBox=null,lastSubmitted='',submitting=false,cancelling=false;
 let historyEpoch=0,historyPending=false;
 const transport=new PrometheusTransport.LocalClient();
-transport.onRestart=()=>{stopVoiceChat(false);invalidateHistory();$('homeKey').value='';$('questionImage').value='';job=null;localJob=null;cancelling=false;if(partialBox)partialBox.querySelector('.label').textContent='Interrupted by restart · not saved';partialBox=null;if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('Prometheus restarted. Saved conversations are retained; an unfinished request was not resubmitted.');refreshHistory();};
+transport.onRestart=()=>{stopVoiceChat(false);stopSpeaking();invalidateHistory();$('homeKey').value='';$('questionImage').value='';job=null;localJob=null;cancelling=false;if(partialBox)partialBox.querySelector('.label').textContent='Interrupted by restart · not saved';partialBox=null;if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('Prometheus restarted. Saved conversations are retained; an unfinished request was not resubmitted.');refreshHistory();};
 let hardware={},display={level:1,name:'Simple',fps:15,size:0},raf=null,lastPaint=0,paintCost=0,lag=0,frames=0,slowFrames=0,drawTotal=0,lastFrame=0;
 let conversationView=false,inputLevel=0,inputLevelAt=-Infinity,paintTimer=null;
 let preference='auto';try{preference=localStorage.getItem('prometheus.display')||'auto';session=null;}catch{}
@@ -13,7 +13,7 @@ if(!['auto','simple','still'].includes(preference))preference='auto';$('quality'
 const canvas=$('fluid');
 const orbRenderer=window.PrometheusOrb?new window.PrometheusOrb.FoldedCore(canvas):null;
 const localVoice=window.PrometheusVoice?new window.PrometheusVoice.LocalVoice():null;
-let spokenMode=false,speechEpoch=0;
+let spokenMode=false,speechEpoch=0,voiceReplyJob=null,voiceStream=null,suppressedSpeechJob=null;
 let voiceChat=false,dictationJob=null,dictationPending=false,dictationEpoch=0,microphoneOn=false,finishingDictation=false;
 let lastVoicePulse=0,voicePulsePending=false,voiceFrame=null,voiceEndNotice='',voiceActivity=null;
 const discardedDictations=new Set();
@@ -31,6 +31,7 @@ function voiceControls(){
 }
 function voiceState(text,state=null){voiceActivity=state;if(state)activity(state);$('voiceState').textContent=text;voiceControls();}
 function stopVoiceChat(cancel=true){
+ if(cancel&&voiceChat&&job&&localJob===job&&voiceReplyJob===job)api('/api/cancel',{id:job}).catch(()=>{});
  if(voiceChat){spokenMode=false;$('textMode').setAttribute('aria-pressed','true');$('spokenMode').setAttribute('aria-pressed','false');}
  const captured=dictationJob;if(captured)discardedDictations.add(captured);dictationEpoch++;voiceChat=false;dictationJob=null;dictationPending=false;microphoneOn=false;finishingDictation=false;voiceActivity=null;
  if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}
@@ -181,18 +182,20 @@ async function pollJob(id){
   if(result.state==='running'){setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
   if(localJob===id)localJob=null;job=null;cancelling=false;setBusy(false);activity('idle');adapt();return;
  }
- if(result.state==='running'){trackRecording(id,result);$('activityNote').textContent=result.stage||'Working on your request';if($('cancelRequest')){$('cancelRequest').hidden=!result.cancellable||dictationJob===id;$('cancelRequest').disabled=cancelling;}if(result.partial){if(!partialBox)partialBox=append('assistant',result.partial,'In progress · not saved');else updateAnswer(partialBox,result.partial,'In progress · not saved');window.dispatchEvent(new CustomEvent('prometheus-partial',{detail:{text:result.partial}}));}setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
+ if(result.state==='running'){updateStreamingSpeech(id,result);trackRecording(id,result);$('activityNote').textContent=result.stage||'Working on your request';if($('cancelRequest')){$('cancelRequest').hidden=!result.cancellable||dictationJob===id;$('cancelRequest').disabled=cancelling;}if(result.partial){if(!partialBox)partialBox=append('assistant',result.partial,'In progress · not saved');else updateAnswer(partialBox,result.partial,'In progress · not saved');window.dispatchEvent(new CustomEvent('prometheus-partial',{detail:{text:result.partial}}));}setTimeout(()=>pollJob(id),document.hidden?5000:350);return;}
  const ownDictation=dictationJob===id,continueVoice=ownDictation&&voiceChat;const origin=localJob===id?'local':'observed';if(ownDictation){dictationJob=null;microphoneOn=false;finishingDictation=false;voiceActivity=null;voiceControls();}if(localJob===id)localJob=null;job=null;cancelling=false;const completedPartial=partialBox;partialBox=null;$('requestTime').textContent=result.seconds+' s';
  if(result.state==='cancelled'&&result.action==='dictate'&&result.reason==='empty_recording'){stopVoiceChat(false);stopSpeaking();if(completedPartial)completedPartial.remove();activity('idle');voiceEndNotice=result.error;notice(voiceEndNotice);}
- else if(result.state==='error'||result.state==='cancelled'){stopVoiceChat(false);if(completedPartial)completedPartial.querySelector('.label').textContent='Incomplete · not saved';append('error',result.error,result.state==='cancelled'?'Request stopped':'Request needs attention');activity('error');if(!$('prompt').value)$('prompt').value=lastSubmitted;window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{action:result.action,error:result.error,origin,job_id:id}}));notice('You can edit your request and try again.');}
+ else if(result.state==='error'||result.state==='cancelled'){stopVoiceChat(false);stopSpeaking();if(completedPartial)completedPartial.querySelector('.label').textContent='Incomplete · not saved';append('error',result.error,result.state==='cancelled'?'Request stopped':'Request needs attention');activity('error');if(!$('prompt').value)$('prompt').value=lastSubmitted;window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{action:result.action,error:result.error,origin,job_id:id}}));notice('You can edit your request and try again.');}
  else{const r=result.result;if(r.transcript){if(completedPartial)completedPartial.remove();if(ownDictation){const draft=$('prompt').value.trim();if(draft&&voiceChat)stopVoiceChat(false);$('prompt').value=draft?draft+'\n'+r.transcript:r.transcript;growPrompt();notice('Dictation is ready. Review it, then send when you’re ready.');}}else{lastReply=r.reply||'';if(completedPartial)updateAnswer(completedPartial,lastReply,r.label,r.details);else append('assistant',lastReply,r.label,r.details);if(r.session)rememberSession(r.session);$('workLabel').textContent=r.label||'Request completed';$('saveStatus').textContent=r.session?'Saved locally':'Completed locally';window.dispatchEvent(new CustomEvent('prometheus-result',{detail:{...r,origin,job_id:id}}));}activity('idle');}
  setBusy(false);refreshHistory();
  adapt();
  if(result.state==='done'&&continueVoice&&voiceChat&&!document.hidden){
   if($('prompt').value.length>4000){stopVoiceChat(false);notice('This transcript is longer than one message. Edit it before sending; your words remain in the box.');return;}
   voiceState('Thinking…','thinking');await submit('chat');
- }else if(result.state==='done'&&origin==='local'&&result.result?.reply&&spokenMode&&!document.hidden)speak();
- }catch(error){if(job!==id)return;if(error.status===404||error.status===403){stopVoiceChat(false);job=null;localJob=null;setBusy(false);if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('This request is no longer available. Check saved conversations before sending it again.');await refreshHistory();return;}notice('Connection interrupted. Your request may still be running; reconnecting…');setTimeout(()=>pollJob(id),5000);}
+ }else if(result.state==='done'&&origin==='local'&&result.result?.reply&&spokenMode&&!document.hidden){
+  if(!updateStreamingSpeech(id,result,true,true)&&suppressedSpeechJob!==id)speak();
+ }
+ }catch(error){if(job!==id)return;stopVoiceChat(false);stopSpeaking();if(error.status===404||error.status===403){stopVoiceChat(false);job=null;localJob=null;setBusy(false);if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('This request is no longer available. Check saved conversations before sending it again.');await refreshHistory();return;}notice('Connection interrupted. Your request may still be running; reconnecting…');setTimeout(()=>pollJob(id),5000);}
 }
 async function submitAction(body){
  if(busy||closed||!online||voiceChat||dictationPending||dictationJob)return false;invalidateHistory();stopSpeaking();notice('');submitting=true;setBusy(true);activity('thinking');partialBox=null;cancelling=false;
@@ -205,11 +208,41 @@ async function imageUpload(){
 }
 async function submit(modeOverride){
  if(busy||closed||!online)return false;if(historyPending){notice('Wait for the selected conversation to load, or choose New conversation. Your message stays here.');return;}const mode=modeOverride||$('mode').value;let prompt=$('prompt').value.trim();if(mode==='reach'&&$('reachAction').value==='agent-resources'&&!prompt)prompt='all';if(!prompt&&!['dictate','tools','models','capabilities'].includes(mode)){$('prompt').focus();return;}
- window.dispatchEvent(new CustomEvent('prometheus-show-conversation'));invalidateHistory();stopSpeaking();notice('');submitting=true;cancelling=false;setBusy(true);activity(mode==='dictate'?'opening':'thinking');const captureEpoch=dictationEpoch;if(mode==='dictate'){dictationPending=true;voiceActivity='opening';voiceControls();notice(voiceChat?'Voice chat is on. Pause to send; End voice chat stops listening.':'Recording locally. Pause to finish, or press Stop recording. Your words will be held for review.');}
- try{const body={mode,prompt,profile:$('profile').value,provider:$('provider').value||'crossref',language:$('language').value||'Auto',project:$('project').value};if(mode==='reach')body.reach_action=$('reachAction').value;if(mode==='ask')body.source=$('evidenceSource').value||'documents';if(mode==='vision')body.content=await imageUpload();if(mode==='home')body.home_key=$('homeKey').value;if(mode==='documents')body.include_history=$('documentHistory')?.checked||false;if(session)body.session=session;const result=await api('/api/jobs',body);job=result.id;localJob=job;if(mode==='dictate'){dictationPending=false;if(captureEpoch!==dictationEpoch||document.hidden){discardedDictations.add(job);api('/api/cancel',{id:job}).catch(()=>{});pollJob(job);return false;}dictationJob=job;voiceControls();}partialBox=null;lastSubmitted=prompt;if(mode==='vision')$('questionImage').value='';if(!['dictate','tools','models','capabilities'].includes(mode)){append('user',prompt);$('prompt').value='';}pollJob(job);adapt();growPrompt();return true;}
+ window.dispatchEvent(new CustomEvent('prometheus-show-conversation'));invalidateHistory();stopSpeaking();notice('');submitting=true;cancelling=false;setBusy(true);activity(mode==='dictate'?'opening':'thinking');const captureEpoch=dictationEpoch,replyEpoch=speechEpoch,wantsVoice=mode==='chat'&&spokenMode,wasVoiceChat=voiceChat;if(mode==='dictate'){dictationPending=true;voiceActivity='opening';voiceControls();notice(voiceChat?'Voice chat is on. Pause to send; End voice chat stops listening.':'Recording locally. Pause to finish, or press Stop recording. Your words will be held for review.');}
+ try{const body={mode,prompt,profile:$('profile').value,provider:$('provider').value||'crossref',language:$('language').value||'Auto',project:$('project').value};if(wantsVoice)body.voice_reply=true;if(mode==='reach')body.reach_action=$('reachAction').value;if(mode==='ask')body.source=$('evidenceSource').value||'documents';if(mode==='vision')body.content=await imageUpload();if(mode==='home')body.home_key=$('homeKey').value;if(mode==='documents')body.include_history=$('documentHistory')?.checked||false;if(session)body.session=session;const result=await api('/api/jobs',body);job=result.id;localJob=job;voiceReplyJob=wantsVoice?job:null;if(wantsVoice&&replyEpoch!==speechEpoch){suppressedSpeechJob=job;if(wasVoiceChat)api('/api/cancel',{id:job}).catch(()=>{});}if(mode==='dictate'){dictationPending=false;if(captureEpoch!==dictationEpoch||document.hidden){discardedDictations.add(job);api('/api/cancel',{id:job}).catch(()=>{});pollJob(job);return false;}dictationJob=job;voiceControls();}partialBox=null;lastSubmitted=prompt;if(mode==='vision')$('questionImage').value='';if(!['dictate','tools','models','capabilities'].includes(mode)){append('user',prompt);$('prompt').value='';}pollJob(job);adapt();growPrompt();return true;}
  catch(error){stopVoiceChat();setBusy(false);activity('error');notice(error.message);return false;}finally{submitting=false;}
 }
-function stopSpeaking(){speechEpoch++;localVoice?.stop();if('speechSynthesis'in window)speechSynthesis.cancel();speaking=false;voiceActivity=null;if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}$('stopSpeech').hidden=true;activity(busy?'thinking':'idle');}
+function stopSpeaking(preserveJob=false){
+ if(!preserveJob&&voiceReplyJob)suppressedSpeechJob=voiceReplyJob;
+ const previous=voiceStream;voiceStream=null;
+ if(previous){previous.handle?.cancel();api('/api/speech/cancel',{job_id:previous.job,speech_epoch:previous.epoch}).catch(()=>{});}
+ speechEpoch++;localVoice?.stop();if('speechSynthesis'in window)speechSynthesis.cancel();speaking=false;voiceActivity=null;if(voiceFrame!==null){cancelAnimationFrame(voiceFrame);voiceFrame=null;}$('stopSpeech').hidden=true;activity(busy?'thinking':'idle');}
+function updateStreamingSpeech(id,result,done=false,isLocal=localJob===id){
+ if(!isLocal||voiceReplyJob!==id||suppressedSpeechJob===id)return false;
+ const eligible=result.speech_streamable===true&&Number.isSafeInteger(result.speech_epoch)&&result.speech_epoch>=0;
+ if(voiceStream&&voiceStream.job===id&&(!eligible||voiceStream.epoch!==result.speech_epoch)){
+  // A retry belongs to a new server generation. Cancel its predecessor before
+  // accepting any new prefix; old audio callbacks retain their old local epoch.
+  stopSpeaking(eligible);
+  if(!eligible)return true;
+ }
+ if(!eligible||!spokenMode||document.hidden||closed||typeof localVoice?.stream!=='function')return false;
+ if(!voiceStream){
+  stopSpeaking(true);const epoch=speechEpoch,row={job:id,epoch:result.speech_epoch,handle:null,accepted:false};voiceStream=row;
+  const current=()=>voiceStream===row&&epoch===speechEpoch;
+  row.handle=localVoice.stream((path,body)=>api(path,{...body,job_id:id,speech_epoch:row.epoch}),()=>{
+   if(!current())return;speaking=true;voiceState(row.accepted?'Prometheus is speaking · microphone off':'Reply in progress · microphone off','speaking');
+   if(voiceChat)voiceFrame=requestAnimationFrame(playbackWave);notice('');
+  },()=>{
+   if(!current()||!row.accepted)return;voiceStream=null;speaking=false;voiceActivity=null;activity(busy?'thinking':'idle');$('stopSpeech').hidden=true;listenAfterReply();
+  },error=>{if(!current())return;stopVoiceChat(false);stopSpeaking();notice(error.message);});
+  $('stopSpeech').hidden=false;voiceState('Preparing voice · microphone off','preparing');
+ }
+ const row=voiceStream;row.accepted=done;
+ row.handle.update(done?(result.result?.reply||''):(result.partial||''),done);
+ if(voiceStream===row&&speaking)voiceState(done?'Prometheus is speaking · microphone off':'Reply in progress · microphone off','speaking');
+ return true;
+}
 async function speak(){
  if(!lastReply||busy||closed||document.hidden)return;
  stopSpeaking();const epoch=speechEpoch;
@@ -225,7 +258,7 @@ async function selectVoice(enabled){
  if(enabled){try{if(!localVoice)throw Error('Local voice playback is unavailable.');await localVoice.unlock();if(epoch!==speechEpoch||document.hidden)return;spokenMode=true;}catch(error){if(epoch!==speechEpoch)return;notice(error.message);}}
  $('textMode')?.setAttribute('aria-pressed',String(!spokenMode));$('spokenMode')?.setAttribute('aria-pressed',String(spokenMode));voiceControls();
 }
-async function status(){if(closed)return;try{const s=await api('/api/status');online=true;$('runtimeVersion').textContent=typeof s.version==='string'&&s.version.trim()?s.version.trim():'Unavailable';$('lamp').className='ready';$('connection').textContent=s.development_preview?'Development preview · local test history':'Connected · local';hardware=s.hardware;$('memory').textContent=`${hardware.ram_gib} GiB installed · ${hardware.available_ram_gib??'unknown'} GiB available. ${hardware.chat_ready?'Local model can fit.':'Reference mode is ready.'}`;if(s.closing){stopVoiceChat(false);invalidateHistory();$('homeKey').value='';closed=true;setBusy(true);notice('Prometheus is closing after the current request. Saved conversations are retained.');stopSpeaking();motion();return;}if(s.job&&!s.job_background&&!job&&!submitting){invalidateHistory();job=s.job;pollJob(job);}setBusy(s.busy||submitting||!!job);if(!speaking)activity(voiceActivity||((submitting||job)&&!s.busy?'thinking':s.state));adapt();}catch(error){stopVoiceChat();invalidateHistory();online=false;setBusy(busy);$('lamp').className='';$('connection').textContent='Disconnected · retrying';activity('offline');}setTimeout(status,document.hidden?15000:5000);}
+async function status(){if(closed)return;try{const s=await api('/api/status');online=true;$('runtimeVersion').textContent=typeof s.version==='string'&&s.version.trim()?s.version.trim():'Unavailable';$('lamp').className='ready';$('connection').textContent=s.development_preview?'Development preview · local test history':'Connected · local';hardware=s.hardware;$('memory').textContent=`${hardware.ram_gib} GiB installed · ${hardware.available_ram_gib??'unknown'} GiB available. ${hardware.chat_ready?'Local model can fit.':'Reference mode is ready.'}`;if(s.closing){stopVoiceChat(false);invalidateHistory();$('homeKey').value='';closed=true;setBusy(true);notice('Prometheus is closing after the current request. Saved conversations are retained.');stopSpeaking();motion();return;}if(s.job&&!s.job_background&&!job&&!submitting){invalidateHistory();job=s.job;pollJob(job);}setBusy(s.busy||submitting||!!job);if(!speaking)activity(voiceActivity||((submitting||job)&&!s.busy?'thinking':s.state));adapt();}catch(error){stopVoiceChat();stopSpeaking();invalidateHistory();online=false;setBusy(busy);$('lamp').className='';$('connection').textContent='Disconnected · retrying';activity('offline');}setTimeout(status,document.hidden?15000:5000);}
 $('compose').onsubmit=event=>{event.preventDefault();submit();};$('prompt').onkeydown=event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229){event.preventDefault();submit();}};
 $('mode').onchange=updateFields;$('reachAction').onchange=updateFields;$('evidenceSource').onchange=updateFields;$('quality').onchange=()=>{preference=$('quality').value;try{localStorage.setItem('prometheus.display',preference);}catch{}adapt();};
 $('dictate').onclick=toggleRecording;$('finishRecording').onclick=finishRecording;$('codingTools').onclick=()=>submit('tools');$('stopSpeech').onclick=()=>{stopVoiceChat();stopSpeaking();};
@@ -247,7 +280,7 @@ $('history').onchange=async()=>{
 };
 document.querySelectorAll('[data-prompt]').forEach(button=>button.onclick=()=>{$('mode').value=button.dataset.mode;updateFields();$('prompt').value=button.dataset.prompt;$('prompt').focus();});
 $('close').onclick=async()=>{stopVoiceChat();invalidateHistory();$('homeKey').value='';$('questionImage').value='';try{const result=await api('/api/close',{});closed=true;stopSpeaking();setBusy(true);motion();$('connection').textContent=result.busy?'Finishing current request, then closing':'Prometheus closed';notice('The interface will release the drive after its current request. Use Windows safe removal before unplugging.');}catch(error){setBusy(busy);notice(error.message);}};
-$('cancelRequest')?.addEventListener('click',async()=>{if(!job)return;stopVoiceChat(false);try{cancelling=true;$('cancelRequest').disabled=true;await api('/api/cancel',{id:job});notice('Stopping the current request. Partial generated text will not be saved.');}catch(error){cancelling=false;notice(error.message);}});
+$('cancelRequest')?.addEventListener('click',async()=>{if(!job)return;stopVoiceChat(false);stopSpeaking();try{cancelling=true;$('cancelRequest').disabled=true;await api('/api/cancel',{id:job});notice('Stopping the current request. Partial generated text will not be saved.');}catch(error){cancelling=false;notice(error.message);}});
 $('models').onclick=()=>submit('models');$('capabilities').onclick=()=>submit('capabilities');
 $('textMode')?.addEventListener('click',()=>selectVoice(false));
 $('spokenMode')?.addEventListener('click',()=>selectVoice(true));

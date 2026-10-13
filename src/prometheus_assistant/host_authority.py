@@ -106,9 +106,20 @@ class HostLedger:
                 try:
                     db.execute('BEGIN IMMEDIATE')
                     if stamp < mark['wall'] or mono < mark['mono']:
-                        # Reboot/clock reset retires existing authority, but the
-                        # healthy ledger remains usable for NEW owner reviews.
-                        db.execute("UPDATE grants SET state='clock_invalid' WHERE state='active'")
+                        # Legacy exact grants retain their fail-closed clock
+                        # behavior. Valid task grants survive a reboot's
+                        # monotonic reset; timed tasks still use wall expiry.
+                        # Only a fully validated witnessed contract may use
+                        # these semantics, never a capability name alone.
+                        from .integration_contracts import decode_task_row
+                        for row in db.execute("SELECT * FROM grants WHERE state='active'").fetchall():
+                            try:
+                                contract = decode_task_row(row)
+                                preserve = (stamp >= mark['wall'] or contract['duration_seconds'] is None)
+                            except ValueError:
+                                preserve = False
+                            if not preserve:
+                                db.execute("UPDATE grants SET state='clock_invalid' WHERE id=?", (row['id'],))
                     yield db
                     current = {'epoch':mark['epoch'],'seq':mark['seq']+1,'state':self._state(db),'wall':stamp,'mono':mono}
                     db.execute('UPDATE continuity SET epoch=:epoch,seq=:seq,state=:state,wall=:wall,mono=:mono WHERE id=1',current)

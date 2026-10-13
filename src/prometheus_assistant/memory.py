@@ -114,7 +114,12 @@ def _response_metadata(details):
     if 'metrics' in details:
         result['metrics'] = _metadata_fields(details['metrics'], strings={'model': 240}, numbers=(
             'seconds', 'first_token_seconds', 'eval_count', 'context', 'load_seconds', 'total_seconds',
-            'output_tokens', 'prompt_eval_count', 'prompt_eval_seconds', 'eval_seconds'))
+            'output_tokens', 'prompt_eval_count', 'prompt_eval_seconds', 'eval_seconds',
+            'input_utf8_bytes', 'input_message_count'))
+        for key in ('input_utf8_bytes', 'input_message_count'):
+            count = result['metrics'].get(key)
+            if count is not None and (type(count) is not int or count < 0):
+                raise ValueError('Turn metadata input counts must be nonnegative bounded integers.')
         if 'attempts' in details['metrics']:
             attempts = details['metrics']['attempts']
             if not isinstance(attempts, list) or len(attempts)>2:

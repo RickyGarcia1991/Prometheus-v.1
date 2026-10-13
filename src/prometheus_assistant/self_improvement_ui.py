@@ -62,6 +62,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
         raise ValueError('Unlock with your enrolled owner passkey before reviewing application changes.')
     with grant_owner() as owner:
         pending = app.action_approvals.pending(owner=owner, binding=binding)
+    if pending and pending['kind'] != 'self_improve' and decision:
+        return None
     if goal:
         require_dispatch('ui.self_improve')
         if pending:

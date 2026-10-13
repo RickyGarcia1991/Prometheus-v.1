@@ -16,7 +16,7 @@ POLICY_SCOPE = 'Registered Core risk policy plus host deny restrictions; no plan
 GAPS = [
     'Shared application checks supplement existing Core/browser/CLI and provider boundaries; target checks remain separate.',
     'Signed host/bootstrap/controller/signing/recovery helpers retain independent OS/signature authority and cannot use application grants.',
-    'Persistent grants are limited to exact research/public and project/tests requests, with a configured authenticated owner on the issuing host.',
+    'Exact Core grants and reviewed integration task access require a configured authenticated owner on the issuing host. Task access can last until revoked; it is selected explicitly for a conversation.',
     'Generic in-process Python extension executors remain trusted application code; this is not an OS sandbox for arbitrary Python callers.',
     'OS privileges, disk encryption, provider accounts, devices, installed models and physical portability are not probed.',
     'Update preferences, watch schedules, smart-home credentials and remote pending actions are not read by this view.',
@@ -29,6 +29,7 @@ SOURCE_FILES = (
     'component_updates.py', 'remote_access.py', 'smart_home.py', 'voice.py',
     'owner_profile.py', 'worker_policy.py', 'personality.py', 'permissions_inventory.py',
     'action_approvals.py', 'self_improvement.py', 'self_improvement_runtime.py', 'self_improvement_ui.py', 'autonomous_promotion.py',
+    'integration_ui.py', 'integration_contracts.py', 'agent_memory.py', 'browser_agent.py',
 )
 
 
@@ -138,6 +139,11 @@ def snapshot(*, owner=None):
         scope='Browser capture APIs', requirements='Browser enforces the response header. Native dictation is a separate path.',
         basis='runtime_constant'))
     reviews = [
+        ('integrations.owner_tasks', 'Owner-approved integration tasks', 'application', 'conditional',
+         'AgentMemory and Browser Use explain actions, effects, resources and duration before exact text, voice or button approval. Task access lasts for the owner-selected duration or until revoked; task selection is explicit per conversation. Model output cannot approve access.',
+         'integration_ui.py; integration_contracts.py; scoped_grants.py; action_approvals.py',
+         'ActionApprovals.consume; GrantStore.run_task; provider dispatch', 'Reviewed project memory or public-browser access',
+         'Configured owner, pinned portable runtime, supported operation and current task scope. Expanded access needs a new review. Revoke and Stop remain available.'),
         ('updates.self_improvement', 'Model-generated application changes', 'application', 'conditional',
          'One existing implementation file per proposal, up to three repair attempts, complete source context and both full regression groups. The owner reviews the exact diff and approves by text, voice or button before signed activation.',
          'self_improvement.py; self_improvement_runtime.py; autonomous_promotion.py; action_approvals.py',

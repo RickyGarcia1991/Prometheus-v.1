@@ -48,6 +48,26 @@ function speechChunks(text){
  }
  return chunks;
 }
+function stableSpeechPrefix(text){
+ // Incomplete markup can reinterpret earlier characters. Speak only the plain
+ // prefix before its first marker; the accepted final rendering handles the rest.
+ const marker=text.search(/[`*_\[\]<>|#~]|\bhttps?:/i);
+ let plain=(marker<0?text:text.slice(0,marker)).replace(/\r\n?/g,'\n').replace(/\s+/g,' ').trimStart();
+ // The existing final 4,000-codepoint renderer may shorten at a late sentence.
+ // Reserve its entire possible shortening region until final acceptance.
+ if(plain.length>1800){plain=plain.slice(0,1800).replace(/[\uD800-\uDBFF]$/,'');const space=plain.lastIndexOf(' ');plain=space>0?plain.slice(0,space):'';}
+ return plain;
+}
+function streamChunk(text,done,first){
+ if(!text.trim())return '';
+ const limit=first?240:700,points=Array.from(text),prefix=points.slice(0,limit).join('');
+ const sentences=[...prefix.matchAll(/[.!?](?:["'”’)]*)(?=\s)/g)].filter(match=>
+  !/\b(?:Mr|Mrs|Ms|Dr|Prof|Sr|Jr|St|vs|etc|e\.g|i\.e)\.$/i.test(prefix.slice(0,match.index+1)));
+ const sentence=first?sentences[0]:sentences.at(-1);
+ if(sentence)return prefix.slice(0,sentence.index+sentence[0].length);
+ if(points.length>=limit){const space=prefix.lastIndexOf(' ');if(space>0)return prefix.slice(0,space);if(done)return prefix;}
+ return done?text:'';
+}
 const INTERRUPTED='Audio playback was interrupted. Choose Spoken + text and start voice chat again; your answer stays in text.';
 async function resumeContext(context){
  if(context.state==='running')return;
@@ -115,6 +135,60 @@ class LocalVoice {
   };
   return start(await prepare(chunks[0]),0);
  }
+ stream(request,onstart,onend,onerror=()=>{}){
+  this.stop();const epoch=this.epoch;
+  let available='',committed='',raw='',final=false,ended=false,preparing=false,prepared=null,starting=false,began=false,duration=0;
+  const current=()=>epoch===this.epoch&&!ended;
+  const fail=error=>{if(!current())return;ended=true;this.stop();onerror(error);};
+  const prepare=async text=>{
+   await this.unlock();if(!current())return null;
+   const context=this.context,result=await request('/api/speech',{text});if(!current())return null;
+   if(result.encoding!=='wav-base64'||typeof result.audio!=='string'||result.audio.length>14000000)throw Error('Invalid local voice response.');
+   const bytes=Uint8Array.from(atob(result.audio),c=>c.charCodeAt(0));
+   const buffer=await context.decodeAudioData(bytes.buffer);if(!current())return null;
+   duration+=buffer.duration;
+   if(!Number.isFinite(buffer.duration)||buffer.duration<=0||duration>300||buffer.numberOfChannels!==1)throw Error('Local voice output exceeded its limit.');
+   return {context,buffer};
+  };
+  const start=async item=>{
+   starting=true;await resumeContext(item.context);if(!current())return;
+   const {context,buffer}=item,source=context.createBufferSource();
+   source.buffer=buffer;source.connect(context.destination);this.source=source;this.samples=envelope(buffer);this.start=context.currentTime+.04;this.last=0;
+   let recovering=false;
+   const listener=()=>{if(!current()||context.state==='running'||recovering)return;recovering=true;resumeContext(context).then(()=>{recovering=false;},fail);};
+   this.contextListener={context,listener};context.addEventListener('statechange',listener);
+   source.onended=()=>{
+    if(!current()||this.source!==source)return;
+    if(context.state!=='running'){fail(Error(INTERRUPTED));return;}
+    source.onended=null;source.disconnect();this.source=null;this.samples=null;this.value=0;this.last=0;
+    context.removeEventListener('statechange',listener);this.contextListener=null;pump();
+   };
+   source.start(this.start);starting=false;
+   if(!began){began=true;onstart();}pump();
+  };
+  const pump=()=>{
+   if(!current())return;
+   if(!this.source&&!starting&&prepared){const item=prepared;prepared=null;start(item).catch(fail);return;}
+   if(!preparing&&!prepared&&!starting){
+    const part=streamChunk(available.slice(committed.length),final,!committed);
+    if(part){
+     committed+=part;preparing=true;
+     prepare(part).then(item=>{preparing=false;if(!current())return;prepared=item;pump();},fail);return;
+    }
+   }
+   if(final&&!this.source&&!preparing&&!prepared&&!starting){ended=true;this.stop();onend();}
+  };
+  return {
+   update:(text,done=false)=>{
+    if(!current())return false;
+    if(typeof text!=='string'||final||(!done&&!text.startsWith(raw))){fail(Error('The streamed reply changed. Your answer remains in text.'));return false;}
+    const next=done?speechText(text):stableSpeechPrefix(text);
+    if(!next.startsWith(committed)){fail(Error('The streamed reply changed. Your answer remains in text.'));return false;}
+    raw=text;available=next;final=done===true;pump();return true;
+   },
+   cancel:()=>{if(current()){ended=true;this.stop();}},
+  };
+ }
  level(now){
   if(!this.source||!this.samples||this.context.state!=='running')return 0;
   const context=this.context,stamp=context.getOutputTimestamp?.();
@@ -127,6 +201,6 @@ class LocalVoice {
  }
  suspend(){this.stop();if(this.context?.state==='running')this.context.suspend().catch(()=>{});}
 }
-root.PrometheusVoice={LocalVoice,envelope,speechText,speechChunks};
+root.PrometheusVoice={LocalVoice,envelope,speechText,speechChunks,stableSpeechPrefix,streamChunk};
 if(typeof module!=='undefined')module.exports=root.PrometheusVoice;
 })(typeof window!=='undefined'?window:globalThis);

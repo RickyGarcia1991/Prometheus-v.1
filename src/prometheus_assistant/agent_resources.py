@@ -6,7 +6,7 @@ import re
 
 CATALOG_PATH = Path(__file__).with_name('agent_resources.json')
 MAX_RESULTS = 10
-AVAILABILITIES = {'reference', 'existing-public-adapter', 'requires-setup', 'ambiguous/not-integrated'}
+AVAILABILITIES = {'reference', 'existing-public-adapter', 'reviewed-adapter', 'requires-setup', 'ambiguous/not-integrated'}
 REQUIRED_TEXT = ('id', 'name', 'publisher', 'category', 'license',
                  'availability', 'capability', 'limitations', 'next_step', 'verified_on')
 NOTE = ('Curated reference information checked on the listed dates. Setup requirements are separate from '
@@ -80,6 +80,7 @@ def render_resources(result):
         return ('No catalogue entry matches that query. Supply an exact project or publisher name. '
                 + NOTE)
     labels = {'reference': 'External reference', 'existing-public-adapter': 'Existing public adaptation',
+              'reviewed-adapter': 'Owner-reviewed adapter · check runtime in Integrations',
               'requires-setup': 'Requires setup; adapter not installed',
               'ambiguous/not-integrated': 'Not integrated; see verification limits'}
     parts = []

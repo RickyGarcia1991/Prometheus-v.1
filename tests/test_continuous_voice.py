@@ -79,15 +79,17 @@ def runtime(monkeypatch):
 
 def test_speech_continues_beyond_thirty_seconds_and_preserves_short_pause(tmp_path, runtime):
     _, install = runtime
-    install([pcm(1200)]*400 + [pcm(0)]*12 + [pcm(1800)]*50 + [pcm(0)]*25)
+    speech = [pcm(1200)]*400 + [pcm(0)]*5 + [pcm(1800)]*50
+    install(speech + [pcm(0)]*25)
     levels = []
     path = tmp_path/'speech.wav'
     capture.record_continuous(path, on_level=lambda level, elapsed: levels.append((level, elapsed)))
     with wave.open(str(path), 'rb') as audio:
         assert audio.getframerate() == 16000 and audio.getnchannels() == 1
-        assert 47.5 <= audio.getnframes()/16000 <= 47.8
+        assert 46.3 <= audio.getnframes()/16000 <= 47.2
+        assert audio.readframes(728000) == b''.join(speech)
     assert any(level > 0 for level, _ in levels)
-    assert levels[-1][1] >= 47.5
+    assert levels[-1][1] >= 46.3
 
 
 def test_manual_finish_keeps_audio_and_does_not_cancel(tmp_path, runtime):
@@ -103,6 +105,35 @@ def test_manual_finish_keeps_audio_and_does_not_cancel(tmp_path, runtime):
     with wave.open(str(path), 'rb') as audio:
         assert 12 <= audio.getnframes()/16000 < 12.3
     assert not cancel.is_set() and device.closed
+
+
+def test_established_speech_finishes_within_nine_tenths_of_a_second(tmp_path, runtime):
+    _, install = runtime
+    install(chain(repeat(pcm(1200), 20), repeat(pcm(0), 40)))
+    elapsed = []
+    path = tmp_path/'quick-turn.wav'
+    capture.record_continuous(path, on_level=lambda level, seconds: elapsed.append(seconds))
+    assert 2.7 <= elapsed[-1] <= 2.9
+    with wave.open(str(path), 'rb') as audio:
+        assert audio.readframes(32000) == pcm(1200)*20
+
+
+def test_tentative_short_speech_gets_more_time_to_continue(tmp_path, runtime):
+    _, install = runtime
+    install(chain(repeat(pcm(1200), 3), repeat(pcm(0), 40)))
+    elapsed = []
+    capture.record_continuous(tmp_path/'short-word.wav', on_level=lambda level, seconds: elapsed.append(seconds))
+    assert 1.4 <= elapsed[-1] <= 1.6
+
+
+def test_observed_hesitation_extends_later_pause_without_losing_speech(tmp_path, runtime):
+    _, install = runtime
+    chunks = [pcm(1200)]*10 + [pcm(0)]*5 + [pcm(1800)]*10 + [pcm(0)]*9 + [pcm(2400)]*10
+    install(chain(chunks, repeat(pcm(0), 40)))
+    path = tmp_path/'hesitant-turn.wav'
+    capture.record_continuous(path)
+    with wave.open(str(path), 'rb') as audio:
+        assert audio.readframes(sum(len(chunk) for chunk in chunks)//2) == b''.join(chunks)
 
 
 @pytest.mark.parametrize('reason', ['cancel', 'lease', 'size', 'stalled'])
@@ -143,10 +174,10 @@ def test_waits_past_thirty_seconds_and_preserves_initial_quiet_syllables(tmp_pat
     elapsed = []
     capture.record_continuous(path, on_level=lambda level, seconds: elapsed.append(seconds))
     with wave.open(str(path), 'rb') as audio:
-        assert 2.5 <= audio.getnframes()/16000 < 3.5
+        assert 1.8 <= audio.getnframes()/16000 < 2.7
         frames = audio.readframes(audio.getnframes())
     assert onset+pcm(1000)*10 in frames
-    assert elapsed[-1] >= 42.7
+    assert elapsed[-1] >= 42.1
 
 
 def test_long_idle_does_not_grow_wav_or_consume_audio_resource_limit(tmp_path, runtime, monkeypatch):

@@ -18,7 +18,8 @@ def evidence():
             'recognized_citations': ['S2'], 'unrecognized_citations': ['S99'],
             'claim_verification': 'not performed'},
         'metrics': {'seconds': 1.25, 'first_token_seconds': .2, 'eval_count': 12,
-                    'model': 'test-helper', 'context': 4096, 'load_seconds': .1},
+                    'model': 'test-helper', 'context': 4096, 'load_seconds': .1,
+                    'input_utf8_bytes': 513, 'input_message_count': 4},
         'routing': {'role': 'general', 'automatic': True, 'reason': 'Measured fit.', 'attempts': 1}}
 
 
@@ -87,6 +88,16 @@ def test_invalid_or_oversized_metadata_cannot_partially_save_exchange(tmp_path, 
         sid = store.create_session('test')
         with pytest.raises(ValueError, match='metadata'):
             store.save_exchange(sid, 'Question', 'Answer', **kwargs)
+        assert store.history(sid) == []
+
+
+@pytest.mark.parametrize('key', ['input_utf8_bytes', 'input_message_count'])
+@pytest.mark.parametrize('value', [-1, True, '4', 1.5, float('nan'), float('inf'), 10 ** 400])
+def test_input_metric_counts_are_bounded_integers_and_atomic(tmp_path, key, value):
+    with MemoryStore(tmp_path/'memory.db') as store:
+        sid = store.create_session('test')
+        with pytest.raises(ValueError, match='metadata'):
+            store.save_exchange(sid, 'Question', 'Answer', details={'metrics': {key: value}})
         assert store.history(sid) == []
 
 

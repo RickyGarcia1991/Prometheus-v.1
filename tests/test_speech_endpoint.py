@@ -67,8 +67,9 @@ def test_spoken_turn_ends_without_stop_despite_nonzero_background(tmp_path, monk
     samples = [voice+sound for voice, sound in zip(samples, noise)]
     elapsed, output = record(tmp_path, monkeypatch, samples)
     end = 1+len(speech)/16000
-    assert end+.8 <= elapsed <= end+2, (end, elapsed)
+    assert end+.65 <= elapsed <= end+1.7, (end, elapsed)
     assert len(output) > len(speech)*2
+    assert pcm(samples[16000:16000+len(speech)]) in output
 
 
 @pytest.mark.parametrize('kind', ['fan', 'hum', 'dc'])
@@ -85,19 +86,20 @@ def test_immediate_quiet_and_short_speech_preserves_onset(tmp_path, monkeypatch,
     samples = speech+[0]*64000
     mixed = [voice+sound for voice,sound in zip(samples, background(len(samples)/16000, level=noise))]
     elapsed, output = record(tmp_path, monkeypatch, mixed)
-    assert len(speech)/16000+.8 <= elapsed <= len(speech)/16000+2
+    assert len(speech)/16000+.65 <= elapsed <= len(speech)/16000+1.7
     # No silent calibration or loss of the initial syllable, even if it takes
     # several detector frames to recognize a quiet first word.
-    assert output.startswith(pcm(mixed[:1600]))
+    assert output.startswith(pcm(mixed[:len(speech)]))
 
 
-def test_thoughtful_pause_and_long_speech_stay_in_one_turn(tmp_path, monkeypatch):
+def test_brief_pause_and_long_speech_stay_in_one_turn(tmp_path, monkeypatch):
     speech = phrase()
-    # 1.2 s pauses and >30 s of audio remain a single recording.
-    samples = (speech+[0]*19200)*10 + phrase(1)
+    # A first 1.2 s thinking pause conflicts with a prompt 0.8 s endpoint.
+    # Brief half-second pauses and >30 s of audio must still stay together.
+    samples = (speech+[0]*8000)*10 + phrase(1)
     end = len(samples)/16000
     elapsed, output = record(tmp_path, monkeypatch, samples+[0]*64000)
-    assert elapsed > 30 and end+.8 <= elapsed <= end+2
+    assert elapsed > 30 and end+.65 <= elapsed <= end+1.7
     assert pcm(samples) in output
 
 
@@ -109,7 +111,7 @@ def test_repeated_clicks_do_not_hold_completed_turn_open(tmp_path, monkeypatch):
         for i in range(start, min(start+160, len(trailing))):
             trailing[i] += 8000 if i % 2 else -8000
     elapsed, _ = record(tmp_path, monkeypatch, speech+trailing)
-    assert elapsed <= len(speech)/16000+2
+    assert elapsed <= len(speech)/16000+1.7
 
 
 def test_irregular_buffers_retain_every_pcm_sample(tmp_path, monkeypatch):
@@ -117,7 +119,7 @@ def test_irregular_buffers_retain_every_pcm_sample(tmp_path, monkeypatch):
     elapsed, output = record(tmp_path, monkeypatch, speech+[0]*64000,
                              sizes=(2, 318, 1026, 2560, 94, 790))
     assert output.startswith(pcm(speech))
-    assert len(speech)/16000+.8 <= elapsed <= len(speech)/16000+2
+    assert len(speech)/16000+.65 <= elapsed <= len(speech)/16000+1.7
 
 
 def test_manual_finish_retains_subframe_tail(tmp_path, monkeypatch):

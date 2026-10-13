@@ -54,6 +54,8 @@ async function fixture({voice = null} = {}) {
       return row ? response(row) : response({error: 'Job not found'}, 404);
     }
     if (url === '/api/cancel') return response({cancel_requested: true});
+    if (url === '/api/speech/cancel') return response({cancel_requested: true});
+    if (url === '/api/speech') return response({encoding: 'wav-base64', audio: 'AAAA'});
     if (url === '/api/dictation/finish') return response({finish_requested: true});
     if (url === '/api/dictation/pulse') return response({recording: true});
     if (url === '/api/close') return response({closing: true, busy: false});

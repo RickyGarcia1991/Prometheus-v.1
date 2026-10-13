@@ -15,17 +15,16 @@
       "category": "browser automation",
       "license": "MIT library; hosted services have separate terms",
       "requirements": [
-        "Python >=3.11,<4.0",
-        "Qualified local browser and model, or explicitly configured cloud services",
-        "Pinned dependency bundle and a Prometheus action adapter"
+        "Pinned Browser Use 0.13.11, Chromium 155.0.8059.39 and portable Python 3.12 Windows bundle",
+        "Owner approval for an exact read or a selected public-web task grant"
       ],
-      "availability": "requires-setup",
+      "availability": "reviewed-adapter",
       "capability": "Navigate interactive websites and extract information using an AI browser agent.",
-      "limitations": "No Prometheus runnable adapter is installed. Small local Qwen models need action-schema qualification; cloud model/browser usage can incur charges.",
-      "next_step": "Qualify public navigation, extraction and cancellation in an isolated browser profile before enabling reviewed account actions.",
+      "limitations": "Dev20 includes a public HTTPS reader using a temporary Browser Use browser. Same-host GET assets only; no account flows or qualified model-driven actions.",
+      "next_step": "Open Integrations, check the portable runtime, enter a public HTTPS URL and review the action.",
       "verified_on": "2026-10-13",
       "source_commit": null,
-      "verification_status": "primary-sources-reviewed"
+      "verification_status": "pinned-runtime-and-native-operations-qualified"
     },
     {
       "id": "agentmemory-rohitg00",
@@ -41,17 +40,16 @@
       "category": "coding agent memory",
       "license": "Apache-2.0",
       "requirements": [
-        "Node.js >=20",
-        "Full native Windows service: pinned iii-engine 0.22.1; standalone MCP mode is also documented",
-        "Explicit SSD data directory and a qualified memory adapter"
+        "Pinned AgentMemory 0.9.30 and portable Node 24.21.0 Windows bundle",
+        "Owner approval for an exact action or a selected task grant"
       ],
-      "availability": "requires-setup",
+      "availability": "reviewed-adapter",
       "capability": "Store and retrieve project decisions and coding-session context across supported agents.",
-      "limitations": "Chosen because its persistent coding-agent tagline matches the request; other projects also use AgentMemory. No Prometheus adapter is installed. Semantic retrieval can require a provider or local embedding download.",
-      "next_step": "Test explicit remember, recall and delete operations with synthetic project notes; verify restart and portable data paths before enabling capture hooks.",
+      "limitations": "Dev20 includes an owner-reviewed standalone adapter for project remember, recall and forget. Keyword matching only; no capture hooks, embeddings or engine server.",
+      "next_step": "Open Integrations, check the portable runtime, then review an action or approve task access.",
       "verified_on": "2026-10-13",
       "source_commit": null,
-      "verification_status": "primary-sources-reviewed"
+      "verification_status": "pinned-runtime-and-native-operations-qualified"
     },
     {
       "id": "openviking",

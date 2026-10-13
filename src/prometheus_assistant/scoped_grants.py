@@ -15,8 +15,10 @@ import secrets
 import sqlite3
 import threading
 import time
-from .application_policy import registered_decision, revision
+from .application_policy import registered_decision, require_dispatch, revision
 from .guardrails import Decision
+from .integration_contracts import (TASK_CAPABILITIES, allows_task, canonical_arguments,
+                                    canonical_task, decode_task_row, task_digest, task_target)
 
 SUPPORTED = frozenset({('research', 'public'), ('project', 'tests')})
 MAX_SECONDS = 900
@@ -157,6 +159,16 @@ class GrantStore:
             state = None
             if row['host'] != self.host(): state = 'binding_invalid'
             elif row['revision'] != self.policy_revision(): state = 'policy_invalid'
+            elif row['capability'] in TASK_CAPABILITIES:
+                try:
+                    contract = decode_task_row(row)
+                except ValueError:
+                    state = 'contract_invalid'
+                else:
+                    if (contract['duration_seconds'] is not None
+                            and (row['expires'] <= stamp or
+                                 (row['epoch'] == self.epoch and row['mono_expires'] <= mono))):
+                        state = 'expired'
             elif row['expires'] <= stamp or row['mono_expires'] <= mono: state = 'expired'
             elif row['remaining'] <= 0: state = 'exhausted'
             if state: db.execute('UPDATE grants SET state=? WHERE id=?', (state, row['id']))
@@ -170,7 +182,118 @@ class GrantStore:
                 stamp, mono = self._locked_clock()
                 self._refresh(db, owner, stamp, mono)
                 rows = db.execute('SELECT id,capability,target,scope,created,expires,remaining,state FROM grants WHERE owner=? ORDER BY created DESC LIMIT 100', (owner,)).fetchall()
-                return [dict(row) for row in rows]
+                return [dict(row) for row in rows if row['capability'] not in TASK_CAPABILITIES]
+
+    @staticmethod
+    def _task_view(row):
+        contract = decode_task_row(row)
+        return {'id': row['id'], 'contract': contract, 'scope_sha256': row['scope'],
+                'created_at': row['created'], 'expires_at': None if row['expires'] == -1 else row['expires'],
+                'state': row['state'], 'capability': row['capability']}
+
+    def issue_task(self, contract, *, owner):
+        """Called only by the trusted authenticated one-use approval consumer."""
+        if not isinstance(owner, str) or not owner or len(owner) > 256:
+            raise ValueError('Authenticated owner required.')
+        contract = canonical_task(contract)
+        capability = 'integrations.' + contract['adapter']
+        require_dispatch(capability)
+        target, digest = task_target(contract), task_digest(contract)
+        with self.lock:
+            self._clock()
+            with self._db() as db:
+                stamp, mono = self._locked_clock()
+                require_dispatch(capability)
+                # Do not silently create overlapping copies when an approval
+                # callback is accidentally repeated after a lost response.
+                for existing in db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (?,?)',
+                                           (owner, *sorted(TASK_CAPABILITIES))):
+                    if decode_task_row(existing)['task_id'] == contract['task_id']:
+                        raise ValueError('This task approval was already issued; use a new reviewed task identifier.')
+                identity = secrets.token_hex(24)
+                seconds = contract['duration_seconds']
+                expires, mono_expires = (-1, -1) if seconds is None else (stamp + seconds, mono + seconds)
+                db.execute('INSERT INTO grants VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                           (identity, capability, digest, self.host(), owner, self.policy_revision(), self.epoch,
+                            stamp, expires, -1, 'active', mono_expires, target))
+                row = db.execute('SELECT * FROM grants WHERE id=?', (identity,)).fetchone()
+                return self._task_view(row)
+
+    def inspect_tasks(self, *, owner):
+        if not owner:
+            raise ValueError('Authenticated owner required.')
+        with self.lock:
+            self._clock()
+            if not any(path.exists() for path in (self.path, self.ledger.witness, self.ledger.poison)):
+                return []
+            with self._db() as db:
+                stamp, mono = self._locked_clock()
+                self._refresh(db, owner, stamp, mono)
+                rows = db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (?,?) ORDER BY created DESC LIMIT 100',
+                                  (owner, *sorted(TASK_CAPABILITIES))).fetchall()
+                result = []
+                for row in rows:
+                    try:
+                        result.append(self._task_view(row))
+                    except ValueError:
+                        result.append({'id': row['id'], 'state': 'contract_invalid', 'capability': row['capability'],
+                                       'contract': None, 'expires_at': None, 'scope_sha256': row['scope']})
+                return result
+
+    def revoke_task(self, ident, *, owner):
+        if not owner:
+            raise ValueError('Authenticated owner required.')
+        with self.lock, self._db() as db:
+            changed = db.execute("UPDATE grants SET state='revoked' WHERE id=? AND owner=? AND capability IN (?,?)",
+                                 (ident, owner, *sorted(TASK_CAPABILITIES))).rowcount
+            if not changed:
+                raise ValueError('Unknown owner task grant.')
+        return {'id': ident, 'state': 'revoked'}
+
+    def run_task(self, ident, invocation, adapter, action, arguments, *, owner, execute):
+        """Spend a durable invocation, then dispatch the exact canonical request.
+
+        The callback is supplied by trusted application code and receives
+        (action, canonical_arguments). Revocation waits for an already-dispatched
+        call; it does not retroactively undo that call's effects.
+        """
+        if (not owner or not isinstance(invocation, str) or not re.fullmatch('[a-f0-9]{32}', invocation)
+                or not callable(execute)):
+            raise ValueError('Authenticated owner, fresh invocation identifier and trusted executor required.')
+        args = canonical_arguments(adapter, action, arguments)
+        capability = 'integrations.' + adapter
+        with self.lock:
+            self._clock()
+            invalid = False
+            with self._db() as db:
+                stamp, mono = self._locked_clock()
+                self._refresh(db, owner, stamp, mono)
+                row = db.execute('SELECT * FROM grants WHERE id=?', (ident,)).fetchone()
+                invalid = row is None or row['state'] != 'active' or row['owner'] != owner or row['capability'] != capability
+                if not invalid:
+                    invalid = not allows_task(decode_task_row(row), adapter, action, args)
+                if not invalid:
+                    require_dispatch(capability)
+                    try:
+                        db.execute('INSERT INTO attempts VALUES (?,?,?)', (invocation, ident, stamp))
+                    except sqlite3.IntegrityError:
+                        raise ValueError('Invocation was already consumed; do not replay it.') from None
+            if invalid:
+                raise ValueError('Task grant is unavailable or this request needs a newly approved access envelope.')
+            # Commit the spent attempt/witness before effects, then serialize
+            # dispatch with a competing revocation using the same host ledger.
+            self._clock()
+            with self._db() as db:
+                stamp, mono = self._locked_clock()
+                self._refresh(db, owner, stamp, mono)
+                row = db.execute('SELECT * FROM grants WHERE id=?', (ident,)).fetchone()
+                reserved = db.execute('SELECT grant_id FROM attempts WHERE id=?', (invocation,)).fetchone()
+                if (row is None or row['state'] != 'active' or row['owner'] != owner or row['capability'] != capability
+                        or reserved is None or reserved['grant_id'] != ident
+                        or not allows_task(decode_task_row(row), adapter, action, args)):
+                    raise ValueError('Task grant became invalid before dispatch; the attempt remains spent.')
+                require_dispatch(capability)
+                return execute(action, dict(args))
 
     def revoke(self, ident, *, owner):
         if not owner: raise ValueError('Authenticated owner required.')

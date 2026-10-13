@@ -5,7 +5,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 const {setup}=require('./test-workspace.cjs');
 const {elements:e,context,emit,submitted}=setup();
-const pending={id:'a'.repeat(32),fingerprint:'b'.repeat(64),session:'c'.repeat(32),
+const pending={kind:'self_improve',id:'a'.repeat(32),fingerprint:'b'.repeat(64),session:'c'.repeat(32),
  review:{action:'Install exact tested edit',reason:'Correct empty input',effects:'Restart with rollback available',target:'src/example.py',
  diff:'-old\n+<script>untrusted literal diff</script>',check_summary:'42 tests passed',checks:[{id:'python',exit_code:0}]}};
 let nextApproval=pending;

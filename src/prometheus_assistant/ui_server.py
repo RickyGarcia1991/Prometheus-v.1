@@ -21,7 +21,7 @@ from .hardware import detect_hardware, resource_root, select_model
 from .memory import MemoryStore
 from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
-from . import ui_workspace, self_improvement_ui
+from . import ui_workspace, self_improvement_ui, integration_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -39,6 +39,7 @@ LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 
 MODES = {'chat', 'coding', 'ask', 'vision', 'reach', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home', 'core'}
 MODES |= ui_workspace.MODES
 MODES |= self_improvement_ui.MODES
+MODES |= integration_ui.MODES
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
 
@@ -137,11 +138,13 @@ def validate_job(body):
         request, _ = scope(spec, body['arguments'])
         return {**body, 'arguments': dict(request.arguments)}
     approval_fields = {'approval_id', 'approval_fingerprint', 'approval_decision'}
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | approval_fields):
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | integration_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
         raise ValueError('Choose an available workspace mode.')
+    if 'voice_reply' in body and (mode != 'chat' or type(body['voice_reply']) is not bool):
+        raise ValueError('Voice reply must be a boolean in chat mode.')
     if mode == 'approval_decision':
         if (not approval_fields <= body.keys() or not isinstance(body['approval_id'], str)
                 or not re.fullmatch(r'[0-9a-f]{32}', body['approval_id'])
@@ -164,7 +167,7 @@ def validate_job(body):
     prompt = body.get('prompt', '')
     if not isinstance(prompt, str) or len(prompt) > 4000 or ('\x00' in prompt):
         raise ValueError('Use a prompt of at most 4000 characters.')
-    if mode not in {'dictate', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT and not prompt.strip():
+    if mode not in {'dictate', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -187,6 +190,7 @@ def validate_job(body):
     if mode == 'ask' and body.get('source') == 'project' and not project.strip():
         raise ValueError('Select the project folder to use as evidence.')
     ui_workspace.validate(body)
+    integration_ui.validate(body)
     return {**body, 'prompt': prompt.strip()}
 
 
@@ -204,6 +208,8 @@ class Interface:
         self.next_maintenance = time.monotonic()+60
         self.token = secrets.token_urlsafe(32)
         self.jobs = {}
+        self._speech_owners = {}
+        self.integration_tasks = {}
         self.lock = threading.Lock()
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='prometheus-ui')
         self.current = None
@@ -244,6 +250,38 @@ class Interface:
                 self.jobs[self.current]['stage'] = stage
                 if reset:
                     self.jobs[self.current]['partial'] = ''
+                    row = self.jobs[self.current]
+                    row['speech_epoch'] = row.get('speech_epoch', 0) + 1
+
+    def enable_voice_stream(self, request, role):
+        from .compact_chat import voice_reply_eligible
+        eligible = voice_reply_eligible(request, role)
+        with self.lock:
+            if self.current:
+                self.jobs[self.current]['speech_streamable'] = eligible
+
+    def _speech_matches(self, job_id, epoch, binding):
+        if not isinstance(job_id, str) or type(epoch) is not int:
+            return False
+        context = self._speech_owners.get(job_id, {})
+        row = self.jobs.get(job_id, {})
+        return (isinstance(binding, str) and bool(re.fullmatch(r'[0-9a-f]{64}', binding))
+                and context.get('binding') == binding and row.get('speech_epoch') == epoch
+                and row.get('speech_streamable') is True and row.get('action') == 'chat')
+
+    def speech_active(self, job_id, epoch, binding):
+        with self.lock:
+            return (not self.closing and self._speech_matches(job_id, epoch, binding)
+                    and self.jobs[job_id]['state'] in {'running', 'done'}
+                    and self._speech_owners[job_id].get('cancelled_epoch') != epoch
+                    and not (self.current == job_id and self.cancel_event.is_set()))
+
+    def cancel_speech(self, job_id, epoch, binding):
+        with self.lock:
+            if not self._speech_matches(job_id, epoch, binding):
+                raise ValueError('This speech belongs to an expired request or another owner session.')
+            self._speech_owners[job_id]['cancelled_epoch'] = epoch
+        return {'stopped': True}
 
     def cancel(self, job_id):
         with self.lock:
@@ -277,7 +315,8 @@ class Interface:
     def stop_dictation(self):
         """Shutdown/owner lock discards an active voice turn without affecting other work."""
         with self.lock:
-            if self.jobs.get(self.current, {}).get('action') == 'dictate':
+            row = self.jobs.get(self.current, {})
+            if row.get('action') == 'dictate' or row.get('integration_active'):
                 self.cancel_event.set()
 
     def idle_maintenance(self):
@@ -368,15 +407,19 @@ class Interface:
                 raise RuntimeError('Finish the current request before starting another.')
             job_id = secrets.token_hex(12)
             if len(self.jobs) >= 12:
-                del self.jobs[next(iter(self.jobs))]
+                oldest = next(iter(self.jobs))
+                del self.jobs[oldest]
+                self._speech_owners.pop(oldest, None)
             self.cancel_event.clear()
             self.dictation_finish.clear()
             self.dictation_last_pulse = time.monotonic()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
+                                 'speech_epoch': 0, 'speech_streamable': False,
                                  'action': request['mode'],
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates', 'self_improve'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision'}}
             if request['mode'] == 'dictate':
                 self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
+            self._speech_owners[job_id] = {'binding': approval_binding}
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request, grant_owner, approval_binding)
@@ -398,7 +441,9 @@ class Interface:
                     with grant_owner() as owner:
                         result = self.execute_core(request, owner=owner)
                 else:
-                    result = self_improvement_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    result = integration_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = self_improvement_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
                         result = self.execute(request)
                 result = {'state': 'done', 'result': result}
@@ -411,6 +456,8 @@ class Interface:
             with self.lock:
                 background = self.jobs.get(job_id, {}).get('background', False)
                 recorded_seconds = self.jobs.get(job_id, {}).get('elapsed', 0.)
+                speech = {key: self.jobs.get(job_id, {}).get(key, default)
+                          for key, default in (('speech_epoch', 0), ('speech_streamable', False))}
                 diagnostics = timing.snapshot({'done': 'completed', 'error': 'failed',
                                                'cancelled': 'cancelled'}[result['state']])
                 payload = result.get('result')
@@ -420,7 +467,7 @@ class Interface:
                     # stay untouched, and final persistence is measured too.
                     result['result'] = {**payload, 'details': {
                         **payload['details'], 'request_timing': diagnostics}}
-                self.jobs[job_id] = {'id': job_id, **result, 'action': request['mode'], 'background': background,
+                self.jobs[job_id] = {'id': job_id, **result, **speech, 'action': request['mode'], 'background': background,
                                     'seconds': round(diagnostics['worker_total_seconds'], 3),
                                     'diagnostics': diagnostics}
                 if request['mode'] == 'dictate':
@@ -449,8 +496,8 @@ class Interface:
         require_dispatch('ui.'+request['mode'])
         if request['mode'] == 'core':
             raise ValueError('Scoped Core execution requires the authenticated job path.')
-        if request['mode'] in self_improvement_ui.MODES:
-            raise ValueError('Application changes require the authenticated owner approval path.')
+        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES:
+            raise ValueError('Application changes and integrations require the authenticated owner approval path.')
         mode, prompt = request['mode'], request['prompt']
         self.progress(mode.replace('_', ' ').capitalize())
         if mode in {'chat', 'coding'}:
@@ -628,10 +675,12 @@ class Interface:
             data['memory_note'] = 'Available memory changed during startup. Source excerpts remain available; no model answer was generated.'
             return self.save(request, data, 'Memory pressure · source evidence')
         try:
+            self.enable_voice_stream(request, role)
             return generate(request, self.memory_path, profiles, role, self.model_evidence,
                             on_token=self.append_partial, on_stage=self.progress, cancel_event=self.cancel_event)
         except ModelMemoryPressure as error:
             self.progress('Memory pressure · switching to source evidence', reset=True)
+            self.enable_voice_stream({}, role)
             data = reference_query(prompt, 'engineering' if mode=='coding' else choose_reference(prompt))
             data['memory_note'] = str(error)+' These are source excerpts, not a generated answer.'
             return self.save(request, data, 'Automatic memory recovery · source evidence')
@@ -797,6 +846,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/permissions.js': ('permissions.js', 'text/javascript; charset=utf-8'),
                   '/grants.js': ('grants.js', 'text/javascript; charset=utf-8'),
                   '/self-improvement.js': ('self-improvement.js', 'text/javascript; charset=utf-8'),
+                  '/integrations.js': ('integrations.js', 'text/javascript; charset=utf-8'),
                   '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
                   '/style.css': ('style.css', 'text/css; charset=utf-8')}
         try:
@@ -821,6 +871,14 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/permissions/grants':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'grants': app.grants.inspect(owner=owner)})
+            elif self.path in {'/api/integrations', '/api/integrations/grants'}:
+                with access.grant_owner(self.owner_session()) as owner:
+                    current_owner = owner
+                data = {'grants': app.grants.inspect_tasks(owner=current_owner)}
+                if self.path == '/api/integrations':
+                    data['providers'] = [integration_ui.provider(name).status(resource_root())
+                                         for name in sorted(integration_ui.ADAPTERS)]
+                self.respond(200, data)
             elif self.path == '/api/approvals/pending':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'approval': app.action_approvals.pending(owner=owner,
@@ -888,7 +946,10 @@ class Handler(BaseHTTPRequestHandler):
                         self.owner_cookie = session
                     self.respond(200, result)
                 elif self.path == '/api/owner/lock' and body == {}:
-                    self.server.app.action_approvals.revoke_binding(hashlib.sha256((self.owner_session() or '').encode()).hexdigest())
+                    binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
+                    self.server.app.action_approvals.revoke_binding(binding)
+                    with self.server.app.lock:
+                        self.server.app.integration_tasks = {key: value for key, value in self.server.app.integration_tasks.items() if key[1] != binding}
                     access.logout(self.owner_session())
                     self.server.app.stop_dictation()
                     self.owner_cookie = ''
@@ -916,17 +977,54 @@ class Handler(BaseHTTPRequestHandler):
                     else:
                         raise ValueError('Unknown scoped grant action or fields.')
                 self.respond(200, result)
-            elif self.path == '/api/speech':
-                if not isinstance(body, dict) or set(body) != {'text'}:
-                    raise ValueError('Use only answer text for speech.')
+            elif self.path == '/api/integrations/select':
+                if not isinstance(body, dict) or 'id' not in body or set(body) - {'id', 'session'}:
+                    raise ValueError('Choose the existing task and conversation.')
                 app = self.server.app
+                with self.server.owner_access.grant_owner(self.owner_session()) as owner:
+                    current_owner = owner
+                result = integration_ui.select_task(app, body['id'], owner=current_owner,
+                    binding=hashlib.sha256((self.owner_session() or '').encode()).hexdigest(), session=body.get('session'))
+                self.respond(200, result)
+            elif self.path == '/api/integrations/revoke':
+                if not isinstance(body, dict) or set(body) != {'id'} or not isinstance(body['id'], str):
+                    raise ValueError('Select the exact task access to revoke.')
+                app = self.server.app
+                with self.server.owner_access.grant_owner(self.owner_session()) as owner:
+                    with app.lock:
+                        if app.jobs.get(app.current, {}).get('task_grant') == body['id']:
+                            app.cancel_event.set()
+                result = app.grants.revoke_task(body['id'], owner=owner)
+                with app.lock:
+                    app.integration_tasks = {key: value for key, value in app.integration_tasks.items() if value != body['id']}
+                self.respond(200, result)
+            elif self.path == '/api/speech/cancel':
+                if not isinstance(body, dict) or set(body) != {'job_id', 'speech_epoch'}:
+                    raise ValueError('Use the exact speech request and attempt.')
+                binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
+                self.respond(200, self.server.app.cancel_speech(body['job_id'], body['speech_epoch'], binding))
+            elif self.path == '/api/speech':
+                if not isinstance(body, dict) or set(body) not in ({'text'}, {'text', 'job_id', 'speech_epoch'}):
+                    raise ValueError('Use answer text and, for streaming speech, its exact request and attempt.')
+                app = self.server.app
+                bound = 'job_id' in body
+                binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
+                def cancelled():
+                    return (app.closing or not self.owner_unlocked()
+                            or bound and not app.speech_active(body['job_id'], body['speech_epoch'], binding))
+                if app.closing:
+                    raise RuntimeError('Voice preparation is busy or closing.')
+                if cancelled():
+                    raise ValueError('This speech is no longer active.')
                 if app.closing or not app.speech_lock.acquire(blocking=False):
                     raise RuntimeError('Voice preparation is busy or closing.')
                 try:
                     from .voice import synthesize_wav
                     import base64
                     app.last_seen = time.monotonic()
-                    audio = synthesize_wav(body['text'], cancelled=lambda: app.closing or not self.owner_unlocked())
+                    if cancelled():
+                        raise ValueError('This speech is no longer active.')
+                    audio = synthesize_wav(body['text'], cancelled=cancelled)
                 finally:
                     app.speech_lock.release()
                 # The client may request its next chunk as soon as this response arrives.
@@ -934,6 +1032,8 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(401, {'error': 'Unlock Prometheus with your passkey.'})
                 elif app.closing:
                     raise RuntimeError('Prometheus is closing.')
+                elif cancelled():
+                    raise ValueError('This speech is no longer active.')
                 else:
                     self.respond(200, {'encoding': 'wav-base64', 'audio': base64.b64encode(audio).decode('ascii')})
             elif self.path == '/api/jobs':

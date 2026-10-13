@@ -13,9 +13,11 @@ from .guardrails import Decision, GuardrailResult, evaluate_tool_request
 
 UI_MODES = frozenset('chat coding ask vision reach capabilities library calculate research project dictate tools models home documents document_import document_list document_index code_open code_read code_preview code_apply code_undo code_tests maintenance watch_source check_sources backup restore_check model_benchmark health_check component_updates check_updates configure_updates core'.split())
 UI_MODES |= frozenset({'self_improve', 'approval_decision'})
+UI_MODES |= frozenset({'integration', 'integration_access'})
 CLI_COMMANDS = frozenset('permissions ui huggingface security-hardware research legal math library see voice-status transcribe coding-tools code media ask backup-memory restore-memory sources resources search sessions history doctor inspect-host chat voice-chat'.split())
 ADAPTERS = frozenset('evidence.retrieve reach.read public.fetch ollama.request ollama.stream coding.launch media.launch home.request voice.record voice.transcribe voice.speak maintenance.sources maintenance.updates backup.create backup.restore remote.action remote.dispatch'.split())
 ADAPTERS |= frozenset('workspace.apply workspace.undo workspace.tests documents.import documents.index documents.extract research.provider hf.metadata integrations.inspect archive.search remote.transport media.inspect ollama.start'.split())
+ADAPTERS |= frozenset({'integrations.agentmemory', 'integrations.browser_use'})
 SCOPED = frozenset({'maintenance.source.dispatch', 'maintenance.update.dispatch', 'remote.dispatch'})
 CONTROL = frozenset('init doctor snapshot verify'.split())
 CAPABILITIES = frozenset({'ui.'+x for x in UI_MODES} | {'cli.'+x for x in CLI_COMMANDS} | {'control.'+x for x in CONTROL} | set(ADAPTERS) | set(SCOPED))
@@ -81,6 +83,8 @@ def revision():
 
 def inventory():
     sites = {'evidence.retrieve':'capabilities.retrieve', 'public.fetch':'public_http.fetch_public_bytes',
+             'integrations.agentmemory':'agent_memory.execute after owner task review',
+             'integrations.browser_use':'browser_agent.execute after owner task review',
              'workspace.apply':'CodingWorkspace.apply_edit','workspace.undo':'CodingWorkspace.undo_edit','workspace.tests':'CodingWorkspace.run_tests',
              'documents.import':'DocumentLibrary.import_bytes','documents.index':'DocumentLibrary.index_missing_embeddings','documents.extract':'document_library._extract',
              'research.provider':'HttpJsonResearchProvider.search','hf.metadata':'hf_resources.compare_remote','integrations.inspect':'integrations.launch_integrations',

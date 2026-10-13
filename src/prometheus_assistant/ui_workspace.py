@@ -188,7 +188,8 @@ def execute(app, request):
         if not destination:
             raise ValueError('Choose a backup folder on a different drive.')
         result = create_backup(app.memory_path, destination,
-            data_dirs={name: app.data_root/name for name in ('Library','Coding','Maintenance','PublicHistory','Routing')})
+            data_dirs={**{name: app.data_root/name for name in ('Library','Coding','Maintenance','PublicHistory','Routing')},
+                       'AgentMemory': app.data_root/'Integrations/AgentMemory'})
         app.last_backup = result
     elif mode == 'restore_check':
         from .maintenance import restore_backup

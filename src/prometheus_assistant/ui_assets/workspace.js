@@ -57,7 +57,7 @@ function showWorkbench(show) {
 }
 window.addEventListener('prometheus-show-conversation', () => showWorkbench(false));
 function switchPanel(name, focus = false) {
-  ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'].forEach(item => {
+  ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'].forEach(item => {
     const selected = item === name, tab = element('tab' + item);
     tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
     element('panel' + item).hidden = !selected;
@@ -245,7 +245,7 @@ panel.querySelectorAll('[data-panel]').forEach(button => {
   button.onclick = () => switchPanel(button.dataset.panel);
   button.onkeydown = event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'];
+    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'];
     let index = names.indexOf(button.dataset.panel);
     index = event.key === 'Home' ? 0 : event.key === 'End' ? names.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : names.length - 1)) % names.length;
     switchPanel(names[index], true);

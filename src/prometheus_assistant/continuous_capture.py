@@ -20,7 +20,10 @@ from .speech_activity import SpeechDetector
 
 RATE = 16000
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
-SILENCE_SECONDS = 1.6
+SILENCE_SECONDS = .8
+TENTATIVE_SILENCE_SECONDS = 1.2
+MAX_SILENCE_SECONDS = 1.6
+ESTABLISHED_SPEECH_SECONDS = .4
 PRE_ROLL_BYTES = int(RATE * 2 * .8)
 
 
@@ -187,6 +190,8 @@ is never a generated animation or a transcription claim.
             size = 44
             elapsed = 0.
             last_speech = None
+            speech_seconds = 0.
+            pause_seconds = SILENCE_SECONDS
             pre_roll = bytearray()
             with SpeechDetector() as detector, open_device() as device:
                 last_data = time.monotonic()
@@ -216,7 +221,7 @@ is never a generated animation or a transcription claim.
                         on_level(round(min(1., rms/4096), 4), round(elapsed, 2))
 
                 def consume_frame(data, speech):
-                    nonlocal elapsed, last_speech
+                    nonlocal elapsed, last_speech, speech_seconds, pause_seconds
                     had_speech = last_speech is not None
                     if not had_speech:
                         # Keep the quiet onset and confirmation frames, but never
@@ -227,6 +232,12 @@ is never a generated animation or a transcription claim.
                     duration = len(data)/(RATE*2)
                     elapsed += duration
                     if speech:
+                        if last_speech is not None:
+                            # Learn actual within-turn hesitations, without
+                            # treating every background/noise frame as speech.
+                            gap = max(0., elapsed-duration-last_speech)
+                            pause_seconds = max(pause_seconds, min(MAX_SILENCE_SECONDS, gap*1.5+.2))
+                        speech_seconds += duration
                         last_speech = elapsed
                     if had_speech:
                         write(data)
@@ -242,7 +253,11 @@ is never a generated animation or a transcription claim.
                     data = device.read()
                     consume(data)
                     now = time.monotonic()
-                    if last_speech is not None and elapsed-last_speech >= SILENCE_SECONDS:
+                    # Established speech can finish promptly; a tentative word
+                    # gets more time to continue. This is acoustic timing, not a
+                    # prediction that the speaker has completed a thought.
+                    allowance = pause_seconds if speech_seconds >= ESTABLISHED_SPEECH_SECONDS else max(pause_seconds, TENTATIVE_SILENCE_SECONDS)
+                    if last_speech is not None and elapsed-last_speech >= allowance:
                         break
                     if now-last_data >= 5:
                         raise ValueError('The microphone stopped supplying audio; check the input device and try again.')
