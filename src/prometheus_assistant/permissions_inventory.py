@@ -28,6 +28,7 @@ SOURCE_FILES = (
     'coding_workspace.py', 'public_http.py', 'ollama.py', 'hosted_preview.py',
     'component_updates.py', 'remote_access.py', 'smart_home.py', 'voice.py',
     'owner_profile.py', 'worker_policy.py', 'personality.py', 'permissions_inventory.py',
+    'action_approvals.py', 'self_improvement.py', 'self_improvement_runtime.py', 'self_improvement_ui.py', 'autonomous_promotion.py',
 )
 
 
@@ -137,6 +138,22 @@ def snapshot(*, owner=None):
         scope='Browser capture APIs', requirements='Browser enforces the response header. Native dictation is a separate path.',
         basis='runtime_constant'))
     reviews = [
+        ('updates.self_improvement', 'Model-generated application changes', 'application', 'conditional',
+         'One existing implementation file per proposal, up to three repair attempts, complete source context and both full regression groups. The owner reviews the exact diff and approves by text, voice or button before signed activation.',
+         'self_improvement.py; self_improvement_runtime.py; autonomous_promotion.py; action_approvals.py',
+         'SelfImprovementEngine.propose / promote; ActionApprovals.consume; WindowsPromotionHost',
+         'Current signed application on a configured Windows host',
+         'Enrolled owner, fitting local model, complete passing tests and pinned host signing tools. This view does not test readiness.'),
+        ('updates.self_improvement_scope', 'Application-change edit boundaries', 'application', 'enforced',
+         'Existing Python, JavaScript, CSS or HTML implementation only; the current adapter bounds complete files to 1500 bytes. Tests, dependency pins, signing, approval and policy implementation are excluded from generated edits.',
+         'self_improvement.py:_eligible; self_improvement_runtime.py:get_self_improvement',
+         'Source catalog, exact replacement, payload and context validation', 'One bounded implementation file',
+         'Larger or multi-file work needs a separate reviewed development update. Passing tests are not proof of every possible behavior.'),
+        ('updates.owner_confirmation', 'Text and voice approval', 'authentication_integrity', 'enforced',
+         'Only an exact unquoted approval phrase for the pending review in the same authenticated owner/browser/conversation can approve. Reviews expire after ten minutes and are single-use; rejection, logout or changed content cannot approve.',
+         'action_approvals.py; self_improvement_ui.py; ui_server.py',
+         'ActionApprovals.consume; authenticated pre-model chat dispatch', 'Exact reviewed action',
+         'Voice transcription enters the same deterministic path as typed text. Model replies do not constitute owner approval.'),
         ('files.project', 'Project files and tests', 'authentication_integrity', 'conditional',
          'Selected roots, private-file/link checks and stale-hash checks remain enforced. Tests execute with host user permissions.',
          'coding_workspace.py:CodingWorkspace; builtin_tools.py:build_builtin_registry',

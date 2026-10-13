@@ -15,10 +15,16 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  assert.equal(one.elements.finishRecording.hidden,false);
  assert.equal(one.elements.dictate.disabled,false,'cancel remains available while recording');
  assert(one.elements.voiceWave.children.some(b=>parseFloat(b.style.height)>20),'wave responds to actual input level');
+ assert.equal(one.elements.voiceWave.dataset.phase,'listening');assert.equal(one.elements.voiceSource.textContent,'Microphone input');
  assert.equal(one.requests.filter(r=>r.url==='/api/dictation/pulse').length,1);
  await one.elements.finishRecording.click();await settle();
  assert.equal(one.requests.findLast(r=>r.url==='/api/dictation/finish').body.id,id);
  assert.equal(one.requests.filter(r=>r.url==='/api/cancel').length,0,'finish retains audio for transcription');
+ one.jobs.set(id,{state:'running',recording:false,stage:'Microphone off · transcribing locally'});
+ await one.run(`pollJob('${id}')`);await settle();
+ assert.equal(one.elements.voiceWave.dataset.phase,'transcribing');
+ assert.match(one.elements.voiceSource.textContent,/Transcribing.*microphone off/);
+ assert(one.elements.voiceWave.children.every(b=>b.style.height==='3px'),'processing does not display stale microphone activity');
  await finish(one,{transcript:'these are my spoken words'});
  assert.equal(one.elements.prompt.value,'My existing draft\nthese are my spoken words');
  assert.equal(posts(one).length,1,'ordinary dictation is held for review');
@@ -66,7 +72,11 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
  assert.equal(posts(chat).at(-1).body.prompt,'What is six times seven?');
  await finish(chat,{reply:'Forty two',session:'b'.repeat(32),label:'Local helper'});
  assert.deepEqual(output.played,['Forty two']);assert.equal(posts(chat).length,2,'microphone stays off throughout playback');
+ chat.run('playbackWave(1000)');
+ assert.match(chat.elements.voiceSource.textContent,/Voice output.*microphone off/);
+ assert(chat.elements.voiceWave.children.some(b=>parseFloat(b.style.height)>20),'spoken reply is explicitly displayed as measured output');
  output.end();await settle();assert.equal(posts(chat).length,3,'only finished playback starts next listening turn');
+ assert(chat.elements.voiceWave.children.every(b=>b.style.height==='3px'),'the previous reply cannot appear as next-turn microphone activity');
  assert.equal(posts(chat).at(-1).body.mode,'dictate');
  const secondCapture=chat.run('dictationJob');await chat.elements.dictate.click();await settle();
  assert.equal(chat.run('voiceChat'),false);assert.equal(chat.run('spokenMode'),false);

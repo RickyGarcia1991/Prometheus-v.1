@@ -165,8 +165,9 @@ def test_owner_observation_never_reads_keys_or_mutates_expired_sessions(tmp_path
 
 @pytest.fixture
 def endpoint(tmp_path):
+    from prometheus_assistant.action_approvals import ActionApprovals
     app = SimpleNamespace(memory_path=tmp_path/'memory.sqlite3', token='synthetic-request-token',
-                          submit=forbidden, stop_dictation=lambda: None)
+                          submit=forbidden, stop_dictation=lambda: None, action_approvals=ActionApprovals())
     server = Server(('127.0.0.1', 0), app)
     server.owner_access.required = server.owner_access.ready = True
     server.owner_access.sessions['synthetic-owner-session'] = server.owner_access.clock()+120

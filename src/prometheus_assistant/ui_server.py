@@ -6,6 +6,7 @@ from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import json
+import hashlib
 import os
 import re
 import secrets
@@ -20,7 +21,7 @@ from .hardware import detect_hardware, resource_root, select_model
 from .memory import MemoryStore
 from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
-from . import ui_workspace
+from . import ui_workspace, self_improvement_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -37,6 +38,7 @@ LANGUAGES = ('Auto', 'Python', 'JavaScript', 'TypeScript', 'HTML / CSS', 'SQL', 
              'Dockerfile / Terraform', 'GraphQL', 'Protobuf')
 MODES = {'chat', 'coding', 'ask', 'vision', 'reach', 'capabilities', 'library', 'calculate', 'research', 'project', 'dictate', 'tools', 'models', 'home', 'core'}
 MODES |= ui_workspace.MODES
+MODES |= self_improvement_ui.MODES
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
 
@@ -134,11 +136,22 @@ def validate_job(body):
         spec = build_builtin_registry(None).get(body['worker'], body['tool'])
         request, _ = scope(spec, body['arguments'])
         return {**body, 'arguments': dict(request.arguments)}
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS):
+    approval_fields = {'approval_id', 'approval_fingerprint', 'approval_decision'}
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
         raise ValueError('Choose an available workspace mode.')
+    if mode == 'approval_decision':
+        if (not approval_fields <= body.keys() or not isinstance(body['approval_id'], str)
+                or not re.fullmatch(r'[0-9a-f]{32}', body['approval_id'])
+                or not isinstance(body['approval_fingerprint'], str)
+                or not re.fullmatch(r'[0-9a-f]{64}', body['approval_fingerprint'])
+                or not isinstance(body['approval_decision'], str)
+                or body['approval_decision'] not in {'approve', 'reject'}):
+            raise ValueError('Use the exact reviewed approval and choose approve or reject.')
+    elif approval_fields & body.keys():
+        raise ValueError('Approval fields are only valid for an exact approval decision.')
     from .capabilities import SOURCES
     if 'source' in body and (mode != 'ask' or not isinstance(body['source'], str) or body['source'] not in SOURCES):
         raise ValueError('Choose a valid source in Ask with evidence mode.')
@@ -151,7 +164,7 @@ def validate_job(body):
     prompt = body.get('prompt', '')
     if not isinstance(prompt, str) or len(prompt) > 4000 or ('\x00' in prompt):
         raise ValueError('Use a prompt of at most 4000 characters.')
-    if mode not in {'dictate', 'tools', 'models', 'capabilities'} | ui_workspace.NO_PROMPT and not prompt.strip():
+    if mode not in {'dictate', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -200,6 +213,8 @@ class Interface:
         self.cache_context = None
         self.maintenance_error = None
         self.maintenance_turn = 1
+        from .action_approvals import ActionApprovals
+        self.action_approvals = ActionApprovals(receipt_root=self.data_root/'Maintenance/Approvals')
         from .remote_access import RemoteAccess
         self.remote = RemoteAccess()
         from .scoped_grants import GrantStore
@@ -341,7 +356,7 @@ class Interface:
                         process.kill()
                         process.wait(timeout=5)
 
-    def submit(self, request, *, grant_owner=None, background=False):
+    def submit(self, request, *, grant_owner=None, approval_binding=None, background=False):
         request = validate_job(request)
         if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates'}:
             raise ValueError('Only scheduled source and component checks can be background jobs.')
@@ -358,15 +373,15 @@ class Interface:
             self.dictation_last_pulse = time.monotonic()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
                                  'action': request['mode'],
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates', 'self_improve'}}
             if request['mode'] == 'dictate':
                 self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
             self.current = job_id
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
-        self.executor.submit(self._work, job_id, request, grant_owner)
+        self.executor.submit(self._work, job_id, request, grant_owner, approval_binding)
         return {'id': job_id, 'state': 'running'}
 
-    def _work(self, job_id, request, grant_owner=None):
+    def _work(self, job_id, request, grant_owner=None, approval_binding=None):
         start = time.monotonic()
         with RequestTiming(started=start, clock=time.monotonic,
                            cancelled_exceptions=(GenerationCancelled,)) as timing:
@@ -382,7 +397,9 @@ class Interface:
                     with grant_owner() as owner:
                         result = self.execute_core(request, owner=owner)
                 else:
-                    result = self.execute(request)
+                    result = self_improvement_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = self.execute(request)
                 result = {'state': 'done', 'result': result}
             except EmptyRecording as error:
                 result = {'state': 'cancelled', 'reason': 'empty_recording', 'error': str(error)}
@@ -431,6 +448,8 @@ class Interface:
         require_dispatch('ui.'+request['mode'])
         if request['mode'] == 'core':
             raise ValueError('Scoped Core execution requires the authenticated job path.')
+        if request['mode'] in self_improvement_ui.MODES:
+            raise ValueError('Application changes require the authenticated owner approval path.')
         mode, prompt = request['mode'], request['prompt']
         self.progress(mode.replace('_', ' ').capitalize())
         if mode in {'chat', 'coding'}:
@@ -776,6 +795,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/remote.js': ('remote.js', 'text/javascript; charset=utf-8'),
                   '/permissions.js': ('permissions.js', 'text/javascript; charset=utf-8'),
                   '/grants.js': ('grants.js', 'text/javascript; charset=utf-8'),
+                  '/self-improvement.js': ('self-improvement.js', 'text/javascript; charset=utf-8'),
                   '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
                   '/style.css': ('style.css', 'text/css; charset=utf-8'),
                   '/approved-orb.png': ('approved-orb.png', 'image/png')}
@@ -801,6 +821,14 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/permissions/grants':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'grants': app.grants.inspect(owner=owner)})
+            elif self.path == '/api/approvals/pending':
+                with access.grant_owner(self.owner_session()) as owner:
+                    self.respond(200, {'approval': app.action_approvals.pending(owner=owner,
+                        binding=hashlib.sha256((self.owner_session() or '').encode()).hexdigest())})
+            elif self.path == '/api/self-improvement/result' or self.path.startswith('/api/self-improvement/result/'):
+                job_id = None if self.path == '/api/self-improvement/result' else self.path.rsplit('/', 1)[-1]
+                with access.grant_owner(self.owner_session()) as owner:
+                    self.respond(200, self_improvement_ui.activation_result(app, owner=owner, job_id=job_id))
             elif self.path == '/api/remote/state':
                 app.last_seen = time.monotonic()
                 self.respond(200, app.remote.state())
@@ -860,6 +888,7 @@ class Handler(BaseHTTPRequestHandler):
                         self.owner_cookie = session
                     self.respond(200, result)
                 elif self.path == '/api/owner/lock' and body == {}:
+                    self.server.app.action_approvals.revoke_binding(hashlib.sha256((self.owner_session() or '').encode()).hexdigest())
                     access.logout(self.owner_session())
                     self.server.app.stop_dictation()
                     self.owner_cookie = ''
@@ -908,10 +937,9 @@ class Handler(BaseHTTPRequestHandler):
                     app.speech_lock.release()
             elif self.path == '/api/jobs':
                 cookie = self.owner_session()
-                if isinstance(body, dict) and body.get('mode') == 'core':
-                    self.respond(202, self.server.app.submit(body, grant_owner=lambda: self.server.owner_access.grant_owner(cookie)))
-                else:
-                    self.respond(202, self.server.app.submit(body))
+                self.respond(202, self.server.app.submit(body,
+                    grant_owner=lambda: self.server.owner_access.grant_owner(cookie),
+                    approval_binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/remote/action':
                 self.server.app.last_seen = time.monotonic()
                 self.respond(200, self.server.app.remote.action(body))

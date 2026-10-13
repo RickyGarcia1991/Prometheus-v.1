@@ -190,3 +190,42 @@ def test_bundled_lock_and_all_wheels_are_exact_pinned_upstream_artifacts():
         assert row['license_files']
         assert row['source_url'].startswith('https://files.pythonhosted.org/')
     assert not any('magika' in row['filename'] or 'onnxruntime' in row['filename'] for row in lock['wheels'])
+
+
+def test_main_pdf_parser_matches_the_qualified_worker_distribution():
+    import pypdf
+    vendor = Path(converter.__file__).with_name('vendor')/'markitdown'
+    lock = json.loads((vendor/'LOCK.json').read_bytes())
+    pdf = next(row for row in lock['wheels'] if row['name'] == 'pypdf')
+    assert pypdf.__version__ == pdf['version']
+
+
+def test_pdf_cyclic_tree_removal_is_bounded():
+    # A cyclic sibling chain must raise instead of looping indefinitely. Keep
+    # the hostile structure in a short-lived process to bound a regression.
+    code = '''
+from pypdf import PdfWriter
+from pypdf.errors import LimitReachedError
+from pypdf.generic import TreeObject, NameObject, TextStringObject
+writer = PdfWriter()
+parent = TreeObject()
+parent_ref = writer._add_object(parent)
+nodes = []
+for title in ('first', 'second', 'absent'):
+    node = TreeObject({NameObject('/Title'): TextStringObject(title), NameObject('/Parent'): parent_ref})
+    nodes.append(writer._add_object(node))
+parent[NameObject('/First')] = nodes[0]
+parent[NameObject('/Last')] = nodes[1]
+nodes[0].get_object()[NameObject('/Next')] = nodes[1]
+nodes[1].get_object()[NameObject('/Next')] = nodes[0]
+try:
+    parent.remove_child(nodes[2])
+except LimitReachedError:
+    print('cycle rejected')
+else:
+    raise AssertionError('Cyclic tree was not rejected')
+'''
+    result = subprocess.run([sys.executable, '-B', '-c', code], capture_output=True, timeout=5,
+                            env={**os.environ, 'PYTHONPATH': str(Path(converter.__file__).parent.parent)})
+    assert result.returncode == 0, result.stderr
+    assert b'cycle rejected' in result.stdout

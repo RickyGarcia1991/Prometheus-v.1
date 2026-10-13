@@ -12,6 +12,7 @@ from pathlib import Path
 from .guardrails import Decision, GuardrailResult, evaluate_tool_request
 
 UI_MODES = frozenset('chat coding ask vision reach capabilities library calculate research project dictate tools models home documents document_import document_list document_index code_open code_read code_preview code_apply code_undo code_tests maintenance watch_source check_sources backup restore_check model_benchmark health_check component_updates check_updates configure_updates core'.split())
+UI_MODES |= frozenset({'self_improve', 'approval_decision'})
 CLI_COMMANDS = frozenset('permissions ui huggingface security-hardware research legal math library see voice-status transcribe coding-tools code media ask backup-memory restore-memory sources resources search sessions history doctor inspect-host chat voice-chat'.split())
 ADAPTERS = frozenset('evidence.retrieve reach.read public.fetch ollama.request ollama.stream coding.launch media.launch home.request voice.record voice.transcribe voice.speak maintenance.sources maintenance.updates backup.create backup.restore remote.action remote.dispatch'.split())
 ADAPTERS |= frozenset('workspace.apply workspace.undo workspace.tests documents.import documents.index documents.extract research.provider hf.metadata integrations.inspect archive.search remote.transport media.inspect ollama.start'.split())

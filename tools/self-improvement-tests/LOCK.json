@@ -1,0 +1,95 @@
+{
+  "purpose": "Offline full regression checks only; never imported from candidate-controlled paths.",
+  "schema": 1,
+  "wheels": [
+    {
+      "filename": "pytest-9.1.1-py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/pytest/9.1.1/json",
+      "package": "pytest",
+      "requires_dist": [
+        "colorama>=0.4; sys_platform == \"win32\"",
+        "exceptiongroup>=1; python_version < \"3.11\"",
+        "iniconfig>=1.0.1",
+        "packaging>=22",
+        "pluggy<2,>=1.5",
+        "pygments>=2.7.2",
+        "tomli>=1; python_version < \"3.11\"",
+        "argcomplete; extra == \"dev\"",
+        "attrs>=19.2; extra == \"dev\"",
+        "hypothesis>=3.56; extra == \"dev\"",
+        "mock; extra == \"dev\"",
+        "requests; extra == \"dev\"",
+        "setuptools; extra == \"dev\"",
+        "xmlschema; extra == \"dev\""
+      ],
+      "requires_python": ">=3.10",
+      "sha256": "37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c",
+      "size": 386536,
+      "url": "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl",
+      "version": "9.1.1"
+    },
+    {
+      "filename": "pluggy-1.6.0-py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/pluggy/1.6.0/json",
+      "package": "pluggy",
+      "requires_dist": [
+        "pre-commit; extra == \"dev\"",
+        "tox; extra == \"dev\"",
+        "pytest; extra == \"testing\"",
+        "pytest-benchmark; extra == \"testing\"",
+        "coverage; extra == \"testing\""
+      ],
+      "requires_python": ">=3.9",
+      "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+      "size": 20538,
+      "url": "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl",
+      "version": "1.6.0"
+    },
+    {
+      "filename": "iniconfig-2.3.1-py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/iniconfig/2.3.1/json",
+      "package": "iniconfig",
+      "requires_dist": null,
+      "requires_python": ">=3.10",
+      "sha256": "9121e2c1fdb355232495be3194c8dfe87ccc2d5dee45947b78e68f499790d7a7",
+      "size": 7552,
+      "url": "https://files.pythonhosted.org/packages/56/43/4ca9e49d27a1fcf6bece6f6aec0ea46bb9112489b93d4b688fb415457bdb/iniconfig-2.3.1-py3-none-any.whl",
+      "version": "2.3.1"
+    },
+    {
+      "filename": "packaging-26.3-py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/packaging/26.3/json",
+      "package": "packaging",
+      "requires_dist": null,
+      "requires_python": ">=3.9",
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "size": 129956,
+      "url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl",
+      "version": "26.3"
+    },
+    {
+      "filename": "pygments-2.21.0-py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/pygments/2.21.0/json",
+      "package": "pygments",
+      "requires_dist": [
+        "colorama>=0.4.6; extra == \"windows-terminal\""
+      ],
+      "requires_python": ">=3.9",
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "size": 1250147,
+      "url": "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl",
+      "version": "2.21.0"
+    },
+    {
+      "filename": "colorama-0.4.6-py2.py3-none-any.whl",
+      "metadata_url": "https://pypi.org/pypi/colorama/0.4.6/json",
+      "package": "colorama",
+      "requires_dist": null,
+      "requires_python": "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7",
+      "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+      "size": 25335,
+      "url": "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl",
+      "version": "0.4.6"
+    }
+  ]
+}

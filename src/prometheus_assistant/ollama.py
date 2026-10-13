@@ -17,9 +17,12 @@ def output_token_budget(model, num_predict=384):
 def _idle_residency():
     from .hardware import detect_hardware
     hardware = detect_hardware()
-    short = (hardware.ram_gib < 12 or hardware.available_ram_gib is None
-             or hardware.available_ram_gib < 2)
-    return '30s' if short else '5m'
+    free = hardware.available_ram_gib
+    if hardware.ram_gib < 12 or free is None or free < 1:
+        return '30s'
+    # Loading from portable storage can dominate reply latency. Allow a natural
+    # conversation pause without keeping a model resident indefinitely.
+    return '2m' if free < 2 else '15m'
 
 
 class LocalModelError(RuntimeError):

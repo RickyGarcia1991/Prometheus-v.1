@@ -16,13 +16,9 @@ let spokenMode=false,speechEpoch=0;
 let voiceChat=false,dictationJob=null,dictationPending=false,dictationEpoch=0,microphoneOn=false,finishingDictation=false;
 let lastVoicePulse=0,voicePulsePending=false,voiceFrame=null,voiceEndNotice='',voiceActivity=null;
 const discardedDictations=new Set();
-const waveBars=Array.from({length:32},()=>{const bar=document.createElement('span');$('voiceWave').append(bar);return bar;});
-function resetWave(){for(const bar of waveBars)bar.style.height='3px';}
-function showLevel(level){
- const value=Number.isFinite(level)?Math.max(0,Math.min(1,level)):0;
- for(let i=0;i<waveBars.length-1;i++)waveBars[i].style.height=waveBars[i+1].style.height||'3px';
- waveBars[waveBars.length-1].style.height=(3+37*value)+'px';
-}
+const voiceWaveform=window.PrometheusOrb?.VoiceWaveform?new window.PrometheusOrb.VoiceWaveform($('voiceWave'),$('voiceSource')):null;
+function resetWave(){voiceWaveform?.reset();}
+function showLevel(level,source='input',now=performance.now()){voiceWaveform?.sample(level,now,source);}
 function voiceControls(){
  const engaged=voiceChat||dictationJob!==null||dictationPending;
  $('voiceCapture').hidden=!engaged;
@@ -90,14 +86,14 @@ function trackRecording(id,result){
 }
 function playbackWave(now){
  voiceFrame=null;if(!voiceChat||!speaking||document.hidden)return;
- showLevel(localVoice?.level(now)||0);voiceFrame=requestAnimationFrame(playbackWave);
+ showLevel(localVoice?.level(now)||0,'output',now);voiceFrame=requestAnimationFrame(playbackWave);
 }
 function growPrompt(){const prompt=$('prompt');prompt.style.height='auto';prompt.style.height=Math.min(160,Math.max(48,prompt.scrollHeight||48))+'px';}
 
 function notice(text){$('notice').textContent=text;$('notice').hidden=!text;}
 function rememberSession(value){session=value;try{if(value)localStorage.setItem('prometheus.session',value);else localStorage.removeItem('prometheus.session');}catch{}}
 function invalidateHistory(){historyEpoch++;historyPending=false;$('history').value=session||'';}
-function activity(state){$('orb').dataset.state=['opening','finishing','transcribing','preparing'].includes(state)?'thinking':state;const labels={idle:['I’m here.','What shall we work on?'],thinking:['Thinking…','Working on your request'],opening:['Opening microphone…','Starting local recording'],finishing:['Finishing recording…','Closing the microphone'],transcribing:['Transcribing…','Microphone off · reading your words locally'],preparing:['Preparing voice…','Microphone off · preparing the spoken reply'],listening:['Listening…','Pause to finish, or press Stop'],speaking:['Speaking…','Reading your answer'],error:['Let’s adjust.','See the message below'],offline:['Disconnected','Your text stays here']};const pair=labels[state]||labels.idle;$('activity').textContent=pair[0];$('activityNote').textContent=pair[1];}
+function activity(state){voiceWaveform?.setState(state);$('orb').dataset.state=['opening','finishing','transcribing','preparing'].includes(state)?'thinking':state;const labels={idle:['I’m here.','What shall we work on?'],thinking:['Thinking…','Working on your request'],opening:['Opening microphone…','Starting local recording'],finishing:['Finishing recording…','Closing the microphone'],transcribing:['Transcribing…','Microphone off · reading your words locally'],preparing:['Preparing voice…','Microphone off · preparing the spoken reply'],listening:['Listening…','Pause to finish, or press Stop'],speaking:['Speaking…','Reading your answer'],error:['Let’s adjust.','See the message below'],offline:['Disconnected','Your text stays here']};const pair=labels[state]||labels.idle;$('activity').textContent=pair[0];$('activityNote').textContent=pair[1];}
 async function api(path,data){try{return await transport.request(path,data);}catch(error){if(error.status===401){stopVoiceChat(false);window.dispatchEvent(new CustomEvent('prometheus-auth-lost'));invalidateHistory();stopSpeaking();$('messages').replaceChildren();location.replace('/');}throw error;}}
 function renderSourceLinks(content,text){
  // Render the stored source footer without interpreting answer text as HTML.

@@ -1,6 +1,6 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.5
 Name: pypdf
-Version: 6.10.0
+Version: 6.20.1
 Summary: A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
 Author-email: Mathieu Fenniak <biziqe@mathieu.fenniak.net>
 Maintainer: stefan6419846
@@ -18,12 +18,14 @@ Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
 Classifier: Programming Language :: Python :: 3.13
 Classifier: Programming Language :: Python :: 3.14
+Classifier: Programming Language :: Python :: 3.15
 Classifier: Operating System :: OS Independent
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Classifier: Typing :: Typed
 License-File: LICENSE
 Requires-Dist: typing_extensions >= 4.0; python_version < '3.11'
-Requires-Dist: cryptography ; extra == "crypto"
+Requires-Dist: brotli>=1.2.0 ; extra == "brotli"
+Requires-Dist: cryptography>3.0 ; extra == "crypto"
 Requires-Dist: PyCryptodome ; extra == "cryptodome"
 Requires-Dist: flit ; extra == "dev"
 Requires-Dist: pip-tools ; extra == "dev"
@@ -36,19 +38,30 @@ Requires-Dist: wheel ; extra == "dev"
 Requires-Dist: myst_parser ; extra == "docs"
 Requires-Dist: sphinx ; extra == "docs"
 Requires-Dist: sphinx_rtd_theme ; extra == "docs"
-Requires-Dist: cryptography ; extra == "full"
+Requires-Dist: fonttools ; extra == "fonts"
+Requires-Dist: arabic-reshaper ; extra == "full"
+Requires-Dist: brotli>=1.2.0 ; extra == "full"
+Requires-Dist: cryptography>3.0 ; extra == "full"
+Requires-Dist: fonttools ; extra == "full"
 Requires-Dist: Pillow>=8.0.0 ; extra == "full"
+Requires-Dist: python-bidi ; extra == "full"
 Requires-Dist: Pillow>=8.0.0 ; extra == "image"
+Requires-Dist: arabic-reshaper ; extra == "rtl-text"
+Requires-Dist: python-bidi ; extra == "rtl-text"
 Project-URL: Bug Reports, https://github.com/py-pdf/pypdf/issues
 Project-URL: Changelog, https://pypdf.readthedocs.io/en/latest/meta/CHANGELOG.html
 Project-URL: Documentation, https://pypdf.readthedocs.io/en/latest/
 Project-URL: Source, https://github.com/py-pdf/pypdf
+Provides-Extra: brotli
 Provides-Extra: crypto
 Provides-Extra: cryptodome
 Provides-Extra: dev
 Provides-Extra: docs
+Provides-Extra: fonts
 Provides-Extra: full
 Provides-Extra: image
+Provides-Extra: rtl-text
+Import-Name: pypdf
 
 [![PyPI version](https://badge.fury.io/py/pypdf.svg)](https://badge.fury.io/py/pypdf)
 [![Python Support](https://img.shields.io/pypi/pyversions/pypdf.svg)](https://pypi.org/project/pypdf/)
@@ -166,3 +179,4 @@ tests/test_xmp.py ...                                   [100%]
 
 ========== 232 passed, 1 xfailed, 1 warning in 4.52s ==========
 ```
+

@@ -30,7 +30,17 @@ def strict_json(text):
     return value
 
 def requests_json(prompt):
-    return bool(re.search(r"\b(?:return|respond|answer|output)\s+(?:with\s+|in\s+)?(?:only\s+|valid\s+)?json\b", prompt, re.I))
+    # Examples are data, not output instructions. Keep a boundary marker so a
+    # real instruction after a quoted example can still be recognized.
+    text = re.sub(r'```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)', '\x00', prompt)
+    text = re.sub(r'(?m)^\s*>[^\n]*', '\x00', text)
+    text = re.sub(r'`[^`\n]*`', '\x00', text)
+    text = re.sub(r'"(?:\\.|[^"\\])*"|“[^”]*”|‘[^’]*’|(?<!\w)\'(?:\\.|[^\'\\])*\'(?!\w)', '\x00', text)
+    return bool(re.search(
+        r'(?:^|[.!?;\x00]\s*|\band\s+)(?:please\s+)?'
+        r'(?:return|respond|answer|output)\s+(?:(?:with|in|as)\s+)?'
+        r'(?:(?:only|valid|exactly|just|this|a|an)\s+){0,4}json\b',
+        text, re.I | re.M))
 
 def requested_json_keys(prompt):
     """Read a bounded, explicit top-level key list; do not infer a schema."""
@@ -51,6 +61,29 @@ def json_output_format(prompt):
         return True
     return {'type': 'object', 'properties': {key: {} for key in keys},
             'required': list(keys), 'additionalProperties': False}
+
+
+def finalize_code_only(prompt, reply):
+    """Remove one Markdown wrapper only when explicitly asked for source alone.
+
+    This changes presentation, never code contents or correctness checks. Prose,
+    multiple blocks, quoted instructions and ordinary explanations stay intact.
+    """
+    instructions = re.sub(r'```[\s\S]*?(?:```|$)|~~~[\s\S]*?(?:~~~|$)', '\x00', prompt)
+    instructions = re.sub(r'(?m)^\s*>[^\n]*', '\x00', instructions)
+    instructions = re.sub(r'`[^`\n]*`', '\x00', instructions)
+    instructions = re.sub(r'"(?:\\.|[^"\\])*"|“[^”]*”|‘[^’]*’|(?<!\w)\'(?:\\.|[^\'\\])*\'(?!\w)', '\x00', instructions)
+    explicit = re.search(r'(?:^|[.!?;]\s*)(?:please\s+)?(?:write|return|output|provide)\s+'
+        r'(?:only\s+(?:(?:a|the)\s+)?|(?:raw|plain)\s+)'
+        r'(?:(?:python|javascript|typescript|java|c\+\+|c#|rust|go|sql|html|css|bash)\s+)?'
+        r'(?:source|code|function)\b', instructions, re.I | re.M)
+    no_markdown = re.search(r'\b(?:no|without)\s+(?:markdown|(?:code\s+)?fences)\b', instructions, re.I)
+    if not explicit or not no_markdown or not isinstance(reply, str):
+        return reply
+    block = re.fullmatch(r'\s*```[A-Za-z0-9_+.#-]*[ \t]*\r?\n([\s\S]*?)\r?\n```\s*', reply)
+    if block and block[1].strip() and '```' not in block[1]:
+        return block[1] + '\n'
+    return reply
 
 def output_issues(prompt, reply):
     if not isinstance(reply, str) or not reply.strip():

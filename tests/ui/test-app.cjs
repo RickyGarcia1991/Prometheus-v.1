@@ -60,6 +60,7 @@ async function fixture({voice = null} = {}) {
   };
   const runtime = vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(asset, 'transport.js'), 'utf8'), runtime, {filename: 'transport.js'});
+  vm.runInContext(fs.readFileSync(path.join(asset, 'folded-core.js'), 'utf8'), runtime, {filename: 'folded-core.js'});
   vm.runInContext(fs.readFileSync(path.join(asset, 'app.js'), 'utf8'), runtime, {filename: 'app.js'});
   await settle();
   const run = expression => vm.runInContext(expression, runtime);

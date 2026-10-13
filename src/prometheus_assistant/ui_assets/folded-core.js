@@ -188,5 +188,40 @@ class FoldedCore {
  }
  pause(){this.previous=0;}
 }
-root.PrometheusOrb={FoldedCore};
+// A short history of measured levels. No clock-driven animation or microphone access.
+class VoiceWaveform {
+ constructor(element,sourceLabel){
+  this.element=element;this.sourceLabel=sourceLabel;this.state=null;
+  this.values=new Float32Array(32);this.lastSample=-Infinity;
+  this.bars=Array.from({length:this.values.length},()=>{const bar=document.createElement('span');element.append(bar);return bar;});
+  this.setState('idle');
+ }
+ setState(state){
+  const labels={idle:'Microphone off',opening:'Starting microphone',listening:'Microphone input',finishing:'Closing microphone',transcribing:'Transcribing · microphone off',thinking:'Thinking · microphone off',preparing:'Preparing voice · microphone off',speaking:'Voice output · microphone off',error:'Microphone off',offline:'Microphone off'};
+  const next=Object.hasOwn(labels,state)?state:'idle';
+  if(next===this.state)return;
+  this.state=next;this.element.dataset.phase=next;
+  if(this.sourceLabel)this.sourceLabel.textContent=labels[next];
+  this.reset();
+ }
+ reset(){
+  this.values.fill(0);this.lastSample=-Infinity;
+  for(const bar of this.bars){bar.style.height='3px';bar.style.opacity='.32';}
+ }
+ sample(level,now,source='input'){
+  const expected=this.state==='speaking'?'output':['listening','finishing'].includes(this.state)?'input':null;
+  if(source!==expected)return false;
+  // Playback can provide a frame every refresh; twenty visual samples per second suffice.
+  const time=Number.isFinite(now)?now:0;
+  if(source==='output'&&time>=this.lastSample&&time-this.lastSample<50)return false;
+  this.lastSample=time;
+  this.values.copyWithin(0,1);this.values[this.values.length-1]=Number.isFinite(level)?Math.min(1,Math.max(0,level)):0;
+  for(let i=0;i<this.bars.length;i++){
+   this.bars[i].style.height=(3+37*this.values[i])+'px';
+   this.bars[i].style.opacity=String(.32+.68*this.values[i]);
+  }
+  return true;
+ }
+}
+root.PrometheusOrb={FoldedCore,VoiceWaveform};
 })(window);
