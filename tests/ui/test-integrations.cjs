@@ -64,6 +64,13 @@ function result(h,detail){h.emit('prometheus-result',{origin:'local',...detail})
  e.integrationScope.value='public-web';e.integrationScope.onchange();assert(e.integrationHostsField.hidden);await e.reviewIntegrationAccess.click();assert.deepEqual(h.submitted.at(-1).task.resources,{public_web:true},'broader web access requires an explicit scope choice');
  const beforeInvalid=h.submitted.length;e.integrationUrl.value='https://user:password@example.com';await e.reviewIntegration.click();assert.equal(h.submitted.length,beforeInvalid);assert.match(e.integrationStatus.textContent,/without account credentials/);
 
+ const semantic=fixture();semantic.state.providers.push({provider:'agentmemory_service',available:true,version:'0.9.30',integrity:'verified',operations:['remember','recall','forget']});
+ const serviceGrant=grant({id:'9'.repeat(48),contract:{...grant().contract,adapter:'agentmemory_service'}});semantic.state.grants=[grant(),serviceGrant];await ready(semantic);
+ const s=semantic.elements;s.integrationAdapter.value='agentmemory_service';s.integrationAdapter.onchange();s.integrationProject.value='home';s.integrationProject.oninput();s.integrationContent.value='The equipment is in the blue cabinet.';
+ assert.match(text(s.integrationProviders),/AgentMemory semantic service.*Available/);assert.match(s.integrationHelp.textContent,/recall notes by meaning/);assert(!s.integrationProjectField.hidden&&s.integrationUrlField.hidden);
+ assert.equal(s.integrationGrant.options.length,2,'semantic runtime offers its own grant, not the classic memory grant');assert.equal(s.integrationGrant.options[1].value,serviceGrant.id);
+ await s.reviewIntegration.click();assert.equal(semantic.submitted.at(-1).adapter,'agentmemory_service');assert(!semantic.submitted.at(-1).task_grant,'full service still asks for review by default');
+ s.integrationTask.value='Find workshop notes by meaning';s.integrationAllowRecall.checked=true;await s.reviewIntegrationAccess.click();assert.equal(semantic.submitted.at(-1).task.adapter,'agentmemory_service');assert.equal(semantic.submitted.at(-1).task.duration_seconds,null);
  const isolate=fixture();await ready(isolate);isolate.state.pending=approval('self_improve');await isolate.elements.refreshIntegrationApproval.click();assert(isolate.elements.integrationReview.hidden);assert.match(isolate.elements.integrationStatus.textContent,/Maintenance/);
  isolate.emit('prometheus-result',{origin:'observed',details:{approval:approval()}});assert(isolate.elements.integrationReview.hidden,'another tab cannot inject an approval');
  isolate.state.pending=approval();await isolate.elements.refreshIntegrationApproval.click();assert(!isolate.elements.integrationReview.hidden);

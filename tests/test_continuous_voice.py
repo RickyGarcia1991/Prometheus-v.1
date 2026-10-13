@@ -107,6 +107,26 @@ def test_manual_finish_keeps_audio_and_does_not_cancel(tmp_path, runtime):
     assert not cancel.is_set() and device.closed
 
 
+@pytest.mark.parametrize('manual', [False, True])
+def test_capture_diagnostics_are_numeric_and_emitted_after_device_closes(tmp_path, runtime, manual):
+    _, install = runtime
+    device = install([pcm(1200)]*20+[pcm(0)]*30)
+    finished = threading.Event()
+    reports = []
+    def level(value, elapsed):
+        if manual and elapsed >= 2: finished.set()
+    def report(values):
+        assert device.closed
+        reports.append(values)
+    capture.record_continuous(tmp_path/'turn.wav', finish_event=finished,
+                              on_level=level, on_diagnostics=report)
+    assert len(reports) == 1
+    row = reports[0]
+    assert row['manual_finish'] == int(manual)
+    assert all(type(v) in (int, float) and 0 <= v <= 86400 for v in row.values())
+    if not manual: assert .8 <= row['endpoint_silence_audio_seconds'] <= .9
+
+
 def test_established_speech_finishes_within_nine_tenths_of_a_second(tmp_path, runtime):
     _, install = runtime
     install(chain(repeat(pcm(1200), 20), repeat(pcm(0), 40)))

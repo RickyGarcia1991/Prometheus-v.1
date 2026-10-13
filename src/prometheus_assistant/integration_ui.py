@@ -15,7 +15,10 @@ from .ollama import GenerationCancelled
 
 MODES = {'integration', 'integration_access'}
 FIELDS = {'adapter', 'operation', 'arguments', 'task_grant', 'task'}
-ADAPTERS = {'agentmemory', 'browser_use'}
+ADAPTERS = {'agentmemory', 'browser_use', 'agentmemory_service'}
+MEMORY_ADAPTERS = {'agentmemory', 'agentmemory_service'}
+LABELS = {'agentmemory': 'AgentMemory classic', 'agentmemory_service': 'AgentMemory semantic service',
+          'browser_use': 'Browser Use · public page'}
 KINDS = {'integration', 'integration_access'}
 
 
@@ -23,6 +26,9 @@ def provider(adapter):
     if adapter == 'agentmemory':
         from . import agent_memory
         return agent_memory
+    if adapter == 'agentmemory_service':
+        from . import agent_memory_service
+        return agent_memory_service
     if adapter == 'browser_use':
         from . import browser_agent
         return browser_agent
@@ -53,6 +59,12 @@ def validate(body):
 
 def from_chat(prompt):
     """Conservative complete owner commands; quoted/provider text cannot approve."""
+    match = re.fullmatch(r'(?:please\s+)?(remember|recall)\s+with\s+agent\s*memory\s+semantic(?:\s+service)?\s+'
+                        r'(?:in|from)\s+project\s+([a-z0-9_-]+)\s*:\s*(.+)', prompt.strip(), re.I | re.S)
+    if match:
+        operation = match[1].lower()
+        return {'adapter': 'agentmemory_service', 'operation': operation,
+                'arguments': {'project': match[2].lower(), 'content' if operation == 'remember' else 'query': match[3]}}
     match = re.fullmatch(r'(?:please\s+)?remember\s+in\s+project\s+([a-z0-9_-]+)\s*:\s*(.+)',
                         prompt.strip(), re.I | re.S)
     if match:
@@ -71,6 +83,13 @@ def from_chat(prompt):
 
 
 def access_from_chat(prompt):
+    semantic = re.subn(r'^(\s*(?:please\s+)?(?:give|allow)\s+agent\s*memory)\s+semantic(?:\s+service)?(?=\s+full access)',
+                       r'\1', prompt, count=1, flags=re.I)
+    if semantic[1]:
+        task = access_from_chat(semantic[0])
+        if task:
+            task['adapter'] = 'agentmemory_service'
+        return task
     duration = r'(until i (?:revoke it|say stop)|for ([0-9]{1,9}) (seconds?|minutes?|hours?|days?))'
     match = re.fullmatch(r'(?:please\s+)?(?:give|allow)\s+agent\s*memory\s+full access\s+(?:to|for)\s+project\s+'
                         r'([a-z0-9_-]+)\s+' + duration + r'(?:\s+to\s+(.+))?[.!]?', prompt.strip(), re.I)
@@ -105,7 +124,7 @@ def _check_cancel(app):
 def _call(app, adapter, operation, arguments):
     _check_cancel(app)
     require_dispatch('integrations.' + adapter)
-    app.progress('Using ' + ('AgentMemory' if adapter == 'agentmemory' else 'Browser Use'))
+    app.progress('Using ' + LABELS[adapter])
     try:
         return provider(adapter).execute(operation, arguments, data_root=app.data_root,
             resource_root=resource_root(), cancel_event=app.cancel_event)
@@ -137,7 +156,7 @@ def _response(app, request, adapter, operation, data, *, grant_id=None, resolved
     # Bounded provider output is evidence, not further instructions or approval.
     from .ui_server import readable_result
     details['reply'] = readable_result(data)
-    if adapter == 'agentmemory' and isinstance(data.get('result'), dict):
+    if adapter in MEMORY_ADAPTERS and isinstance(data.get('result'), dict):
         result = data['result']
         if operation == 'remember' and result.get('saved'):
             details['reply'] = 'Saved in project ' + data['project'] + '. Memory ID: ' + result['saved']
@@ -146,7 +165,7 @@ def _response(app, request, adapter, operation, data, *, grant_id=None, resolved
         elif operation == 'recall' and isinstance(result.get('results'), list):
             details['reply'] = '\n\n'.join(str(row.get('content', '')) + '\nMemory ID: ' + str(row.get('id', ''))
                                           for row in result['results']) or 'No matching memories in this project.'
-    return _result(app, request, details, 'AgentMemory' if adapter == 'agentmemory' else 'Browser Use · public page')
+    return _result(app, request, details, LABELS[adapter])
 
 
 def select_task(app, ident, *, owner, binding, session=None):
@@ -171,11 +190,12 @@ def select_task(app, ident, *, owner, binding, session=None):
 
 
 def _review_action(adapter, operation, arguments):
-    if adapter == 'agentmemory':
+    if adapter in MEMORY_ADAPTERS:
         verb = {'remember': 'Save a note', 'recall': 'Find saved notes', 'forget': 'Delete selected notes'}[operation]
         return {'action': verb + ' in project ' + arguments['project'],
                 'reason': 'Use the project memory to carry out your requested task.',
-                'effects': ('Stores the supplied note on your portable data drive.' if operation == 'remember' else
+                'effects': ('Starts the local semantic memory service for this action, then stops it. ' if adapter == 'agentmemory_service' else '') +
+                           ('Stores the supplied note on your portable data drive.' if operation == 'remember' else
                             'Reads matching notes from this project only.' if operation == 'recall' else
                             'Permanently removes the selected memory IDs from this project.'),
                 'resources': arguments, 'duration': 'This action once'}

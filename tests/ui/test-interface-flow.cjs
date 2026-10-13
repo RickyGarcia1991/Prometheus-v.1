@@ -5,7 +5,8 @@ const {test} = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const {fixture, settle, deferred} = require('./test-app.cjs');
-const posts = h => h.requests.filter(row => row.url === '/api/jobs');
+// The lifecycle assertions below count conversation operations, not warmup.
+const posts = h => h.requests.filter(row => row.url === '/api/jobs'&&row.body.mode!=='voice_prepare');
 function voice(){return {stops:0,stop(){this.stops++;},suspend(){},async unlock(){},level(){return 0;},async play(text,api,start,end,error){this.end=end;this.error=error;start();}};}
 async function finish(h,result){const id=h.run('job');h.jobs.set(id,{state:'done',seconds:1,result});await h.run(`pollJob('${id}')`);await settle();}
 async function speakingChat(){const audio=voice(),h=await fixture({voice:audio});await h.elements.spokenMode.click();await settle();await h.elements.dictate.click();await settle();await finish(h,{transcript:'Hello'});await finish(h,{reply:'Hello to you'});return {h,audio};}

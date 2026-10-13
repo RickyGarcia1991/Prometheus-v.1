@@ -1,6 +1,8 @@
 (function(){
 'use strict';
 const el=id=>document.getElementById(id),kinds=new Set(['integration','integration_access']);
+const providerNames={agentmemory:'AgentMemory classic',agentmemory_service:'AgentMemory semantic service',browser_use:'Browser Use'};
+const memoryAdapters=new Set(['agentmemory','agentmemory_service']);
 const inputs=['integrationAdapter','integrationOperation','integrationProject','integrationContent','integrationQuery','integrationMemoryIds','integrationForgetReason','integrationUrl','integrationGrant','integrationTask','integrationScope','integrationHosts','integrationDuration','integrationAllowRemember','integrationAllowRecall','integrationAllowForget'];
 let state={online:false,busy:false,closed:false,authLost:false},epoch=0,conversationEpoch=0,working=false,data=null,pending=null,decisionId=null,suggestedHost='',selectedTask=null;
 const usable=()=>state.online&&!state.closed&&!state.authLost;
@@ -46,7 +48,7 @@ function grantOptions(){
 }
 function matches(grant){
  const task=grant.contract;if(grant.state!=='active'||task?.adapter!==el('integrationAdapter').value||!task.actions.includes(el('integrationOperation').value))return false;
- if(task.adapter==='agentmemory')return task.resources.project===el('integrationProject').value.trim();
+ if(memoryAdapters.has(task.adapter))return task.resources.project===el('integrationProject').value.trim();
  try{const url=new URL(el('integrationUrl').value);return url.protocol==='https:'&&!url.username&&!url.password&&(task.resources.public_web===true||task.resources.hosts?.includes(url.hostname.toLowerCase().replace(/\.$/,'')));}catch{return false;}
 }
 function fields(reset=false){
@@ -57,14 +59,14 @@ function fields(reset=false){
  el('integrationProjectField').hidden=browser;el('integrationContentField').hidden=browser||operation!=='remember';
  el('integrationQueryField').hidden=browser||operation!=='recall';el('integrationForgetField').hidden=browser||operation!=='forget';
  el('integrationUrlField').hidden=!browser;el('integrationMemoryActions').hidden=browser;el('integrationScopeField').hidden=!browser;el('integrationHostsField').hidden=!browser||el('integrationScope').value==='public-web';
- el('integrationHelp').textContent=browser?'Reads a public page in a temporary browser. No account profile is used. Links returned in the result require another read.':operation==='forget'?'Forgetting permanently removes only the selected IDs from this project. Recall first to inspect the IDs.':'Project memory stays on your portable data drive. Choose a project name such as home or workshop.';
+ el('integrationHelp').textContent=browser?'Reads a public page in a temporary browser. No account profile is used. Links returned in the result require another read.':operation==='forget'?'Forgetting permanently removes only the selected IDs from this project. Recall first to inspect the IDs.':el('integrationAdapter').value==='agentmemory_service'?'Uses the full local service to recall notes by meaning. The service starts for this action and stops afterward. Semantic notes are separate from classic project notes.':'Project memory stays on your portable data drive. Choose a project name such as home or workshop.';
  el('integrationDurationHelp').textContent=el('integrationDuration').value==='until-revoked'?'Until revoked: this access remains active until you use Revoke below.':'Access expires after the selected duration, measured from approval. You can revoke it sooner.';
  controls();
 }
 function renderInventory(){
  el('integrationProviders').replaceChildren(...data.providers.map(row=>{
   const card=node('div','', 'workspace-card');
-  card.append(node('strong',(row.provider==='agentmemory'?'AgentMemory':'Browser Use')+' · '+(row.available?'Available':'Unavailable')),
+  card.append(node('strong',(providerNames[row.provider]||row.name||row.provider)+' · '+(row.available?'Available':'Unavailable')),
    node('p','Version: '+(row.version||'unknown')+' · Integrity: '+String(row.integrity??'not checked'),'fine'),
    node('p','Actions: '+(row.operations||[]).join(', '),'fine'));
   if(row.limitations)card.append(node('p',Array.isArray(row.limitations)?row.limitations.join(' '):row.limitations,'fine'));

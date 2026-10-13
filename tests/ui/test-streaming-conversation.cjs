@@ -2,7 +2,8 @@
 const assert=require('node:assert/strict');
 const {fixture,settle,deferred,response}=require('./test-app.cjs');
 const {LocalVoice}=require('../../src/prometheus_assistant/ui_assets/voice-player.js');
-const posts=h=>h.requests.filter(r=>r.url==='/api/jobs');
+// Count conversational operations separately from content-free preparation.
+const posts=h=>h.requests.filter(r=>r.url==='/api/jobs'&&r.body.mode!=='voice_prepare');
 function fakeVoice(){return {
  streams:[],played:[],stop(){},suspend(){},async unlock(){},level(){return .4;},
  async play(text,_request,start,end){this.played.push(text);this.end=end;start();},

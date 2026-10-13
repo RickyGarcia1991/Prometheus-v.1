@@ -10,7 +10,7 @@ function deferred() { let resolve, reject; const promise = new Promise((a, b) =>
 function response(data, status = 200) { return {ok: status >= 200 && status < 300, status, json: async () => data}; }
 async function settle() { for (let index = 0; index < 40; index++) await Promise.resolve(); }
 
-async function fixture({voice = null} = {}) {
+async function fixture({voice = null, autoVoicePrepare = true} = {}) {
   const dom = setup({runWorkspace: false}), {elements, context, documentRoot} = dom;
   const requests = [], timers = [], storageWrites = [], jobs = new Map(), queued = new Map();
   let serial = 0;
@@ -47,6 +47,10 @@ async function fixture({voice = null} = {}) {
     if (url === '/api/jobs') {
       if (server.pendingPost) { const pending = server.pendingPost; server.pendingPost = null; return await pending.promise; }
       const id = 'job-' + (++serial); jobs.set(id, {state: 'running', partial: 'working text', stage: 'Generating', cancellable: true});
+      if(JSON.parse(options.body).mode==='dictate')jobs.set(id,{state:'running',action:'dictate',partial:'',stage:'Opening microphone',cancellable:true,recording:false});
+      if(JSON.parse(options.body).mode==='voice_prepare')jobs.set(id,autoVoicePrepare?
+        {state:'done',action:'voice_prepare',seconds:.1,result:{voice_ready:true,model:'fixture-model',context:2048,threads:2,batch:32}}:
+        {state:'running',action:'voice_prepare',stage:'Preparing conversation · microphone off',cancellable:true});
       return response({id});
     }
     if (url.startsWith('/api/job/')) {
@@ -58,6 +62,8 @@ async function fixture({voice = null} = {}) {
     if (url === '/api/speech') return response({encoding: 'wav-base64', audio: 'AAAA'});
     if (url === '/api/dictation/finish') return response({finish_requested: true});
     if (url === '/api/dictation/pulse') return response({recording: true});
+    if (url === '/api/voice/pulse') return response({preparing: true});
+    if (url === '/api/owner/lock') return response({locked: true});
     if (url === '/api/close') return response({closing: true, busy: false});
     throw new Error('Unexpected test request: ' + url);
   };

@@ -126,6 +126,16 @@ class OllamaClient:
         self.last_metrics = {}
 
     def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384, json_format=False):
+        return self._chat_stream(messages, on_token=on_token, cancel_event=cancel_event,
+                                 num_predict=num_predict, json_format=json_format)
+
+    def prepare(self, *, cancel_event=None):
+        """Load the selected options without a user message or generated answer."""
+        self._chat_stream([], cancel_event=cancel_event, preparing=True)
+        return dict(self.last_metrics)
+
+    def _chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384,
+                     json_format=False, preparing=False):
         """Bounded NDJSON streaming; disconnect the owned request on cancellation."""
         from .application_policy import require_dispatch
         require_dispatch('ollama.stream')
@@ -218,6 +228,10 @@ class OllamaClient:
             self.last_metrics = metrics
             if final.get('done_reason') == 'length':
                 raise LocalModelError('The answer reached its output limit; partial text was not saved. Try a narrower question.')
+            if preparing:
+                if reply or final.get('eval_count', 0) not in (None, 0):
+                    raise LocalModelError('Voice preparation unexpectedly generated text; readiness was not accepted.')
+                return '', 0
             if not reply:
                 raise LocalModelError('The local stream ended without a complete answer.')
             return reply, final.get('eval_count')

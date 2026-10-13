@@ -10,9 +10,11 @@ import math
 import re
 from urllib.parse import urlsplit
 
-TASK_CAPABILITIES = frozenset({'integrations.agentmemory', 'integrations.browser_use'})
+TASK_CAPABILITIES = frozenset({'integrations.agentmemory', 'integrations.browser_use', 'integrations.agentmemory_service'})
+MEMORY_ADAPTERS = frozenset({'agentmemory', 'agentmemory_service'})
 _TASK_KEYS = {'task_id', 'task', 'adapter', 'actions', 'resources', 'duration_seconds'}
-_ACTIONS = {'agentmemory': {'remember', 'recall', 'forget'}, 'browser_use': {'read'}}
+_ACTIONS = {'agentmemory': {'remember', 'recall', 'forget'},
+            'agentmemory_service': {'remember', 'recall', 'forget'}, 'browser_use': {'read'}}
 
 
 def canonical_host(value):
@@ -52,7 +54,7 @@ def canonical_task(value):
     resources = value['resources']
     if not isinstance(resources, dict):
         raise ValueError('Declare the task access envelope.')
-    if adapter == 'agentmemory':
+    if adapter in MEMORY_ADAPTERS:
         if set(resources) != {'project'}:
             raise ValueError('A memory task must name exactly one project.')
         from .agent_memory import canonical_arguments
@@ -80,6 +82,8 @@ def canonical_task(value):
 def canonical_arguments(adapter, action, arguments):
     if adapter == 'agentmemory':
         from .agent_memory import canonical_arguments as canonical
+    elif adapter == 'agentmemory_service':
+        from .agent_memory_service import canonical_arguments as canonical
     elif adapter == 'browser_use':
         from .browser_agent import canonical_arguments as canonical
     else:
@@ -94,7 +98,7 @@ def allows_task(contract, adapter, action, arguments):
         if adapter != contract['adapter'] or action not in contract['actions']:
             return False
         args = canonical_arguments(adapter, action, arguments)
-        if adapter == 'agentmemory':
+        if adapter in MEMORY_ADAPTERS:
             return args['project'] == contract['resources']['project']
         if contract['resources'].get('public_web') is True:
             # The provider's canonical URL validation above still applies;

@@ -40,6 +40,7 @@ MODES = {'chat', 'coding', 'ask', 'vision', 'reach', 'capabilities', 'library', 
 MODES |= ui_workspace.MODES
 MODES |= self_improvement_ui.MODES
 MODES |= integration_ui.MODES
+MODES.add('voice_prepare')
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
 
@@ -167,7 +168,9 @@ def validate_job(body):
     prompt = body.get('prompt', '')
     if not isinstance(prompt, str) or len(prompt) > 4000 or ('\x00' in prompt):
         raise ValueError('Use a prompt of at most 4000 characters.')
-    if mode not in {'dictate', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES and not prompt.strip():
+    if mode == 'voice_prepare' and (set(body) - {'mode', 'prompt'} or prompt.strip()):
+        raise ValueError('Voice preparation accepts only its mode and an empty prompt.')
+    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -316,8 +319,20 @@ class Interface:
         """Shutdown/owner lock discards an active voice turn without affecting other work."""
         with self.lock:
             row = self.jobs.get(self.current, {})
-            if row.get('action') == 'dictate' or row.get('integration_active'):
+            if row.get('action') in {'dictate', 'voice_prepare'} or row.get('integration_active'):
                 self.cancel_event.set()
+
+    def voice_preparation_pulse(self, job_id, binding):
+        with self.lock:
+            row = self.jobs.get(job_id, {})
+            if (self.closing or self.current != job_id or row.get('action') != 'voice_prepare'
+                    or row.get('state') != 'running' or self.cancel_event.is_set()
+                    or not binding or self._speech_owners.get(job_id, {}).get('binding') != binding
+                    or time.monotonic()-self.dictation_last_pulse >= 20):
+                raise ValueError('This voice preparation is no longer active for this owner session.')
+            self.dictation_last_pulse = time.monotonic()
+            self.last_seen = self.dictation_last_pulse
+            return {'preparing': True}
 
     def idle_maintenance(self):
         if time.monotonic() < self.next_maintenance or self.closing:
@@ -346,9 +361,12 @@ class Interface:
         except Exception as error:
             self.maintenance_error = str(error)[:400]
 
-    def ensure_runtime(self):
+    def ensure_runtime(self, *, cancel_event=None):
         from .application_policy import require_dispatch
         require_dispatch('ollama.request')
+        cancel_event = self.cancel_event if cancel_event is None else cancel_event
+        if cancel_event.is_set():
+            raise GenerationCancelled('Request cancelled before starting the local runtime.')
         client = OllamaClient(timeout=2)
         try:
             client.local_models()
@@ -371,7 +389,7 @@ class Interface:
             client.timeout = 1
             try:
                 while True:
-                    if self.cancel_event.is_set():
+                    if cancel_event.is_set():
                         raise GenerationCancelled('Request cancelled while starting the local runtime.')
                     if time.monotonic() > deadline:
                         raise RuntimeError('The local runtime did not become ready in time.')
@@ -386,7 +404,7 @@ class Interface:
                         error_log.seek(0)
                         error = error_log.read(4000).decode(errors='replace')
                         raise RuntimeError('Local runtime startup failed: '+error[-500:])
-                    self.cancel_event.wait(.2)
+                    cancel_event.wait(.2)
             finally:
                 if process.poll() is None:
                     process.terminate()
@@ -416,7 +434,7 @@ class Interface:
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
                                  'speech_epoch': 0, 'speech_streamable': False,
                                  'action': request['mode'],
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'voice_prepare', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision'}}
             if request['mode'] == 'dictate':
                 self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
             self._speech_owners[job_id] = {'binding': approval_binding}
@@ -431,7 +449,7 @@ class Interface:
                            cancelled_exceptions=(GenerationCancelled,)) as timing:
             try:
                 # Only the single worker owns the reference cache and its read locks.
-                if self.cache_context is None:
+                if self.cache_context is None and request['mode'] not in {'dictate', 'voice_prepare'}:
                     with stage('reference_cache'):
                         self.cache_context = reference_session()
                         self.cache_context.__enter__()
@@ -475,7 +493,7 @@ class Interface:
                 self.current = None
                 # End/hidden-tab/shutdown or an empty Stop ends a voice turn normally; it is
                 # not a failed microphone or decoder operation.
-                ended_dictation = request['mode'] == 'dictate' and result['state'] == 'cancelled'
+                ended_dictation = request['mode'] in {'dictate', 'voice_prepare'} and result['state'] == 'cancelled'
                 self.state = 'idle' if background or result['state'] == 'done' or ended_dictation else 'error'
                 if background and result['state'] != 'done':
                     self.maintenance_error = result['error'][:400]
@@ -575,9 +593,24 @@ class Interface:
                     'benchmark_evidence': evidence,
                     'note': 'Installed files and memory estimates do not certify answer quality. Embedding models do not generate chat answers.'},
                     'label': 'Your local helpers · automatic selection'}
+        if mode == 'voice_prepare':
+            from .voice_preparation import prepare_voice
+            job_id = self.current
+            return prepare_voice(installed=installed_models, evidence=self.model_evidence,
+                ensure_runtime=self.ensure_runtime, cancel_event=self.cancel_event,
+                lease_alive=lambda: self.dictation_alive(job_id), on_stage=self.progress)
         if mode == 'dictate':
             from .voice import capture_prompt_continuous
             job_id = self.current
+            voice_timings = {}
+            def voice_diagnostics(values):
+                allowed = {'capture_setup_seconds', 'capture_wall_seconds', 'captured_audio_seconds',
+                    'speech_audio_seconds', 'endpoint_silence_audio_seconds', 'manual_finish',
+                    'transcription_seconds', 'asr_load_seconds', 'asr_encode_seconds',
+                    'asr_decode_seconds', 'asr_total_seconds'}
+                if isinstance(values, dict):
+                    voice_timings.update({key: round(value, 4) for key, value in values.items()
+                        if key in allowed and type(value) in (int, float) and 0 <= value <= 86400})
             def voice_started():
                 with self.lock:
                     if self.current == job_id:
@@ -597,7 +630,8 @@ class Interface:
                 return {'transcript': capture_prompt_continuous(
                     cancel_event=self.cancel_event, finish_event=self.dictation_finish,
                     on_stage=voice_stage, on_started=voice_started, on_level=voice_level,
-                    lease_alive=lambda: self.dictation_alive(job_id)),
+                    lease_alive=lambda: self.dictation_alive(job_id), on_diagnostics=voice_diagnostics),
+                    'details': {'voice_timing': voice_timings},
                     'label': 'Local dictation · review before sending'}
             finally:
                 with self.lock:
@@ -1050,6 +1084,11 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(body, dict) or set(body) != {'id'} or not isinstance(body['id'], str):
                     raise ValueError('Use only the current dictation id.')
                 self.respond(200, self.server.app.dictation_control(body['id'], finish=self.path.endswith('/finish')))
+            elif self.path == '/api/voice/pulse':
+                if not isinstance(body, dict) or set(body) != {'id'} or not isinstance(body['id'], str):
+                    raise ValueError('Use only the current voice preparation id.')
+                binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
+                self.respond(200, self.server.app.voice_preparation_pulse(body['id'], binding))
             elif self.path == '/api/close' and body == {}:
                 self.server.app.closing = True
                 self.server.app.stop_dictation()

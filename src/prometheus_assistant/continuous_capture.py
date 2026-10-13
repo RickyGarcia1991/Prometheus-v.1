@@ -152,7 +152,7 @@ class _WaveInput:
 
 
 def record_continuous(destination, *, cancel_event=None, finish_event=None,
-                      lease_alive=lambda: True, on_level=None, on_started=None):
+                      lease_alive=lambda: True, on_level=None, on_started=None, on_diagnostics=None):
     """Record until a normal speech pause or manual finish; cancellation discards.
 
 The 100 MiB transcriber/file limit is a resource limit, not a recording timer.
@@ -172,6 +172,9 @@ is never a generated animation or a transcription claim.
             raise GenerationCancelled('Microphone stopped because the recording tab disconnected; recording was discarded.')
 
     check_cancel()
+    capture_started = time.monotonic()
+    setup_seconds = 0.
+    manually_finished = False
     destination = Path(destination)
     def open_device():
         # Model loading can take time. End/disconnection during it must not open
@@ -195,6 +198,7 @@ is never a generated animation or a transcription claim.
             pre_roll = bytearray()
             with SpeechDetector() as detector, open_device() as device:
                 last_data = time.monotonic()
+                setup_seconds = last_data-capture_started
                 if on_started:
                     on_started()
 
@@ -248,6 +252,7 @@ is never a generated animation or a transcription claim.
                 while True:
                     check_cancel()
                     if finish_event.is_set():
+                        manually_finished = True
                         consume(device.finish(), final=True)
                         break
                     data = device.read()
@@ -267,6 +272,15 @@ is never a generated animation or a transcription claim.
                 if last_speech is None:
                     raise EmptyRecording('No audible speech detected. Microphone off; nothing was submitted.')
         completed = True
+        if on_diagnostics:
+            on_diagnostics({key: round(min(86400., max(0., value)), 4) for key, value in {
+                'capture_setup_seconds': setup_seconds,
+                'capture_wall_seconds': time.monotonic()-capture_started,
+                'captured_audio_seconds': (size-44)/(RATE*2),
+                'speech_audio_seconds': speech_seconds,
+                'endpoint_silence_audio_seconds': elapsed-last_speech,
+                'manual_finish': int(manually_finished),
+            }.items()})
     finally:
         if not completed:
             destination.unlink(missing_ok=True)

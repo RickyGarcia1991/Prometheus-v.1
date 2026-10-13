@@ -31,7 +31,7 @@ def recorder(monkeypatch):
     entered = threading.Event()
     transcribing = threading.Event()
     release = threading.Event()
-    def capture(*, cancel_event, finish_event, on_stage, on_level, on_started, lease_alive):
+    def capture(*, cancel_event, finish_event, on_stage, on_level, on_started, lease_alive, on_diagnostics):
         assert not finish_event.is_set() and lease_alive()
         on_started()
         on_stage('Listening')
@@ -44,6 +44,9 @@ def recorder(monkeypatch):
             on_stage('Microphone off · transcribing locally')
             transcribing.set()
             assert release.wait(2)
+            on_diagnostics({'transcription_seconds': .75, 'endpoint_silence_audio_seconds': .832,
+                'private_transcript': 'must not appear', 'asr_load_seconds': float('nan'),
+                'capture_wall_seconds': float('inf')})
             return 'What is six times seven?'
         finally:
             release.set()
@@ -71,6 +74,8 @@ def test_finish_preserves_transcript_resets_level_and_next_job_events(app, monke
         row = wait(app, job)
         assert row['state'] == 'done' and row['result']['transcript'] == 'What is six times seven?'
         assert row['recording'] is False and row['level'] == 0 and row['elapsed'] == 12.4
+        assert row['result']['details']['voice_timing'] == {
+            'transcription_seconds': .75, 'endpoint_silence_audio_seconds': .832}
 
 
 @pytest.mark.parametrize('reason', ['cancel', 'lease', 'close'])

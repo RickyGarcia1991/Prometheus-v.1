@@ -20,7 +20,7 @@
       ],
       "availability": "reviewed-adapter",
       "capability": "Navigate interactive websites and extract information using an AI browser agent.",
-      "limitations": "Dev20 includes a public HTTPS reader using a temporary Browser Use browser. Same-host GET assets only; no account flows or qualified model-driven actions.",
+      "limitations": "Prometheus includes a public HTTPS reader using a temporary Browser Use browser. Same-host GET assets only; no account flows or qualified model-driven actions. The full native Agent failed two held-out link and fact tasks with Qwen3:1.7b / 4096 context and remains unqualified.",
       "next_step": "Open Integrations, check the portable runtime, enter a public HTTPS URL and review the action.",
       "verified_on": "2026-10-13",
       "source_commit": null,
@@ -40,13 +40,13 @@
       "category": "coding agent memory",
       "license": "Apache-2.0",
       "requirements": [
-        "Pinned AgentMemory 0.9.30 and portable Node 24.21.0 Windows bundle",
+        "Pinned AgentMemory 0.9.30 and portable Node 24.21.0 Windows bundle; the semantic service additionally uses iii 0.22.1 and local MiniLM embeddings",
         "Owner approval for an exact action or a selected task grant"
       ],
       "availability": "reviewed-adapter",
       "capability": "Store and retrieve project decisions and coding-session context across supported agents.",
-      "limitations": "Dev20 includes an owner-reviewed standalone adapter for project remember, recall and forget. Keyword matching only; no capture hooks, embeddings or engine server.",
-      "next_step": "Open Integrations, check the portable runtime, then review an action or approve task access.",
+      "limitations": "Separate owner-reviewed classic keyword and full semantic service adapters support project remember, recall and forget. The semantic engine starts on demand and verifies writes across restart. Neither adapter automatically captures conversations. Windows x64 runtime qualification does not establish Ubuntu compatibility.",
+      "next_step": "Open Integrations, select AgentMemory classic or AgentMemory semantic service, check its runtime, then review an action or approve its separate task access.",
       "verified_on": "2026-10-13",
       "source_commit": null,
       "verification_status": "pinned-runtime-and-native-operations-qualified"
@@ -70,11 +70,11 @@
       ],
       "availability": "requires-setup",
       "capability": "Organize documents, memories and skills in a virtual file system with layered context retrieval.",
-      "limitations": "No Prometheus service or adapter is installed. Native Windows/SSD portability and model resource use have not been qualified.",
-      "next_step": "Compare retrieval on a small public corpus against the existing document library before adopting another service or migrating data.",
+      "limitations": "No Prometheus service or adapter is installed. Version 0.5.0 and its native Windows imports passed isolated checks on this host. The full memory workflow remains unqualified: the prescribed local 4B model, embedding model and context budget exceed the currently verified memory headroom.",
+      "next_step": "Keep the verified candidate staged on the host until the full model workflow can pass within the available memory budget; no owner data has been migrated.",
       "verified_on": "2026-10-13",
-      "source_commit": null,
-      "verification_status": "primary-sources-reviewed"
+      "source_commit": "20f9c11362ad16193b0daa4a414e1095061af427",
+      "verification_status": "native-imports-qualified-full-workflow-unqualified"
     },
     {
       "id": "bolt-new",

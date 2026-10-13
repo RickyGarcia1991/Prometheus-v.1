@@ -218,3 +218,43 @@ def test_portable_memory_notes_are_in_supported_backup_and_restore(tmp_path):
     assert (backup/'AgentMemory/project-home/store.json').read_bytes() == original
     restored = restore_backup(backup, tmp_path/'restore')
     assert (Path(restored['path'])/'AgentMemory/project-home/store.json').read_bytes() == original
+
+
+def test_semantic_memory_requests_use_explicit_separate_runtime():
+    remembered = adapter.from_chat('Remember with AgentMemory semantic in project workshop: Use the blue cabinet.')
+    assert remembered == {'adapter': 'agentmemory_service', 'operation': 'remember',
+                          'arguments': {'project': 'workshop', 'content': 'Use the blue cabinet.'}}
+    recalled = adapter.from_chat('Recall with AgentMemory semantic service from project workshop: storage location')
+    assert recalled['adapter'] == 'agentmemory_service' and recalled['operation'] == 'recall'
+    grant = adapter.access_from_chat('Give AgentMemory semantic full access to project workshop until I revoke it')
+    assert grant['adapter'] == 'agentmemory_service'
+    assert grant['duration_seconds'] is None and grant['resources'] == {'project': 'workshop'}
+    assert adapter.from_chat('Remember in project workshop: Use the blue cabinet.')['adapter'] == 'agentmemory'
+
+
+def test_semantic_memory_review_explains_runtime_and_waits_for_owner(setup):
+    _, calls, _, _, run = setup
+    body = {**request(), 'adapter': 'agentmemory_service'}
+    proposed = run(body)
+    assert calls == []
+    assert 'semantic memory service' in proposed['reply']
+    assert 'then stops it' in proposed['reply']
+    answer = run({'mode': 'chat', 'prompt': 'Yes, approve.', 'session': proposed['session']})
+    assert calls == [('remember', body['arguments'])]
+    assert answer['label'] == 'AgentMemory semantic service'
+
+
+def test_semantic_native_scope_files_are_in_supported_backup_and_restore(tmp_path):
+    from prometheus_assistant.memory import MemoryStore
+    from prometheus_assistant.maintenance import create_backup, restore_backup
+    memory = tmp_path/'memory.sqlite3'
+    with MemoryStore(memory) as store:
+        store.create_session('fixture')
+    notes = tmp_path/'Interface/Data/Integrations/AgentMemoryService'
+    folder = notes/'project-home/state_store.db'
+    folder.mkdir(parents=True)
+    original = b'\x00\x81native binary memory scope\xff'
+    (folder/'notes.bin').write_bytes(original)
+    result = create_backup(memory, tmp_path/'backup', data_dirs={'AgentMemoryService': notes}, require_separate_volume=False)
+    restored = restore_backup(Path(result['path']), tmp_path/'restore')
+    assert (Path(restored['path'])/'AgentMemoryService/project-home/state_store.db/notes.bin').read_bytes() == original

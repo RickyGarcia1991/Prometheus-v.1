@@ -189,7 +189,8 @@ def execute(app, request):
             raise ValueError('Choose a backup folder on a different drive.')
         result = create_backup(app.memory_path, destination,
             data_dirs={**{name: app.data_root/name for name in ('Library','Coding','Maintenance','PublicHistory','Routing')},
-                       'AgentMemory': app.data_root/'Integrations/AgentMemory'})
+                       'AgentMemory': app.data_root/'Integrations/AgentMemory',
+                       'AgentMemoryService': app.data_root/'Integrations/AgentMemoryService'})
         app.last_backup = result
     elif mode == 'restore_check':
         from .maintenance import restore_backup

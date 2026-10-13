@@ -206,7 +206,7 @@ class GrantStore:
                 require_dispatch(capability)
                 # Do not silently create overlapping copies when an approval
                 # callback is accidentally repeated after a lost response.
-                for existing in db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (?,?)',
+                for existing in db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (' + ','.join('?' for _ in TASK_CAPABILITIES) + ')',
                                            (owner, *sorted(TASK_CAPABILITIES))):
                     if decode_task_row(existing)['task_id'] == contract['task_id']:
                         raise ValueError('This task approval was already issued; use a new reviewed task identifier.')
@@ -229,7 +229,7 @@ class GrantStore:
             with self._db() as db:
                 stamp, mono = self._locked_clock()
                 self._refresh(db, owner, stamp, mono)
-                rows = db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (?,?) ORDER BY created DESC LIMIT 100',
+                rows = db.execute('SELECT * FROM grants WHERE owner=? AND capability IN (' + ','.join('?' for _ in TASK_CAPABILITIES) + ') ORDER BY created DESC LIMIT 100',
                                   (owner, *sorted(TASK_CAPABILITIES))).fetchall()
                 result = []
                 for row in rows:
@@ -244,7 +244,7 @@ class GrantStore:
         if not owner:
             raise ValueError('Authenticated owner required.')
         with self.lock, self._db() as db:
-            changed = db.execute("UPDATE grants SET state='revoked' WHERE id=? AND owner=? AND capability IN (?,?)",
+            changed = db.execute("UPDATE grants SET state='revoked' WHERE id=? AND owner=? AND capability IN (" + ','.join('?' for _ in TASK_CAPABILITIES) + ')',
                                  (ident, owner, *sorted(TASK_CAPABILITIES))).rowcount
             if not changed:
                 raise ValueError('Unknown owner task grant.')

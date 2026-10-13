@@ -40,14 +40,18 @@ def test_catalogue_does_not_claim_uninstalled_services_are_working():
                 or 'No Prometheus' in rows[name]['limitations'])
     for name in ('browser-use', 'agentmemory-rohitg00'):
         assert rows[name]['availability'] == 'reviewed-adapter'
-        assert 'Dev20 includes' in rows[name]['limitations']
         assert 'Integrations' in rows[name]['next_step']
+    assert 'full native Agent failed' in rows['browser-use']['limitations']
+    assert 'full semantic service' in rows['agentmemory-rohitg00']['limitations']
+    assert 'separate task access' in rows['agentmemory-rohitg00']['next_step']
     assert rows['bolt-new']['availability'] == 'reference'
     assert rows['agent-reach']['availability'] == 'existing-public-adapter'
     assert 'complete upstream package' in rows['agent-reach']['limitations']
     assert 'not installed' in rows['agent-reach']['limitations']
     assert all(row['source_url'].startswith('https://github.com/') for row in rows.values())
-    assert all(row['source_commit'] is None for row in rows.values())
+    assert rows['openviking']['source_commit'] == '20f9c11362ad16193b0daa4a414e1095061af427'
+    assert rows['openviking']['verification_status'] == 'native-imports-qualified-full-workflow-unqualified'
+    assert all(row['source_commit'] is None for name, row in rows.items() if name != 'openviking')
 
 
 def test_lookup_returns_fresh_records_and_unknown_query_is_explicit():

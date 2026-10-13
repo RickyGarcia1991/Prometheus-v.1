@@ -268,3 +268,20 @@ def test_canonical_task_review_and_scope_normalization():
     assert allows_task(task, 'agentmemory', 'remember', {'project': 'alpha', 'content': 'Selected note'})
     assert not allows_task(task, 'agentmemory', 'remember', {'project': 'beta', 'content': 'Other note'})
     assert not allows_task(task, 'agentmemory', 'forget', {'project': 'alpha', 'memory_ids': ['mem_x'], 'reason': 'remove'})
+
+
+def test_semantic_service_grants_are_distinct_durable_and_revocable(tmp_path):
+    store, restart, _, _ = fixture(tmp_path)
+    classic = contract()
+    service = {**contract(), 'adapter': 'agentmemory_service'}
+    classic_grant = store.issue_task(classic, owner='owner-a')
+    service_grant = store.issue_task(service, owner='owner-a')
+    assert not allows_task(classic, 'agentmemory_service', 'recall', {'project': 'alpha', 'query': 'color'})
+    assert not allows_task(service, 'agentmemory', 'recall', {'project': 'alpha', 'query': 'color'})
+    active = {row['id']: row for row in restart().inspect_tasks(owner='owner-a')}
+    assert active[classic_grant['id']]['contract']['adapter'] == 'agentmemory'
+    assert active[service_grant['id']]['contract']['adapter'] == 'agentmemory_service'
+    assert active[service_grant['id']]['expires_at'] is None
+    store.revoke_task(service_grant['id'], owner='owner-a')
+    states = {row['id']: row['state'] for row in restart().inspect_tasks(owner='owner-a')}
+    assert states == {classic_grant['id']: 'active', service_grant['id']: 'revoked'}

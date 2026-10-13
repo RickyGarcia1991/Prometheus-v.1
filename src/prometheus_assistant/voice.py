@@ -53,9 +53,10 @@ def _transcriber(model):
     return executable, weights, model, hardware
 
 
-def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
+def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None, on_diagnostics=None):
     from .application_policy import require_dispatch
     require_dispatch('voice.transcribe')
+    transcription_started = time.monotonic()
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
     audio = Path(audio).resolve(strict=True)
@@ -105,6 +106,18 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
                     errors.seek(0,2)
                     errors.seek(max(0,errors.tell()-600))
                     raise ValueError('Local Whisper transcription failed: '+errors.read(600).decode('utf-8',errors='replace'))
+                numeric_timings = {}
+                if on_diagnostics:
+                    # Keep only recognized numeric timings; never expose stderr,
+                    # file names or transcript text in timing diagnostics.
+                    import re
+                    errors.seek(0, 2)
+                    errors.seek(max(0, errors.tell()-8192))
+                    timing_text = errors.read(8192).decode('utf-8', errors='replace')
+                    for name, value in re.findall(r'whisper_print_timings:\s*(load|encode|decode|total) time\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*ms', timing_text):
+                        seconds = float(value)/1000
+                        if 0 <= seconds <= 3600:
+                            numeric_timings['asr_'+name+'_seconds'] = round(seconds, 4)
             finally:
                 if process.poll() is None:
                     process.terminate()
@@ -120,6 +133,9 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
         text=transcript.read_text(encoding='utf-8-sig').strip()
         if not text:raise ValueError('No transcription returned; nothing was submitted.')
         _cancelled(cancel_event)
+        if on_diagnostics:
+            on_diagnostics({**numeric_timings, 'transcription_seconds':
+                round(min(3600., max(0., time.monotonic()-transcription_started)), 4)})
         return {'text':text,'model':model,'local':True}
 
 
@@ -172,7 +188,7 @@ def capture_prompt(*, cancel_event=None, on_stage=None):
 
 
 def capture_prompt_continuous(*, cancel_event=None, finish_event=None, on_stage=None,
-                              on_level=None, on_started=None, lease_alive=lambda: True):
+                              on_level=None, on_started=None, lease_alive=lambda: True, on_diagnostics=None):
     """UI voice turn: local capture, silence/manual finish, then local transcription."""
     from .application_policy import require_dispatch
     from .continuous_capture import record_continuous
@@ -190,11 +206,13 @@ def capture_prompt_continuous(*, cancel_event=None, finish_event=None, on_stage=
             if on_stage:
                 on_stage('Listening · pause when finished, or press Stop recording')
         record_continuous(audio, cancel_event=cancel_event, finish_event=finish_event,
-                          lease_alive=lease_alive, on_level=on_level, on_started=started)
+                          lease_alive=lease_alive, on_level=on_level, on_started=started,
+                          **({'on_diagnostics': on_diagnostics} if on_diagnostics else {}))
         # Device context has closed before status changes or Whisper is invoked.
         if on_stage:
             on_stage('Microphone off · transcribing locally')
-        result = transcribe(audio, cancel_event=cancel_event)
+        result = transcribe(audio, cancel_event=cancel_event,
+                            **({'on_diagnostics': on_diagnostics} if on_diagnostics else {}))
     _cancelled(cancel_event)
     return result['text']
 

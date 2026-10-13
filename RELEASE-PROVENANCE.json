@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev20-approved-integrations-20261013",
-  "version": "0.8.0.dev20",
-  "prepared_utc": "2026-10-13T05:36:41.634335+00:00",
-  "base_git_commit": "5a1d1fc6e6f27be29d7b2972e2325411a57ff349",
+  "release": "Prometheus-v0.8.0-dev21-ready-voice-memory-20261013",
+  "version": "0.8.0.dev21",
+  "prepared_utc": "2026-10-13T02:59:28.564678-04:00",
+  "base_git_commit": "caeadacb874e12bffbdb34dbf4f6b23bcc840da6",
   "source_branch": "feature/full-health-audit-20261012",
-  "base_release": "Prometheus-v0.8.0-dev19-interface-refinement-20261013",
-  "base_manifest_sha256": "a7b3dc81e0ff0d6a2b87e94776e2c4ed7a3c64c120972491dbc8c8bd74b9efe2",
-  "integration_scope": "Owner-reviewed AgentMemory and Browser Use operations; exact action approval and task access with owner-selected duration including until revoked; explicit task selection and revocation; adaptive voice endpoint and early eligible spoken replies.",
+  "base_release": "Prometheus-v0.8.0-dev20-approved-integrations-20261013",
+  "base_manifest_sha256": "a7e3f70c6c84d60c2fa9aca3c9a7ec2c2e33a5bd5f02aa9b858a2044697333e5",
+  "integration_scope": "Cancellable reply-model and local speech preparation before voice capture, visible bounded voice timing, and a separate owner-approved full local semantic AgentMemory service. Existing classic memory and public-page reader remain available.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -28,11 +28,13 @@
     "Verified core restoration prepares an owner-approved host candidate from a matching signed recovery. It does not autonomously detect faults, activate recovery or move live files.",
     "Silero acoustic turn ending waits about 0.8 seconds after established speech, 1.2 after tentative speech, and can adapt later pauses up to 1.6 seconds after observed hesitation. This is not semantic turn prediction or playback barge-in.",
     "Eligible plain chat can speak a stable partial answer before final acceptance. Retry, cancellation or a final mismatch stops obsolete audio; already heard words cannot be recalled. Structured/code/evidence replies retain complete-answer speech. Microphone restarts only after final acceptance and playback completion.",
-    "AgentMemory 0.9.30 standalone uses isolated project JSON stores and keyword matching. No embedding engine, automatic capture hooks, server or provider account is enabled.",
-    "Browser Use 0.13.11 runs public HTTPS read/extraction in an owned temporary Chromium profile, with selected-host GET requests. Cross-host assets, redirects, account flows and arbitrary agent actions are not qualified.",
+    "AgentMemory semantic service uses the full pinned local iii engine and MiniLM embeddings for approved project remember/recall/forget. It starts on demand, verifies staged writes by restarting, and has separate task grants from classic keyword memory. No automatic capture hooks are enabled.",
+    "Browser Use public-page reading remains qualified. The full native Agent failed held-out link selection and fact extraction with the fitting local model; autonomous Agent actions remain unqualified and disabled.",
     "A task grant permits only its reviewed task and envelope. Until-revoked grants persist on the issuing host; owner, host or application-policy changes require fresh review. Selecting an existing task for a conversation resumes it without new approval.",
     "Task grants and owner credentials stay host-local. Resource bundles and project memories use SSD-relative paths. Native Windows runtime qualification does not establish physical Ubuntu compatibility.",
     "Other catalogue entries retain their individually documented setup or reference status. No unverified leaked credentials or breach-record collection was installed.",
-    "Dev19 physical voice functionality was confirmed by the owner; dev20 audible speed and pause comfort need a new physical acceptance check."
+    "Dev20 physical voice completed turns but failed the owner's latency expectation. Dev21 prepares the reply model, local synthesis and default recognizer before the microphone opens. Initial preparation can still be slow; new installed native and physical acceptance are separate release receipts.",
+    "The semantic engine viewer is disabled. Temporary raw loopback engine sockets have no independent bearer token; portable files and sockets are not isolated from other programs running as the same OS user.",
+    "OpenViking 0.5.0 native imports passed in an isolated host candidate. Its complete memory workflow remains unqualified under the available memory budget and is not installed."
   ]
 }

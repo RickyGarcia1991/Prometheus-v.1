@@ -57,7 +57,7 @@ def test_speech_pause_completes_one_job_without_manual_finish(tmp_path, monkeypa
     monkeypatch.setattr(continuous_capture, '_WaveInput', lambda: device)
     monkeypatch.setattr(voice, '_transcriber', lambda model: None)
 
-    def transcribe(audio, *, cancel_event):
+    def transcribe(audio, *, cancel_event, on_diagnostics=None):
         # Keep the real record_continuous and native detector. Replace only the
         # expensive recognizer so this test proves device/job ordering separately.
         assert device.closed and events == ['microphone opened', 'microphone closed']

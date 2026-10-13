@@ -1,7 +1,8 @@
 'use strict';
 const assert = require('node:assert/strict');
 const {fixture, settle, deferred, response} = require('./test-app.cjs');
-const posts = h => h.requests.filter(r => r.url === '/api/jobs');
+// Conversation turns exclude the separate content-free preparation request.
+const posts = h => h.requests.filter(r => r.url === '/api/jobs'&&r.body.mode!=='voice_prepare');
 function fakeVoice(){return {played:[],stop(){},suspend(){},async unlock(){},level(){return .5;},async play(text,api,start,end){this.played.push(text);this.end=end;start();return true;}};}
 async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',seconds:12,result});await h.run(`pollJob('${id}')`);await settle();}
 
@@ -41,7 +42,7 @@ async function finish(h, result, id=h.run('job')){h.jobs.set(id,{state:'done',se
   assert.equal(empty.elements.orb.dataset.state,'idle','empty Stop recording is not a red device failure');
   assert.equal(empty.run('voiceChat'),false);assert.equal(empty.run('dictationJob'),null);
   assert.equal(empty.run('busy'),false);assert(empty.elements.voiceCapture.hidden);
-  assert.equal(empty.elements.messages.children.length,0,'empty recording creates no error bubble or conversation');
+  assert.equal(empty.elements.messages.children.filter(row=>row.querySelector('.text')).length,0,'empty recording creates no error bubble or conversation');
   assert.equal(empty.elements.prompt.value,'Preserve this draft');
   assert.match(empty.elements.notice.textContent,/No audible speech.*Microphone off/);
   await empty.run('listenAfterReply()');await settle();

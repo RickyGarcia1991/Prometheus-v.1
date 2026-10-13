@@ -29,7 +29,8 @@ SOURCE_FILES = (
     'component_updates.py', 'remote_access.py', 'smart_home.py', 'voice.py',
     'owner_profile.py', 'worker_policy.py', 'personality.py', 'permissions_inventory.py',
     'action_approvals.py', 'self_improvement.py', 'self_improvement_runtime.py', 'self_improvement_ui.py', 'autonomous_promotion.py',
-    'integration_ui.py', 'integration_contracts.py', 'agent_memory.py', 'browser_agent.py',
+    'integration_ui.py', 'integration_contracts.py', 'agent_memory.py', 'agent_memory_service.py',
+    'browser_agent.py', 'voice_preparation.py',
 )
 
 
@@ -144,6 +145,11 @@ def snapshot(*, owner=None):
          'integration_ui.py; integration_contracts.py; scoped_grants.py; action_approvals.py',
          'ActionApprovals.consume; GrantStore.run_task; provider dispatch', 'Reviewed project memory or public-browser access',
          'Configured owner, pinned portable runtime, supported operation and current task scope. Expanded access needs a new review. Revoke and Stop remain available.'),
+        ('integrations.semantic_memory', 'AgentMemory semantic service', 'application', 'conditional',
+         'A separate approval or selected semantic-memory task grant opens one named project. The local embedding engine starts for the approved operation and stops afterward. Classic note grants do not authorize this service.',
+         'integration_contracts.py; integration_ui.py; agent_memory_service.py',
+         'ActionApprovals.consume; GrantStore.run_task; agent_memory_service.execute', 'One approved project and supported memory operation',
+         'Pinned qualified runtime. The viewer is disabled; raw engine sockets are temporary loopback listeners without a separate bearer token. Portable files and listeners are not isolated from other programs running as the same OS user.'),
         ('updates.self_improvement', 'Model-generated application changes', 'application', 'conditional',
          'One existing implementation file per proposal, up to three repair attempts, complete source context and both full regression groups. The owner reviews the exact diff and approves by text, voice or button before signed activation.',
          'self_improvement.py; self_improvement_runtime.py; autonomous_promotion.py; action_approvals.py',
