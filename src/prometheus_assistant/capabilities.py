@@ -190,7 +190,7 @@ def catalog(app):
         ('vision', 'Ask about an image', 'Select a PNG/JPEG up to 8 MiB. Requires a local vision model and enough memory. Image bytes are not retained.', False, False),
         ('documents', 'Versioned document library', 'Import TXT, Markdown and CSV, plus text PDF, DOCX, PPTX and XLSX using bundled offline MarkItDown. Keyword search needs no model. Scanned pages need OCR first. Meaning indexing is an explicit action.', True, False),
         ('coding', 'Project editing and checks', 'Select a development project; preview and apply changes with undo. Running project checks executes its code.', True, False),
-        ('voice', 'Local dictation and speech', 'Dictation needs installed whisper.cpp, a speech model and a working microphone. Playback needs an installed local browser voice.', False, False),
+        ('voice', 'Local dictation and speech', 'Dictation uses the local speech detector, whisper.cpp and your microphone. Spoken + text supports hands-free turns. Playback uses local Windows speech and your speakers.', False, False),
         ('math', 'Exact mathematics', 'Bounded rational arithmetic is available without a model; symbolic helpers are also exposed through the CLI tool registry.', False, False),
         ('reach', 'Public reach: web search, pages and public sources', 'Firecrawl web search uses limited keyless access and sends your query to the service. Direct pages/feeds, GitHub and public YouTube captions remain available. Results retain source links. No social sign-in or browser sessions.', True, True),
         ('research', 'Public research and saved versions', 'Explicit online search sends the query to the selected publisher. Source watches must be enabled individually.', True, True),

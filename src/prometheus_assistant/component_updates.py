@@ -58,6 +58,29 @@ def _utc(value):
     return datetime.fromtimestamp(value, timezone.utc).isoformat() if value is not None else None
 
 
+def _running_release():
+    """Read this package's identity for display without changing update policy."""
+    from prometheus_control_center import __version__
+    try:
+        root = Path(__file__).absolute().parents[2]
+        provenance = _plain(root/'RELEASE-PROVENANCE.json')
+        with provenance.open('rb') as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            return None
+        value = json.loads(raw.decode('utf-8-sig'))
+        if not isinstance(value, dict) or value.get('version') != __version__:
+            return None
+        release = value.get('release')
+        if not isinstance(release, str) or not re.fullmatch(r'Prometheus-v[\w.-]{1,150}', release):
+            return None
+        if root.name.startswith('Prometheus-v') and root.name != release:
+            return None
+        return release
+    except (OSError, ValueError, TypeError, RecursionError):
+        return None
+
+
 def _policy_digest(entry):
     # Display copy can evolve without discarding installed-version evidence.
     # Any actual provider, baseline or import-policy change remains distinct.
@@ -214,6 +237,9 @@ class ComponentUpdates:
 
     def status(self):
         now = time.time()
+        application = self.entries.get('application-prometheus', {})
+        release = (_running_release() if application.get('provider') == 'pinned'
+                   and application.get('category') == 'application' else None)
         with self._db() as db:
             enabled = bool(db.execute('SELECT value FROM settings WHERE name=?', ('enabled',)).fetchone()[0])
             saved = {row['id']: dict(row) for row in db.execute('SELECT * FROM components')}
@@ -222,7 +248,8 @@ class ComponentUpdates:
             row = saved[identity]
             details = json.loads(row['detail'])
             rows.append(dict(id=identity, label=entry['label'], category=entry['category'], provider=entry['provider'],
-                source_url=entry['source_url'], installed_revision=row['applied_revision'] or entry['installed_revision'],
+                source_url=entry['source_url'],
+                installed_revision=release if release and identity == 'application-prometheus' else row['applied_revision'] or entry['installed_revision'],
                 available_revision=row['available_revision'], status=row['status'], details=details, error=row['error'],
                 next_due=row['next_due'], last_checked=row['last_checked'], last_success=row['last_success'],
                 next_due_utc=_utc(row['next_due']), last_checked_utc=_utc(row['last_checked']),

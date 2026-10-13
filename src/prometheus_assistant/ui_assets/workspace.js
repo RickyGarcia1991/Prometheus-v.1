@@ -166,17 +166,55 @@ function renderUpdates(data) {
   const holder = element('componentUpdates'); holder.replaceChildren();
   holder.append(textNode('p', `Automatic checks ${data.enabled ? 'enabled' : 'paused'} · ${data.due_count || 0} components due`, 'fine'));
   if (data.disclosure) holder.append(textNode('p', data.disclosure, 'fine'));
-  for (const row of data.entries || []) {
-    const card = textNode('details', '', 'workspace-detail');
-    card.append(textNode('summary', `${row.label || row.id} · ${String(row.status || 'unchecked').replaceAll('_', ' ')}`));
-    card.append(textNode('p', `${row.category || 'Component'} · installed ${row.installed_revision || 'unrecorded'} · available ${row.available_revision || 'not checked'}`, 'fine'));
-    if (row.last_checked_utc) card.append(textNode('p', 'Checked ' + row.last_checked_utc, 'fine'));
-    if (row.reason) card.append(textNode('p', row.reason, 'fine'));
-    if (row.error) card.append(textNode('p', row.error, 'fine'));
-    if (row.source_url) card.append(sourceLink(row.source_url));
-    holder.append(card);
+  const groups = {
+    attention: {title: 'Checks needing attention', rows: [], open: true},
+    review: {title: 'Updates awaiting review', rows: [], open: true},
+    checked: {title: 'Checked components', rows: [], open: false},
+    pending: {title: 'Checks not yet completed', rows: [], open: false},
+    manual: {title: 'Manual updates and pinned references', rows: [], open: false}
+  };
+  const labels = {
+    update_available: 'Update available · review required', upstream_changed: 'Upstream reference changed · review required',
+    no_update: 'No newer version found', baseline_recorded: 'Upstream baseline recorded',
+    installed: 'Version recorded · not checked yet', check_failed: 'Check failed',
+    staged_verified: 'Document staged · review required', auto_applied: 'Document update applied',
+    rolled_back: 'Previous document restored · review needed', cancelled: 'Check cancelled · retry available'
+  };
+  const rows = Array.isArray(data.entries) ? data.entries : [];
+  for (const row of rows) {
+    const manual = row.provider === 'pinned' || row.status === 'check_unavailable';
+    const attention = row.error || row.pending_recovery || ['check_failed', 'rolled_back', 'cancelled'].includes(row.status);
+    const group = attention ? 'attention' : manual ? 'manual'
+      : ['update_available', 'upstream_changed', 'staged_verified'].includes(row.status) ? 'review'
+      : ['no_update', 'baseline_recorded', 'auto_applied'].includes(row.status) ? 'checked' : 'pending';
+    groups[group].rows.push(row);
   }
-  if (!data.entries?.length) holder.append(textNode('p', 'No component catalog is available.', 'fine'));
+  for (const [name, group] of Object.entries(groups)) {
+    if (!group.rows.length) continue;
+    const section = textNode('details', '', 'workspace-detail'); section.open = group.open;
+    section.dataset.updateGroup = name;
+    section.append(textNode('summary', `${group.title} · ${group.rows.length}`));
+    if (name === 'manual') section.append(textNode('p', 'These entries use manual review. Their registered policy has no automatic version check.', 'fine'));
+    for (const row of group.rows) {
+      const manual = name === 'manual';
+      const status = row.pending_recovery ? 'Recovery pending · review required' : manual
+        ? row.source_url ? 'Pinned component · manual review' : 'Manual updates · no configured feed'
+        : labels[row.status] || String(row.status || 'Not checked').replaceAll('_', ' ');
+      const card = textNode('details', '', 'workspace-detail');
+      card.append(textNode('summary', `${row.label || row.id} · ${status}`));
+      const installed = row.installed_revision || (row.provider === 'github_commit' ? 'local reference; no upstream version assigned' : 'unrecorded');
+      const available = manual ? '' : ` · available ${row.available_revision || 'not checked'}`;
+      card.append(textNode('p', `${row.category || 'Component'} · installed ${installed}${available}`, 'fine source-location'));
+      if (row.last_checked_utc) card.append(textNode('p', 'Checked ' + row.last_checked_utc, 'fine'));
+      if (row.reason) card.append(textNode('p', row.reason, 'fine'));
+      if (row.details?.reason && row.details.reason !== row.reason) card.append(textNode('p', row.details.reason, 'fine'));
+      if (row.error) card.append(textNode('p', row.error, 'fine'));
+      if (row.source_url) card.append(sourceLink(row.source_url));
+      section.append(card);
+    }
+    holder.append(section);
+  }
+  if (!rows.length) holder.append(textNode('p', 'No component catalog is available.', 'fine'));
 }
 function renderHealth(data) {
   const holder = element('healthResults'); holder.replaceChildren();

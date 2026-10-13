@@ -1,13 +1,13 @@
 {
   "schema_version": 3,
-  "release": "Prometheus-v0.8.0-dev16-speech-endpoint-20261012",
-  "version": "0.8.0.dev16",
-  "prepared_utc": "2026-10-12T17:28:36.611797+00:00",
-  "base_git_commit": "9b19ffa6271a72323cc6d9638120f4727923c5ef",
+  "release": "Prometheus-v0.8.0-dev17-maintenance-review-20261012",
+  "version": "0.8.0.dev17",
+  "prepared_utc": "2026-10-13T01:20:18.402286+00:00",
+  "base_git_commit": "0ad5cbc249e31011fbe90c9be80353de8c74b5bc",
   "source_branch": "feature/full-health-audit-20261012",
-  "base_release": "Prometheus-v0.8.0-dev15-interface-voice-audit-20261012",
-  "base_manifest_sha256": "d7b14a831565913e7d2dbc42f1fb4c9350dd4357b54a2b5e3627f9077402fb6a",
-  "integration_scope": "Local Silero v6.2.0 streaming speech/noise detection using the exact existing whisper.cpp b5454 CPU runtime DLLs and an official verified 885098-byte model. Native 32 ms frames, three speech votes within 160 ms, 1.6 seconds without confirmed speech to finish a turn, and bounded 0.8-second pre-roll. Manual Stop and End, owner authority, personal memory and SSD portability are preserved. Physical voice acceptance is pending.",
+  "base_release": "Prometheus-v0.8.0-dev16-speech-endpoint-20261012",
+  "base_manifest_sha256": "aa5fad3311974a47c13616c5e3dd234223daad1ac6f442a642e3130315b0de31",
+  "integration_scope": "Readable workbench results with complete expandable details; correct running release in component inventory; manual update groups separated from actual errors and candidates; optional legacy archive inventory only when present. Voice implementation, models, authentication and portable runtime remain unchanged.",
   "source_commit_resolution": "Build receipt binds final commit and all payload files; this source metadata does not assert approval, signature or activation.",
   "private_memory_included": false,
   "private_signing_material_included": false,
@@ -23,6 +23,6 @@
     "Document converters are bundled for the existing portable Windows x64 Python 3.12 runtime. No local document upload to cloud services.",
     "PDF text and modern DOCX/PPTX/XLSX only, plus retained TXT/Markdown/CSV. No OCR, old binary Office formats or macro execution.",
     "Owner authority, versioned history and personal memory are preserved. Moving the installed package to another computer is not physically tested in this update.",
-    "Voice uses the Windows default microphone and local English Whisper transcription. Silero v6.2.0 classifies speech locally in 32 ms frames; three speech votes within 160 ms confirm speech, and 1.6 seconds without confirmed speech ends the turn. No semantic turn prediction, playback barge-in or exact ChatGPT parity. No new recording or idle timer; bounded 0.8-second pre-roll, manual Stop/End, cancellation, hidden-tab/disconnection cleanup, the existing 100 MiB utterance boundary and transcription processing limit remain. Dev15 automatic ending failed the user test while manual Stop worked; dev16 physical microphone/speaker acceptance is pending."
+    "Voice uses the Windows default microphone and local English Whisper transcription. Silero v6.2.0 classifies speech locally in 32 ms frames; three speech votes within 160 ms confirm speech, and 1.6 seconds without confirmed speech ends the turn. No semantic turn prediction, playback barge-in or exact ChatGPT parity. No new recording or idle timer; bounded 0.8-second pre-roll, manual Stop/End, cancellation, hidden-tab/disconnection cleanup, the existing 100 MiB utterance boundary and transcription processing limit remain. Dev16 automatic pause ending, spoken 42/50 replies, return to Listening and End microphone cleanup were confirmed by the owner. This release preserves that implementation."
   ]
 }

@@ -61,6 +61,60 @@ def workspace(app, request):
     return CodingWorkspace(root, app.data_root/'Coding', protected_roots=protected)
 
 
+def result_summary(mode, result):
+    """Keep routine workbench activity readable; full evidence stays in details."""
+    if mode == 'health_check':
+        return result['summary']
+    if mode == 'document_list':
+        return f"Document library refreshed: {len(result.get('documents', []))} saved versions. Open Documents to browse them."
+    if mode == 'document_import':
+        action = 'Existing version retained' if result.get('duplicate') else 'Document imported'
+        return f"{action}: {result.get('title', 'document')}. {result.get('passage_count', 0)} searchable passages. Meaning index: {result.get('embedding_status', 'pending').replace('_', ' ')}."
+    if mode == 'document_index':
+        return f"Meaning index: {result.get('status', 'unknown').replace('_', ' ')}. {result.get('indexed', 0)} passages indexed; {result.get('pending', 0)} pending. Keyword search remains available."
+    if mode == 'code_open':
+        return f"Project opened: {len(result.get('files', []))} supported files. Choose a file in the Code workbench."
+    if mode == 'code_read':
+        return f"Opened {result['path']} in the editor. Changes are held for review before applying."
+    if mode == 'code_preview':
+        return f"Changes to {result['path']} are ready to review in Code. Nothing has been applied." if result['changed'] else 'The editor matches the file; no changes to apply.'
+    if mode == 'code_apply':
+        return f"Reviewed changes applied to {result['path']}. Undo is available in Code." if result['changed'] else 'No file changes were needed.'
+    if mode == 'code_undo':
+        return f"Restored the saved version of {result['path']}. Open the file again to review it."
+    if mode == 'code_tests':
+        status = 'cancelled' if result.get('cancelled') else 'timed out' if result.get('timed_out') else 'passed' if result.get('exit_code') == 0 else 'failed'
+        return f"Project check {status}. Review its output in Code."
+    if mode == 'maintenance':
+        paused = len(result.get('model_evidence', {}).get('paused_roles', []))
+        return f"Readiness refreshed. {paused} helper roles remain paused by their recorded task checks. Review hardware and backup details in Maintenance."
+    if mode in {'component_updates', 'configure_updates', 'check_updates'}:
+        rows = result.get('entries', [])
+        def needs_attention(row):
+            return bool(row.get('error') or row.get('pending_recovery') or row.get('status') in {'check_failed', 'rolled_back', 'cancelled'})
+        def manually_updated(row):
+            return row.get('provider') == 'pinned' or row.get('status') == 'check_unavailable'
+        failures = sum(needs_attention(row) for row in rows)
+        candidates = sum(not needs_attention(row) and not manually_updated(row) and row.get('status') in {'update_available', 'upstream_changed', 'staged_verified'} for row in rows)
+        manual = sum(manually_updated(row) and not needs_attention(row) for row in rows)
+        state = 'enabled' if result.get('enabled') else 'paused'
+        return f"Automatic update checks {state}. {failures} checks need attention; {candidates} updates need review; {manual} entries use manual updates. See Maintenance for versions and next steps."
+    if mode == 'model_benchmark':
+        checked, passed = result.get('checked', 0), result.get('passed', 0)
+        state = result.get('state', 'unknown').replace('_', ' ')
+        return f"Helper checks: {passed} of {checked} scored cases passed; {checked - passed} failed. Run status: {state}. Review skipped cases and individual results in Maintenance. These checks do not establish overall accuracy."
+    if mode == 'watch_source':
+        return f"Source watch {'enabled' if result['enabled'] else 'disabled'} for {result['provider']}: {result['query']}."
+    if mode == 'check_sources':
+        checks = result.get('checks', [])
+        failures = sum(bool(row.get('error')) for row in checks)
+        return f"Source checks: {len(checks)} checked; {failures} failed. Earlier saved versions are retained." + (f" {result['reason']}" if result.get('reason') else '')
+    if mode in {'backup', 'restore_check'}:
+        label = 'Backup' if mode == 'backup' else 'Restore check'
+        return f"{label} {'verified' if result.get('verified') else 'needs review'}. Review the destination and full result in Maintenance."
+    raise ValueError('No workbench summary for this action.')
+
+
 def execute(app, request):
     mode = request['mode']
     from .application_policy import require_dispatch
@@ -139,6 +193,5 @@ def execute(app, request):
     elif mode == 'restore_check':
         from .maintenance import restore_backup
         result = restore_backup(request.get('backup_path', ''), request.get('destination', ''))
-    from .ui_server import readable_result
-    return {'reply': result['summary'] if mode == 'health_check' else readable_result(result),
+    return {'reply': result_summary(mode, result),
             'details': result, 'label': mode.replace('_', ' ').capitalize(), 'action': mode}

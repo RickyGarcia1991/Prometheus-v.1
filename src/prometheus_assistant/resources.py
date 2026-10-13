@@ -24,12 +24,17 @@ DEFAULT_RESOURCES = (
     KnowledgeResource("openai-gpt-oss","OpenAI gpt-oss source and license",("coding","ai","reasoning"),"source-reference","offline","https://github.com/openai/gpt-oss","Knowledge/OpenAI-Reference/gpt-oss/README.md","Apache 2.0; reference implementations have separate hardware requirements"),
     KnowledgeResource("openai-whisper","OpenAI Whisper source and license",("voice","speech","ai"),"source-reference","offline","https://github.com/openai/whisper","Knowledge/OpenAI-Reference/whisper/README.md","MIT; installed speech runtime uses whisper.cpp"),
     KnowledgeResource("openai-docs","Official OpenAI developer documentation",("coding","ai","api"),"online-library","online","https://developers.openai.com/",None,"Live reference; accessing links requires internet"),
-    KnowledgeResource("wikipedia-top","Wikipedia English Top",("general","history","science","math","language","geography"),"kiwix-zim","offline","https://library.kiwix.org","Knowledge/Kiwix/wikipedia_en_top_mini_2026-09.zim","Wikimedia content licenses apply"),
-    KnowledgeResource("wikipedia-astronomy","Wikipedia English Astronomy",("astronomy","physics","space","science"),"kiwix-zim","offline","https://library.kiwix.org","Knowledge/Kiwix/wikipedia_en_astronomy_nopic_2026-08.zim","Wikimedia content licenses apply"),
     KnowledgeResource("openstax","OpenStax",("math","algebra","calculus","statistics","science","physics","chemistry","biology","astronomy","history","humanities"),"online-library","online","https://openstax.org/subjects",None,"Openly licensed textbooks; license varies by title"),
     KnowledgeResource("gutenberg","Project Gutenberg",("literature","history","philosophy","reference","books"),"online-library","online","https://www.gutenberg.org/",None,"Primarily works not restricted by U.S. copyright; check each title"),
     KnowledgeResource("wikisource","Wikisource English",("books","primary-sources","history","literature"),"kiwix-catalog","catalog","https://library.kiwix.org",None,"Wikimedia content licenses apply"),
     KnowledgeResource("wiktionary","Wiktionary",("dictionary","language","etymology","vocabulary"),"kiwix-catalog","catalog","https://library.kiwix.org",None,"Wikimedia content licenses apply"),
+)
+
+# Earlier optional downloads remain discoverable on drives that have them.
+# Current installations use the versioned ARCHIVES catalog, including full Wikipedia.
+LEGACY_RESOURCES = (
+    KnowledgeResource("wikipedia-top","Wikipedia English Top",("general","history","science","math","language","geography"),"kiwix-zim","offline","https://library.kiwix.org","Knowledge/Kiwix/wikipedia_en_top_mini_2026-09.zim","Wikimedia content licenses apply"),
+    KnowledgeResource("wikipedia-astronomy","Wikipedia English Astronomy",("astronomy","physics","space","science"),"kiwix-zim","offline","https://library.kiwix.org","Knowledge/Kiwix/wikipedia_en_astronomy_nopic_2026-08.zim","Wikimedia content licenses apply"),
 )
 
 def knowledge_root(resource_root: str | None = None) -> Path | None:
@@ -39,7 +44,8 @@ def knowledge_root(resource_root: str | None = None) -> Path | None:
 def inventory(resource_root: str | None = None) -> list[dict]:
     root = knowledge_root(resource_root)
     rows=[]
-    for item in DEFAULT_RESOURCES:
+    legacy = tuple(item for item in LEGACY_RESOURCES if root and (root/item.relative_path).is_file())
+    for item in DEFAULT_RESOURCES + legacy:
         row=asdict(item); path=(root/item.relative_path) if root and item.relative_path else None
         row["installed"]=bool(path and path.is_file())
         row["path"]=str(path) if path else None
