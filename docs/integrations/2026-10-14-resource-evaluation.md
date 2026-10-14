@@ -1,6 +1,8 @@
 # Prometheus integration candidates — 2026-10-14
 
-Status: **staged for evaluation, NOT installed, NOT enabled in a running Prometheus deployment**.
+Status: **PLANNING ONLY. No integration code, downloads, installations, configurations, or tests are authorized until the Dell is connected and the owner asks to proceed.**
+
+All listed candidates are future possibilities subject to verifying the full project, existing 79 candidate groups, and upstream sources. Research additions do not imply approval to deploy.
 
 This branch deliberately does not assume the GitHub main branch reflects the active Dell/SSD build. Before merging, inventory the Dell workspace, preserve a verified snapshot, reconcile the full 79-group candidate inventory, and port additions to the actual runtime architecture.
 
