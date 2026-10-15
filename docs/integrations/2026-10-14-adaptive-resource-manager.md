@@ -77,3 +77,36 @@ These five modes are required user-facing and internal policies, not separate OS
 - Validate persistent task journal, warm restart, recovery and no double execution of privileged steps.
 
 **All of the above is a plan, not an implementation.**
+
+
+## Predictive Resource Scheduler — approved for future planning (2026-10-14)
+Status: documentation ONLY. Do not install or activate until the user explicitly authorizes implementation on the connected Dell.
+
+### Goals
+- Estimate **before starting each task** the expected peak RAM, CPU seconds, GPU/VRAM usage, disk I/O, battery drain, network needs and completion urgency, using measured historical per-task performance and current pressure.
+- Choose *run locally now*, *use a smaller model*, *run a limited-size batch*, *defer and checkpoint*, or *offer a task to another authorized device*; remote execution requires explicit scope/permission and encrypted transfer.
+- Preserve five owner-selected modes: Idle, Balanced, Performance, Battery Saver, Critical Recovery. Predictions inform each mode but cannot override Critical Recovery safety policy.
+- Resource allocations use admission control, priorities, fair-share queues, leases, thermal and power constraints, hysteresis, task cancellations and release on completion.
+
+### Prediction design
+1. Begin with deterministic conservative cost estimates (model size/quantization/context length, input size, process startup, prior peak measurements). **Do not run an LLM constantly just to predict load.**
+2. Maintain local per-device anonymous metrics history with retention bounds and provenance. Separate workspaces/family permissions; no sensitive prompt contents in performance logs.
+3. Score task options against hard safety budgets and soft response-time goals. Low-confidence estimates get extra RAM headroom or a cheap calibration run; never gamble with OS health.
+4. Reforecast during long work. If pressure rises: throttle optional workers, checkpoint recoverable operations, reduce concurrency or request operator guidance.
+5. Before cross-device delegation, verify device identity, owner consent, battery threshold, availability, network data restrictions, and safe fallback; prevent duplicated irreversible actions on retry.
+6. Benchmark prediction error, admitted peak RAM, swap/page faults, battery drain, fairness, task latency, recovery success, idle overhead and false throttling. Avoid unverified percentage improvement claims.
+
+### Potential later libraries and platform features
+- psutil for portable system measurements; Windows Job Objects and EcoQoS for Prometheus-owned process control, and Windows low-memory notifications for event-driven pressure detection.
+- Ollama keep_alive and llama.cpp model residency for memory release.
+- APScheduler for light scheduled jobs; SQLite/WAL journal or existing reliable Prometheus task journal for on-device restart.
+- Evaluate time-series predictor only after enough benchmark data accumulates; avoid heavy always-on ML or Ray stack on a 16 GB laptop.
+
+## CodeRabbit external reviewer candidate (2026-10-14)
+- Product: https://www.coderabbit.ai/ ; GitHub Marketplace: https://github.com/marketplace/coderabbitai ; terms/pricing: https://www.coderabbit.ai/pricing ; FAQ: https://www.coderabbit.ai/faq
+- Category: **external AI PR reviewer**, not a local resource manager and not an OSS self-hosted drop-in. Proprietary hosted service; enterprise self-hosting is a separate offering.
+- Benefits: automatic PR summaries, code review comments, potential bug/security/maintainability suggestions, agent workflows and code-style rules. Complements CodeQL, tests, zizmor and dependency scanners; never use it as sole approval or quality gate.
+- Cost: official site offers free reviews for qualifying public OSS repositories; paid plans and usage-based options exist, and eligibility/fair-use should be checked before connecting.
+- Security gates: examine GitHub App requested permissions, vendor retention/training/caching controls, remote code-processing boundary and secret scanning; do not provide encryption keys, .env files, local device access or privileged automation rights.
+- RAM: if using GitHub-hosted reviews, little continuous load on Dell; online dependence is a trade-off.
+- Proposed usage after authorization: manual PR review on feature branches, advisory findings, human verification and tests before merge. No automatic code changes or merges and no enrollment now.
