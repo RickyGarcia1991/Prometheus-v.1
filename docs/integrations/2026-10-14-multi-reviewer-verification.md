@@ -37,3 +37,33 @@ Check changes from Prometheus agents, Codex, external contributors and tools wit
 
 ## Governance
 Original 79 candidate groups and Dell/SSD inventory remain unreconciled; candidate count provisional. No installs, code changes, or system access permitted by this document. Owner must separately authorize implementation.
+
+
+## Approved future design additions (2026-10-14)
+These are accepted into the **planning backlog** and are not yet active components.
+
+### Adversarial reviewer
+- An independent hostile-case reviewer examines proposed changes for approval bypass, privilege escalation, unsafe dependencies, injection, exfiltration, backup corruption, data loss and resource exhaustion.
+- Reviewer output is evidence to verify, not permission to execute attack code on real systems or a substitute for owner judgment.
+- Offline sandbox and narrowly scoped fixtures only; no probing third-party networks.
+
+### Autonomous test generation
+- Derive property-based, boundary, regression, integration and fault-injection tests from requirements, previous incidents and reviewed changes.
+- Validate tests against requirements and intentionally faulty variants where safe; prevent generated tests from mutating real user data or system configuration.
+- Require independent reviewer confirmation before generated tests become trusted release gates; track test provenance and false-positive rates.
+
+### Verified rollback intelligence
+- Prepare a signed/hash-verified last-known-good snapshot and migration rollback plan before approval to deploy.
+- Track post-change health, performance, memory integrity, backup recoverability and regression signals.
+- Recommend or execute only explicitly pre-authorized bounded rollback steps; irreversible recovery actions and operations affecting private data or security boundaries require owner approval.
+- Never silently overwrite newer user data with an older snapshot.
+
+## Owner governance directive
+The creator/owner is the **final approval/denial authority for security-sensitive decisions** relating to Prometheus. Other agents, reviewers, and automations cannot override this authority, approve their own privileged actions, or redefine security boundaries.
+
+- Allowed automatically at the **planning** level: identify and record further candidates, architecture improvements, test ideas, performance optimizations and research questions, with reasons and confidence, subject to later review.
+- Non-security ideas may be included in the future plan without separate approval each time; **listing is not installation or implementation permission**.
+- Explicit owner approval is required before enabling security controls, changing permissions, remote access, network exposure, secrets/keys, account integrations, surveillance capabilities, updates to security policy, potentially destructive file/OS operations, automatic merges/deployment, or changes with meaningful privacy or financial impact.
+- Baseline safety mechanisms must remain intact, including backup integrity checks, isolation and no unauthorized actions; owner authority is exercised through authenticated, logged confirmation, not implied consent or reviewer voting.
+- On uncertain risk or disputed classification, classify as security-sensitive and request owner decision. Provide an understandable action preview with scope, affected assets, effects, reversibility and rollback.
+- Do not treat approvals granted in one context as standing permission across different future devices, tasks or scopes.
