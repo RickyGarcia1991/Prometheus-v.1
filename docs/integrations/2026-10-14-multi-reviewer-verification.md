@@ -67,3 +67,24 @@ The creator/owner is the **final approval/denial authority for security-sensitiv
 - Baseline safety mechanisms must remain intact, including backup integrity checks, isolation and no unauthorized actions; owner authority is exercised through authenticated, logged confirmation, not implied consent or reviewer voting.
 - On uncertain risk or disputed classification, classify as security-sensitive and request owner decision. Provide an understandable action preview with scope, affected assets, effects, reversibility and rollback.
 - Do not treat approvals granted in one context as standing permission across different future devices, tasks or scopes.
+
+
+## Decision and Approval Center — accepted planning concept
+- A dedicated interface within the existing Prometheus chat/dashboard for pending approvals, changes, risks, affected devices, estimated resource cost, permissions, reversibility and proposed rollback.
+- Controls: Approve Once, Deny, Request Changes, View Evidence; scoped approvals expire and have a recorded audit trail. Never present blanket security approval as an innocuous routine confirmation.
+- Queue duplicate or related requests, surface urgent cases, and keep nonurgent cases deferred without interrupting ordinary conversations.
+- Default deny on timeout, disconnection or ambiguous identity. Authenticate owner before privileged approval; AI reviewers provide advice but cannot approve themselves.
+- Display results from Verification Council, Predictive Resource Scheduler, backups and device status, with links to detailed evidence.
+
+## Standing research-and-planning delegation
+- The owner has authorized the assistant to **add its recommended non-security improvement ideas to the Prometheus roadmap without repeatedly asking permission**.
+- This delegation does not authorize code execution, installation, account binding, deployment, financial spending, edits to active systems, policy relaxation, or any security-sensitive change.
+- Security-sensitive proposals may be documented as proposals, but enabling or implementing them requires the owner's explicit and appropriately scoped approval.
+- When available, check original inventory and existing 79 groups to prevent duplicates; document rationale and expected overhead before prioritizing.
+
+## Further suggested future backlog additions
+1. **Review evidence provenance index**: trace each finding back to commit SHA, test, tool version and reproducible log to prevent unsupported AI agreement.
+2. **Risk-adaptive review depth**: low-risk documentation receives lightweight checks, whereas code affecting keys, memory durability or OS control gets independent security review and rollback rehearsal.
+3. **Failure knowledge base**: catalog prior bugs and remediations as regression scenarios with redacted examples; prevent repeating known failures.
+4. **Release health dashboard**: local-first metrics on last known-good release, canary status, regression evidence and recovery readiness without always-on heavy observability services.
+5. **Review budget governor**: PARM schedules expensive test/LLM reviews based on available resources and only when code changes; remote/cloud review requires separate privacy and service authorization.
