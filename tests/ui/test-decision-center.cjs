@@ -12,7 +12,7 @@ const snapshot=(extra={})=>({schema_version:1,generated_at:1000,read_only:true,i
 const item=(extra={})=>({id:'one',kind:'project',label:'Review pending',severity:'warning',state:'waiting',count:1,source:'approvals',freshness:'current',navigation:'project',...extra});
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 function fixture(){
- const elements=Object.fromEntries(['decisionCenter','decisionCenterStatus','decisionCenterList','decisionCenterRefresh','taskActivity'].map(k=>[k,new Element()]));
+ const elements=Object.fromEntries(['decisionCenter','decisionCenterStatus','decisionCenterList','decisionCenterRefresh','taskActivity','decisionHistory'].map(k=>[k,new Element()]));
  const events={},documentEvents={},timers=new Map(),calls=[],jumps=[];let now=1000000,next=0,response=snapshot();
  const document={hidden:false,getElementById:id=>elements[id],createElement:()=>new Element(),addEventListener:(k,fn)=>documentEvents[k]=fn};
  const context={document,window:{addEventListener:(k,fn)=>events[k]=fn,PrometheusWorkspace:{show:name=>jumps.push(name)}},Date:{now:()=>now},setTimeout:(fn,delay)=>{timers.set(++next,{fn,delay});return next;},clearTimeout:id=>timers.delete(id),api:async(...args)=>{calls.push(args);if(response instanceof Error)throw response;return typeof response==='function'?response():response;}};
@@ -49,3 +49,12 @@ test('bounded literal labels and navigation allowlist only invoke panel jumps',a
 test('failed refresh removes previous rows',async()=>{const h=fixture();h.set(snapshot({items:[item()]}));h.emit();await settle();h.set(new Error('network'));await h.tick();assert.equal(h.elements.decisionCenterList.children.length,0);assert.match(h.elements.decisionCenterStatus.textContent,/unavailable/);});
 
 test('age expiry clears rows even when a refresh never resolves',async()=>{const h=fixture();h.set(snapshot({items:[item()]}));h.emit();await settle();h.set(()=>new Promise(()=>{}));await h.tick();await h.tick();assert.equal(h.elements.decisionCenterList.children.length,0);assert.match(h.elements.decisionCenterStatus.textContent,/stale/);});
+
+
+test('historical evidence opens only read-only history and unavailable source is explicit',async()=>{
+ const h=fixture();h.set(snapshot({items:[item({source:'decisions',navigation:'history',state:'unknown'})],sources:{...snapshot().sources,decisions:{state:'partial'}}}));h.emit();await settle();
+ assert.match(h.elements.decisionCenterStatus.textContent,/Sources unavailable: decisions/);
+ h.elements.decisionCenterList.children[0].children[1].click();
+ assert.equal(h.elements.decisionHistory.open,true);assert.deepEqual(h.jumps,[]);
+ assert.deepEqual(h.calls,[['/api/decision-center']]);
+});

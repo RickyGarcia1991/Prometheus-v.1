@@ -94,3 +94,24 @@ def test_activity_failure_keeps_review_visible(endpoint, monkeypatch):
     assert code == 200 and data['sources']['activity']['state'] == 'unavailable'
     assert any(row['source'] == 'approvals' for row in data['items'])
     assert 'private' not in str(data)
+
+def test_history_projection_exact_owner_read_only_and_unavailable(endpoint, monkeypatch):
+    app, gate, effects, request, pending, calls = prepare(endpoint, monkeypatch)
+    with gate.grant_owner('fixture-cookie') as expected:pass
+    reads=[]
+    def history(*,owner,limit):
+        assert owner==expected and limit==50
+        reads.append(owner)
+        return [{'decision':'approve','kind':'runtime_config','feedback':'PRIVATE'}]
+    monkeypatch.setattr(app.action_approvals,'history',history)
+    before=copy.deepcopy(app.action_approvals._pending)
+    code,data=request(ROUTE)
+    assert code==200 and reads==[expected] and not effects
+    assert app.action_approvals._pending==before and 'PRIVATE' not in str(data)
+    assert any(r['source']=='decisions' and r['state']=='unknown' for r in data['items'])
+    def unavailable(**kw):raise ValueError('PRIVATE')
+    monkeypatch.setattr(app.action_approvals,'history',unavailable)
+    code,data=request(ROUTE)
+    assert code==200 and data['sources']['decisions']['state']=='unavailable' and not effects
+    gate.sessions.clear()
+    assert request(ROUTE)[0]==401

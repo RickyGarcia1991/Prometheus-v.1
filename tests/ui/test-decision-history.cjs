@@ -43,3 +43,19 @@ test('capability schemas and contradictory success fail closed',async()=>{
  for(const kind of ['project_edit','self_improve','unsupported']){const f=await capabilityHistory(kind,[capability('started')]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);}
 });
 test('incomplete capability start and missing legacy observations stay unconfirmed',async()=>{const f=await capabilityHistory('integration',[capability('started')]);assert.match(flatten(f.elements.decisionHistoryList),/outcome unconfirmed.*cannot resume or repeat/);const g=await capabilityHistory('integration',undefined);assert.match(flatten(g.elements.decisionHistoryList),/No linked execution evidence/);});
+const revisionLink={parent_id:'a'.repeat(32),parent_fingerprint:'b'.repeat(64),child_id:'c'.repeat(32),child_fingerprint:'d'.repeat(64),child_state:'recorded',created_at:3};
+async function revisionHistory(items){const f=fixture();f.set({schema_version:1,read_only:true,items});f.busy();f.open();await settle();return f;}
+const revisionParent={...row,id:revisionLink.parent_id,fingerprint:revisionLink.parent_fingerprint,revisions:[revisionLink]};
+test('revision chain shows separate decisions and retains unknown replacement authority',async()=>{
+ const f=await revisionHistory([revisionParent,{...row,id:revisionLink.child_id,fingerprint:revisionLink.child_fingerprint,decision:'approve',revisions:[revisionLink]}]);
+ assert.match(flatten(f.elements.decisionHistoryList),/Replacement review cccccccc.*separate decision.*Replacement review for requested changes in review aaaaaaaa.*own decision/);
+ assert.equal(f.submitted.length,0);assert.deepEqual(f.calls,[['/api/decisions/history']]);
+ const g=await revisionHistory([{...revisionParent,revisions:[{...revisionLink,child_state:'unrecorded'}]}]);
+ assert.match(flatten(g.elements.decisionHistoryList),/no decision is recorded.*not restored/);
+});
+test('untrusted revision relationships fail closed',async()=>{
+ for(const revisions of [null,[{...revisionLink,parent_id:'<img>'}],[{...revisionLink,parent_fingerprint:'f'.repeat(64)}],[{...revisionLink,child_id:revisionLink.parent_id}],[{...revisionLink,created_at:Infinity}],[{...revisionLink,child_state:'approved'}],[{...revisionLink,private:'hidden'}],Array(17).fill(revisionLink),[revisionLink,revisionLink]]){
+  const f=await revisionHistory([{...revisionParent,revisions}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);
+ }
+ for(const extra of [{decision:'approve'},{kind:'runtime_config'}]){const f=await revisionHistory([{...revisionParent,...extra}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);}
+});

@@ -10,7 +10,8 @@ import math
 
 MAX_JOBS = 100
 MAX_ACTIVITY = 50
-NAVIGATION = frozenset({'project', 'scheduled', 'remote', 'activity', 'self_improvement', 'integrations', 'research'})
+MAX_DECISIONS = 50
+NAVIGATION = frozenset({'project', 'scheduled', 'remote', 'activity', 'self_improvement', 'integrations', 'research', 'history'})
 _APPROVAL_ROUTES = {'project_edit': 'project', 'project_task': 'project',
     'scheduled_syntax': 'scheduled', 'remote_syntax': 'remote',
     'self_improve': 'self_improvement', 'integration': 'integrations',
@@ -42,7 +43,47 @@ def _freshness(resources, now):
     return 'current' if now < expires else 'stale'
 
 
-def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None):
+def _decision_state(row):
+    """Validate saved evidence without interpreting payloads or performing I/O."""
+    from .decision_outcomes import validate as project_validate, sequence
+    from .capability_outcomes import validate as capability_validate, _sequence, _kind
+    decision = row.get('decision')
+    kind = row.get('kind')
+    if decision not in {'approve', 'reject', 'request_changes'} or not isinstance(kind, str):
+        raise ValueError('Invalid decision')
+    project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
+    if any(not isinstance(events, list) or len(events)>16 for events in (project, capability)) or project and capability:
+        raise ValueError('Invalid evidence')
+    if decision != 'approve':
+        if project or capability:raise ValueError('Unapproved evidence')
+        return 'no_execution'
+    prior=[];identities=set()
+    for event in project or capability:
+        if project:
+            if kind not in {'project_edit','project_task'}:raise ValueError('Invalid project kind')
+            project_validate(event);sequence(prior,event)
+        else:
+            capability_validate(event);_kind(kind,event);_sequence(prior,event)
+        if event['event_id'] in identities:raise ValueError('Repeated event')
+        identities.add(event['event_id']);prior.append(event)
+    if not prior:return 'unknown'
+    last=prior[-1];status=last['status']
+    if project:
+        if last['phase']=='undo_result' and status=='restored':return 'restored'
+        if last['phase']=='undo_started' or status=='restore_failed' or last['rollback']=='needs_attention':return 'restoration_unknown'
+        if status in {'started','unknown'}:return 'unknown'
+        if status=='failed':return 'historical_failure'
+        if status=='passed':return 'verified'
+        return 'unverified'
+    if status in {'started','unknown','unconfirmed'}:return 'unknown'
+    if status in {'checks_failed','tool_failed'}:return 'historical_failure'
+    if status=='checks_passed':return 'verified'
+    if status in {'cancelled','expired','deferred'}:return 'no_execution'
+    if status=='waiting':return 'waiting'
+    return 'recorded_effect'
+
+
+def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None, decisions=None):
     """Return schema-v1 grouped fixed-text summaries with navigation only.
 
     Sources distinguish current saved records from live telemetry. Approval
@@ -67,6 +108,27 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
     sources = dict(approvals=dict(state='available' if approval_valid else 'unavailable',
         freshness='saved_records' if approval_valid else 'unavailable',truncated=False,omitted=0),
         queue=queue_source,activity=activity_source)
+    records, decision_source = _source(decisions, MAX_DECISIONS)
+    # A full bounded history page may omit older records; do not imply completeness.
+    if isinstance(decisions,list) and len(decisions)>=MAX_DECISIONS:
+        decision_source['truncated']=True
+    sources['decisions']=decision_source
+    labels={
+        'unknown':('Recorded decision has no confirmed outcome; history cannot resume work.','warning'),
+        'restoration_unknown':('Recorded restoration is unconfirmed or needs attention; inspect its history.','warning'),
+        'historical_failure':('Historical verification or execution reported failure; inspect recorded evidence.','warning'),
+        'restored':('Recorded manual restoration completed; original execution evidence remains in history.','info'),
+        'verified':('Recorded native checks passed their stated scope.','info'),
+        'unverified':('Recorded action has no behavioral pass evidence.','info'),
+        'no_execution':('Recorded decision or disposition does not confirm execution.','info'),
+        'waiting':('Recorded approval entered waiting; consult the current queue for its status.','info'),
+        'recorded_effect':('Recorded configuration, access or adapter observation; later behavior is not verified.','info')}
+    for row in records:
+        try:state=_decision_state(row)
+        except (ValueError,TypeError,KeyError,OverflowError):
+            state='unknown';decision_source['state']='partial'
+        label,severity=labels[state]
+        add('decisions','historical_evidence',label,severity,state,'history')
     if approval_valid and approval is not None:
         route = _APPROVAL_ROUTES.get(approval['kind'], 'activity')
         add('approvals','proposal','An exact proposal is waiting for your decision.','info','pending',route)
@@ -126,10 +188,10 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
     for name, source in sources.items():
         if source['state'] in ('unavailable', 'partial'):
             add(name,'availability','This attention source is unavailable or incomplete.','warning',source['state'],
-                'scheduled' if name == 'queue' else 'activity',source['freshness'])
+                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'activity',source['freshness'])
         if source['truncated']:
             add(name,'limit','This summary is truncated; open the source view for its retained records.','info','truncated',
-                'scheduled' if name == 'queue' else 'activity')
+                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'activity')
     items = sorted(groups.values(), key=lambda row: (_SEVERITY[row['severity']],row['source'],row['kind'],row['state'],row['navigation']))
     return dict(schema_version=1,generated_at=now,items=items,sources=sources,
         counts={level:sum(row['count'] for row in items if row['severity']==level) for level in _SEVERITY},read_only=True)

@@ -41,6 +41,7 @@ class ActionApprovals:
             raise ValueError('Approval lifetime must be at most ten minutes.')
         self.clock, self.lifetime = clock, lifetime
         self._pending = {}
+        self._revision_intents = {}
         self._lock = threading.RLock()
         self.receipt_root = Path(receipt_root) if receipt_root is not None else None
         from .decision_history import DecisionHistory
@@ -49,6 +50,8 @@ class ActionApprovals:
     def _expire(self):
         now = self.clock()
         self._pending = {key: row for key, row in self._pending.items() if row['expires_at'] > now}
+        self._revision_intents = {key: row for key,row in self._revision_intents.items()
+                                  if row['created_at'] <= now < row['expires_at']}
 
     @staticmethod
     def _key(owner, binding):
@@ -76,10 +79,13 @@ class ActionApprovals:
             row = self._pending.get(key)
             return copy.deepcopy(row) if row and row['expires_at'] > self.clock() else None
 
-    def review(self, *, owner, binding, session, kind, payload, review, policy_revision):
+    def review(self, *, owner, binding, session, kind, payload, review, policy_revision,
+               revision_token='', project_hash=''):
         key = self._key(owner, binding)
         if not isinstance(session, str) or not re.fullmatch(r'[0-9a-f]{32}', session):
             raise ValueError('An exact conversation is required for approval.')
+        if type(revision_token) is not str or type(project_hash) is not str:
+            raise ValueError('Invalid revision context.')
         document = json.loads(json.dumps({'kind': kind, 'payload': payload, 'review': review,
             'session': session, 'policy_revision': policy_revision}, allow_nan=False, sort_keys=True))
         digest = hashlib.sha256(json.dumps(document, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
@@ -89,6 +95,16 @@ class ActionApprovals:
                 raise ValueError('Approve or reject the existing proposal before preparing another.')
             row = {**document, 'id': secrets.token_hex(16), 'fingerprint': digest,
                    'expires_at': self.clock() + self.lifetime, 'expires_in_seconds': self.lifetime}
+            if revision_token:
+                if kind!='project_edit':raise ValueError('Only project edits can revise a proposal.')
+                self.validate_revision_context(owner=owner,binding=binding,session=session,
+                    project_hash=project_hash,revision_token=revision_token)
+                intent=self._revision_intents[revision_token]
+                self._revisions().record(dict(owner=owner,session=session,project_hash=project_hash,
+                    parent_id=intent['parent_id'],parent_fingerprint=intent['parent_fingerprint'],
+                    child_id=row['id'],child_fingerprint=digest,created_at=time.time()))
+                row['origin_approval']=intent['parent_id']
+                del self._revision_intents[revision_token]
             self._pending[key] = row
             return copy.deepcopy(row)
 
@@ -122,11 +138,57 @@ class ActionApprovals:
         rows = self.decision_history.history(owner,limit=limit)
         events = self._outcomes().read()
         capability_events = self.capability_outcomes().read()
+        revisions,recorded_children = self._revisions().read_with_states()
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
                                          if o==owner and i==row['id'] and f==row['fingerprint']]
+            row['revisions'] = [{**{k:link[k] for k in ('parent_id','parent_fingerprint','child_id','child_fingerprint','created_at')},
+                'child_state':'recorded' if (owner,link['child_id']) in recorded_children else 'unrecorded'}
+                for link in revisions if link['owner']==owner and
+                ((link['parent_id']==row['id'] and link['parent_fingerprint']==row['fingerprint']) or
+                 (link['child_id']==row['id'] and link['child_fingerprint']==row['fingerprint']))]
         return rows
+
+    def _revisions(self):
+        if self.decision_history is None:raise ValueError('Decision history is not configured.')
+        from .decision_revisions import DecisionRevisions
+        return DecisionRevisions(self.decision_history)
+
+    def revision_context(self, *, owner, binding, session, parent_row, project_hash):
+        self._key(owner,binding)
+        from .decision_history import _identity
+        _identity(session,32);_identity(project_hash,64)
+        if type(parent_row) is not dict:raise ValueError('Exact saved parent required.')
+        with self._lock:
+            self._expire()
+            store=self._revisions()
+            parent=store.history.lookup(owner,parent_row.get('id'))
+            if (not parent or parent['session']!=session or parent['kind']!='project_edit'
+                    or parent['decision']!='request_changes' or parent['fingerprint']!=parent_row.get('fingerprint')):
+                raise ValueError('Exact saved change request required.')
+            if len(self._revision_intents)>=128:raise ValueError('Too many revision contexts.')
+            token=secrets.token_hex(16);now=self.clock()
+            self._revision_intents[token]=dict(owner=owner,binding=binding,session=session,project_hash=project_hash,
+                parent_id=parent['id'],parent_fingerprint=parent['fingerprint'],created_at=now,expires_at=now+self.lifetime)
+            return dict(revision_token=token,origin_approval=parent['id'])
+
+    def validate_revision_context(self, *, owner, binding, session, project_hash, revision_token):
+        """Read-only early validation; review repeats this under its publication lock."""
+        self._key(owner,binding)
+        from .decision_history import _identity
+        _identity(session,32);_identity(project_hash,64);_identity(revision_token,32)
+        with self._lock:
+            intent=self._revision_intents.get(revision_token);now=self.clock()
+            if (not intent or not intent['created_at']<=now<intent['expires_at'] or
+                    any(intent[k]!=v for k,v in [('owner',owner),('binding',binding),
+                        ('session',session),('project_hash',project_hash)])):
+                raise ValueError('Revision context is missing, expired or mismatched.')
+            parent=self._revisions().history.lookup(owner,intent['parent_id'])
+            if (not parent or parent['kind']!='project_edit' or parent['decision']!='request_changes'
+                    or parent['session']!=session or parent['fingerprint']!=intent['parent_fingerprint']):
+                raise ValueError('Revision parent no longer matches its saved receipt.')
+            return dict(origin_approval=parent['id'])
 
     def capability_outcomes(self):
         if self.decision_history is None:raise ValueError('Decision history is not configured.')
@@ -155,6 +217,7 @@ class ActionApprovals:
     def revoke_binding(self, binding):
         with self._lock:
             self._pending = {key: row for key, row in self._pending.items() if key[1] != binding}
+            self._revision_intents = {key:row for key,row in self._revision_intents.items() if row['binding']!=binding}
 
     def _receipt_path(self, job_id):
         if self.receipt_root is None:

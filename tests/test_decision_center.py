@@ -7,7 +7,7 @@ from prometheus_assistant.decision_center import MAX_ACTIVITY, MAX_JOBS, NAVIGAT
 
 
 def snapshot(**kwargs):
-    data = dict(approval=None, jobs=[], activity=[], resources={'mode':'Balanced'}, now=1000.)
+    data = dict(decisions=[], approval=None, jobs=[], activity=[], resources={'mode':'Balanced'}, now=1000.)
     data.update(kwargs)
     return build_snapshot(**data)
 

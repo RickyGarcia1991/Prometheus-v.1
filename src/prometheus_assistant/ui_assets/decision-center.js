@@ -27,7 +27,7 @@ function validate(data){
 function render(data){
  generated=data.generated_at;
  if(age()>60){clear('Decision snapshot is stale (over 60 seconds old). Refresh for current information.');return;}
- const unavailable=sourceNames.filter(name=>!['available','ok'].includes(data.sources[name].state));
+ const unavailable=[...sourceNames,...(data.sources.decisions?['decisions']:[])].filter(name=>!['available','ok'].includes(data.sources[name].state));
  status.textContent=`${data.counts.critical} critical · ${data.counts.warning} warning · ${data.counts.info} information · ${age()} seconds old.`+(unavailable.length?' Sources unavailable: '+unavailable.join(', ')+'.':'')+(!data.items.length?(unavailable.length?' No current items from available sources.':' No items need attention in this snapshot.'):'');
  if(expiry!==null)clearTimeout(expiry);
  expiry=setTimeout(()=>{expiry=null;clear('Decision snapshot is stale (over 60 seconds old). Refresh for current information.');},Math.max(1,(data.generated_at+61)*1000-Date.now()));
@@ -36,9 +36,9 @@ function render(data){
   const li=document.createElement('li'),p=document.createElement('p');
   p.textContent=`${text(row.label)} · ${row.severity} · ${text(row.state)} · ${row.count} · ${text(row.source)}`+(typeof row.freshness==='string'?' · '+text(row.freshness):'');li.append(p);
   const navigation=typeof row.navigation==='string'?row.navigation:null;
-  if(navigation==='activity' || Object.prototype.hasOwnProperty.call(destinations,navigation)){
-   const button=document.createElement('button');button.type='button';button.textContent=navigation==='activity'?'View activity':'Open '+destinations[navigation];
-   button.onclick=()=>{if(!ready() || age()===null || age()>60)return;if(navigation==='activity'){const target=el('taskActivity');if(target){target.open=true;target.scrollIntoView({block:'nearest'});}}else window.PrometheusWorkspace?.show(destinations[navigation]);};li.append(button);
+  if(navigation==='history' || navigation==='activity' || Object.prototype.hasOwnProperty.call(destinations,navigation)){
+   const button=document.createElement('button');button.type='button';button.textContent=navigation==='history'?'View decision history':navigation==='activity'?'View activity':'Open '+destinations[navigation];
+   button.onclick=()=>{if(!ready() || age()===null || age()>60)return;if(navigation==='activity'||navigation==='history'){const target=el(navigation==='history'?'decisionHistory':'taskActivity');if(target){target.open=true;target.scrollIntoView({block:'nearest'});}}else window.PrometheusWorkspace?.show(destinations[navigation]);};li.append(button);
   }
   list.append(li);
  }

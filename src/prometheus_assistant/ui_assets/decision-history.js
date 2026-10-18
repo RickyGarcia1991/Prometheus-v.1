@@ -23,6 +23,26 @@ function events(row){
  return rows;
 }
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);}
+function revisions(row){
+ const links=row.revisions===undefined?[]:row.revisions;
+ if(!Array.isArray(links)||links.length>16)throw Error('Invalid revision links');
+ const fields=['parent_id','parent_fingerprint','child_id','child_fingerprint','child_state','created_at'],ids=new Set();
+ for(const link of links){
+  if(!link||typeof link!=='object'||Object.keys(link).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(link,k))||!['parent_id','child_id'].every(k=>typeof link[k]==='string'&&/^[a-f0-9]{32}$/.test(link[k]))||!['parent_fingerprint','child_fingerprint'].every(k=>typeof link[k]==='string'&&/^[a-f0-9]{64}$/.test(link[k]))||link.parent_id===link.child_id||ids.has(link.child_id)||!['recorded','unrecorded'].includes(link.child_state)||!Number.isFinite(link.created_at)||link.created_at<0||link.created_at>253402300799)throw Error('Invalid revision relationship');
+  const parent=link.parent_id===row.id&&link.parent_fingerprint===row.fingerprint;
+  const child=link.child_id===row.id&&link.child_fingerprint===row.fingerprint;
+  if(row.kind!=='project_edit'||!parent&&!child||parent&&row.decision!=='request_changes'||child&&link.child_state!=='recorded')throw Error('Revision identity mismatch');
+  ids.add(link.child_id);
+ }
+ return links;
+}
+function revisionTimeline(item,row){
+ const links=revisions(row);if(!links.length)return;
+ paragraph(item,'Review reference: '+row.id.slice(0,8)+'.');
+ for(const link of links)paragraph(item,link.child_id===row.id
+  ? 'Replacement review for requested changes in review '+link.parent_id.slice(0,8)+'. This review required its own decision.'
+  : 'Replacement review '+link.child_id.slice(0,8)+' · '+(link.child_state==='recorded'?'a separate decision is recorded.':'no decision is recorded; its pending authority is not restored by history.'));
+}
 const capabilityLabels={started:'Capability execution started',settings_saved:'Settings saved; future behavior has not been verified',access_granted:'Access issued; this does not confirm a provider action',adapter_returned:'Integration adapter returned; result correctness is not independently verified',waiting:'Waiting at the approved destination; no execution confirmed',deferred:'Execution deferred',unconfirmed:'Execution unconfirmed; do not infer success or repeat execution',unknown:'Outcome unknown',cancelled:'Waiting job cancelled',expired:'Waiting permission expired',checks_passed:'Native worker checks passed',checks_failed:'Native worker checks found failures',tool_failed:'Verification tool failed; this is not a code-defect finding'};
 const capabilityTerminal=new Set(['settings_saved','access_granted','adapter_returned','cancelled','expired','checks_passed','checks_failed','tool_failed']);
 function capabilityEvents(row){
@@ -85,8 +105,8 @@ async function load(){
   const data=await api('/api/decisions/history');if(version!==generation||!ready()||!box.open)return;
   if(!data||data.schema_version!==1||data.read_only!==true||!Array.isArray(data.items)||data.items.length>50)throw Error('Invalid history');
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
-  for(const row of data.items){events(row);capabilityEvents(row);}
-  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}timeline(item,row);list.append(item);}
+  for(const row of data.items){events(row);capabilityEvents(row);revisions(row);}
+  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);timeline(item,row);list.append(item);}
   status.textContent=data.items.length+' saved decisions. History does not authorize or resume work.';
  }catch(error){if(version===generation)clear('Decision history unavailable. No historical record authorizes work.');}
  finally{if(version===generation){reading=false;controls();}}
