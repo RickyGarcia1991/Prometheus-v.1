@@ -67,6 +67,13 @@ class ActionApprovals:
             row = self._pending.get(key)
             return copy.deepcopy(row) if row else None
 
+    def peek(self, *, owner, binding):
+        """Project this session's live proposal without expiring any stored row."""
+        key = self._key(owner, binding)
+        with self._lock:
+            row = self._pending.get(key)
+            return copy.deepcopy(row) if row and row['expires_at'] > self.clock() else None
+
     def review(self, *, owner, binding, session, kind, payload, review, policy_revision):
         key = self._key(owner, binding)
         if not isinstance(session, str) or not re.fullmatch(r'[0-9a-f]{32}', session):

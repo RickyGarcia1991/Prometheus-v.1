@@ -151,6 +151,13 @@
 </div></section>
 <section id="conversationPanel" class="conversation-panel" aria-label="Conversation panel" hidden><div class="conversation-heading"><span>Conversation</span><button id="latestReply" class="quiet" type="button" hidden>Latest reply ↓</button></div><section id="messages" class="messages" tabindex="0" aria-label="Current conversation" aria-live="polite"><div id="welcome"><p>Your conversation lives here.</p><small>Type below or start a voice chat.</small></div></section></section>
 <div id="conversationDock" class="conversation-dock">
+<details id="decisionCenter" class="task-activity">
+<summary>Decisions &amp; health</summary>
+<p id="decisionCenterStatus" class="task-activity-note" role="status">Waiting for current information.</p>
+<button id="decisionCenterRefresh" type="button" class="quiet">Refresh decisions</button>
+<ol id="decisionCenterList" aria-label="Decisions and health"></ol>
+<p class="task-activity-note">Grouped attention items link to their existing review screens. Saved results do not establish that a remote computer is currently connected.</p>
+</details>
 <details id="taskActivity" class="task-activity" open>
 <summary><span class="task-activity-heading">Activity</span><span id="taskActivitySummary" role="status" aria-live="polite">Checking current work…</span></summary>
 <ol id="taskActivityList" aria-label="Recent Prometheus activity"></ol>
@@ -164,4 +171,4 @@
 <div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
 <footer><div class="footer-info"><span>Answers and code can need checking. Source excerpts retain their citations.</span><span id="saveStatus">Ready · nothing sent</span></div><div class="release-branding"><span>New Prometheus version <span id="runtimeVersion">Checking…</span></span><span>Created by Ricky Garcia</span></div></footer>
 </div>
-</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/activity-panel.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/project-agent.js"></script><script src="/runtime-settings.js"></script><script src="/remote-jobs.js"></script><script src="/scheduled-jobs.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script><script src="/self-improvement.js"></script><script src="/integrations.js"></script></body></html>
+</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/activity-panel.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/project-agent.js"></script><script src="/runtime-settings.js"></script><script src="/remote-jobs.js"></script><script src="/scheduled-jobs.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script><script src="/self-improvement.js"></script><script src="/integrations.js"></script><script src="/decision-center.js"></script></body></html>

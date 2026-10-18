@@ -252,6 +252,10 @@ class Interface:
         except (OSError, ValueError) as error:
             resource_status = {'mode': 'Unavailable', 'error': str(error)[:200]}
         with self.lock:
+            # The attention view reads this status cache without sampling again.
+            from copy import deepcopy
+            self._decision_resource_status = deepcopy(resource_status)
+            self._decision_resource_cached_at = time.monotonic()
             return {'version': __version__, 'hardware': hardware, 'resource_status': resource_status, 'state': self.state,
                     'busy': self.current is not None, 'closing': self.closing,
                     'job': self.current, 'job_background': self.jobs.get(self.current, {}).get('background', False),
@@ -975,6 +979,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/self-improvement.js': ('self-improvement.js', 'text/javascript; charset=utf-8'),
                   '/integrations.js': ('integrations.js', 'text/javascript; charset=utf-8'),
                   '/activity-panel.js': ('activity-panel.js', 'text/javascript; charset=utf-8'),
+                  '/decision-center.js': ('decision-center.js', 'text/javascript; charset=utf-8'),
                   '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
                   '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
                   '/scheduled-jobs.js': ('scheduled-jobs.js', 'text/javascript; charset=utf-8'),
@@ -1011,6 +1016,12 @@ class Handler(BaseHTTPRequestHandler):
                     data['providers'] = [integration_ui.provider(name).status(resource_root())
                                          for name in sorted(integration_ui.ADAPTERS)]
                 self.respond(200, data)
+            elif self.path == '/api/decision-center':
+                from .decision_center_ui import snapshot
+                cookie = self.owner_session()
+                self.respond(200, snapshot(app,
+                    grant_owner=lambda: access.grant_owner(cookie),
+                    binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/approvals/pending':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'approval': app.action_approvals.pending(owner=owner,
