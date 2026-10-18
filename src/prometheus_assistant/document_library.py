@@ -135,6 +135,11 @@ class OllamaEmbeddingClient:
         return f'ollama:{self.client.model}@{digest}:ctx2048'
 
     def embed(self, texts):
+        from .model_lifecycle import optional_scope
+        with optional_scope():
+            return self._embed(texts)
+
+    def _embed(self, texts):
         if not 1 <= len(texts) <= 2 or any(not isinstance(t, str) or len(t) > 4000 for t in texts):
             raise ValueError('Embedding requests must contain 1–2 bounded texts.')
         result = self.client._request('/api/embed', {
@@ -410,6 +415,9 @@ class DocumentLibrary:
                     if not stored:
                         semantic_status = 'not_indexed'
                     else:
+                        if not self.embedding_allowed():
+                            from .ollama import ModelDeferred
+                            raise ModelDeferred('Semantic lookup deferred by current resources; keyword results retained.')
                         raw = self.embedding_client.embed([query])
                         if not isinstance(raw, list) or len(raw) != 1:
                             raise ValueError('Invalid query embedding.')
@@ -435,8 +443,9 @@ class DocumentLibrary:
                             semantic_ranked.sort(key=lambda item: (-item[1], item[0]))
                             semantic_ranked = semantic_ranked[:60]
                             semantic_status = 'ready' if scanned else 'not_indexed'
-                except Exception:
-                    semantic_status = 'unavailable'
+                except Exception as error:
+                    from .ollama import ModelDeferred
+                    semantic_status = 'resource_deferred' if isinstance(error, ModelDeferred) else 'unavailable'
             scores, signals = {}, {}
             for index, row in enumerate(keyword, 1):
                 scores[row['id']] = 1 / (60 + index)

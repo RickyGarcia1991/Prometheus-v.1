@@ -208,6 +208,14 @@ def _prepare(candidate, packet):
 
 
 def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
+    from .model_lifecycle import task_scope
+    from .project_resources import inference_mode
+    with task_scope(mode_provider=lambda: inference_mode(app),
+                    optional=True, cancel_event=app.cancel_event):
+        return _run_review(app, candidate, measurement_packet, timeout_seconds=timeout_seconds)
+
+
+def _run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
     """One guarded model call, with deterministic assessment on every outcome.
 
     A completed response is only structurally validated advice. It is not model
@@ -323,8 +331,12 @@ def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
                 return finish('timed_out')
             if signal.memory.pressure:
                 return finish('resource_unavailable')
+        from .ollama import ModelDeferred
+        if isinstance(error, ModelDeferred):
+            return finish('resource_unavailable')
         if isinstance(error, TimeoutError):
             return finish('timed_out')
         return finish('runtime_unavailable')
     except (ValueError, TypeError, KeyError, UnicodeError, RecursionError):
         return finish('invalid_response' if result['attempted'] else 'invalid_input')
+

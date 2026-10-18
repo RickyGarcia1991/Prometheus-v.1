@@ -363,6 +363,10 @@ class Interface:
         self.next_maintenance = time.monotonic()+60
         if self.current is not None:
             return
+        from .project_resources import background_allowed
+        if not background_allowed(self)['allowed']:
+            self.maintenance_error = 'Background maintenance deferred by current resource mode.'
+            return
         errors = []
         source_due = update_due = research_due = False
         try:
@@ -490,10 +494,26 @@ class Interface:
         return {'id': job_id, 'state': 'running'}
 
     def _work(self, job_id, request, grant_owner=None, approval_binding=None):
+        from .model_lifecycle import task_scope
+        from .project_resources import inference_mode
+        background = bool(self.jobs.get(job_id, {}).get('background'))
+        def current_mode():
+            return inference_mode(self, foreground=not background)
+        with task_scope(mode_provider=current_mode,
+                        optional=background,
+                        cancel_event=self.cancel_event):
+            return self._work_owned(job_id, request, grant_owner, approval_binding)
+
+    def _work_owned(self, job_id, request, grant_owner=None, approval_binding=None):
         start = time.monotonic()
         with RequestTiming(started=start, clock=time.monotonic,
                            cancelled_exceptions=(GenerationCancelled,)) as timing:
             try:
+                from .project_resources import background_allowed
+                if (self.jobs.get(job_id, {}).get('background')
+                        and request['mode'] in {'check_sources', 'check_updates', 'idle_run'}
+                        and not background_allowed(self)['allowed']):
+                    raise GenerationCancelled('Background maintenance deferred by current resource mode; due work remains queued.')
                 # Only the single worker owns the reference cache and its read locks.
                 if self.cache_context is None and request['mode'] not in {'dictate', 'voice_prepare'}:
                     with stage('reference_cache'):

@@ -123,7 +123,8 @@ def test_incomplete_or_malformed_stream_raises_recoverable_model_error(events):
         client = OllamaClient(url, 'first:tiny', timeout=3)
         with pytest.raises(LocalModelError):
             client.chat_stream([{'role': 'user', 'content': 'Hello'}])
-        assert len(requests) == 1, 'A connection failure must not masquerade as malformed-stream validation.'
+        assert len([row for row in requests if 'messages' in row]) == 1, 'The malformed stream must be received exactly once.'
+        assert requests[-1] == {'model': 'first:tiny', 'keep_alive': 0}, 'Failed inference attempts bounded cleanup.'
 
 
 @pytest.mark.parametrize('scenario', ['before_headers', 'after_headers'])

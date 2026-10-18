@@ -244,13 +244,15 @@ class ProjectResources:
         if self.disk_probe is not None:
             self.disk_probe.select_project(root)
 
-    def specialist_snapshot(self):
-        """One fresh foreground sample; no disk helper, history or model action."""
+    def specialist_snapshot(self, *, foreground=True):
+        """One fresh work sample; no disk helper, history or model action."""
+        if type(foreground) is not bool:
+            raise ValueError('Foreground resource scope must be a boolean.')
         with self.lock:
             raw = self.probe.snapshot(force=True)
             if type(raw) is not dict:
                 raise ValueError('Resource sample unavailable')
-            self.scheduler.mode(self._signals(raw), now=self.clock(), foreground=True,
+            self.scheduler.mode(self._signals(raw), now=self.clock(), foreground=foreground,
                                 requested=self._requested_mode)
             self._clear_transient_mode_diagnostic()
             return {'observations': dict(raw), 'mode': {
@@ -359,3 +361,35 @@ def service(app):
         if not hasattr(app, 'project_resources'):
             app.project_resources = ProjectResources(app.data_root)
         return app.project_resources
+
+
+def inference_mode(app, *, foreground=True):
+    """Fresh lifecycle mode; restrictive owner intent overrides display dwell."""
+    mode = service(app).specialist_snapshot(foreground=foreground)['mode']
+    requested, effective = mode['requested'], mode['effective']
+    if effective == 'Critical Recovery':
+        return effective
+    if requested in {'Idle', 'Battery Saver', 'Critical Recovery'}:
+        return requested
+    # Automatic foreground work can still display Idle while its dwell expires.
+    if foreground and requested is None and effective == 'Idle' and mode['dwell_pending']:
+        return 'Balanced'
+    return effective
+
+
+def background_allowed(app):
+    """Fresh gate for approved network maintenance; Idle permits due research.
+
+    No due schedule is consumed here. Restrictive owner intent takes precedence
+    over display dwell. Unknown observations/mode fail closed.
+    """
+    try:
+        snapshot = service(app).specialist_snapshot(foreground=False)
+        mode = snapshot['mode']
+        requested, effective = mode['requested'], mode['effective']
+        valid = (requested is None or requested in Scheduler.MODES) and effective in Scheduler.MODES
+        allowed = valid and not ({requested, effective} & {'Battery Saver', 'Critical Recovery'})
+        return dict(allowed=bool(allowed), mode=mode,
+                    reason_code=None if allowed else 'resource_deferred')
+    except (OSError, ValueError, TypeError, AttributeError, KeyError):
+        return dict(allowed=False, mode=None, reason_code='resource_deferred')

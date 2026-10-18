@@ -3,12 +3,19 @@ import json
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
 import pytest
 from prometheus_assistant import ui_server, ui_workspace
 
 @pytest.fixture
 def app(tmp_path):
     value=ui_server.Interface(tmp_path/'memory.sqlite3')
+    # These tests exercise update scheduling/ownership, not the host's transient
+    # battery or memory pressure. Keep real resource admission with fixed inputs.
+    value.project_resources.probe = SimpleNamespace(snapshot=lambda **kwargs: dict(
+        total_ram_gib=16, available_ram_gib=8, free_disk_gib=20, cpu_percent=10,
+        battery_percent=80, plugged_in=True, low_memory=False, thermal_distress=False,
+        observed_at='fixture'))
     yield value
     value.close()
 

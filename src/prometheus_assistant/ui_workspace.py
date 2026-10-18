@@ -31,6 +31,12 @@ def validate(body):
 def library(app, *, semantic=True):
     from .document_library import DocumentLibrary, OllamaEmbeddingClient
     def allowed():
+        from .specialist_resources import admit
+        try:
+            if admit(app)['decision'] != 'run_local':
+                return False
+        except Exception:
+            return False
         free = detect_hardware().available_ram_gib
         return free is not None and free >= 2.75
     client = OllamaEmbeddingClient() if semantic else None
@@ -136,9 +142,10 @@ def execute(app, request):
     elif mode == 'document_list':
         result = {'documents': library(app).list_documents(include_history=True)}
     elif mode == 'document_index':
-        if (detect_hardware().available_ram_gib or 0) >= 2.75:
+        documents = library(app)
+        if documents.embedding_allowed():
             app.ensure_runtime()
-        result = library(app).index_missing_embeddings(limit=32)
+        result = documents.index_missing_embeddings(limit=32)
     elif mode == 'model_benchmark':
         from .model_benchmarks import run_benchmarks
         from .ui_server import installed_models

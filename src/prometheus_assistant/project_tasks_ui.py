@@ -336,7 +336,10 @@ def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, mo
 
 def run_idle(app, *, force=False):
     require_dispatch('ui.idle_run')
-    result = research_store(app).run_due(cancel_event=app.cancel_event, force=force, progress=app.progress)
+    from .project_resources import background_allowed
+    admission = background_allowed(app)
+    result = (research_store(app).run_due(cancel_event=app.cancel_event, force=force, progress=app.progress)
+              if admission['allowed'] else dict(state='resource_deferred', resource_admission=admission))
     status = research_store(app).status()
     return {'reply': 'Idle public research: ' + result['state'] + '.',
             'details': {'idle_research': {**status, 'result': result}},
