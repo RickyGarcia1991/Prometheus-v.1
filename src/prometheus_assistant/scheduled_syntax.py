@@ -174,14 +174,20 @@ class ScheduledSyntax:
             row=self.approvals.consume(owner=self.queue.owner,binding=self.binding,session=session,
                 approval_id=approval_id,fingerprint=fingerprint,decision=decision,policy_revision=revision())
             if decision=='reject': return dict(state='rejected',approval_resolved=row['id'],job_id=row['payload']['request']['job_id'])
-            if self.cancelled(): return dict(state='cancelled',approval_resolved=row['id'],job_id=row['payload']['request']['job_id'])
-            adapter=self._adapter(row['payload']['target']) # An offline destination can wait.
-            if adapter is not None: getattr(adapter,'authorize',lambda req:None)(row['payload']['request'])
-            now=self.clock()
-            record=dict(**row['payload'],policy_revision=row['policy_revision'],approval_id=row['id'],
-                fingerprint=row['fingerprint'],approved_at=now,expires_at=now+WAIT_SECONDS)
-            saved=self.queue.enqueue(record,now=now)
-            return {**public_job(saved),'approval_resolved':row['id']}
+            from .capability_outcome_hooks import tracking, observe_worker, attach
+            req = row['payload']['request']
+            with tracking(self.approvals, owner, row, request=req) as outcome:
+                if self.cancelled():
+                    result = dict(state='cancelled',approval_resolved=row['id'],job_id=req['job_id'])
+                    return attach(result, observe_worker(outcome, req, result))
+                adapter=self._adapter(row['payload']['target']) # An offline destination can wait.
+                if adapter is not None: getattr(adapter,'authorize',lambda req:None)(req)
+                now=self.clock()
+                record=dict(**row['payload'],policy_revision=row['policy_revision'],approval_id=row['id'],
+                    fingerprint=row['fingerprint'],approved_at=now,expires_at=now+WAIT_SECONDS)
+                saved=self.queue.enqueue(record,now=now)
+                result={**public_job(saved),'approval_resolved':row['id']}
+                return attach(result, observe_worker(outcome, req, result))
 
     def _cancel(self, row, reason):
         now=self.clock()
@@ -189,6 +195,20 @@ class ScheduledSyntax:
         return public_job(result)
 
     def run_one(self, job_id=None, *, recover=False):
+        result = self._run_one(job_id, recover=recover)
+        # Queue claims and receipts retain their existing authority/recovery
+        # contract. This observer only reads the final durable native row.
+        if result is not None:
+            from .capability_outcome_hooks import observe_queued, attach
+            try:
+                observed = observe_queued(self.approvals, self.queue.owner,
+                                           self.queue.get(result['job_id']))
+            except Exception:
+                observed = dict(recorded=False, error='Capability history unavailable; native job result is retained.')
+            attach(result, observed)
+        return result
+
+    def _run_one(self, job_id=None, *, recover=False):
         with self.grant_owner() as owner:
             if owner!=self.queue.owner: raise ValueError('Queue belongs to another owner.')
             require_dispatch('ui.scheduled_syntax_recover' if recover else 'ui.scheduled_syntax_tick')

@@ -4,6 +4,7 @@ import re
 from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .ollama import GenerationCancelled
+from .capability_outcome_hooks import tracking, gap_notice
 
 MODES = {'runtime_status', 'runtime_config'}
 FIELDS = {'runtime_backend'}
@@ -72,10 +73,14 @@ def execute(app, request, *, grant_owner=None, binding=None):
                     'approval_resolved': row['id'], 'runtime_settings': status(app)})
             require_dispatch('ui.runtime_config')
             payload = row['payload']
-            preferences(app).configure(payload['backend'], payload['expected_revision'])
+            with tracking(app.action_approvals, owner, row) as outcome:
+                saved = preferences(app).configure(payload['backend'], payload['expected_revision'])
+                observed = outcome.observe('settings_saved', evidence={'saved': True,
+                    'revision': saved['revision'], 'cpu': saved['backend']=='cpu'})
         return _result(app, request, {'reply': 'Runtime preference saved for future launches on this computer. '
-            'An existing server keeps its current backend. Automatic restores the launcher defaults after another review.',
-            'approval_resolved': row['id'], 'runtime_settings': status(app)})
+            'An existing server keeps its current backend. Automatic restores the launcher defaults after another review.' + gap_notice(observed),
+            'approval_resolved': row['id'], 'runtime_settings': status(app),
+            **({'decision_outcome': observed} if observed is not None else {})})
     if mode == 'approval_decision':
         return None
     if mode == 'runtime_status':

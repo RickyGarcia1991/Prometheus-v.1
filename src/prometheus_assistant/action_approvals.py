@@ -121,9 +121,17 @@ class ActionApprovals:
             raise ValueError('Decision history is not configured.')
         rows = self.decision_history.history(owner,limit=limit)
         events = self._outcomes().read()
+        capability_events = self.capability_outcomes().read()
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
+            row['capability_outcomes'] = [event for o,i,f,event in capability_events
+                                         if o==owner and i==row['id'] and f==row['fingerprint']]
         return rows
+
+    def capability_outcomes(self):
+        if self.decision_history is None:raise ValueError('Decision history is not configured.')
+        from .capability_outcomes import CapabilityOutcomes
+        return CapabilityOutcomes(self.decision_history)
 
     def _outcomes(self):
         if self.decision_history is None:raise ValueError('Decision history is not configured.')

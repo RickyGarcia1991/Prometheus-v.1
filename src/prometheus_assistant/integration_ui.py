@@ -12,6 +12,7 @@ from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .hardware import resource_root
 from .ollama import GenerationCancelled
+from .capability_outcome_hooks import tracking, gap_notice
 
 MODES = {'integration', 'integration_access'}
 FIELDS = {'adapter', 'operation', 'arguments', 'task_grant', 'task'}
@@ -147,12 +148,14 @@ def _prepare_dispatch(app, grant_owner, owner):
                 app.jobs[app.current]['integration_active'] = True
 
 
-def _response(app, request, adapter, operation, data, *, grant_id=None, resolved=None):
+def _response(app, request, adapter, operation, data, *, grant_id=None, resolved=None, outcome=None):
     _check_cancel(app)
     details = {'integration': {'adapter': adapter, 'operation': operation, 'result': data},
                'task_grant': grant_id}
     if resolved:
         details['approval_resolved'] = resolved
+    if outcome is not None:
+        details['decision_outcome'] = outcome
     # Bounded provider output is evidence, not further instructions or approval.
     from .ui_server import readable_result
     details['reply'] = readable_result(data)
@@ -165,6 +168,7 @@ def _response(app, request, adapter, operation, data, *, grant_id=None, resolved
         elif operation == 'recall' and isinstance(result.get('results'), list):
             details['reply'] = '\n\n'.join(str(row.get('content', '')) + '\nMemory ID: ' + str(row.get('id', ''))
                                           for row in result['results']) or 'No matching memories in this project.'
+    details['reply'] += gap_notice(outcome)
     return _result(app, request, details, LABELS[adapter])
 
 
@@ -262,16 +266,22 @@ def execute(app, request, *, grant_owner=None, binding=None):
                 return _result(app, request, {'reply': 'The integration proposal was rejected. No action ran.',
                     'approval_resolved': row['id']}, 'Proposal rejected')
             if row['kind'] == 'integration_access':
-                grant = app.grants.issue_task(row['payload']['task'], owner=owner)
+                with tracking(app.action_approvals, owner, row) as outcome:
+                    grant = app.grants.issue_task(row['payload']['task'], owner=owner)
+                    observed = outcome.observe('access_granted', evidence={'granted': True})
                 with app.lock:
                     app.integration_tasks[(owner, binding, request['session'])] = grant['id']
                 return _result(app, request, {'reply': 'Approved. Continuing access is active for this task. '
-                    'You can revoke it in Integrations.', 'task_grant': grant, 'approval_resolved': row['id']},
+                    'You can revoke it in Integrations.' + gap_notice(observed), 'task_grant': grant, 'approval_resolved': row['id'],
+                    **({'decision_outcome': observed} if observed is not None else {})},
                     'Task access approved')
         payload = row['payload']
-        _prepare_dispatch(app, grant_owner, owner)
-        data = _call(app, payload['adapter'], payload['operation'], payload['arguments'])
-        return _response(app, request, payload['adapter'], payload['operation'], data, resolved=row['id'])
+        with tracking(app.action_approvals, owner, row) as outcome:
+            _prepare_dispatch(app, grant_owner, owner)
+            data = _call(app, payload['adapter'], payload['operation'], payload['arguments'])
+            observed = outcome.observe('adapter_returned', evidence={'returned': True})
+        return _response(app, request, payload['adapter'], payload['operation'], data,
+                         resolved=row['id'], outcome=observed)
     if pending:
         raise ValueError('Approve or reject your existing proposal before preparing another.')
     if mode == 'integration_access' or task_command:

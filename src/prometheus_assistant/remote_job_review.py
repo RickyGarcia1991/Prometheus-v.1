@@ -4,6 +4,7 @@ Boundary callbacks are trusted application wiring, never request parameters.
 dispatch must authenticate returned receipts; this orchestration does not do so.
 No transport, key storage, UI or installation is implemented here.
 """
+from contextlib import ExitStack
 import hashlib
 import math
 import time
@@ -11,6 +12,7 @@ import time
 from .application_policy import require_dispatch, revision
 from .remote_job_envelope import seal_request
 from .remote_job_protocol import normalize_request, validate_receipt
+from .capability_outcome_hooks import tracking, observe_worker, attach
 
 
 class RemoteJobReview:
@@ -98,6 +100,15 @@ class RemoteJobReview:
                     if entry['state']=='unconfirmed' else [])
 
     def decide(self, *, session, approval_id, fingerprint, decision):
+        observation = {}
+        with ExitStack() as stack:
+            result = self._decide(session=session, approval_id=approval_id,
+                fingerprint=fingerprint, decision=decision, stack=stack, observation=observation)
+            if observation:
+                attach(result, observe_worker(observation['outcome'], observation['request'], result))
+            return result
+
+    def _decide(self, *, session, approval_id, fingerprint, decision, stack, observation):
         """Consume exact owner approval, recheck target, then claim before signing.
 
         Signing/dispatch/persistence uncertainty leaves an unconfirmed claim.
@@ -112,6 +123,8 @@ class RemoteJobReview:
             req = row['payload']['request']
             if decision == 'reject':
                 return self._result(req,dict(state='rejected',receipt=None),row['id'])
+            outcome = stack.enter_context(tracking(self.approvals, owner, row, request=req))
+            observation.update(outcome=outcome, request=req)
             require_dispatch('remote.action')
             target = self._target(req)
             if target != row['payload']['target']:

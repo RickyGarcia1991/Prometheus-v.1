@@ -23,9 +23,48 @@ function events(row){
  return rows;
 }
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);}
+const capabilityLabels={started:'Capability execution started',settings_saved:'Settings saved; future behavior has not been verified',access_granted:'Access issued; this does not confirm a provider action',adapter_returned:'Integration adapter returned; result correctness is not independently verified',waiting:'Waiting at the approved destination; no execution confirmed',deferred:'Execution deferred',unconfirmed:'Execution unconfirmed; do not infer success or repeat execution',unknown:'Outcome unknown',cancelled:'Waiting job cancelled',expired:'Waiting permission expired',checks_passed:'Native worker checks passed',checks_failed:'Native worker checks found failures',tool_failed:'Verification tool failed; this is not a code-defect finding'};
+const capabilityTerminal=new Set(['settings_saved','access_granted','adapter_returned','cancelled','expired','checks_passed','checks_failed','tool_failed']);
+function capabilityEvents(row){
+ const rows=row.capability_outcomes===undefined?[]:row.capability_outcomes;
+ if(!Array.isArray(rows)||rows.length>16||row.decision!=='approve'&&rows.length)throw Error('Invalid capability outcomes');
+ const asyncKind=['remote_syntax','scheduled_syntax'].includes(row.kind),allowed=['started','unknown'];
+ if(asyncKind)allowed.push('waiting','deferred','unconfirmed','cancelled','expired','checks_passed','checks_failed','tool_failed');
+ else if(['runtime_config','idle_config'].includes(row.kind))allowed.push('settings_saved');
+ else if(row.kind==='integration_access')allowed.push('access_granted');
+ else if(row.kind==='integration')allowed.push('adapter_returned');
+ else if(rows.length)throw Error('Invalid capability kind');
+ if(rows.length&&events(row).length)throw Error('Mixed capability records');
+ const ids=new Set(),fields=['event_id','phase','observed_at','status','job_id','request_digest','checks','evidence_sha256'];let previous=null;
+ for(const event of rows){
+  if(!event||typeof event!=='object'||Object.keys(event).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(event,k))||typeof event.event_id!=='string'||!/^[a-f0-9]{32}$/.test(event.event_id)||ids.has(event.event_id)||!allowed.includes(event.status)||!['started','observed'].includes(event.phase)||(event.phase==='started')!==(event.status==='started')||!Number.isFinite(event.observed_at)||event.observed_at<0||event.observed_at>253402300799)throw Error('Invalid capability event');
+  if(asyncKind?(typeof event.job_id!=='string'||!/^[a-f0-9]{32}$/.test(event.job_id)||typeof event.request_digest!=='string'||!/^[a-f0-9]{64}$/.test(event.request_digest)):(event.job_id!==''||event.request_digest!==''))throw Error('Invalid capability binding');
+  if(previous?(event.phase==='started'||capabilityTerminal.has(previous.status)||event.job_id!==previous.job_id||event.request_digest!==previous.request_digest):event.phase!=='started')throw Error('Invalid capability sequence');
+  if(event.evidence_sha256!==null&&(typeof event.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(event.evidence_sha256)))throw Error('Invalid evidence digest');
+  const c=event.checks,names=['planned','executed','passed','failed','cancelled','timed_out'];
+  if(c!==null&&(typeof c!=='object'||Object.keys(c).length!==names.length||!names.every(k=>Number.isInteger(c[k])&&c[k]>=0&&c[k]<=64)||c.executed>c.planned||c.passed+c.failed+c.cancelled+c.timed_out!==c.executed))throw Error('Invalid capability counts');
+  if(['started','unknown'].includes(event.status)&&(c!==null||event.evidence_sha256!==null))throw Error('Unobserved capability evidence');
+  if(['checks_passed','checks_failed'].includes(event.status)){
+   if(!c||!event.evidence_sha256||c.planned===0||(event.status==='checks_passed')!==(c.executed===c.planned&&c.passed===c.planned)||event.status==='checks_failed'&&c.failed===0)throw Error('Contradictory capability checks');
+  }else if(c!==null)throw Error('Unexpected capability checks');
+  if(capabilityTerminal.has(event.status)&&event.evidence_sha256===null)throw Error('Missing native evidence');
+  ids.add(event.event_id);previous=event;
+ }
+ return rows;
+}
+function capabilityTimeline(item,rows){
+ const ordered=document.createElement('ol');item.append(ordered);
+ for(const event of rows){const li=document.createElement('li');paragraph(li,new Date(event.observed_at*1000).toLocaleString()+' · '+capabilityLabels[event.status]);
+  if(event.checks){const c=event.checks;paragraph(li,`Native worker checks: planned ${c.planned}, executed ${c.executed}, passed ${c.passed}, failed ${c.failed}, cancelled ${c.cancelled}, timed out ${c.timed_out}.`);}
+  ordered.append(li);
+ }
+ if(rows[rows.length-1].phase==='started')paragraph(item,'Execution outcome unconfirmed. Reading history cannot resume or repeat work.');
+ paragraph(item,'Recorded native observations only; not model acceptance or new execution authority.');
+}
 function timeline(item,row){
  const rows=events(row);
  if(row.decision!=='approve'){paragraph(item,'This decision authorized no execution.');return;}
+ const capabilities=capabilityEvents(row);if(capabilities.length){capabilityTimeline(item,capabilities);return;}
  if(!rows.length){paragraph(item,'No linked execution evidence. Approval alone does not confirm execution or success.');return;}
  const timeline=document.createElement('ol');item.append(timeline);
  for(const event of rows){const li=document.createElement('li');paragraph(li,new Date(event.observed_at*1000).toLocaleString()+' · '+(event.phase==='undo_started'?'Manual restoration started':event.status==='passed'&&(!event.checks||event.checks.executed===0)?'Execution reported passed, but native check evidence is unavailable; behavior is unverified':statuses[event.status]));
@@ -46,7 +85,7 @@ async function load(){
   const data=await api('/api/decisions/history');if(version!==generation||!ready()||!box.open)return;
   if(!data||data.schema_version!==1||data.read_only!==true||!Array.isArray(data.items)||data.items.length>50)throw Error('Invalid history');
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
-  for(const row of data.items)events(row);
+  for(const row of data.items){events(row);capabilityEvents(row);}
   list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}timeline(item,row);list.append(item);}
   status.textContent=data.items.length+' saved decisions. History does not authorize or resume work.';
  }catch(error){if(version===generation)clear('Decision history unavailable. No historical record authorizes work.');}

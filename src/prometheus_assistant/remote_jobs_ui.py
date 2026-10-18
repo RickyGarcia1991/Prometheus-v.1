@@ -77,7 +77,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
             approval_id=pending['id'] if mode=='chat' else request['approval_id'],
             fingerprint=pending['fingerprint'] if mode=='chat' else request['approval_fingerprint'],decision=decision)
         result['job_id'] = req['job_id']
-        details = dict(reply='Remote syntax check: '+result['state']+'.',remote_syntax=result,
+        from .capability_outcome_hooks import gap_notice
+        details = dict(reply='Remote syntax check: '+result['state']+'.'+gap_notice(result.get('decision_outcome')),remote_syntax=result,
                        approval_resolved=result['approval_resolved'])
     elif mode == 'remote_syntax_info':
         require_dispatch('ui.remote_syntax_info')
@@ -96,7 +97,9 @@ def execute(app, request, *, grant_owner=None, binding=None):
             try: result = gateway.recover(req,ledger)
             except Exception:
                 result = dict(state='unconfirmed',receipt=None)
-            details = dict(reply='Worker recovery: '+result['state']+'. No execution was retried.',
+            from .capability_outcome_hooks import reconcile_worker, attach, gap_notice
+            attach(result, reconcile_worker(app.action_approvals, owner, req, result))
+            details = dict(reply='Worker recovery: '+result['state']+'. No execution was retried.'+gap_notice(result.get('decision_outcome')),
                 remote_syntax={**result,'job_id':req['job_id'],
                     'evidence':validate_receipt(req,result['receipt']) if result.get('receipt') else None})
     else:

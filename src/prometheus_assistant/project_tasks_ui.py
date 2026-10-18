@@ -436,10 +436,17 @@ def execute(app, request, *, grant_owner=None, binding=None):
                             delegated=original.get('edit_policy') == 'delegated', resolved=row['id'],
                             decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         _verify(app, grant_owner, owner)
-        research_store(app).configure(original['prompt'], original['enabled'],
-                                      original.get('interval_minutes', 60), owner=owner)
-        return _result(app, original, {'reply': 'Idle public research is configured.',
-            'approval_resolved': row['id'], 'idle_research': research_store(app).status()},
+        from .capability_outcome_hooks import tracking, gap_notice
+        with tracking(app.action_approvals, owner, row) as outcome:
+            configured = research_store(app).configure(original['prompt'], original['enabled'],
+                                          original.get('interval_minutes', 60), owner=owner)
+            settings = configured['settings']
+            observed = outcome.observe('settings_saved', evidence={'saved': True,
+                'revision': settings['revision'], 'enabled': settings['enabled'],
+                'interval_minutes': settings['interval_minutes']})
+        return _result(app, original, {'reply': 'Idle public research is configured.' + gap_notice(observed),
+            'approval_resolved': row['id'], 'idle_research': configured,
+            **({'decision_outcome': observed} if observed is not None else {})},
             'Idle public research', 'idle_config')
     if mode == 'idle_status':
         return {'reply': 'Current idle public research settings and retained findings.',

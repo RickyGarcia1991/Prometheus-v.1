@@ -15,6 +15,20 @@ Owner history can show up to 16 ordered immutable outcome events per decision fo
 
 Native check summaries show planned, executed, passed, failed, cancelled and timed-out counts. They describe recorded checks, not model acceptance or general behavioral correctness. Missing checks, zero executed checks, and applied-without-checks outcomes remain unverified. Failed checks remain visible even when automatic rollback restored the original content; execution outcome and restoration are separate facts.
 
-Manual undo links only to previously recorded edit identifiers. Interrupted undo is restoration unconfirmed; failed restoration remains visible alongside the original execution outcome. These historical events survive restart without becoming approval, replay, recovery or execution controls. Denied and request-changes decisions authorize no execution. Other capability outcome links and older unlinked edits are outside this bounded scope.
+Manual undo links only to previously recorded edit identifiers. Interrupted undo is restoration unconfirmed; failed restoration remains visible alongside the original execution outcome. These historical events survive restart without becoming approval, replay, recovery or execution controls. Denied and request-changes decisions authorize no execution. Older unlinked edits remain unlinked.
 
 Malformed, contradictory or unavailable evidence is reported as unavailable, never as an empty successful history. No raw project paths, source, commands or model content are rendered in the outcome timeline. All history text is read-only and literal.
+
+## Other reviewed capabilities
+
+Dev45 adds exact decision links for runtime startup preferences, idle research configuration, integration access, individual integration calls, direct remote syntax checks, and scheduled syntax/lint jobs. Each uses a separate bounded CapabilityLinks database. Existing decisions and project-outcome databases are not migrated or rewritten.
+
+A settings save records the committed configuration, not execution of research or a change to an already running model server. Issuing integration access is distinct from performing an integration action. An adapter response means the adapter returned; it does not independently verify the response's meaning or truth. Unknown effects remain unknown after an exception.
+
+Worker observations bind the exact job and normalized request digest as well as the approved owner, decision and fingerprint. Waiting, cancellation, expiration, uncertainty, tool failure and completed native checks remain distinct. Exact trusted receipts can complete a previously linked uncertain result after restart. Reading decision history cannot recover, replay, sign, dispatch or create a job. Older jobs with no capability start remain unlinked.
+
+The separate scheduled-job status operation already expires waiting permissions. It also reconciles the existing local queue state into already-linked capability evidence. This can append a cancellation, expiration or retained receipt locally, but does not call a worker or submit work. The decision-history endpoint itself remains strictly read-only.
+
+New execution requires the start record to be durable. If recording the later observation fails, the native result remains intact and the response reports the history gap; repeating the action is not a repair. Semantic duplicate observations do not fill history. Terminal observations are immutable, with at most 16 events per decision and a bounded database without silent eviction. Outcome storage contains only fixed statuses, bounded counts, exact opaque identities and a digest of selected native facts; no source, credentials or provider output.
+
+External application promotion and its activation/health/rollback receipts are a remaining lifecycle boundary. A promotion request is not treated as proof that a release was activated successfully.

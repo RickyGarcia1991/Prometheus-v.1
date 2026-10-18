@@ -7,6 +7,7 @@ import time
 from types import SimpleNamespace
 
 from .action_approvals import decision_text
+from .capability_outcome_hooks import gap_notice
 from .application_policy import require_dispatch
 from .remote_job_envelope import seal_request
 from .remote_job_protocol import LINT_OPERATION
@@ -94,10 +95,15 @@ def status(app, *, grant_owner, binding):
     with grant_owner() as owner:
         store=queue(app,owner)
         store.expire(now=getattr(app,'_scheduled_syntax_clock',time.time)())
-        rows=[public_job(row) for row in store.list()]
+        rows=[observed_job(app, owner, row) for row in store.list()]
     arm(app,grant_owner,binding)
     return dict(jobs=rows,auto_resume='Approved waiting work resumes while this owner is unlocked and the app is idle.',
         interval_seconds=30)
+
+
+def observed_job(app, owner, row):
+    from .capability_outcome_hooks import observe_queued, attach
+    return attach(public_job(row), observe_queued(app.action_approvals, owner, row))
 
 
 def idle(app):
@@ -153,7 +159,7 @@ def execute(app,request,*,grant_owner=None,binding=None):
         if result['state']=='waiting':
             app.progress('Checking resources for the exact approved destination')
             result=controller.run_one(result['job_id']) or result
-        details=dict(reply='Scheduled verification: '+result['state']+'.',scheduled_syntax=result,approval_resolved=resolved)
+        details=dict(reply='Scheduled verification: '+result['state']+'.'+gap_notice(result.get('decision_outcome')),scheduled_syntax=result,approval_resolved=resolved)
     elif mode=='scheduled_syntax_prepare':
         if pending:raise ValueError('Approve or deny the existing review first.')
         require_dispatch('ui.scheduled_syntax_prepare')
@@ -174,13 +180,13 @@ def execute(app,request,*,grant_owner=None,binding=None):
         return {**saved,'action':mode}
     elif mode=='scheduled_syntax_cancel':
         require_dispatch('ui.scheduled_syntax_cancel')
-        with current_owner():result=public_job(store.cancel(request['scheduled_job_id'],now=clock()))
-        details=dict(reply='Waiting job: '+result['state']+'.',scheduled_syntax=result)
+        with current_owner():result=observed_job(app,owner,store.cancel(request['scheduled_job_id'],now=clock()))
+        details=dict(reply='Waiting job: '+result['state']+'.'+gap_notice(result.get('decision_outcome')),scheduled_syntax=result)
     else:
         app.progress('Recovering the original result without replay' if mode=='scheduled_syntax_recover' else 'Checking one approved waiting job')
         result=controller.run_one(request.get('scheduled_job_id'),recover=mode=='scheduled_syntax_recover')
-        details=dict(reply='Approved queue checked.',scheduled_syntax=result,
-            scheduled_queue=[public_job(row) for row in store.list()])
+        details=dict(reply='Approved queue checked.'+gap_notice(result.get('decision_outcome') if result else None),scheduled_syntax=result,
+            scheduled_queue=[observed_job(app,owner,row) for row in store.list()])
         if mode=='scheduled_syntax_tick':
             return dict(action=mode,label='Approved waiting work',reply='',details=details)
     with current_owner():
