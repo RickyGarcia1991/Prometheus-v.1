@@ -101,7 +101,7 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
         if state in ('failed', 'error'):
             add('activity','task','Recent activity reports a failed task.','warning','failed','activity')
         elif state == 'review':
-            add('activity','task','Recent activity needs review.','warning','review','activity')
+            add('activity','task','Recent activity prepared a review; consult the current proposal status.','info','review','activity')
         elif state in ('running', 'working', 'queued'):
             add('activity','task','Recent activity includes work in progress.','info','active','activity')
         elif state in ('done', 'completed', 'success'):

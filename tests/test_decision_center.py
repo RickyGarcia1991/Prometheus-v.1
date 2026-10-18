@@ -121,9 +121,20 @@ def test_critical_mode_visible_even_without_sample_timestamp():
     assert row['severity']=='critical' and row['freshness']=='unknown'
 
 
-def test_recent_review_is_attention_not_unknown():
-    result=snapshot(activity=[{'state':'review','stage':'private details'}])
+def test_historical_review_without_current_proposal_is_informational():
+    result=snapshot(approval=None,activity=[{'state':'review','stage':'private details'}])
     row=next(row for row in result['items'] if row['source']=='activity')
-    assert row['state']=='review' and row['severity']=='warning'
-    assert row['label']=='Recent activity needs review.'
+    assert row['state']=='review' and row['severity']=='info'
+    assert row['label']=='Recent activity prepared a review; consult the current proposal status.'
+    assert result['counts']['warning']==0 and result['counts']['critical']==0
+    assert not any(item['state']=='pending' for item in result['items'])
     assert 'private' not in json.dumps(result)
+
+
+def test_current_proposal_remains_separate_from_historical_review():
+    result=snapshot(approval={'kind':'project_edit'},activity=[{'state':'review'}])
+    pending=[row for row in result['items'] if row['state']=='pending']
+    history=[row for row in result['items'] if row['source']=='activity']
+    assert len(pending)==len(history)==1
+    assert pending[0]['source']=='approvals' and pending[0]['navigation']=='project'
+    assert history[0]['severity']=='info' and history[0]['navigation']=='activity'
