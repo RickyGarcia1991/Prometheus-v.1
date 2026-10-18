@@ -4,12 +4,12 @@ const element = id => document.getElementById(id);
 const panel = element('workbench');
 const main = panel.closest('main');
 let state = {busy: false, online: false, closed: false};
-let preparing = false, pending = null, selectedProject = '', opened = null, reviewed = null, lastEdit = null;
+let preparing = false, pending = null, selectedProject = '', opened = null, reviewed = null, lastEdit = null, diskChanged = false;
 
 function message(text) { element('workspaceStatus').textContent = text; }
 function dirty() { return !!opened && element('codeEditor').value !== opened.content; }
 function projectMatches() { return !!selectedProject && element('projectRoot').value.trim() === selectedProject; }
-function openedFileMatches() { return projectMatches() && !!opened && element('codeFile').value === opened.path; }
+function openedFileMatches() { return projectMatches() && !diskChanged && !!opened && element('codeFile').value === opened.path; }
 function textNode(tag, text, className) {
   const node = document.createElement(tag); node.textContent = text;
   if (className) node.className = className;
@@ -36,7 +36,7 @@ function controls() {
     element(id).querySelectorAll('input, select').forEach(input => { input.disabled = locked; });
   });
   const fileReady = openedFileMatches();
-  element('codeEditor').disabled = locked || !fileReady;
+  element('codeEditor').disabled = locked || !projectMatches() || !opened || element('codeFile').value !== opened.path;
   element('readCode').disabled = locked || !projectMatches() || !element('codeFile').value;
   element('previewCode').disabled = locked || !fileReady || !dirty();
   element('applyCode').disabled = locked || !fileReady || !reviewed || reviewed.content !== element('codeEditor').value;
@@ -46,6 +46,7 @@ function controls() {
   element('importDocument').disabled = locked || !element('documentFile').files.length;
   element('enableWatch').disabled = locked || !element('watchProvider').value;
   element('disableWatch').disabled = locked || !element('watchProvider').value;
+  window.PrometheusProjectAgent?.workspaceChanged();
 }
 function showWorkbench(show) {
   panel.hidden = !show; main.classList.toggle('workspace-open', show);
@@ -87,7 +88,7 @@ function preserveDraft() {
 }
 function invalidatePreview() {
   reviewed = null; element('codeDiffPanel').hidden = true;
-  element('codeFileStatus').textContent = opened ? opened.path + (dirty() ? ' · unapplied editor changes' : ' · matches opened file') : '';
+  element('codeFileStatus').textContent = opened ? opened.path + (diskChanged ? ' · changed on disk; reopen to refresh' : dirty() ? ' · unapplied editor changes' : ' · matches opened file') : '';
   controls();
 }
 function syncProviders() {
@@ -338,6 +339,27 @@ element('restoreCheck').onclick = () => {
   action({mode: 'restore_check', backup_path, destination});
 };
 
+function checkMeasurements(data) {
+  if (!data || data.scope !== 'direct_process') return '\n\nMeasurements unavailable.';
+  const number = (value, unit, scale = 1) => typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? (value * scale).toFixed(1) + ' ' + unit : 'unavailable';
+  const lines = ['\n\nMeasured resources:',
+    'Direct process: ' + number(data.ram_gib, 'MiB peak working set', 1024) +
+    '; ' + number(data.cpu_seconds, 'CPU seconds') + '; ' + number(data.io_mib, 'MiB OS transfers') + '.'];
+  const job = data.job_metrics;
+  if (job) {
+    const count = Number.isSafeInteger(job.total_processes) && job.total_processes >= 0
+      ? job.total_processes + ' associated processes' : 'process count unavailable';
+    lines.push('Windows job: ' + number(job.peak_commit_gib, 'MiB peak committed memory', 1024) +
+      '; ' + number(job.cpu_seconds, 'CPU seconds') + '; ' + number(job.io_mib, 'MiB OS transfers') +
+      '; ' + count + '.');
+    lines.push(job.snapshot_complete === true ? 'No active associated processes at the final snapshot.'
+      : 'Job snapshot incomplete or unavailable.');
+    lines.push('Coverage may exclude descendants created before assignment. Committed memory is separate from working-set RAM.');
+  }
+  lines.push('OS transfers include non-disk I/O; not physical disk traffic.');
+  return lines.join('\n');
+}
 window.addEventListener('prometheus-busy', event => { state = {...state, ...event.detail}; controls(); });
 window.addEventListener('prometheus-partial', event => {
   if (pending?.mode === 'code_tests') element('codeTestOutput').textContent = String(event.detail?.text || '').slice(0, 32000);
@@ -355,6 +377,10 @@ window.addEventListener('prometheus-result', event => {
       ? ' Your draft is still in the editor. Copy it before discarding changes and reopening the current file.' : ''));
     pending = null; controls(); return;
   }
+  if (result.origin !== 'observed' && (data.project_edit || ['project_task', 'project_edit'].includes(data.approval?.kind))) {
+    message(data.project_edit ? 'Project task finished. Review its checks and verification evidence below.'
+      : 'Project review ready. No proposed changes have been applied.');
+  }
   if (mode === 'document_list') { renderDocuments(data.documents || []); message('Document versions refreshed.'); }
   else if (mode === 'documents') { renderSearch(data); message('Document search completed.'); }
   else if (mode === 'document_import') {
@@ -363,7 +389,7 @@ window.addEventListener('prometheus-result', event => {
   } else if (mode === 'document_index') { message(`Meaning index: ${data.status} · ${data.indexed || 0} passages indexed · ${data.pending || 0} pending.`); }
   else if (mode === 'code_open') {
     selectedProject = data.project; element('projectRoot').value = selectedProject; element('project').value = selectedProject;
-    opened = reviewed = null; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
+    opened = reviewed = null; diskChanged = false; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
     element('codeFile').replaceChildren(new Option('Choose a source file…', ''));
     for (const file of data.files || []) element('codeFile').add(new Option(`${file.path} · ${file.size} bytes`, file.path));
     element('testPreset').replaceChildren();
@@ -374,6 +400,7 @@ window.addEventListener('prometheus-result', event => {
     const available = [...element('testPreset').options].find(option => !option.disabled); if (available) element('testPreset').value = available.value;
     message(`Project opened · ${(data.files || []).length} supported files listed.`);
   } else if (mode === 'code_read') {
+    diskChanged = false;
     element('codeEditor').value = data.content; opened = {path: data.path, sha256: data.sha256, content: element('codeEditor').value};
     element('codeFile').value = data.path; invalidatePreview(); message('File opened. Your edits are held in the editor until applied.');
   } else if (mode === 'code_preview') {
@@ -387,11 +414,11 @@ window.addEventListener('prometheus-result', event => {
     if (data.edit_id) lastEdit = {id: data.edit_id, project: selectedProject, file: data.path};
     invalidatePreview(); message(data.changed ? 'Reviewed edit applied. A verified backup is available for undo.' : 'No file changes were needed.');
   } else if (mode === 'code_undo') {
-    lastEdit = null; opened = reviewed = null; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
+    lastEdit = null; opened = reviewed = null; diskChanged = false; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
     message('Saved bytes restored. Open the file again to review the restored content.');
   } else if (mode === 'code_tests') {
     const status = data.cancelled ? 'Cancelled' : data.timed_out ? 'Timed out' : data.exit_code === 0 ? 'Passed' : 'Failed';
-    element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}`;
+    element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}` + checkMeasurements(data.resource_measurements);
     message('Project check ' + status.toLowerCase() + '.');
   } else if (mode === 'maintenance') { renderReadiness(data); message('Readiness refreshed. Physical checks remain separate from device detection.'); }
   else if (mode === 'health_check') { message(renderHealth(data)); }
@@ -414,6 +441,21 @@ element('prompt').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229 && !state.busy && element('prompt').value.trim()) showWorkbench(false);
 }, true);
 new MutationObserver(syncProviders).observe(element('provider'), {childList: true});
+window.PrometheusWorkspace = {
+  context: () => ({project: projectMatches() ? selectedProject : '', dirty: dirty(), file: opened?.path || '', stale: diskChanged}),
+  show: name => switchPanel(name),
+  invalidate(project, path) {
+    if (project !== selectedProject) return;
+    lastEdit = null;
+    if (opened && (!path || opened.path === path)) {
+      diskChanged = true; invalidatePreview();
+      message('The project task changed this file on disk. ' + (dirty()
+        ? 'Your unapplied editor draft is preserved. Copy or discard it before reopening the file.'
+        : 'Open the file again to review the current contents.'));
+    }
+    controls();
+  }
+};
 element('projectRoot').value = element('project').value;
 syncProviders(); controls();
 })();

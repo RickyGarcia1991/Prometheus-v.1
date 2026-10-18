@@ -21,11 +21,11 @@ def decision_text(text):
     phrase = re.sub(r',\s*', ' ', phrase)
     if phrase in {'yes', 'yes please', 'approve', 'approve it', 'approve this change',
                   'yes approve', 'yes approve it', 'go ahead', 'yes go ahead',
-                  'please go ahead', 'do it', 'proceed'}:
+                  'please go ahead', 'do it', 'proceed', 'allow', 'allow it'}:
         return 'approve'
     if phrase in {'no', 'no thanks', 'reject', 'reject it', 'reject this change',
                   'cancel', 'cancel it', 'cancel the change', 'do not proceed',
-                  "don't proceed", 'stop'}:
+                  "don't proceed", 'stop', 'deny', 'deny it'}:
         return 'reject'
     return None
 

@@ -151,13 +151,26 @@ def execute(app, request):
         project = workspace(app, request)
         if mode == 'code_open':
             result = project.describe()
+            from .project_change_set import latest_group
+            from .project_recovery import latest
+            result['latest_edit'] = latest(project) or latest_group(project, result.get('latest_edit')) or result.get('latest_edit')
+            from .project_resources import service
+            service(app).select_project(str(project.root))
         elif mode == 'code_read':
             result = project.read_file(request.get('file', ''))
         elif mode in {'code_preview', 'code_apply'}:
             action = project.preview_edit if mode == 'code_preview' else project.apply_edit
             result = action(request.get('file', ''), request.get('content', ''), request.get('expected_sha256', ''))
         elif mode == 'code_undo':
-            result = project.undo_edit(request.get('edit_id', ''))
+            edit_id = request.get('edit_id', '')
+            if edit_id.startswith('recovery-'):
+                from .project_recovery import restore
+                result = restore(project, edit_id)
+            elif edit_id.startswith('group-'):
+                from .project_change_set import undo_group
+                result = undo_group(project, edit_id)
+            else:
+                result = project.undo_edit(edit_id)
         elif mode == 'code_tests':
             result = project.run_tests(request.get('preset', ''), request.get('target', ''),
                                        cancel_event=app.cancel_event, on_output=app.append_partial)

@@ -14,6 +14,7 @@ if __name__ == '__main__' and not __package__:
     __package__ = 'prometheus_assistant'
 
 import ast
+from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import difflib
@@ -36,6 +37,38 @@ REQUIRED_CHECKS = ('python-regression', 'javascript-regression')
 _HASH = re.compile(r'[a-f0-9]{64}')
 _RELEASE = re.compile(r'Prometheus-v[\w.-]{1,150}')
 _SIGNATURES = {'SHA256-MANIFEST.json', 'SHA256-MANIFEST.sig', 'MANIFEST-PUBLIC.cer'}
+
+
+def _validate_installed_health(result):
+    """Reconcile sparse health counters with the actual required check results."""
+    required = {'release_metadata', 'code_manifest', 'memory_database',
+                'runtime', 'model_files', 'model_ram'}
+    statuses = {'pass', 'fail', 'blocked', 'untested'}
+    error = 'Candidate installed health checks failed.'
+    if not isinstance(result, dict):
+        raise ValueError(error)
+    counts, checks = result.get('counts'), result.get('checks')
+    if not isinstance(counts, dict) or set(counts) - statuses or not isinstance(checks, list):
+        raise ValueError(error)
+    actual, seen, passed = Counter(), set(), set()
+    for check in checks:
+        if not isinstance(check, dict):
+            raise ValueError(error)
+        identity, status = check.get('id'), check.get('status')
+        if (not isinstance(identity, str) or not identity or identity in seen
+                or not isinstance(status, str) or status not in statuses):
+            raise ValueError(error)
+        seen.add(identity)
+        actual[status] += 1
+        if status == 'pass':
+            passed.add(identity)
+    # The producer uses Counter, so absent statuses mean zero, not missing evidence.
+    for status in statuses:
+        value = counts.get(status, 0)
+        if type(value) is not int or value < 0 or value != actual[status]:
+            raise ValueError(error)
+    if not required <= passed or actual['fail'] or actual['blocked']:
+        raise ValueError(error)
 
 
 def sha(path):
@@ -527,9 +560,7 @@ class WindowsPromotionHost:
         report = job/'installed-health.json'
         self.run([self.tool('python'),'-B',self.tool('care'),'check','--root',self.ssd,'--report',report],180,log=job/'health.log')
         result = _strict_json(_read(report,1_000_000).decode('utf-8-sig'))
-        counts=result.get('counts')
-        if not isinstance(counts,dict) or any(type(counts.get(name)) is not int or counts[name]<0 for name in ('pass','fail','blocked','untested')) or counts['pass']<1 or counts['fail'] or counts['blocked']:
-            raise ValueError('Candidate installed health checks failed.')
+        _validate_installed_health(result)
 
     def launch(self, job, label):
         # Detached app children can retain inherited stdout handles. A pipe would

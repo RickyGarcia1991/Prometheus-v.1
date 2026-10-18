@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../../src/prometheus_assistant/ui_assets/project-agent.js'),'utf8');
+const code=source.slice(source.indexOf('function renderMeasuredChecks'),source.indexOf('function renderAdvisoryReview'));
+const node=(tag,text='')=>({tag,text,children:[],append(...items){this.children.push(...items)}});
+const context={node};vm.createContext(context);vm.runInContext(code,context);
+const show=v=>{const root=node('div');context.renderMeasuredChecks(root,v);return JSON.stringify(root)};
+assert.match(show({phase:'prepared',checks:[{status:'pending'}]}),/Checks have not run/);
+assert.match(show({status:'blocked',checks:[{status:'failed',preset:'unit',target:'x.py'}]}),/Checks failed/);
+assert.match(show({status:'passed',checks:[{status:'failed'}]}),/Checks failed/);
+assert.match(show({status:'blocked',checks:[{status:'missing'}]}),/incomplete/);
+assert.match(show(undefined),/incomplete or blocked/);
+assert.match(show({status:'passed',checks:[]}),/incomplete or blocked/);
+assert.match(show({status:'passed',checks:[{status:'passed'}]}),/Recorded checks passed/);
+console.log('7 measured-check visibility cases passed');

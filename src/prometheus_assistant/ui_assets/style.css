@@ -151,6 +151,30 @@
 @media(max-height:400px){.folded-home .presence{flex:0 0 auto;padding:0;gap:0}.folded-home .presence-identity{display:none}.folded-home .voice-capture{padding:4px 8px;margin-top:4px}.folded-home .voice-wave{height:16px}.folded-home .voice-caption{font-size:10px}.folded-home .voice-signal{display:none}}
 @media(prefers-reduced-motion:reduce){.folded-home .voice-wave span{transition:none}}
 
+/* Observable task history stays visible in both conversation and workbench views. */
+.project-task h3{margin-top:0}
+.project-task textarea{width:100%;box-sizing:border-box}
+.project-review-field{white-space:pre-wrap;overflow-wrap:anywhere}
+#projectAgentReview,#idleResearchReview{border-top:1px solid #395345;padding-top:12px;margin-top:12px}
+#projectAgentContext,#projectTaskContext{overflow-wrap:anywhere}
+#projectAgentResult:empty,#idleResearchFindings:empty{display:none}
+.task-activity{border:1px solid #395345;border-radius:12px;background:#10251dcc;margin:0 0 10px;color:#d9e8df;font-size:12px}
+.task-activity>summary{display:flex;align-items:baseline;gap:12px;padding:10px 12px;cursor:pointer;list-style:revert}
+.task-activity-heading{font-weight:700;flex:none;color:#b6d8c1}
+#taskActivitySummary{overflow-wrap:anywhere;line-height:1.4}
+#taskActivityList{margin:0;padding:0 12px;list-style:none;max-height:150px;overflow:auto;overscroll-behavior:contain}
+.task-activity-item{padding:8px 0;border-top:1px solid #294535}
+.task-activity-title{display:flex;justify-content:space-between;gap:12px;align-items:baseline;overflow-wrap:anywhere}
+.task-activity-title strong{font-size:12px;font-weight:500}
+.task-activity-meta{font-size:10px;color:#acc4b6;white-space:nowrap}
+.task-activity-item[data-state=error] .task-activity-meta{color:#f4bcb3}
+.task-activity-item[data-state=review] .task-activity-meta{color:#efdaa1}
+.task-activity-steps{padding:4px 0 0 15px;color:#afc5b9;font-size:11px;line-height:1.55}
+.task-activity-empty{padding:5px 0;color:#afc5b9}
+.task-activity-note{margin:5px 12px 9px;font-size:10px;color:#91aa9b}
+@media(max-width:650px){.task-activity-title{display:block}.task-activity-meta{display:block;margin-top:3px}.task-activity>summary{gap:8px}}
+@media(max-height:650px){#taskActivityList{max-height:86px}.task-activity{margin-bottom:5px}.task-activity>summary{padding:6px 10px}.task-activity-note{display:none}}
+
 /* Light ribbon view: the composer and capture controls stay outside the switch. */
 .folded-home .viewbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;width:min(100%,920px);margin:0 auto;padding:12px 0 4px;font-size:10px;letter-spacing:.18em;color:#8ea99c}
 .folded-home #conversationToggle{min-height:36px;padding:7px 14px;border-radius:20px;font-size:12px;letter-spacing:0;background:#132b20;border-color:#496d55}

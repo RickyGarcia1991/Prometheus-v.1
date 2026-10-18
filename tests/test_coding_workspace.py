@@ -218,3 +218,58 @@ def test_successful_test_process_cleans_up_spawned_children(project):
             assert code.value != 259, 'Test child remained running after successful completion.'
         finally:
             kernel.CloseHandle(handle)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows job accounting integration')
+def test_job_measurements_captured_once_before_close(project, monkeypatch):
+    from prometheus_assistant import project_job_metrics
+    from prometheus_assistant.coding_workspace import _WindowsJob
+    events = []
+    original_close = _WindowsJob.close
+
+    def capture(handle):
+        assert handle
+        events.append('capture')
+        return {'scope': 'job_associated_processes', 'peak_commit_gib': 7,
+                'snapshot_complete': False}
+
+    def close(job):
+        if job.handle:
+            events.append('close')
+        original_close(job)
+
+    monkeypatch.setattr(project_job_metrics, 'capture_job', capture)
+    monkeypatch.setattr(_WindowsJob, 'close', close)
+    result = project.run_tests('python-compile', 'hello.py', timeout=10)
+    assert result['exit_code'] == 0
+    assert events == ['capture', 'close']
+    measured = result['resource_measurements']
+    assert measured['scope'] == 'direct_process'
+    assert measured['ram_gib'] != 7
+    assert measured['job_metrics']['peak_commit_gib'] == 7
+    assert measured['job_metrics']['snapshot_complete'] is False
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows job accounting integration')
+def test_job_query_failure_preserves_result_and_cleanup(project, monkeypatch):
+    from prometheus_assistant import project_job_metrics
+    from prometheus_assistant.coding_workspace import _WindowsJob
+    closed = []
+    original_close = _WindowsJob.close
+
+    def fail(handle):
+        raise OSError('fixture query failure')
+
+    def close(job):
+        original_close(job)
+        closed.append(job.handle)
+
+    monkeypatch.setattr(project_job_metrics, 'capture_job', fail)
+    monkeypatch.setattr(_WindowsJob, 'close', close)
+    result = project.run_tests('python-compile', 'hello.py', timeout=10)
+    assert result['exit_code'] == 0
+    assert closed and all(handle is None for handle in closed)
+    measured = result['resource_measurements']
+    assert measured['ram_gib'] is not None
+    assert measured['job_metrics']['snapshot_complete'] is None
+    assert measured['job_metrics']['peak_commit_gib'] is None
