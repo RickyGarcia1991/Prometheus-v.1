@@ -198,6 +198,11 @@ class ScheduledSyntax:
                 return public_job(rows[0])
             rows=[r for r in rows if r and (r['state']=='unconfirmed' if recover else r['state']=='waiting' and r['next_attempt_at']<=self.clock())]
             if not rows: return None
+            if job_id is None and not recover:
+                # Persisted retry deadlines represent waiting for an attempt.
+                # An unavailable oldest approval must yield to overdue peers,
+                # including after restart; no caller-supplied priority applies.
+                rows.sort(key=lambda r: (r['next_attempt_at'], r['approved_at'], r['request']['job_id']))
             row=rows[0];job_id=row['request']['job_id']
             if self.cancelled(): return public_job(row) if recover else self._cancel(row,'Waiting work was stopped before execution.')
             if revision()!=row['policy_revision']:

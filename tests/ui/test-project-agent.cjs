@@ -56,6 +56,14 @@ function fixture() {
   return f;
 }
 (async () => {
+  const calibration = fixture(); calibration.busy(); await calibration.open();
+  for (const applied of [false, true]) {
+    const proposed = approval();
+    proposed.review.resource_assessment.prediction_calibration = {applied};
+    calibration.result('project_edit', {approval: proposed}, {origin: 'local'});
+    assert.match(text(calibration.elements.projectAgentReview), applied
+      ? /correction passed separate held-out checks/ : /using the conservative baseline/);
+  }
   const team = fixture(); team.busy(); await team.open();
   const checkbox = team.elements.projectAgentSpecialists;
   assert(checkbox, 'optional specialist control exists');

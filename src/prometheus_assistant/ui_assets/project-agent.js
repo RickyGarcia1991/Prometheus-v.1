@@ -243,6 +243,13 @@ function renderSpecialistReview(box, result) {
   detail.append(identity);
   return true;
 }
+function renderCalibration(box, assessment) {
+  const report = assessment?.prediction_calibration;
+  if (!report) return;
+  box.append(node('p', report.applied === true
+    ? 'Prediction calibration: a correction passed separate held-out checks and increased this estimate. Safety reserves and CPU thresholds are unchanged.'
+    : 'Prediction calibration: using the conservative baseline. A correction needs complete measurements and separate held-out checks for this device and workload.', 'fine'));
+}
 function review(approval, show = false) {
   pending = kinds.has(approval?.kind) ? approval : null;
   for (const [box, buttons] of [['projectAgentReview', 'projectAgentDecisions'], ['idleResearchReview', 'idleResearchDecisions']]) {
@@ -264,6 +271,7 @@ function review(approval, show = false) {
         detail.append(node('summary', label), node('pre', typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key], null, 2), 'code-output')); box.append(detail);
       }
     }
+    renderCalibration(box, data.resource_assessment);
     renderMeasuredChecks(box, data.verification);
     if (!renderSpecialistReview(box, data.specialist_review)) renderAdvisoryReview(box, data.advisory_review);
     box.append(node('p', 'Approve or deny this review below, or say “yes, approve” or “deny” in its conversation. Approval applies to this exact review; changes to these form fields require a new proposal.', 'fine'));
@@ -311,6 +319,7 @@ function renderProject(data, reply) {
   }
   if (!renderSpecialistReview(box, data.specialist_review)) renderAdvisoryReview(box, data.advisory_review);
   if (data.resource_assessment) field(box, 'Resource admission at execution', data.resource_assessment);
+  renderCalibration(box, data.resource_assessment);
   if (data.resource_measurements) field(box, 'Measured check resources and history', data.resource_measurements);
   if (data.checks !== undefined) {
     const detail = node('details', '', 'workspace-detail'); detail.open = true;
