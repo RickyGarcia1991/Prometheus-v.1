@@ -388,10 +388,28 @@ def execute(app, request, *, grant_owner=None, binding=None):
             raise ValueError('Return to the conversation containing this proposal before deciding.')
         require_dispatch('ui.approval_decision')
         _verify(app, grant_owner, owner)
+        draft = None
+        if decision == 'request_changes':
+            if pending['kind'] != 'project_edit':
+                raise ValueError('Request changes is available only for an exact project edit.')
+            original = pending['payload']['request']
+            feedback = request.get('approval_feedback', '').strip()
+            if not feedback or len(feedback) > 2000 or '\x00' in feedback:
+                raise ValueError('Describe the requested changes in 1 to 2000 characters.')
+            prompt = original['prompt'] + '\n\nRequested changes from the owner:\n' + feedback
+            if len(prompt) > 4000:
+                raise ValueError('The original goal and requested changes must fit within 4000 characters. Shorten the feedback.')
+            draft = {key: original[key] for key in ('project', 'file', 'project_files', 'auto_files',
+                     'specialist_review', 'preset', 'target') if key in original}
+            draft.update(prompt=prompt, edit_policy='ask_first', research_query='', origin_approval=pending['id'])
         row = app.action_approvals.consume(owner=owner, binding=binding, session=request['session'],
             approval_id=pending['id'] if mode == 'chat' else request['approval_id'],
             fingerprint=pending['fingerprint'] if mode == 'chat' else request['approval_fingerprint'],
-            policy_revision=revision(), decision=decision)
+            policy_revision=revision(), decision=decision, feedback=request.get('approval_feedback', ''))
+        if decision == 'request_changes':
+            return _result(app, request, {'reply': 'Changes requested. The old proposal is closed; no files were changed. '
+                'Review the revised goal and prepare a fresh exact proposal.',
+                'approval_resolved': row['id'], 'revision_draft': draft}, 'Task · changes requested', 'approval_decision')
         if decision == 'reject':
             return _result(app, request, {'reply': 'Denied. No proposed change was applied.',
                             'approval_resolved': row['id']}, 'Task · denied')

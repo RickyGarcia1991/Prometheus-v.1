@@ -140,7 +140,8 @@ def validate_job(body):
         spec = build_builtin_registry(None).get(body['worker'], body['tool'])
         request, _ = scope(spec, body['arguments'])
         return {**body, 'arguments': dict(request.arguments)}
-    approval_fields = {'approval_id', 'approval_fingerprint', 'approval_decision'}
+    approval_required = {'approval_id', 'approval_fingerprint', 'approval_decision'}
+    approval_fields = approval_required | {'approval_feedback'}
     if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
@@ -149,13 +150,19 @@ def validate_job(body):
     if 'voice_reply' in body and (mode != 'chat' or type(body['voice_reply']) is not bool):
         raise ValueError('Voice reply must be a boolean in chat mode.')
     if mode == 'approval_decision':
-        if (not approval_fields <= body.keys() or not isinstance(body['approval_id'], str)
+        if (not approval_required <= body.keys() or not isinstance(body['approval_id'], str)
                 or not re.fullmatch(r'[0-9a-f]{32}', body['approval_id'])
                 or not isinstance(body['approval_fingerprint'], str)
                 or not re.fullmatch(r'[0-9a-f]{64}', body['approval_fingerprint'])
                 or not isinstance(body['approval_decision'], str)
-                or body['approval_decision'] not in {'approve', 'reject'}):
-            raise ValueError('Use the exact reviewed approval and choose approve or reject.')
+                or body['approval_decision'] not in {'approve', 'reject', 'request_changes'}):
+            raise ValueError('Use the exact reviewed approval and choose approve, reject or request changes.')
+        if body['approval_decision'] == 'request_changes':
+            feedback = body.get('approval_feedback')
+            if not isinstance(feedback, str) or not feedback.strip() or len(feedback) > 2000 or '\x00' in feedback:
+                raise ValueError('Describe the requested changes in 1 to 2000 characters.')
+        elif 'approval_feedback' in body:
+            raise ValueError('Feedback is only valid when requesting changes.')
     elif approval_fields & body.keys():
         raise ValueError('Approval fields are only valid for an exact approval decision.')
     from .capabilities import SOURCES
@@ -236,7 +243,8 @@ class Interface:
         self.maintenance_error = None
         self.maintenance_turn = 1
         from .action_approvals import ActionApprovals
-        self.action_approvals = ActionApprovals(receipt_root=self.data_root/'Maintenance/Approvals')
+        self.action_approvals = ActionApprovals(receipt_root=self.data_root/'Maintenance/Approvals',
+            history_root=self.data_root/'Maintenance/DecisionHistory')
         from .remote_access import RemoteAccess
         self.remote = RemoteAccess()
         from .scoped_grants import GrantStore
@@ -980,6 +988,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/integrations.js': ('integrations.js', 'text/javascript; charset=utf-8'),
                   '/activity-panel.js': ('activity-panel.js', 'text/javascript; charset=utf-8'),
                   '/decision-center.js': ('decision-center.js', 'text/javascript; charset=utf-8'),
+                  '/decision-history.js': ('decision-history.js', 'text/javascript; charset=utf-8'),
                   '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
                   '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
                   '/scheduled-jobs.js': ('scheduled-jobs.js', 'text/javascript; charset=utf-8'),
@@ -1022,6 +1031,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.respond(200, snapshot(app,
                     grant_owner=lambda: access.grant_owner(cookie),
                     binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
+            elif self.path == '/api/decisions/history':
+                with access.grant_owner(self.owner_session()) as owner:
+                    try:
+                        rows = app.action_approvals.history(owner=owner, limit=50)
+                    except (OSError, ValueError, RuntimeError):
+                        self.respond(503, {'error': 'Decision history is unavailable; existing approvals are unchanged.'})
+                    else:
+                        self.respond(200, {'schema_version': 1, 'read_only': True, 'items': rows})
             elif self.path == '/api/approvals/pending':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'approval': app.action_approvals.pending(owner=owner,

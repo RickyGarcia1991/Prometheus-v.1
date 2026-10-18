@@ -36,13 +36,15 @@ class ActionApprovals:
     A restart revokes pending approvals. Consuming an approval removes it before
     dispatch, so failures cannot turn a retry into an unintended second action.
     """
-    def __init__(self, *, clock=time.monotonic, lifetime=600, receipt_root=None):
+    def __init__(self, *, clock=time.monotonic, lifetime=600, receipt_root=None, history_root=None):
         if not 1 <= lifetime <= 600:
             raise ValueError('Approval lifetime must be at most ten minutes.')
         self.clock, self.lifetime = clock, lifetime
         self._pending = {}
         self._lock = threading.RLock()
         self.receipt_root = Path(receipt_root) if receipt_root is not None else None
+        from .decision_history import DecisionHistory
+        self.decision_history = DecisionHistory(history_root) if history_root is not None else None
 
     def _expire(self):
         now = self.clock()
@@ -90,21 +92,34 @@ class ActionApprovals:
             self._pending[key] = row
             return copy.deepcopy(row)
 
-    def consume(self, *, owner, binding, session, approval_id, fingerprint, policy_revision, decision):
+    def consume(self, *, owner, binding, session, approval_id, fingerprint, policy_revision, decision, feedback=''):
         key = self._key(owner, binding)
-        if decision not in {'approve', 'reject'}:
-            raise ValueError('Choose approve or reject.')
+        if type(decision) is not str or decision not in {'approve', 'reject', 'request_changes'}:
+            raise ValueError('Choose approve, reject or request changes.')
         with self._lock:
             self._expire()
             row = self._pending.get(key)
             if (not row or row['session'] != session or row['id'] != approval_id
                     or not secrets.compare_digest(row['fingerprint'], fingerprint)):
                 raise ValueError('This exact approval is missing, expired, or belongs to another conversation.')
-            if decision == 'approve' and row['policy_revision'] != policy_revision:
+            from .decision_history import KINDS, validate_feedback
+            feedback = validate_feedback(decision, row['kind'], feedback)
+            if decision in {'approve', 'request_changes'} and row['policy_revision'] != policy_revision:
                 del self._pending[key]
                 raise ValueError('Application policy changed. Prepare a new review before approval.')
+            if self.decision_history is not None:
+                self.decision_history.record(dict(schema_version=1,id=row['id'],owner=owner,
+                    fingerprint=row['fingerprint'],session=row['session'],
+                    kind=row['kind'] if row['kind'] in KINDS else 'other',
+                    decision=decision,feedback=feedback,decided_at=time.time()))
             del self._pending[key]
             return copy.deepcopy(row)
+
+    def history(self, *, owner, limit=50):
+        self._key(owner, '0'*64)
+        if self.decision_history is None:
+            raise ValueError('Decision history is not configured.')
+        return self.decision_history.history(owner,limit=limit)
 
     def revoke_binding(self, binding):
         with self._lock:
