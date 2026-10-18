@@ -153,7 +153,7 @@ def _research(query, app):
     return search(query, cancel_event=app.cancel_event)
 
 
-def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, resolved=None):
+def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, resolved=None, decision_link=None):
     specialist_policy_revision = revision() if request.get('specialist_review') else None
     workspace = ui_workspace.workspace(app, request)
     research = None
@@ -212,7 +212,8 @@ def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, reso
     specialist_escalation = specialists is not None and project_specialists.needs_exact_review(specialists)
     if delegated and not project_advisory.needs_exact_review(advisory) and not specialist_escalation:
         return _apply(app, request, candidate, owner=owner, grant_owner=grant_owner, resolved=resolved,
-                      model=getattr(engine, 'model', 'local helper'), advisory=advisory, specialists=specialists)
+                      model=getattr(engine, 'model', 'local helper'), advisory=advisory, specialists=specialists,
+                      decision_link=decision_link)
     review = {'action': 'Apply the proposed change to ' + candidate['path'],
         'reason': candidate['reason'], 'benefit': candidate['benefit'],
         'effects': 'Apply the displayed diff, run the displayed checks, and retain an undo record. '
@@ -239,7 +240,7 @@ def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, reso
                    review, resolved, expected_revision=specialist_policy_revision)
 
 
-def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model='local helper', advisory=None, specialists=None):
+def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model='local helper', advisory=None, specialists=None, decision_link=None):
     from .project_resources import service
     from .project_task_evidence import prepare_evidence
     from .project_editor import ProjectEditor
@@ -261,10 +262,10 @@ def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model=
     with service(app).reserve(candidate, app.current or 'owner-project-task') as resources:
         return _apply_reserved(app, request, candidate, owner=owner, grant_owner=grant_owner,
             resolved=resolved, model=model, evidence=evidence, resources=resources, advisory=advisory,
-            specialists=specialists)
+            specialists=specialists, decision_link=decision_link)
 
 
-def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, model, evidence, resources, advisory=None, specialists=None):
+def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, model, evidence, resources, advisory=None, specialists=None, decision_link=None):
     from .project_editor import ProjectEditor
     _verify(app, grant_owner, owner)
     engine = ProjectEditor(ui_workspace.workspace(app, request), lambda *_: None, progress=app.progress)
@@ -277,17 +278,26 @@ def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, mo
         # Optional review limits must not reject a valid owner-approved edit.
         # proposed_files and the editor still validate the exact candidate.
         capture = None
-    if candidate.get('version') == 2:
-        from .project_change_set import apply_group
-        result = apply_group(engine, candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
-                             check_runner=capture.run_check if capture is not None else None)
-    else:
-        from . import project_recovery
-        with engine.workspace.lock:
-            journal = project_recovery.begin(engine, [candidate])
-            result = engine.apply(candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
-                                  check_runner=capture.run_check if capture is not None else None)
-            project_recovery.finish(engine.workspace, journal, result)
+    from .project_decision_outcomes import ProjectOutcome
+    outcome = ProjectOutcome(app, engine.workspace, owner, decision_link)
+    outcome.start()
+    try:
+        if candidate.get('version') == 2:
+            from .project_change_set import apply_group
+            result = apply_group(engine, candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
+                check_runner=capture.run_check if capture is not None else None,
+                on_result=lambda native: outcome.finish(native, len(candidate['checks'])))
+        else:
+            from . import project_recovery
+            with engine.workspace.lock:
+                journal = project_recovery.begin(engine, [candidate])
+                result = engine.apply(candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
+                                      check_runner=capture.run_check if capture is not None else None)
+                outcome.finish(result, len(candidate['checks']))
+                project_recovery.finish(engine.workspace, journal, result)
+    except Exception:
+        outcome.unknown()
+        raise
     result.update(project=request['project'], state=result['status'], model=model,
                   reason=candidate['reason'], benefit=candidate['benefit'], diff=candidate['diff'])
     result['advisory_review'] = advisory
@@ -419,10 +429,12 @@ def execute(app, request, *, grant_owner=None, binding=None):
         if row['kind'] == 'project_edit':
             return _apply(app, original, payload['candidate'], owner=owner, grant_owner=grant_owner,
                           resolved=row['id'], model=payload['model'], advisory=payload.get('advisory_review'),
-                          specialists=payload.get('specialist_review'))
+                          specialists=payload.get('specialist_review'),
+                          decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         if row['kind'] == 'project_task':
             return _prepare(app, original, owner=owner, binding=binding, grant_owner=grant_owner,
-                            delegated=original.get('edit_policy') == 'delegated', resolved=row['id'])
+                            delegated=original.get('edit_policy') == 'delegated', resolved=row['id'],
+                            decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         _verify(app, grant_owner, owner)
         research_store(app).configure(original['prompt'], original['enabled'],
                                       original.get('interval_minutes', 60), owner=owner)

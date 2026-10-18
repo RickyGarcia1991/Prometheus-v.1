@@ -119,7 +119,30 @@ class ActionApprovals:
         self._key(owner, '0'*64)
         if self.decision_history is None:
             raise ValueError('Decision history is not configured.')
-        return self.decision_history.history(owner,limit=limit)
+        rows = self.decision_history.history(owner,limit=limit)
+        events = self._outcomes().read()
+        for row in rows:
+            row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
+        return rows
+
+    def _outcomes(self):
+        if self.decision_history is None:raise ValueError('Decision history is not configured.')
+        from .decision_outcomes import DecisionOutcomes
+        return DecisionOutcomes(self.decision_history)
+
+    def record_outcome(self, *, owner, approval_id, fingerprint, event):
+        return self._outcomes().record(owner,approval_id,fingerprint,event)
+
+    def outcomes_for_edit(self, *, owner, project_hash, edit_id):
+        from .decision_history import _identity
+        _identity(owner,64);_identity(project_hash,64)
+        if type(edit_id) is not str or not re.fullmatch(r'(?:group-)?[0-9a-f]{32}',edit_id):raise ValueError('Exact edit identity required.')
+        store=self._outcomes();result=[]
+        for o,i,f,event in store.read():
+            if o==owner and event['phase']=='result' and event['edit_id']==edit_id and event['project_hash']==project_hash:
+                store._approved(o,i,f)
+                result.append({'approval_id':i,'fingerprint':f})
+        return result
 
     def revoke_binding(self, binding):
         with self._lock:

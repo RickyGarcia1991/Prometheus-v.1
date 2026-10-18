@@ -536,6 +536,11 @@ class Interface:
                         raise ValueError('A current authenticated owner is required for grant execution.')
                     with grant_owner() as owner:
                         result = self.execute_core(request, owner=owner)
+                elif request['mode'] == 'code_undo':
+                    if grant_owner is None:
+                        raise ValueError('A current authenticated owner is required for undo.')
+                    with grant_owner() as owner:
+                        result = ui_workspace.execute(self, request, decision_owner=owner)
                 else:
                     if request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
                         result = project_tasks_ui.run_idle(self)

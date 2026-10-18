@@ -135,3 +135,14 @@ class DecisionHistory:
             return [{key:value for key,value in row.items() if key!='owner'} for row in rows if row['owner']==owner][:limit]
         except (sqlite3.Error,json.JSONDecodeError,UnicodeError) as error:
             raise ValueError('Decision history is unavailable or malformed.') from error
+
+    def lookup(self, owner, approval_id):
+        """Exact durable identity lookup, including decisions outside recent history."""
+        _identity(owner,64);_identity(approval_id,32)
+        self._plain()
+        if not self.path.exists():return None
+        try:
+            with closing(sqlite3.connect(self.path.as_uri()+'?mode=ro',uri=True,timeout=5)) as db:
+                self._schema(db)
+                return next((dict(row) for row in self._rows(db) if row['owner']==owner and row['id']==approval_id),None)
+        except (sqlite3.Error,UnicodeError) as error:raise ValueError('Decision history unavailable.') from error
