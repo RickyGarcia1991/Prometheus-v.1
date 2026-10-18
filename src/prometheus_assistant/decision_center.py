@@ -83,7 +83,7 @@ def _decision_state(row):
     return 'recorded_effect'
 
 
-def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None, decisions=None):
+def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None, decisions=None, devices=None):
     """Return schema-v1 grouped fixed-text summaries with navigation only.
 
     Sources distinguish current saved records from live telemetry. Approval
@@ -94,13 +94,13 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
     """
     now = now if _number(now) else None
     groups = {}
-    def add(source, kind, label, severity, state, navigation, freshness='saved_records'):
+    def add(source, kind, label, severity, state, navigation, freshness='saved_records', count=1):
         key = (source, kind, state, navigation, severity, freshness)
         if key in groups:
-            groups[key]['count'] += 1
+            groups[key]['count'] += count
         else:
             groups[key] = dict(id='.'.join((source,kind,state,navigation)), kind=kind,
-                label=label,severity=severity,state=state,count=1,source=source,
+                label=label,severity=severity,state=state,count=count,source=source,
                 freshness=freshness,navigation=navigation)
     queue, queue_source = _source(jobs, MAX_JOBS)
     recent, activity_source = _source(activity, MAX_ACTIVITY)
@@ -185,10 +185,14 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
             add('resources','health','Resource observations are stale; refresh the existing health view.','warning','stale','activity',freshness)
         add('resources','mode','Reported resource mode: '+resource_mode+'.',severity,
             resource_mode.lower().replace(' ', '_'),'activity',freshness)
+    from .device_attention import project
+    sources['devices'], device_items = project(devices, now)
+    for item in device_items:
+        add('devices', navigation='remote', **item)
     for name, source in sources.items():
         if source['state'] in ('unavailable', 'partial'):
             add(name,'availability','This attention source is unavailable or incomplete.','warning',source['state'],
-                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'activity',source['freshness'])
+                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'remote' if name == 'devices' else 'activity',source['freshness'])
         if source['truncated']:
             add(name,'limit','This summary is truncated; open the source view for its retained records.','info','truncated',
                 'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'activity')

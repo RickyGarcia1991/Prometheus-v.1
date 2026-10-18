@@ -8,7 +8,7 @@ class Element{
  click(){if(!this.disabled)return this.onclick?.();}
  set innerHTML(value){throw Error('HTML forbidden');}
 }
-const snapshot=(extra={})=>({schema_version:1,generated_at:1000,read_only:true,items:[],sources:Object.fromEntries(['approvals','queue','activity','resources'].map(k=>[k,{state:'available'}])),counts:{critical:0,warning:0,info:0},...extra});
+const snapshot=(extra={})=>({schema_version:1,generated_at:1000,read_only:true,items:[],sources:Object.fromEntries(['approvals','queue','activity','resources','devices'].map(k=>[k,{state:'available'}])),counts:{critical:0,warning:0,info:0},...extra});
 const item=(extra={})=>({id:'one',kind:'project',label:'Review pending',severity:'warning',state:'waiting',count:1,source:'approvals',freshness:'current',navigation:'project',...extra});
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 function fixture(){
@@ -57,4 +57,23 @@ test('historical evidence opens only read-only history and unavailable source is
  h.elements.decisionCenterList.children[0].children[1].click();
  assert.equal(h.elements.decisionHistory.open,true);assert.deepEqual(h.jumps,[]);
  assert.deepEqual(h.calls,[['/api/decision-center']]);
+});
+
+test('device health opens Remote only and remains separate from saved evidence',async()=>{
+ const h=fixture();h.set(snapshot({items:[item({source:'devices',navigation:'remote',state:'selected_online',freshness:'current',label:'Selected computer recently observed online'}),item({source:'decisions',navigation:'history',state:'historical_failure',freshness:'saved_records'})],sources:{...snapshot().sources,devices:{state:'available',freshness:'current',observed_at:990,expires_at:1020}}}));h.emit();await settle();
+ const rows=h.elements.decisionCenterList.children;assert.equal(rows.length,2);rows[0].children[1].click();assert.deepEqual(h.jumps,['Remote']);
+ assert.match(rows[1].children[0].textContent,/historical_failure.*saved_records/);
+ assert.deepEqual(h.calls,[['/api/decision-center']]);
+});
+
+test('device rows expire at their observation deadline even before the next poll',async()=>{
+ const h=fixture();h.set(snapshot({items:[item({source:'devices',navigation:'remote',state:'online'})],sources:{...snapshot().sources,devices:{state:'available',freshness:'current',observed_at:990,expires_at:1020}}}));h.emit();await settle();
+ assert.equal(h.elements.decisionCenterList.children.length,1);await h.tick();
+ assert.equal(h.elements.decisionCenterList.children.length,0);assert.match(h.elements.decisionCenterStatus.textContent,/stale/);assert.equal(h.calls.length,1);
+});
+
+test('missing device source and malformed freshness never render an all-clear',async()=>{
+ for(const device of [undefined,{state:'available',freshness:'current',observed_at:990,expires_at:1300},{state:'available',freshness:'current',observed_at:1001,expires_at:1031}]){
+  const h=fixture();h.set(snapshot({sources:{...snapshot().sources,devices:device}}));h.emit();await settle();assert.match(h.elements.decisionCenterStatus.textContent,/unavailable/);assert.doesNotMatch(h.elements.decisionCenterStatus.textContent,/No items need attention/);
+ }
 });

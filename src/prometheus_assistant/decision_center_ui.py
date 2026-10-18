@@ -20,6 +20,10 @@ def snapshot(app, *, grant_owner, binding):
             decisions = app.action_approvals.history(owner=owner, limit=50)
         except (OSError, ValueError, RuntimeError, TypeError):
             decisions = None
+        try:
+            devices = app.remote.health_snapshot()
+        except (AttributeError, OSError, ValueError, RuntimeError, TypeError):
+            devices = None
         with app.lock:
             try:
                 activity = app.activity_history.recent()
@@ -28,4 +32,4 @@ def snapshot(app, *, grant_owner, binding):
             age = time.monotonic() - getattr(app, '_decision_resource_cached_at', float('-inf'))
             resources = deepcopy(getattr(app, '_decision_resource_status', None)) if 0 <= age <= 15 else None
         return build_snapshot(approval=approval, jobs=jobs, activity=activity,
-                              resources=resources, decisions=decisions, now=time.time())
+                              resources=resources, decisions=decisions, devices=devices, now=time.time())
