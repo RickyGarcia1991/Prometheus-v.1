@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -1220,7 +1221,9 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/jobs':
                 cookie = self.owner_session()
                 self.respond(202, self.server.app.submit(body,
-                    grant_owner=lambda: self.server.owner_access.grant_owner(cookie),
+                    grant_owner=lambda: (nullcontext(None) if body.get('mode') == 'code_undo'
+                        and self.server.owner_access.required is False
+                        else self.server.owner_access.grant_owner(cookie)),
                     approval_binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/remote/action':
                 self.server.app.last_seen = time.monotonic()
