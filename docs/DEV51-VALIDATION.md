@@ -11,4 +11,4 @@ The initial external preview adapter accidentally replaced the native status met
 Release manifest SHA256: `8bebadaec9a52981894554f9b2ff669f04d04cbcd6de8003f4b87b555bd7dd5d`.
 Archive SHA256: `3fc378b383495a6590863f117bf3917162202e4893b2f4858f9a1d1f0fe2fbce`.
 
-Installation uses a fresh verified backup and isolated restore with dev50 retained for rollback. Installed acceptance is recorded separately; this validation note alone does not claim deployment.
+Installed acceptance completed on 2026-10-19. The ordinary installer verified a fresh 184-file backup and isolated restore, all three signed copies (1,013 payload files each), and retained dev50 for rollback. All ten installed startup/native/history groups and normal-owner dashboard/history/reload checks passed. Existing worker results were preserved and no job was resubmitted. Prometheus's remote provider was disconnected at interface acceptance; Desktop Commander and the progress monitors are separate. Earlier USB-storage interruptions are retained in local evidence; the resumed preflight and installation completed without new observed reset events. The broader roadmap remains unfinished.
