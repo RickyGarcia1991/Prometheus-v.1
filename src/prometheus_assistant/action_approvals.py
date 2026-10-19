@@ -42,6 +42,7 @@ class ActionApprovals:
         self.clock, self.lifetime = clock, lifetime
         self._pending = {}
         self._revision_intents = {}
+        self._capability_revision_intents = {}
         self._lock = threading.RLock()
         self.receipt_root = Path(receipt_root) if receipt_root is not None else None
         from .decision_history import DecisionHistory
@@ -52,6 +53,8 @@ class ActionApprovals:
         self._pending = {key: row for key, row in self._pending.items() if row['expires_at'] > now}
         self._revision_intents = {key: row for key,row in self._revision_intents.items()
                                   if row['created_at'] <= now < row['expires_at']}
+        self._capability_revision_intents = {key: row for key,row in self._capability_revision_intents.items()
+                                             if row['created_at'] <= now < row['expires_at']}
 
     @staticmethod
     def _key(owner, binding):
@@ -80,14 +83,24 @@ class ActionApprovals:
             return copy.deepcopy(row) if row and row['expires_at'] > self.clock() else None
 
     def review(self, *, owner, binding, session, kind, payload, review, policy_revision,
-               revision_token='', project_hash=''):
+               revision_token='', project_hash='', capability_revision_token='', capability_subject=''):
         key = self._key(owner, binding)
         if not isinstance(session, str) or not re.fullmatch(r'[0-9a-f]{32}', session):
             raise ValueError('An exact conversation is required for approval.')
         if type(revision_token) is not str or type(project_hash) is not str:
             raise ValueError('Invalid revision context.')
+        if type(capability_revision_token) is not str or type(capability_subject) is not str:
+            raise ValueError('Invalid capability revision context.')
+        if revision_token and capability_revision_token:
+            raise ValueError('A proposal cannot combine project and capability revision contexts.')
+        if capability_subject or capability_revision_token:
+            from .decision_history import CAPABILITY_REVISION_KINDS, _identity
+            if kind not in CAPABILITY_REVISION_KINDS:
+                raise ValueError('This capability does not support revision relationships.')
+            _identity(capability_subject,64)
         document = json.loads(json.dumps({'kind': kind, 'payload': payload, 'review': review,
-            'session': session, 'policy_revision': policy_revision}, allow_nan=False, sort_keys=True))
+            'session': session, 'policy_revision': policy_revision,
+            **({'capability_subject':capability_subject} if capability_subject else {})}, allow_nan=False, sort_keys=True))
         digest = hashlib.sha256(json.dumps(document, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         with self._lock:
             self._expire()
@@ -105,6 +118,16 @@ class ActionApprovals:
                     child_id=row['id'],child_fingerprint=digest,created_at=time.time()))
                 row['origin_approval']=intent['parent_id']
                 del self._revision_intents[revision_token]
+            if capability_revision_token:
+                self.validate_capability_revision_context(owner=owner,binding=binding,session=session,
+                    kind=kind,subject_hash=capability_subject,capability_revision_token=capability_revision_token)
+                intent=self._capability_revision_intents[capability_revision_token]
+                self._capability_revisions().record(dict(owner=owner,session=session,kind=kind,
+                    subject_hash=capability_subject,parent_id=intent['parent_id'],
+                    parent_fingerprint=intent['parent_fingerprint'],child_id=row['id'],
+                    child_fingerprint=digest,created_at=time.time()))
+                row['origin_approval']=intent['parent_id']
+                del self._capability_revision_intents[capability_revision_token]
             self._pending[key] = row
             return copy.deepcopy(row)
 
@@ -118,8 +141,10 @@ class ActionApprovals:
             if (not row or row['session'] != session or row['id'] != approval_id
                     or not secrets.compare_digest(row['fingerprint'], fingerprint)):
                 raise ValueError('This exact approval is missing, expired, or belongs to another conversation.')
-            from .decision_history import KINDS, validate_feedback
+            from .decision_history import KINDS, CAPABILITY_REVISION_KINDS, _identity, validate_feedback
             feedback = validate_feedback(decision, row['kind'], feedback)
+            if decision=='request_changes' and row['kind'] in CAPABILITY_REVISION_KINDS:
+                _identity(row.get('capability_subject'),64)
             if decision in {'approve', 'request_changes'} and row['policy_revision'] != policy_revision:
                 del self._pending[key]
                 raise ValueError('Application policy changed. Prepare a new review before approval.')
@@ -139,6 +164,9 @@ class ActionApprovals:
         events = self._outcomes().read()
         capability_events = self.capability_outcomes().read()
         revisions,recorded_children = self._revisions().read_with_states()
+        capability_revisions,capability_children = self._capability_revisions().read_with_states()
+        from .shared_capability_evidence import for_owner
+        shared = for_owner(owner,capability_events)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
@@ -148,6 +176,13 @@ class ActionApprovals:
                 for link in revisions if link['owner']==owner and
                 ((link['parent_id']==row['id'] and link['parent_fingerprint']==row['fingerprint']) or
                  (link['child_id']==row['id'] and link['child_fingerprint']==row['fingerprint']))]
+            row['capability_revisions'] = [{**{k:link[k] for k in ('kind','parent_id','parent_fingerprint',
+                'child_id','child_fingerprint','created_at')},
+                'child_state':'recorded' if (owner,link['child_id']) in capability_children else 'unrecorded'}
+                for link in capability_revisions if link['owner']==owner and
+                ((link['parent_id']==row['id'] and link['parent_fingerprint']==row['fingerprint']) or
+                 (link['child_id']==row['id'] and link['child_fingerprint']==row['fingerprint']))]
+            row['shared_evidence'] = shared.get((row['id'],row['fingerprint']),[])
         return rows
 
     def _revisions(self):
@@ -195,6 +230,59 @@ class ActionApprovals:
         from .capability_outcomes import CapabilityOutcomes
         return CapabilityOutcomes(self.decision_history)
 
+    def _capability_revisions(self):
+        if self.decision_history is None:raise ValueError('Decision history is not configured.')
+        from .capability_revisions import CapabilityRevisions
+        return CapabilityRevisions(self.decision_history)
+
+    def capability_revision_context(self, *, owner, binding, session, kind, subject_hash, parent_row):
+        """Issue a RAM-only link context from an exact consumed change request."""
+        self._key(owner,binding)
+        from .decision_history import CAPABILITY_REVISION_KINDS, _identity
+        _identity(session,32);_identity(subject_hash,64)
+        if kind not in CAPABILITY_REVISION_KINDS or type(parent_row) is not dict:
+            raise ValueError('Exact supported capability parent required.')
+        if (parent_row.get('kind')!=kind or parent_row.get('session')!=session
+                or parent_row.get('capability_subject')!=subject_hash):
+            raise ValueError('Capability parent subject or kind differs.')
+        try:
+            document={key:parent_row[key] for key in ('kind','payload','review','session','policy_revision','capability_subject')}
+            digest=hashlib.sha256(json.dumps(document,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+        except (KeyError,TypeError,ValueError) as error:
+            raise ValueError('Exact capability parent document required.') from error
+        if digest!=parent_row.get('fingerprint'):
+            raise ValueError('Capability parent document differs from its fingerprint.')
+        with self._lock:
+            self._expire()
+            parent=self._capability_revisions().history.lookup(owner,parent_row.get('id'))
+            if (not parent or parent['kind']!=kind or parent['session']!=session
+                    or parent['decision']!='request_changes' or parent['fingerprint']!=digest):
+                raise ValueError('Exact saved capability change request required.')
+            if len(self._capability_revision_intents)>=128:raise ValueError('Too many capability revision contexts.')
+            token=secrets.token_hex(16);now=self.clock()
+            self._capability_revision_intents[token]=dict(owner=owner,binding=binding,session=session,kind=kind,
+                subject_hash=subject_hash,parent_id=parent['id'],parent_fingerprint=parent['fingerprint'],
+                created_at=now,expires_at=now+self.lifetime)
+            return dict(capability_revision_token=token,origin_approval=parent['id'])
+
+    def validate_capability_revision_context(self, *, owner, binding, session, kind, subject_hash, capability_revision_token):
+        """Read-only early check; publication repeats it under the approval lock."""
+        self._key(owner,binding)
+        from .decision_history import CAPABILITY_REVISION_KINDS, _identity
+        _identity(session,32);_identity(subject_hash,64);_identity(capability_revision_token,32)
+        if kind not in CAPABILITY_REVISION_KINDS:raise ValueError('Unsupported capability revision kind.')
+        with self._lock:
+            intent=self._capability_revision_intents.get(capability_revision_token);now=self.clock()
+            if (not intent or not intent['created_at']<=now<intent['expires_at'] or
+                    any(intent[k]!=v for k,v in [('owner',owner),('binding',binding),('session',session),
+                        ('kind',kind),('subject_hash',subject_hash)])):
+                raise ValueError('Capability revision context is missing, expired or mismatched.')
+            parent=self._capability_revisions().history.lookup(owner,intent['parent_id'])
+            if (not parent or parent['kind']!=kind or parent['decision']!='request_changes'
+                    or parent['session']!=session or parent['fingerprint']!=intent['parent_fingerprint']):
+                raise ValueError('Capability revision parent no longer matches its saved receipt.')
+            return dict(origin_approval=parent['id'])
+
     def _outcomes(self):
         if self.decision_history is None:raise ValueError('Decision history is not configured.')
         from .decision_outcomes import DecisionOutcomes
@@ -218,6 +306,7 @@ class ActionApprovals:
         with self._lock:
             self._pending = {key: row for key, row in self._pending.items() if key[1] != binding}
             self._revision_intents = {key:row for key,row in self._revision_intents.items() if row['binding']!=binding}
+            self._capability_revision_intents = {key:row for key,row in self._capability_revision_intents.items() if row['binding']!=binding}
 
     def _receipt_path(self, job_id):
         if self.receipt_root is None:

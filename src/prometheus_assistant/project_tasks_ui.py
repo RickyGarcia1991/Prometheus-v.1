@@ -9,6 +9,7 @@ from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .ollama import GenerationCancelled
 from . import ui_workspace
+from . import capability_revision_ui as capability_revisions
 
 MODES = {'project_edit', 'idle_config', 'idle_status', 'idle_run'}
 NO_PROMPT = {'idle_config', 'idle_status', 'idle_run'}
@@ -107,7 +108,7 @@ def _verify(app, grant_owner, owner):
 def _result(app, request, details, label, action='project_edit'):
     # Persist rollback evidence even after Stop; a cancelled chat save normally
     # suppresses output, which would hide the actual recovery result here.
-    saved_request = {key: value for key, value in request.items() if key != 'revision_token'}
+    saved_request = {key: value for key, value in request.items() if key not in {'revision_token', capability_revisions.FIELD}}
     return {**app.save({**saved_request, 'mode': action}, details, label,
                        model='owner-reviewed-project-task'), 'action': action}
 
@@ -125,6 +126,10 @@ def _review(app, request, owner, binding, kind, payload, review, resolved=None, 
     result = _result(app, request, details, 'Task · needs your approval',
                      'idle_config' if kind == 'idle_config' else 'project_edit')
     revision_options = {}
+    if kind == 'idle_config':
+        revision_options = capability_revisions.review_options(app, request, owner=owner, binding=binding,
+            kind=kind, subject_hash=capability_revisions.subject(kind, 'local'))
+        payload = {**payload, 'request': capability_revisions.without_context(payload['request'])}
     if request.get('revision_token'):
         from .project_decision_outcomes import project_hash
         revision_options = dict(revision_token=request['revision_token'],
@@ -473,6 +478,7 @@ def execute(app, request, *, grant_owner=None, binding=None):
                 'details': {'idle_research': research_store(app).status()},
                 'action': mode, 'label': 'Idle public research'}
     if mode == 'idle_config' and not request['enabled']:
+        capability_revisions.validate(request)
         settings = research_store(app).status()['settings']
         if settings.get('owner'):
             research_store(app).configure(settings['topic'], False, settings['interval_minutes'], owner=owner)

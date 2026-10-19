@@ -22,7 +22,7 @@ from .hardware import detect_hardware, resource_root, select_model
 from .memory import MemoryStore
 from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
-from . import ui_workspace, self_improvement_ui, integration_ui, project_tasks_ui, runtime_settings_ui, remote_jobs_ui
+from . import ui_workspace, self_improvement_ui, integration_ui, project_tasks_ui, runtime_settings_ui, remote_jobs_ui, capability_revision_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -143,7 +143,8 @@ def validate_job(body):
         return {**body, 'arguments': dict(request.arguments)}
     approval_required = {'approval_id', 'approval_fingerprint', 'approval_decision'}
     approval_fields = approval_required | {'approval_feedback'}
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | approval_fields):
+    capability_revision_ui.validate(body if isinstance(body, dict) else {})
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
@@ -543,9 +544,10 @@ class Interface:
                     with grant_owner() as owner:
                         result = ui_workspace.execute(self, request, decision_owner=owner)
                 else:
-                    if request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
+                    result = capability_revision_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None and request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
                         result = project_tasks_ui.run_idle(self)
-                    else:
+                    elif result is None:
                         result = project_tasks_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
                         result = runtime_settings_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
@@ -995,6 +997,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/activity-panel.js': ('activity-panel.js', 'text/javascript; charset=utf-8'),
                   '/decision-center.js': ('decision-center.js', 'text/javascript; charset=utf-8'),
                   '/decision-history.js': ('decision-history.js', 'text/javascript; charset=utf-8'),
+                  '/capability-revisions.js': ('capability-revisions.js', 'text/javascript; charset=utf-8'),
                   '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
                   '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
                   '/scheduled-jobs.js': ('scheduled-jobs.js', 'text/javascript; charset=utf-8'),
@@ -1071,10 +1074,17 @@ class Handler(BaseHTTPRequestHandler):
                 with MemoryStore(app.memory_path) as memory:
                     self.respond(200, memory.history(session, limit=40, include_metadata=True))
             elif self.path.startswith('/api/job/'):
+                binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
                 with app.lock:
                     job = app.jobs.get(self.path.rsplit('/', 1)[-1])
                     if job:
                         job = {**job, 'activity': app.activity_history.snapshot(job['id'])}
+                        if app._speech_owners.get(job['id'], {}).get('binding') != binding:
+                            result = job.get('result')
+                            if isinstance(result, dict) and isinstance(result.get('details'), dict):
+                                job = {**job, 'result': {**result, 'details': {
+                                    key: value for key, value in result['details'].items()
+                                    if key != 'capability_revision'}}}
                     self.respond(200 if job else 404, job or {'error': 'Request no longer available.'})
             else:
                 self.respond(404, {'error': 'Not found.'})

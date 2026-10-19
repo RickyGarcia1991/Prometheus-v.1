@@ -10,6 +10,7 @@ from .remote_job_protocol import normalize_request, validate_receipt
 from .remote_worker_client import RemoteWorkerClient, OwnerLedger, MAX_TRANSPORT_BYTES
 from . import ui_workspace
 from . import scheduled_syntax_ui
+from . import capability_revision_ui as revisions
 
 MODES = {'remote_syntax_info','remote_syntax_prepare','remote_syntax_recover'} | scheduled_syntax_ui.MODES
 FIELDS = {'remote_files','remote_job_id'} | scheduled_syntax_ui.FIELDS
@@ -56,6 +57,14 @@ def execute(app, request, *, grant_owner=None, binding=None):
     with grant_owner() as owner:
         pending = app.action_approvals.pending(owner=owner,binding=binding)
         if possible and (not pending or pending['kind']!='remote_syntax'): return None
+    revision_options = {}
+    if mode == 'remote_syntax_prepare':
+        from .project_decision_outcomes import project_hash
+        workspace = ui_workspace.workspace(app, request)
+        revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+            kind='remote_syntax', subject_hash=revisions.subject('remote_syntax', project_hash(workspace)))
+    if possible and decision not in {'approve', 'reject'}:
+        raise ValueError('Request changes must use the live capability feedback route.')
     @contextmanager
     def current_owner():
         with grant_owner() as current:
@@ -107,7 +116,6 @@ def execute(app, request, *, grant_owner=None, binding=None):
         if pending: raise ValueError('Approve or deny the existing review first.')
         with current_owner():
             target = gateway.target()
-            workspace = ui_workspace.workspace(app,request)
             files=[]
             with workspace.lock:
                 for relative in request['remote_files'].splitlines():
@@ -119,9 +127,9 @@ def execute(app, request, *, grant_owner=None, binding=None):
             # Leave room for the signed envelope in this bridge's command budget.
             if len(json.dumps(req,ensure_ascii=False).encode())>MAX_TRANSPORT_BYTES-4096:
                 raise ValueError('Select a smaller source set; this connection supports about 58 KiB per review.')
-            result = app.save(request,{'reply':'Review the exact files and destination before sending this syntax check.'},
+            result = app.save(revisions.without_context(request),{'reply':'Review the exact files and destination before sending this syntax check.'},
                               'Remote syntax review',model='owner-reviewed-worker')
-        row = controller.prepare(req,session=result['session'])
+        row = controller.prepare(req,session=result['session'], **revision_options)
         result['details']['approval']=row
         result['details']['remote_worker']={'ready':True,'target':target,
             'resource_admission':row['review']['resource_admission']}

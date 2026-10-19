@@ -59,3 +59,39 @@ test('untrusted revision relationships fail closed',async()=>{
  }
  for(const extra of [{decision:'approve'},{kind:'runtime_config'}]){const f=await revisionHistory([{...revisionParent,...extra}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);}
 });
+const capabilityLink={...revisionLink,kind:'runtime_config'};
+const capabilityParent={...revisionParent,kind:'runtime_config',revisions:[],capability_revisions:[capabilityLink]};
+test('capability revision chains show kind and separate recorded or unknown child decisions',async()=>{
+ for(const kind of ['runtime_config','idle_config','integration','integration_access','remote_syntax','scheduled_syntax']){
+  const link={...capabilityLink,kind};
+  const f=await revisionHistory([{...capabilityParent,kind,capability_revisions:[link]},{...row,id:link.child_id,fingerprint:link.child_fingerprint,kind,decision:'reject',capability_revisions:[link]}]);
+  assert.match(flatten(f.elements.decisionHistoryList),/revision chain.*separate decision.*own decision/);assert.equal(f.submitted.length,0);
+  const g=await revisionHistory([{...capabilityParent,kind,capability_revisions:[{...link,child_state:'unrecorded'}]}]);assert.match(flatten(g.elements.decisionHistoryList),/no decision is recorded.*not restored/);
+ }
+});
+test('capability links reject mixed kinds, malformed identities and restored historical authority',async()=>{
+ for(const links of [null,[{...capabilityLink,kind:'project_edit'}],[{...capabilityLink,kind:'integration'}],[{...capabilityLink,parent_id:'e'.repeat(32)}],[{...capabilityLink,child_state:'approved'}],[{...capabilityLink,capability_revision_token:'a'.repeat(32)}],[capabilityLink,capabilityLink]]){
+  const f=await revisionHistory([{...capabilityParent,capability_revisions:links}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);
+ }
+ const f=await revisionHistory([{...capabilityParent,decision:'approve'}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);
+ const g=await revisionHistory([{...capabilityParent,id:capabilityLink.child_id,fingerprint:capabilityLink.child_fingerprint,capability_revisions:[{...capabilityLink,child_state:'unrecorded'}]}]);assert.match(g.elements.decisionHistoryStatus.textContent,/unavailable/);
+});
+const sharedGroup={reference:'e'.repeat(64),kind:'worker_result',status:'checks_failed',linked_decisions:2,related_decisions:[{id:'f'.repeat(32),fingerprint:'f'.repeat(64)}],truncated:false,read_only:true};
+const sharedRow={...row,id:'a'.repeat(32),fingerprint:'b'.repeat(64),kind:'scheduled_syntax',decision:'approve',capability_outcomes:[capability('started',jobBinding),capability('checks_failed',{...jobBinding,checks:{planned:1,executed:1,passed:0,failed:1,cancelled:0,timed_out:0}})],shared_evidence:[sharedGroup]};
+test('shared native evidence is readonly provenance and never a separate run or replay button',async()=>{
+ const f=await revisionHistory([sharedRow]);const text=flatten(f.elements.decisionHistoryList);
+ assert.match(text,/Shared native worker observation.*checks found failures/);assert.match(text,/2 decisions link to this same recorded result/);assert.match(text,/Read-only provenance.*do not establish separate executions.*replay/);assert(text.includes(sharedGroup.reference));
+ assert.equal(f.submitted.length,0);assert.deepEqual(f.calls,[['/api/decisions/history']]);
+ function assertDisplayOnly(node){assert(!['BUTTON','A','INPUT'].includes(node.tagName));node.children.forEach(assertDisplayOnly);}assertDisplayOnly(f.elements.decisionHistoryList);
+});
+test('shared evidence preserves tool failure and validates bounded truncation',async()=>{
+ const related=Array.from({length:16},(_,i)=>({id:(i+2).toString(16).padStart(32,'0'),fingerprint:'f'.repeat(64)}));
+ const f=await revisionHistory([{...sharedRow,capability_outcomes:[capability('started',jobBinding),capability('tool_failed',jobBinding)],shared_evidence:[{...sharedGroup,status:'tool_failed',linked_decisions:20,related_decisions:related,truncated:true}]}]);
+ assert.match(flatten(f.elements.decisionHistoryList),/tool failed; this is not a code-defect finding/);assert.match(flatten(f.elements.decisionHistoryList),/additional references omitted/);assert.equal(f.submitted.length,0);
+});
+test('malformed shared provenance, contradictory outcomes and foreign fields fail closed before rendering',async()=>{
+ for(const patch of [{reference:'<img>'},{kind:'model_acceptance'},{status:'checks_passed'},{linked_decisions:1},{linked_decisions:3},{linked_decisions:true},{related_decisions:[]},{related_decisions:[{id:sharedRow.id,fingerprint:sharedRow.fingerprint}]},{related_decisions:[{id:'f'.repeat(32),fingerprint:'bad'}]},{truncated:true},{read_only:false},{owner:'private'},{capability_revision_token:'a'.repeat(32)}]){
+  const f=await revisionHistory([row,{...sharedRow,shared_evidence:[{...sharedGroup,...patch}]}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);
+ }
+ for(const patch of [{kind:'runtime_config'},{id:'short'},{fingerprint:'bad'},{decision:'request_changes'},{capability_outcomes:[]},{shared_evidence:[sharedGroup,sharedGroup]},{shared_evidence:null}]){const f=await revisionHistory([{...sharedRow,...patch}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);}
+});
