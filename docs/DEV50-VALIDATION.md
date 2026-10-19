@@ -22,8 +22,14 @@ Archive SHA256: `922a69d444a8a2a5ca9090345497adf16085ce0da0d19450ab67e3af7c33b6b
 
 1,010 signed payload files. Installation is separately recorded with a fresh verified backup/restore and dev49 revision 2 retained for rollback. The broader roadmap remains unfinished: conflict-resolution proposals and other workflow families, additional scheduler measurements, broader reviewer acceptance, update/requalification lifecycle, and heterogeneous device cooperation remain.
 
-## Installation status — 2026-10-19
+## Historical installation interruption — 2026-10-19
 
 The authorized installation verified a fresh 184-file backup and isolated restore, plus all three signed application copies. Its six applicable native health checks passed. USB-storage reset and disk-retry events then interrupted activation; the installation journal remains incomplete, and the installed interface has not passed acceptance. This is not recorded as a successful installation. The original journal and diagnostics are preserved; dev49 revision 2 and verified recovery copies remain available.
 
 The full package qualification above is unchanged. Recovery must first restore stable storage access and reconcile the existing transaction, then complete startup, retained-history and installed-interface acceptance. No second installer has been run and no worker or security settings were changed. A separate flash checkpoint verified 344 public files, including the signed archive and failure evidence, without accessing the stalled SSD. The final SSD evidence checkpoint is pending.
+
+## Installation acceptance completed — 2026-10-19 03:09 UTC
+
+Storage access resumed and the original one-use installer completed successfully. No second installer or separate recovery operation was run. The earlier interruption snapshot and emergency flash checkpoint remain unchanged. All three signed copies, the 184-file backup/restore and retained dev49 rollback verified. Startup, all nine native installed acceptance receipts and the owner-authenticated installed dashboard/history/reload checks passed. The three retained worker results are unchanged, including the original failed syntax example; no new production job was submitted by acceptance.
+
+The latest bounded storage check showed both expected removable-volume identities and no new reset within two minutes. This is current responsiveness, not a claim of permanent USB hardware repair. Prometheus's provider connection is disconnected at acceptance; the separate Surface monitor connection is not counted as a connected application provider. Full qualification and its stated observation gap are unchanged. Final storage checkpoint receipts record the copies of this completed evidence and the preserved interruption record.
