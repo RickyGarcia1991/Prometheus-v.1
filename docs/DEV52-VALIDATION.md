@@ -21,6 +21,9 @@ completed and unconfirmed interpretations.
 - Ubuntu Surface: **206 passed**, no failures or skips, exact result readback
   verified; production worker unchanged.
 - Isolated installer/helper checks: **132 passed**.
+- The new installed-interpretation helper passed **ten checks against the candidate**.
+  Its retained first run exposed an enum-expectation error in the helper, corrected
+  without changing signed application bytes. Installed acceptance has not run.
 - Normal-owner browser: approve, reject, reload, saved history and process restart
   passed. An undecided review was absent after restart; completed history and
   every original observation were preserved.
@@ -42,10 +45,13 @@ feature test. All records remain in the release evidence.
 
 This is a draft tested candidate, **not installed**. The direct source review is
 recorded; independent agents exhausted their usage allowance before an audit
-could finish, so an independent audit is not claimed. Final installer review,
-installation preflight, fresh stopped-data backup/restore, activation and installed
+could finish, so an independent audit is not claimed. Read-only installation
+preflight passed. Final installer review, fresh stopped-data backup/restore, activation and installed
 interface acceptance remain required. The existing installer validation still
 requires independent review; no passing flag has been invented or waived.
+
+SSD and flash preparation copies each verified 145 public source/evidence files,
+including the signed archive. Neither copy installs or activates the candidate.
 
 Dev51 is the intended rollback release. Existing identities, owner data and the
 Surface production worker are retained. The wider roadmap remains unfinished.
