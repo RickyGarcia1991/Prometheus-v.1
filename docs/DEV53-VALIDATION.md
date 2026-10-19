@@ -1,19 +1,67 @@
-# Dev53 preparation: interpretation revision and withdrawal
+# Dev53 interpretation lifecycle — Installed acceptance complete
 
-This candidate lets an owner revise or withdraw an approved historical interpretation using a new exact review. The original interpretation, native observations, failed checks and every attempted change remain visible. Competing active interpretations remain separate. These decisions do not run work or authorize remediation.
+## Current installation record
 
-The separate append-only lifecycle store binds each attempt to the exact original interpretation and lineage. A newer linked attempt permanently prevents an older interrupted attempt from becoming effective, even when the newer attempt is rejected. A process restart preserves completed history and revokes pending reviews. Withdrawal is terminal for that interpretation; a separate fresh interpretation remains possible.
+Installed acceptance complete. The installer verified a fresh 184-file stopped-data backup
+and an isolated restore before activation. All three signed release copies verified.
+Dev52 revision 3 is retained for rollback. Its reader preserves the lifecycle sidecar
+but does not display revision or withdrawal state. The Surface worker and identities
+are unchanged. No production job was replayed by the acceptance checks.
 
-The grouped change covers project, worker and application evidence, current-input checks for revisions, stale withdrawal, bounded history, Unicode text, authenticated controls and rollback compatibility. The previous release can read the original historical interpretation but does not display the new lifecycle sidecar; preserving that sidecar restores the current view on re-upgrade.
+- startup: passed
+- retained history: passed
+- mode policy: passed
+- native measurements: passed
+- decision history: passed
+- device health: passed
+- capability revisions: passed
+- evidence lifecycle: passed
+- application evidence: passed
+- conflict investigation: passed
+- evidence interpretations: passed
+- interpretation lifecycle: passed
+- installed interface: passed
 
-Verified preparation evidence at this snapshot:
+The installed acceptance summary binds each actual check by SHA256. Its current hash
+is `8c7b5dac169e5e9a8eaa0447c538fb02cd9a2b3f6fc2638c03a257b889f7eae0`.
+The existing repository review remains a draft and is not merged. The final evidence
+supplement is only established when its separate drive readback receipt is present;
+the earlier 159-file preparation checkpoint is retained on both drives.
 
-- 184 combined source integration checks and 108 interface checks passed.
-- 32 independent checks passed, including real process exits, cross-process completion/link contention, an actual previous-release reader and malformed/late UI response cases.
-- All 35 packaged UI suites passed.
-- 270 isolated native Surface checks passed with no failures or skips. Executed source and results were read back by hash; production worker and identities were unchanged.
-- Corrected generated fixtures passed native recovery and two actual packaged Interface status calls. The smoke used a synthetic owner, no model request and no disk-probe child process. Initial fixture and test-expectation failures remain in the public evidence record.
+The existing Dell connector was restarted through its saved-session launcher, and
+Desktop Commander subsequently reported both computers online. Both progress displays
+responded. Connectivity is a timed observation. Previous USB storage resets, component
+update warnings and failed observations remain recorded; no hardware repair is claimed.
 
-The signed candidate contains 1,027 payload files. Manifest SHA-256: `61d873757944044d83066462814aacffef5306de0e2d95e9bc5123134aeb4e73`. Archive SHA-256: `00e670e19d41e98d7b07f6b2fbb0e5c73488d09dd5f6907823ed95ac8591631c`.
+## Next grouped milestone
 
-This is a preparation snapshot. Complete packaged regression, normal-owner browser recovery and installation qualification require their own final records. This document does not claim that the candidate is installed or the broader roadmap is finished. The existing installed release and worker remain the active baseline until the coordinator completes qualification and deployment.
+Fresh, exact review of a bounded follow-up check tied to the current interpretation,
+its source evidence, approved files and destination, and eventual result. Start with
+already supported check operations. Changed inputs require a new review. An uncertain
+past execution must remain visible and cannot silently run again. This is still planned,
+not implemented by dev53. Original failed checks and competing interpretations remain.
+
+The five broader workstreams remain unfinished: evidence follow-up actions, scheduling,
+reviewer qualification, research/memory/update lifecycle, and device cooperation.
+Ubuntu on the SSD remains an optional separate migration. There is no defensible
+overall completion percentage or fixed count of future releases.
+
+## Preserved qualification snapshot
+
+# Dev53 interpretation lifecycle — final qualification snapshot
+
+The signed candidate supports fresh, exact owner reviews to revise or withdraw a recorded interpretation. Original interpretations, conflicting observations and failed results remain visible. A separate append-only history preserves rejected and interrupted changes; a newer linked review blocks an older interrupted decision from completing. Pending approval authority is not restored after restart.
+
+Final packaged regression passed 4,671 tests, with 14 documented skips and one exclusion. All 35 interface suites and 270 fresh native Surface checks passed. The frozen 12-file feature scope passed independent review, with 32 additional recovery and UI probes. Installer preparation passed 175 distinct cases; earlier failed UI probes and external helper assertions remain retained alongside their corrections.
+
+Live tests approved a revision, withdrew another interpretation, rejected a withdrawal, preserved ten saved decisions across browser reload and process restart, and confirmed that a pending approval was not restored. Explicit visible-button evidence and a complete post-restart snapshot prove that the old Approve and Deny controls are absent. These tests used labeled generated history and normal owner authentication, without model calls, worker dispatch or remediation execution.
+
+Post-test checks verified the signature, exact 1,027-file payload, archive, source, frozen overlays and prior baseline. Final installation validation additionally requires read-only preflight and fresh isolated baseline-history capture. Standing owner authorization covers installation; normal device authentication remains necessary after restart. Installation and installed acceptance are separate records and are not established by this qualification snapshot.
+
+The 159-file preparation checkpoint contains the exact archive and reviewed source on the SSD and flash drive. The additional qualification checkpoint references that base and has a separate readback receipt; this document does not claim a supplemental copy before it runs. The repository PR remains a draft and is not merged.
+
+Dev52 revision 3 is the retained rollback target. It preserves the lifecycle sidecar but does not display revision and withdrawal state. The Surface worker is unchanged. Component-update warnings and prior SSD resets remain operational follow-ups. This release does not choose an authoritative winner, erase failed evidence, authorize automatic remediation or finish the broader roadmap.
+
+Manifest SHA256: `61d873757944044d83066462814aacffef5306de0e2d95e9bc5123134aeb4e73`
+
+Archive SHA256: `00e670e19d41e98d7b07f6b2fbb0e5c73488d09dd5f6907823ed95ac8591631c`
