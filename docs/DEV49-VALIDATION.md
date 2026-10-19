@@ -25,4 +25,8 @@ Archive SHA-256: `837002601d8e3689557dabdd416ae0cecbf3457ac76945a62485497e70bc29
 
 Production installation is separately recorded. Dev48 revision 2 remains the rollback target; the reviewed transaction requires a fresh verified separate-volume backup and isolated restore. Worker identity, enrollment and production worker package stay unchanged.
 
+On 2026-10-19 UTC, the production transaction verified a fresh 184-file backup and isolated restore, verified all three signed copies, selected dev49 and passed native installed health. Startup readiness then timed out while Windows reported repeated USB-storage resets and disk retries. The cooperative rollback stop also timed out before selection restoration. The retained installation receipt is `recovery_required`: dev49 operation and completed dev48 rollback are both unconfirmed. No application was forcibly stopped and live data was not restored from backup. Further SSD writes are held until storage is stable; a separate bounded recovery record must preserve this failed attempt. This is a deployment failure, separate from the passed candidate qualification above.
+
+Before that failure, SSD and flash checkpoints each verified 128 files. The later failure evidence is retained locally pending a new checkpoint after storage recovery.
+
 This draft source update is stacked on codex/dev48-release-sync. It does not merge older release branches. This milestone qualifies historical evidence handling, not new model accuracy or completion of the wider Prometheus roadmap. The preview's existing component-check warning and disconnected isolated provider were visible and not counted as feature passes.
