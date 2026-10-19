@@ -185,6 +185,9 @@ class ActionApprovals:
         # A contradictory original result may be older than the latest 50 rows.
         lifecycle = lifecycle_for_owner(owner,decisions=all_rows,
             project_events=events,capability_events=capability_events,application_events=application_events)
+        from .evidence_conflicts import for_owner as conflicts_for_owner
+        conflicts = conflicts_for_owner(owner,decisions=all_rows,
+            project_events=events,capability_events=capability_events,application_events=application_events)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
@@ -204,6 +207,7 @@ class ActionApprovals:
                  (link['child_id']==row['id'] and link['child_fingerprint']==row['fingerprint']))]
             row['shared_evidence'] = shared.get((row['id'],row['fingerprint']),[])
             row['evidence_lifecycle'] = lifecycle[(row['id'],row['fingerprint'])]
+            row['evidence_conflict'] = conflicts.get((row['id'],row['fingerprint']))
         return rows
 
     def _revisions(self):
