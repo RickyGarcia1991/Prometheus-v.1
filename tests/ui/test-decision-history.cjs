@@ -1,6 +1,17 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {test}=require('node:test');const {setup}=require('./test-workspace.cjs');
+test('interpretations show stale and competing decisions without hiding failed evidence or adding actions',async()=>{
+ const original=investigatedRow(), entry={approval_id:'8'.repeat(32),fingerprint:'8'.repeat(64),target_id:original.id,target_fingerprint:original.fingerprint,source:'worker',reference:'9'.repeat(64),snapshot_sha256:'7'.repeat(64),fact_sha256:'6'.repeat(64),reason:'<script>literal owner reason</script>',decision:'approve',recording_state:'recorded',currency:'stale',interpretation_conflict:true};
+ const projection={schema_version:1,read_only:true,freshness:'historical',total:1,truncated:false,items:[entry]};
+ const f=await revisionHistory([{...original,evidence_resolutions:projection}]);
+ assert.match(flatten(f.elements.decisionHistoryList),/Stale: collected evidence changed/);assert.match(flatten(f.elements.decisionHistoryList),/Conflicting approved interpretations/);assert.match(flatten(f.elements.decisionHistoryList),/checks found failures/i);assert.match(flatten(f.elements.decisionHistoryList),/literal owner reason/);noAuthority(f);
+ for(const bad of [{...projection,items:[{...entry,target_id:'0'.repeat(32)}]},{...projection,items:[{...entry,decision:'success'}]},{...projection,items:[{...entry,command:'run'}]},null]){
+  const g=await revisionHistory([{...original,evidence_resolutions:bad}]);assert.match(flatten(g.elements.decisionHistoryList),/interpretation history unavailable/);assert.match(flatten(g.elements.decisionHistoryList),/checks found failures/i);noAuthority(g);
+ }
+ const unrecorded=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'unrecorded',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(unrecorded.elements.decisionHistoryList),/completion unconfirmed/);noAuthority(unrecorded);
+ const consumed=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'approve',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(consumed.elements.decisionHistoryList),/completion unconfirmed \(owner decision: approve\)/);assert.doesNotMatch(flatten(consumed.elements.decisionHistoryList),/Approved interpretation/);noAuthority(consumed);
+});
 const script=fs.readFileSync(path.join(__dirname,'../../src/prometheus_assistant/ui_assets/decision-history.js'),'utf8');
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 const row={id:'a',fingerprint:'b',session:'c',kind:'project_edit',decision:'request_changes',feedback:'<img onerror=bad>',decided_at:1};

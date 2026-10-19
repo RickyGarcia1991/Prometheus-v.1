@@ -23,6 +23,27 @@ function events(row){
  return rows;
 }
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);}
+function interpretationHistory(item,row){
+ const value=row.evidence_resolutions;if(value===undefined)return;
+ const hex=(x,n)=>typeof x==='string'&&new RegExp('^[a-f0-9]{'+n+'}$').test(x);
+ const fields=['approval_id','fingerprint','target_id','target_fingerprint','source','reference','snapshot_sha256','fact_sha256','reason','decision','recording_state','currency','interpretation_conflict'];
+ try{
+  if(!value||Object.keys(value).length!==6||value.schema_version!==1||value.read_only!==true||value.freshness!=='historical'||!Number.isInteger(value.total)||value.total<0||value.total>4096||typeof value.truncated!=='boolean'||!Array.isArray(value.items)||value.items.length>16||value.items.length>value.total||value.truncated!==(value.total>value.items.length))throw Error('Invalid interpretation history');
+  const seen=new Set();
+  for(const r of value.items){
+   if(!r||Object.keys(r).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(r,k))||!['approval_id','target_id'].every(k=>hex(r[k],32))||!['fingerprint','target_fingerprint','reference','snapshot_sha256','fact_sha256'].every(k=>hex(r[k],64))||!['project','worker','application'].includes(r.source)||typeof r.reason!=='string'||!r.reason.trim()||r.reason.length>2000||!['approve','reject','unrecorded'].includes(r.decision)||!['recorded','unrecorded'].includes(r.recording_state)||r.decision==='unrecorded'&&r.recording_state!=='unrecorded'||!['matching_inputs','stale'].includes(r.currency)||typeof r.interpretation_conflict!=='boolean'||r.interpretation_conflict&&(r.decision!=='approve'||r.recording_state!=='recorded')||seen.has(r.approval_id)||!(r.target_id===row.id&&r.target_fingerprint===row.fingerprint||r.approval_id===row.id&&r.fingerprint===row.fingerprint))throw Error('Invalid interpretation record');
+   seen.add(r.approval_id);
+  }
+ }catch{paragraph(item,'Evidence interpretation history unavailable. Original evidence remains visible.');return;}
+ if(!value.items.length)return;
+ paragraph(item,'Historical evidence interpretations ('+value.items.length+' shown of '+value.total+'). Original conflicts and failed checks remain unchanged.');
+ for(const r of value.items){
+  paragraph(item,(r.recording_state==='unrecorded'?'Interpretation completion unconfirmed (owner decision: '+r.decision+')':r.decision==='approve'?'Approved interpretation':'Rejected interpretation')+' · '+(r.currency==='stale'?'Stale: collected evidence changed':'Matches the collected history inputs; not a current health check')+'.');
+  paragraph(item,'Reason: '+r.reason);paragraph(item,'Selected observation '+r.fact_sha256+' · snapshot '+r.snapshot_sha256+' · review '+r.approval_id+'.');
+  if(r.interpretation_conflict)paragraph(item,'Conflicting approved interpretations exist for this snapshot. No automatic winner is selected.');
+ }
+ paragraph(item,'Interpretations do not authorize execution, retry or restoration.');
+}
 const revisionKinds=['runtime_config','idle_config','integration','integration_access','remote_syntax','scheduled_syntax'];
 function revisions(row,capability=false){
  const source=capability?row.capability_revisions:row.revisions,links=source===undefined?[]:source;
@@ -276,7 +297,7 @@ async function load(){
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
   for(const row of data.items){events(row);capabilityEvents(row);applicationEvents(row);revisions(row);revisions(row,true);sharedEvidence(row);}
   let unknownLifecycles=0;
-  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);conflictInvestigation(item,row,lifecycle);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
+  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);conflictInvestigation(item,row,lifecycle);interpretationHistory(item,row);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
   status.textContent=data.items.length+' saved decisions. '+(unknownLifecycles?unknownLifecycles+' evidence lifecycle summaries are unknown. ':'')+'History does not authorize or resume work.';
  }catch(error){if(version===generation)clear('Decision history unavailable. No historical record authorizes work.');}
  finally{if(version===generation){reading=false;controls();}}

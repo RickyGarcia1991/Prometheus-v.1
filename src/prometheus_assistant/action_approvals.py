@@ -188,6 +188,9 @@ class ActionApprovals:
         from .evidence_conflicts import for_owner as conflicts_for_owner
         conflicts = conflicts_for_owner(owner,decisions=all_rows,
             project_events=events,capability_events=capability_events,application_events=application_events)
+        from .evidence_resolution import for_owner as resolutions_for_owner, empty_projection
+        interpretations = resolutions_for_owner(owner,records=self.evidence_resolutions().read(decisions=all_rows),
+            decisions=all_rows,conflicts=conflicts)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
@@ -208,7 +211,94 @@ class ActionApprovals:
             row['shared_evidence'] = shared.get((row['id'],row['fingerprint']),[])
             row['evidence_lifecycle'] = lifecycle[(row['id'],row['fingerprint'])]
             row['evidence_conflict'] = conflicts.get((row['id'],row['fingerprint']))
+            row['evidence_resolutions'] = interpretations.get((row['id'],row['fingerprint']),empty_projection())
         return rows
+
+    def evidence_resolutions(self):
+        from .evidence_resolution import EvidenceResolutions
+        return EvidenceResolutions(self.decision_history)
+
+    def _evidence_conflict_inputs(self, owner):
+        """Collect complete bounded history; no native refresh, action or writes."""
+        if self.decision_history is None:raise ValueError('Decision history is not configured.')
+        from .evidence_conflicts import for_owner
+        decisions=self.decision_history._all_rows()
+        conflicts=for_owner(owner,decisions=decisions,project_events=self._outcomes().read(),
+            capability_events=self.capability_outcomes().read(),
+            application_events=self.application_outcomes().read(decisions=decisions))
+        return decisions,conflicts
+
+    @staticmethod
+    def _checked_resolution_target(conflicts, payload):
+        conflict=conflicts.get((payload['target_id'],payload['target_fingerprint']))
+        if (not conflict or any(conflict[key]!=payload[key] for key in ('source','reference','snapshot_sha256'))
+                or not any(variant['fact_sha256']==payload['fact_sha256'] and
+                    all(variant[k]==v for k,v in payload['selected_fact'].items()) for variant in conflict['variants'])):
+            raise ValueError('Conflict inputs changed or the selected fact is unavailable. Prepare a fresh interpretation review.')
+
+    def prepare_evidence_resolution(self, *, owner, binding, session, target_id, target_fingerprint,
+                                    snapshot_sha256, fact_sha256, reason, policy_revision):
+        """Prepare one exact RAM-only interpretation; no sidecar writes on open."""
+        self._key(owner,binding)
+        from .decision_history import _identity
+        from .evidence_resolution import review_document, FACT_FIELDS, reason_text, policy_text, validate_payload
+        for value,size in ((session,32),(target_id,32),(target_fingerprint,64),(snapshot_sha256,64),(fact_sha256,64)):
+            _identity(value,size)
+        reason=reason_text(reason);policy_text(policy_revision)
+        with self._lock:
+            _decisions,conflicts=self._evidence_conflict_inputs(owner)
+            conflict=conflicts.get((target_id,target_fingerprint))
+            if not conflict or conflict['snapshot_sha256']!=snapshot_sha256:
+                raise ValueError('Exact current owned conflict inputs are required.')
+            variant=next((v for v in conflict['variants'] if v['fact_sha256']==fact_sha256),None)
+            if variant is None:raise ValueError('Choose a shown native fact variant from this conflict.')
+            payload=dict(target_id=target_id,target_fingerprint=target_fingerprint,source=conflict['source'],
+                reference=conflict['reference'],snapshot_sha256=snapshot_sha256,fact_sha256=fact_sha256,
+                selected_fact={k:copy.deepcopy(variant[k]) for k in FACT_FIELDS},reason=reason)
+            validate_payload(payload)
+            # A malformed/full sidecar is checked again on the decision attempt;
+            # merely opening this review never creates an audit or native result.
+            self.evidence_resolutions().read(decisions=_decisions)
+            return self.review(owner=owner,binding=binding,session=session,kind='evidence_resolution',
+                               payload=payload,review=review_document(payload),policy_revision=policy_revision)
+
+    def decide_evidence_resolution(self, *, owner, binding, session, approval_id, fingerprint, decision, policy_revision):
+        """Record only a historical owner interpretation, without executing work."""
+        key=self._key(owner,binding)
+        from .decision_history import _identity
+        from .evidence_resolution import proposal, validate_payload, policy_text, for_owner
+        for value,size in ((session,32),(approval_id,32),(fingerprint,64)):_identity(value,size)
+        if type(decision) is not str or decision not in {'approve','reject'}:
+            raise ValueError('Interpretations support approve or reject only.')
+        policy_text(policy_revision)
+        with self._lock:
+            self._expire();row=self._pending.get(key)
+            if (not row or row['kind']!='evidence_resolution' or row['session']!=session
+                    or row['id']!=approval_id or not secrets.compare_digest(row['fingerprint'],fingerprint)):
+                raise ValueError('Exact current interpretation review is missing, expired or belongs to another session.')
+            if row['policy_revision']!=policy_revision:
+                del self._pending[key]
+                raise ValueError('Application policy changed. Prepare a new interpretation review.')
+            payload=validate_payload(row['payload'])
+            _decisions,conflicts=self._evidence_conflict_inputs(owner)
+            if decision=='approve':self._checked_resolution_target(conflicts,payload)
+            store=self.evidence_resolutions()
+            # Durable association precedes consumption: a later write failure
+            # stays visibly unrecorded and cannot restore the consumed approval.
+            store.link(proposal(owner,row,time.time()))
+            _decisions,conflicts=self._evidence_conflict_inputs(owner)
+            if decision=='approve':self._checked_resolution_target(conflicts,payload)
+            consumed=self.consume(owner=owner,binding=binding,session=session,approval_id=approval_id,
+                fingerprint=fingerprint,policy_revision=policy_revision,decision=decision)
+            try:
+                store.finish(dict(schema_version=1,owner=owner,approval_id=approval_id,fingerprint=fingerprint,
+                                  decision=decision,recorded_at=time.time()))
+            except (ValueError,OSError) as error:
+                raise ValueError('The owner decision was saved, but interpretation completion is unconfirmed. History remains unrecorded; prepare a new review rather than replaying this approval.') from error
+            decisions,conflicts=self._evidence_conflict_inputs(owner)
+            projection=for_owner(owner,records=store.read(decisions=decisions),decisions=decisions,conflicts=conflicts)
+            item=projection[(approval_id,fingerprint)]['items'][0]
+            return {'approval':consumed,'resolution':item}
 
     def _revisions(self):
         if self.decision_history is None:raise ValueError('Decision history is not configured.')
