@@ -24,6 +24,7 @@ from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
 from . import ui_workspace, self_improvement_ui, integration_ui, project_tasks_ui, runtime_settings_ui, remote_jobs_ui, capability_revision_ui
 from . import evidence_resolution_ui
+from . import interpretation_lifecycle_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -45,6 +46,7 @@ MODES |= integration_ui.MODES
 MODES |= project_tasks_ui.MODES
 MODES |= runtime_settings_ui.MODES | remote_jobs_ui.MODES
 MODES |= evidence_resolution_ui.MODES
+MODES |= interpretation_lifecycle_ui.MODES
 MODES.add('voice_prepare')
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -147,7 +149,8 @@ def validate_job(body):
     approval_fields = approval_required | {'approval_feedback'}
     capability_revision_ui.validate(body if isinstance(body, dict) else {})
     evidence_resolution_ui.validate(body if isinstance(body, dict) else {})
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | evidence_resolution_ui.FIELDS | approval_fields):
+    interpretation_lifecycle_ui.validate(body if isinstance(body, dict) else {})
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | evidence_resolution_ui.FIELDS | interpretation_lifecycle_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
@@ -184,7 +187,7 @@ def validate_job(body):
         raise ValueError('Use a prompt of at most 4000 characters.')
     if mode == 'voice_prepare' and (set(body) - {'mode', 'prompt'} or prompt.strip()):
         raise ValueError('Voice preparation accepts only its mode and an empty prompt.')
-    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES | project_tasks_ui.NO_PROMPT | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES and not prompt.strip():
+    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES | project_tasks_ui.NO_PROMPT | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -550,6 +553,8 @@ class Interface:
                     result = capability_revision_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
                         result = evidence_resolution_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = interpretation_lifecycle_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None and request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
                         result = project_tasks_ui.run_idle(self)
                     elif result is None:
@@ -615,7 +620,7 @@ class Interface:
         require_dispatch('ui.'+request['mode'])
         if request['mode'] == 'core':
             raise ValueError('Scoped Core execution requires the authenticated job path.')
-        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES | project_tasks_ui.MODES | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES:
+        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES | project_tasks_ui.MODES | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES:
             raise ValueError('Application changes and integrations require the authenticated owner approval path.')
         mode, prompt = request['mode'], request['prompt']
         from .ui_activity import task_label
@@ -1003,6 +1008,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/decision-center.js': ('decision-center.js', 'text/javascript; charset=utf-8'),
                   '/decision-history.js': ('decision-history.js', 'text/javascript; charset=utf-8'),
                   '/evidence-resolution.js': ('evidence-resolution.js', 'text/javascript; charset=utf-8'),
+                  '/interpretation-lifecycle.js': ('interpretation-lifecycle.js', 'text/javascript; charset=utf-8'),
                   '/capability-revisions.js': ('capability-revisions.js', 'text/javascript; charset=utf-8'),
                   '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
                   '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
