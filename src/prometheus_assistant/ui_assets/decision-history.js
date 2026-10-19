@@ -48,10 +48,11 @@ function revisionTimeline(item,row,capability=false){
 function sharedEvidence(row){
  const groups=row.shared_evidence===undefined?[]:row.shared_evidence;
  if(!Array.isArray(groups)||groups.length>16)throw Error('Invalid shared evidence');
- if(groups.length&&(!['remote_syntax','scheduled_syntax'].includes(row.kind)||row.decision!=='approve'||!/^[a-f0-9]{32}$/.test(row.id)||!/^[a-f0-9]{64}$/.test(row.fingerprint)))throw Error('Invalid shared evidence kind');
- const terminal=capabilityEvents(row).at(-1),references=new Set(),fields=['reference','kind','status','linked_decisions','related_decisions','truncated','read_only'];
+ const project=['project_edit','project_task'].includes(row.kind),worker=['remote_syntax','scheduled_syntax'].includes(row.kind);
+ if(groups.length&&(!project&&!worker||row.decision!=='approve'||!/^[a-f0-9]{32}$/.test(row.id)||!/^[a-f0-9]{64}$/.test(row.fingerprint)))throw Error('Invalid shared evidence kind');
+ const terminal=project?events(row).find(event=>event.phase==='result'):capabilityEvents(row).at(-1),references=new Set(),fields=['reference','kind','status','linked_decisions','related_decisions','truncated','read_only'];
  for(const group of groups){
-  if(!group||typeof group!=='object'||Object.keys(group).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(group,k))||typeof group.reference!=='string'||!/^[a-f0-9]{64}$/.test(group.reference)||references.has(group.reference)||group.kind!=='worker_result'||!['checks_passed','checks_failed','tool_failed'].includes(group.status)||terminal?.status!==group.status||!Number.isSafeInteger(group.linked_decisions)||group.linked_decisions<2||!Array.isArray(group.related_decisions)||group.related_decisions.length!==Math.min(group.linked_decisions-1,16)||group.truncated!==(group.linked_decisions>17)||group.read_only!==true)throw Error('Invalid shared evidence reference');
+  if(!group||typeof group!=='object'||Object.keys(group).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(group,k))||typeof group.reference!=='string'||!/^[a-f0-9]{64}$/.test(group.reference)||references.has(group.reference)||group.kind!==(project?'project_result':'worker_result')||!(project?['passed','failed','unchanged','applied_without_checks','cancelled']:['checks_passed','checks_failed','tool_failed']).includes(group.status)||terminal?.status!==group.status||project&&!terminal?.edit_id||!Number.isSafeInteger(group.linked_decisions)||group.linked_decisions<2||!Array.isArray(group.related_decisions)||group.related_decisions.length!==Math.min(group.linked_decisions-1,16)||group.truncated!==(group.linked_decisions>17)||group.read_only!==true)throw Error('Invalid shared evidence reference');
   const ids=new Set();
   for(const related of group.related_decisions){
    if(!related||typeof related!=='object'||Object.keys(related).length!==2||typeof related.id!=='string'||!/^[a-f0-9]{32}$/.test(related.id)||typeof related.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(related.fingerprint)||related.id===row.id||ids.has(related.id))throw Error('Invalid related decision');
@@ -63,10 +64,71 @@ function sharedEvidence(row){
 }
 function evidenceTimeline(item,row){
  for(const group of sharedEvidence(row)){
-  paragraph(item,'Shared native worker observation · '+capabilityLabels[group.status]+'. Reference: '+group.reference+'.');
+  const project=group.kind==='project_result';
+  paragraph(item,'Shared native '+(project?'project':'worker')+' observation · '+(project?statuses[group.status]:capabilityLabels[group.status])+'. Reference: '+group.reference+'.');
   paragraph(item,group.linked_decisions+' decisions link to this same recorded result. Other review references: '+group.related_decisions.map(ref=>ref.id.slice(0,8)).join(', ')+(group.truncated?' (additional references omitted).':'.'));
-  paragraph(item,'Read-only provenance for this owner’s exact worker result. These links do not establish separate executions, authorize new work or replay a job.');
+  paragraph(item,'Read-only provenance for this owner’s exact '+(project?'project':'worker')+' result. These links do not establish separate executions, authorize new work or replay a job.');
  }
+}
+const lifecycleReasons={
+ decision_not_approved:['not_applicable','This decision authorized no execution.'],
+ no_recorded_start:['missing','No execution start is recorded; its effect is unknown.'],
+ execution_pending:['pending','Execution is pending in the recorded history; no completed result is confirmed.'],
+ outcome_unconfirmed:['unconfirmed','The recorded execution outcome is unconfirmed.'],
+ native_result_recorded:['recorded','A native result is recorded. Its checks and limits remain in the observations below.'],
+ restoration_pending:['unconfirmed','Restoration was started; completion is not confirmed.'],
+ restoration_unconfirmed:['unconfirmed','Restoration is unconfirmed or needs attention.'],
+ project_restored:['restored','Manual restoration was recorded. The original native result is retained below.'],
+ native_identity_conflict:['conflicting','Conflicting native observations refer to the same recorded execution identity. No result is selected as authoritative.']
+};
+function evidenceLifecycle(row){
+ if(row.evidence_lifecycle===undefined)return null;
+ const value=row.evidence_lifecycle,fields=['schema_version','state','source','freshness','reference','reason','linked_decisions','related_decisions','truncated','read_only'];
+ try{
+  if(!value||typeof value!=='object'||Object.keys(value).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(value,k))||value.schema_version!==1||typeof value.reason!=='string'||!Object.prototype.hasOwnProperty.call(lifecycleReasons,value.reason)||value.state!==lifecycleReasons[value.reason][0]||!['none','project','worker','capability'].includes(value.source)||value.freshness!=='historical'||value.read_only!==true||!Number.isSafeInteger(value.linked_decisions)||value.linked_decisions<0||value.linked_decisions>8192||!Array.isArray(value.related_decisions)||value.related_decisions.length>16||typeof value.truncated!=='boolean'||!/^[a-f0-9]{32}$/.test(row.id)||!/^[a-f0-9]{64}$/.test(row.fingerprint))throw Error('Invalid evidence lifecycle');
+  if(value.reference===null){if(value.linked_decisions!==0||value.related_decisions.length||value.truncated)throw Error('Unexpected evidence links');}
+  else if(typeof value.reference!=='string'||!/^[a-f0-9]{64}$/.test(value.reference)||value.linked_decisions<1||value.related_decisions.length!==Math.min(value.linked_decisions-1,16)||value.truncated!==(value.linked_decisions>17))throw Error('Invalid evidence links');
+  const ids=new Set();
+  for(const related of value.related_decisions){
+   if(!related||typeof related!=='object'||Object.keys(related).length!==2||typeof related.id!=='string'||!/^[a-f0-9]{32}$/.test(related.id)||typeof related.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(related.fingerprint)||related.id===row.id||ids.has(related.id))throw Error('Invalid related evidence decision');
+   ids.add(related.id);
+  }
+  const project=events(row),capabilities=capabilityEvents(row),rows=project.length?project:capabilities,last=rows.at(-1),original=project.find(event=>event.phase==='result');
+  const source=row.decision!=='approve'?'none':['project_edit','project_task'].includes(row.kind)?'project':['remote_syntax','scheduled_syntax'].includes(row.kind)?'worker':revisionKinds.includes(row.kind)?'capability':'none';
+  if(value.source!==source||project.length&&!['project_edit','project_task'].includes(row.kind))throw Error('Evidence source mismatch');
+  const nativeIdentity=source==='worker'&&!!capabilities.length||source==='project'&&!!original?.edit_id;
+  if((value.reference!==null)!==nativeIdentity)throw Error('Evidence identity mismatch');
+  if(row.decision!=='approve'){if(value.reason!=='decision_not_approved'||rows.length)throw Error('Unapproved evidence');}
+  else if(!rows.length){if(value.reason!=='no_recorded_start')throw Error('Missing evidence');}
+  else if(value.reason==='native_identity_conflict'){
+   if(!nativeIdentity||value.linked_decisions<2||(row.shared_evidence||[]).length)throw Error('Invalid conflict projection');
+  }else if(value.reason==='execution_pending'){
+   if(!(last.phase==='started'||['waiting','deferred'].includes(last.status)))throw Error('Pending evidence mismatch');
+  }else if(value.reason==='outcome_unconfirmed'){
+   if(!['unknown','unconfirmed'].includes(last.status))throw Error('Unknown evidence mismatch');
+  }else if(value.reason==='restoration_pending'){
+   if(source!=='project'||last.phase!=='undo_started')throw Error('Restoration start mismatch');
+  }else if(value.reason==='restoration_unconfirmed'){
+   if(source!=='project'||!(last.phase==='undo_result'&&last.status==='restore_failed'||last.phase==='result'&&last.rollback==='needs_attention'))throw Error('Restoration uncertainty mismatch');
+  }else if(value.reason==='project_restored'){
+   if(source!=='project'||last.phase!=='undo_result'||last.status!=='restored')throw Error('Restoration result mismatch');
+  }else if(value.reason==='native_result_recorded'){
+   if(source==='project'?last.phase!=='result'||last.status==='unknown'||last.rollback==='needs_attention':!capabilityTerminal.has(last.status))throw Error('Native result mismatch');
+  }else throw Error('Unexpected evidence lifecycle');
+  return {value};
+ }catch(error){return {invalid:true};}
+}
+function lifecycleSummary(item,lifecycle){
+ if(lifecycle===null)return;
+ paragraph(item,'Evidence lifecycle · Historical record.');
+ if(lifecycle.invalid){paragraph(item,'Evidence lifecycle unknown: its summary is unavailable or inconsistent. The original observations remain below.');return;}
+ const value=lifecycle.value;paragraph(item,lifecycleReasons[value.reason][1]);
+ if(value.reference!==null){
+  paragraph(item,'Read-only native identity reference: '+value.reference+'.');
+  paragraph(item,value.linked_decisions+' recorded decision'+(value.linked_decisions===1?'':'s')+' linked to this identity. Each decision keeps its own observations and restoration history.');
+  if(value.related_decisions.length)paragraph(item,'Related owner review references: '+value.related_decisions.map(ref=>ref.id+' / '+ref.fingerprint).join(', ')+(value.truncated?' (additional references omitted).':'.'));
+ }
+ paragraph(item,'Historical observations only; not a current validity check or execution authority. These references cannot approve, resume or replay work.');
 }
 const capabilityLabels={started:'Capability execution started',settings_saved:'Settings saved; future behavior has not been verified',access_granted:'Access issued; this does not confirm a provider action',adapter_returned:'Integration adapter returned; result correctness is not independently verified',waiting:'Waiting at the approved destination; no execution confirmed',deferred:'Execution deferred',unconfirmed:'Execution unconfirmed; do not infer success or repeat execution',unknown:'Outcome unknown',cancelled:'Waiting job cancelled',expired:'Waiting permission expired',checks_passed:'Native worker checks passed',checks_failed:'Native worker checks found failures',tool_failed:'Verification tool failed; this is not a code-defect finding'};
 const capabilityTerminal=new Set(['settings_saved','access_granted','adapter_returned','cancelled','expired','checks_passed','checks_failed','tool_failed']);
@@ -131,8 +193,9 @@ async function load(){
   if(!data||data.schema_version!==1||data.read_only!==true||!Array.isArray(data.items)||data.items.length>50)throw Error('Invalid history');
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
   for(const row of data.items){events(row);capabilityEvents(row);revisions(row);revisions(row,true);sharedEvidence(row);}
-  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
-  status.textContent=data.items.length+' saved decisions. History does not authorize or resume work.';
+  let unknownLifecycles=0;
+  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
+  status.textContent=data.items.length+' saved decisions. '+(unknownLifecycles?unknownLifecycles+' evidence lifecycle summaries are unknown. ':'')+'History does not authorize or resume work.';
  }catch(error){if(version===generation)clear('Decision history unavailable. No historical record authorizes work.');}
  finally{if(version===generation){reading=false;controls();}}
 }

@@ -43,7 +43,7 @@ def _freshness(resources, now):
     return 'current' if now < expires else 'stale'
 
 
-def _decision_state(row):
+def _native_decision_state(row):
     """Validate saved evidence without interpreting payloads or performing I/O."""
     from .decision_outcomes import validate as project_validate, sequence
     from .capability_outcomes import validate as capability_validate, _sequence, _kind
@@ -83,6 +83,45 @@ def _decision_state(row):
     return 'recorded_effect'
 
 
+def _decision_state(row):
+    native = _native_decision_state(row)
+    if 'evidence_lifecycle' not in row:
+        return native
+    from .evidence_lifecycle import validate_projection
+    lifecycle = row['evidence_lifecycle']
+    validate_projection(lifecycle)
+    state, source = lifecycle['state'], lifecycle['source']
+    project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
+    if row['decision'] != 'approve':
+        if state != 'not_applicable':raise ValueError('Unapproved lifecycle')
+        return native
+    if not project and not capability:
+        if state != 'missing':raise ValueError('Lifecycle without observations')
+        return native
+    expected = 'project' if project else 'worker' if row['kind'] in {'remote_syntax','scheduled_syntax'} else 'capability'
+    if source != expected:raise ValueError('Lifecycle source mismatch')
+    if state == 'conflicting':
+        # Raw validation above remains mandatory. Conflict never selects a winner
+        # or turns an individually passing observation into verified consensus.
+        if project:
+            confirmed = any(e['phase']=='result' and e['status']!='unknown' and e['edit_id'] for e in project)
+        else:
+            # A still-waiting observer can reference a conflicting native family;
+            # this warning does not claim that observer completed execution.
+            confirmed = bool(capability and capability[0]['job_id'])
+        if not confirmed or source not in {'project','worker'}:
+            raise ValueError('Conflict without a native result')
+        return 'conflicting'
+    allowed = {
+        'pending': {'unknown','waiting','no_execution'},
+        'unconfirmed': {'unknown','restoration_unknown'},
+        'recorded': {'verified','historical_failure','unverified','no_execution','recorded_effect'},
+        'restored': {'restored'},
+    }
+    if native not in allowed.get(state, set()):raise ValueError('Lifecycle state mismatch')
+    return native
+
+
 def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None, decisions=None, devices=None):
     """Return schema-v1 grouped fixed-text summaries with navigation only.
 
@@ -114,6 +153,7 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
         decision_source['truncated']=True
     sources['decisions']=decision_source
     labels={
+        'conflicting':('Conflicting historical results share the same native identity; inspect all recorded observations.','warning'),
         'unknown':('Recorded decision has no confirmed outcome; history cannot resume work.','warning'),
         'restoration_unknown':('Recorded restoration is unconfirmed or needs attention; inspect its history.','warning'),
         'historical_failure':('Historical verification or execution reported failure; inspect recorded evidence.','warning'),

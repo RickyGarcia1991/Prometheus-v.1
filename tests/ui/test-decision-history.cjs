@@ -95,3 +95,93 @@ test('malformed shared provenance, contradictory outcomes and foreign fields fai
  }
  for(const patch of [{kind:'runtime_config'},{id:'short'},{fingerprint:'bad'},{decision:'request_changes'},{capability_outcomes:[]},{shared_evidence:[sharedGroup,sharedGroup]},{shared_evidence:null}]){const f=await revisionHistory([{...sharedRow,...patch}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);}
 });
+
+const counts={planned:1,executed:1,passed:1,failed:0,cancelled:0,timed_out:0};
+const projectPass={...row,id:'a'.repeat(32),fingerprint:'b'.repeat(64),decision:'approve',feedback:'',outcomes:[outcome('started','started'),outcome('result','passed',{checks:counts,rollback:'not_attempted'})]};
+const lifecycle=(extra={})=>({schema_version:1,state:'recorded',source:'project',freshness:'historical',reference:'9'.repeat(64),reason:'native_result_recorded',linked_decisions:1,related_decisions:[],truncated:false,read_only:true,...extra});
+function displayOnly(node){assert(!['BUTTON','A','INPUT','TEXTAREA','SELECT'].includes(node.tagName));node.children.forEach(displayOnly);}
+function noAuthority(f){assert.equal(f.submitted.length,0);assert.deepEqual(f.calls,[['/api/decisions/history']]);displayOnly(f.elements.decisionHistoryList);}
+test('lifecycle states are explicitly historical and never turn observations into current validity',async()=>{
+ const f=await revisionHistory([{...projectPass,evidence_lifecycle:lifecycle()}]);const text=flatten(f.elements.decisionHistoryList);
+ assert.match(text,/Evidence lifecycle · Historical record.*A native result is recorded/);assert.match(text,/not a current validity check or execution authority/);assert.match(text,/Native checks passed/);assert.doesNotMatch(f.elements.decisionHistoryStatus.textContent,/unknown/);noAuthority(f);
+});
+test('manual restoration retains original pass while automatic rollback is a separate recorded fact',async()=>{
+ const restored=[...projectPass.outcomes,outcome('undo_started','started',{event_id:'3'.repeat(32)}),outcome('undo_result','restored',{event_id:'4'.repeat(32),rollback:'restored'})];
+ const f=await revisionHistory([{...projectPass,outcomes:restored,evidence_lifecycle:lifecycle({state:'restored',reason:'project_restored'})}]);const text=flatten(f.elements.decisionHistoryList);
+ assert.match(text,/Manual restoration was recorded.*original native result is retained.*Native checks passed.*Manual restoration completed/);assert.match(text,/Each decision keeps its own observations and restoration history/);noAuthority(f);
+ const g=await revisionHistory([{...projectPass,outcomes:[outcome('started','started'),outcome('result','failed',{checks:{...counts,passed:0,failed:1},rollback:'restored'})],evidence_lifecycle:lifecycle()}]);
+ assert.match(flatten(g.elements.decisionHistoryList),/A native result is recorded.*Execution failed.*original content restored/);assert.doesNotMatch(flatten(g.elements.decisionHistoryList),/Manual restoration was recorded/);noAuthority(g);
+});
+test('conflicting worker observations retain both raw pass and fail, unrelated records and no resolution action',async()=>{
+ const first={id:sharedRow.id,fingerprint:sharedRow.fingerprint},second={id:'f'.repeat(32),fingerprint:'f'.repeat(64)};
+ const conflict=related=>lifecycle({state:'conflicting',source:'worker',reason:'native_identity_conflict',linked_decisions:2,related_decisions:[related]});
+ const pass={...sharedRow,shared_evidence:[],capability_outcomes:[capability('started',jobBinding),capability('checks_passed',{...jobBinding,checks:counts})],evidence_lifecycle:conflict(second)};
+ const fail={...sharedRow,...second,shared_evidence:[],evidence_lifecycle:conflict(first)};
+ const f=await revisionHistory([pass,fail,row]);const text=flatten(f.elements.decisionHistoryList);
+ assert.equal(f.elements.decisionHistoryList.children.length,3);assert.equal((text.match(/Conflicting native observations/g)||[]).length,2);assert.match(text,/No result is selected as authoritative/);assert.match(text,/Native worker checks passed/);assert.match(text,/Native worker checks found failures/);assert.match(text,/Changes requested/);assert.doesNotMatch(text,/Shared native worker observation/);noAuthority(f);
+});
+test('conflicting project identity does not erase a row-local Undo or the original failed result',async()=>{
+ const other={id:'f'.repeat(32),fingerprint:'f'.repeat(64)},here={id:projectPass.id,fingerprint:projectPass.fingerprint};
+ const conflict=related=>lifecycle({state:'conflicting',reason:'native_identity_conflict',linked_decisions:2,related_decisions:[related]});
+ const f=await revisionHistory([{...projectPass,outcomes:[...projectPass.outcomes,outcome('undo_started','started',{event_id:'3'.repeat(32)}),outcome('undo_result','restored',{event_id:'4'.repeat(32),rollback:'restored'})],evidence_lifecycle:conflict(other)},{...projectPass,...other,outcomes:[outcome('started','started'),outcome('result','failed',{checks:{...counts,passed:0,failed:1}})],evidence_lifecycle:conflict(here)}]);
+ assert.equal(f.elements.decisionHistoryList.children.length,2);const text=flatten(f.elements.decisionHistoryList);assert.equal((text.match(/Conflicting native observations/g)||[]).length,2);assert.match(text,/Native checks passed.*Manual restoration completed.*Execution failed/);noAuthority(f);
+});
+test('missing, pending and unconfirmed lifecycle states never claim a completed result',async()=>{
+ const cases=[
+  [{...projectPass,decision:'reject',outcomes:[]},lifecycle({state:'not_applicable',source:'none',reference:null,reason:'decision_not_approved',linked_decisions:0}),/authorized no execution/],
+  [{...projectPass,outcomes:[]},lifecycle({state:'missing',reference:null,reason:'no_recorded_start',linked_decisions:0}),/No execution start is recorded; its effect is unknown/],
+  [{...projectPass,outcomes:[outcome('started','started')]},lifecycle({state:'pending',reference:null,reason:'execution_pending',linked_decisions:0}),/Execution is pending.*no completed result is confirmed/],
+  [{...projectPass,outcomes:[outcome('started','started'),outcome('result','unknown')]},lifecycle({state:'unconfirmed',reference:null,reason:'outcome_unconfirmed',linked_decisions:0}),/recorded execution outcome is unconfirmed/],
+  [{...sharedRow,shared_evidence:[],capability_outcomes:[capability('started',jobBinding),capability('waiting',jobBinding)]},lifecycle({state:'pending',source:'worker',reason:'execution_pending'}),/Execution is pending.*Waiting at the approved destination/],
+  [{...sharedRow,shared_evidence:[],capability_outcomes:[capability('started',jobBinding),capability('unconfirmed',jobBinding)]},lifecycle({state:'unconfirmed',source:'worker',reason:'outcome_unconfirmed'}),/recorded execution outcome is unconfirmed.*Execution unconfirmed/]
+ ];
+ for(const [base,projection,expected] of cases){const f=await revisionHistory([{...base,evidence_lifecycle:projection}]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,expected);assert.doesNotMatch(text,/A native result is recorded|lifecycle unknown/);noAuthority(f);}
+});
+test('pending and failed restoration summaries retain the original outcome',async()=>{
+ const undo=outcome('undo_started','started',{event_id:'3'.repeat(32)});
+ for(const [outcomes,projection,expected] of [
+  [[...projectPass.outcomes,undo],lifecycle({state:'unconfirmed',reason:'restoration_pending'}),/Restoration was started; completion is not confirmed/],
+  [[...projectPass.outcomes,undo,outcome('undo_result','restore_failed',{event_id:'4'.repeat(32),rollback:'needs_attention'})],lifecycle({state:'unconfirmed',reason:'restoration_unconfirmed'}),/Restoration is unconfirmed or needs attention/],
+  [[outcome('started','started'),outcome('result','failed',{rollback:'needs_attention'})],lifecycle({state:'unconfirmed',reason:'restoration_unconfirmed'}),/Restoration is unconfirmed or needs attention/]
+ ]){const f=await revisionHistory([{...projectPass,outcomes,evidence_lifecycle:projection}]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,expected);assert.match(text,/Native checks passed|Execution failed/);assert.doesNotMatch(text,/lifecycle unknown/);noAuthority(f);}
+});
+test('settings observations remain limited and legacy omission is supported without inventing a lifecycle',async()=>{
+ const f=await capabilityHistory('runtime_config',[capability('started'),capability('settings_saved')],{id:projectPass.id,fingerprint:projectPass.fingerprint,evidence_lifecycle:lifecycle({source:'capability',reference:null,linked_decisions:0})});
+ assert.match(flatten(f.elements.decisionHistoryList),/A native result is recorded.*future behavior has not been verified/);noAuthority(f);
+ const legacy=await revisionHistory([projectPass]);assert.match(flatten(legacy.elements.decisionHistoryList),/Native checks passed/);assert.doesNotMatch(flatten(legacy.elements.decisionHistoryList),/Evidence lifecycle|current validity/);noAuthority(legacy);
+});
+test('malformed lifecycle summaries become unknown while valid raw observations remain visible',async()=>{
+ const bad=[null,[],{...lifecycle(),schema_version:2},{...lifecycle(),state:'approved'},{...lifecycle(),source:'worker'},{...lifecycle(),freshness:'current'},{...lifecycle(),reason:['native_result_recorded']},{...lifecycle(),reason:'project_restored',state:'restored'},{...lifecycle(),read_only:false},{...lifecycle(),reference:'bad'},{...lifecycle(),reference:null},{...lifecycle(),linked_decisions:true},{...lifecycle(),linked_decisions:0},{...lifecycle(),linked_decisions:2},{...lifecycle(),truncated:true},{...lifecycle(),owner:'private'},{...lifecycle(),capability_revision_token:'secret'},Object.fromEntries(Object.entries(lifecycle()).filter(([key])=>key!=='reason'))];
+ for(const value of bad){const f=await revisionHistory([{...projectPass,evidence_lifecycle:value},row]);const text=flatten(f.elements.decisionHistoryList);assert.equal(f.elements.decisionHistoryList.children.length,2);assert.match(text,/Evidence lifecycle unknown/);assert.match(text,/Native checks passed/);assert.match(f.elements.decisionHistoryStatus.textContent,/lifecycle summaries are unknown/);assert.doesNotMatch(text,/A native result is recorded|Manual restoration was recorded|secret|private/);noAuthority(f);}
+});
+test('lifecycle related references validate exact IDs, fingerprints, membership and bounded counts',async()=>{
+ const related={id:'f'.repeat(32),fingerprint:'f'.repeat(64)},linked=lifecycle({linked_decisions:2,related_decisions:[related]});
+ for(const patch of [{related_decisions:[{...related,id:'short'}]},{related_decisions:[{...related,fingerprint:'bad'}]},{related_decisions:[{id:projectPass.id,fingerprint:projectPass.fingerprint}]},{related_decisions:[{...related,owner:'secret'}]},{related_decisions:[related,related],linked_decisions:3},{related_decisions:Array(17).fill(related),linked_decisions:18,truncated:true},{linked_decisions:3},{linked_decisions:Number.MAX_SAFE_INTEGER+1}]){
+  const f=await revisionHistory([{...projectPass,evidence_lifecycle:{...linked,...patch}}]);assert.match(flatten(f.elements.decisionHistoryList),/Evidence lifecycle unknown.*Native checks passed/);assert.doesNotMatch(flatten(f.elements.decisionHistoryList),/Related owner review references/);noAuthority(f);
+ }
+ const refs=Array.from({length:16},(_,i)=>({id:(i+2).toString(16).padStart(32,'0'),fingerprint:'f'.repeat(64)}));
+ const f=await revisionHistory([{...projectPass,evidence_lifecycle:lifecycle({linked_decisions:20,related_decisions:refs,truncated:true})}]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/20 recorded decisions linked.*additional references omitted/);assert(refs.every(ref=>text.includes(ref.id+' / '+ref.fingerprint)));noAuthority(f);
+ const over=await revisionHistory([{...projectPass,evidence_lifecycle:lifecycle({linked_decisions:8193,related_decisions:refs,truncated:true})}]);assert.match(flatten(over.elements.decisionHistoryList),/Evidence lifecycle unknown/);assert.doesNotMatch(flatten(over.elements.decisionHistoryList),/8193/);
+});
+test('lifecycle metadata injection is neither rendered nor used as a navigation target',async()=>{
+ const injected='<img src=x onerror=alert(1)>';
+ for(const patch of [{reason:injected},{source:injected},{state:injected},{reference:injected},{related_decisions:[{id:injected,fingerprint:'f'.repeat(64)}],linked_decisions:2}]){
+  const f=await revisionHistory([{...projectPass,evidence_lifecycle:{...lifecycle(),...patch}}]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/Evidence lifecycle unknown/);assert(!text.includes(injected));noAuthority(f);
+ }
+});
+test('conflict cannot be claimed without related native identity or mixed with consistent shared evidence',async()=>{
+ for(const [base,projection] of [[projectPass,lifecycle({state:'conflicting',reason:'native_identity_conflict'})],[{...sharedRow},lifecycle({state:'conflicting',source:'worker',reason:'native_identity_conflict',linked_decisions:2,related_decisions:sharedGroup.related_decisions})],[{...projectPass,outcomes:[]},lifecycle({state:'conflicting',source:'none',reference:null,linked_decisions:0,reason:'native_identity_conflict'})]]){
+  const f=await revisionHistory([{...base,evidence_lifecycle:projection}]);assert.match(flatten(f.elements.decisionHistoryList),/Evidence lifecycle unknown/);assert.doesNotMatch(flatten(f.elements.decisionHistoryList),/No result is selected as authoritative/);noAuthority(f);
+ }
+});
+test('project provenance refers to the original result and retains its independent manual restoration',async()=>{
+ const group={...sharedGroup,kind:'project_result',status:'passed'};
+ const f=await revisionHistory([{...projectPass,shared_evidence:[group],outcomes:[...projectPass.outcomes,outcome('undo_started','started',{event_id:'3'.repeat(32)}),outcome('undo_result','restored',{event_id:'4'.repeat(32),rollback:'restored'})],evidence_lifecycle:lifecycle({state:'restored',reason:'project_restored',linked_decisions:2,related_decisions:group.related_decisions})}]);const text=flatten(f.elements.decisionHistoryList);
+ assert.match(text,/Manual restoration completed.*Shared native project observation · Native checks passed/);assert.match(text,/Read-only provenance for this owner’s exact project result/);noAuthority(f);
+ for(const patch of [{kind:'worker_result'},{status:'restored'},{status:'failed'}]){const g=await revisionHistory([{...projectPass,shared_evidence:[{...group,...patch}]}]);assert.match(g.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(g.elements.decisionHistoryList.children.length,0);}
+ const noIdentity=await revisionHistory([{...projectPass,outcomes:[outcome('started','started'),outcome('result','unchanged',{edit_id:''})],shared_evidence:[{...group,status:'unchanged'}]}]);assert.match(noIdentity.elements.decisionHistoryStatus.textContent,/unavailable/);
+});
+test('late lifecycle conflicts do not reappear after authentication is lost',async()=>{
+ const f=fixture();let resolve;f.set(()=>new Promise(r=>resolve=r));f.busy();f.open();await settle();f.emit('prometheus-auth-lost');
+ resolve({schema_version:1,read_only:true,items:[{...projectPass,evidence_lifecycle:lifecycle({state:'conflicting',reason:'native_identity_conflict',linked_decisions:2,related_decisions:sharedGroup.related_decisions})}]});await settle();assert.equal(f.elements.decisionHistoryList.children.length,0);assert.match(f.elements.decisionHistoryStatus.textContent,/Unlock/);assert.equal(f.submitted.length,0);
+});

@@ -160,13 +160,22 @@ class ActionApprovals:
         self._key(owner, '0'*64)
         if self.decision_history is None:
             raise ValueError('Decision history is not configured.')
-        rows = self.decision_history.history(owner,limit=limit)
+        if type(limit) is not int or not 1 <= limit <= 50:
+            raise ValueError('Decision history limit must be between 1 and 50.')
+        all_rows = self.decision_history._all_rows()
+        rows = [{key:value for key,value in row.items() if key!='owner'}
+                for row in all_rows if row['owner']==owner][:limit]
         events = self._outcomes().read()
         capability_events = self.capability_outcomes().read()
         revisions,recorded_children = self._revisions().read_with_states()
         capability_revisions,capability_children = self._capability_revisions().read_with_states()
         from .shared_capability_evidence import for_owner
-        shared = for_owner(owner,capability_events)
+        from .evidence_lifecycle import for_owner as lifecycle_for_owner
+        shared = for_owner(owner,capability_events,project_events=events)
+        # Compare the complete bounded owner ledger, not just the displayed page.
+        # A contradictory original result may be older than the latest 50 rows.
+        lifecycle = lifecycle_for_owner(owner,decisions=all_rows,
+            project_events=events,capability_events=capability_events)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
@@ -183,6 +192,7 @@ class ActionApprovals:
                 ((link['parent_id']==row['id'] and link['parent_fingerprint']==row['fingerprint']) or
                  (link['child_id']==row['id'] and link['child_fingerprint']==row['fingerprint']))]
             row['shared_evidence'] = shared.get((row['id'],row['fingerprint']),[])
+            row['evidence_lifecycle'] = lifecycle[(row['id'],row['fingerprint'])]
         return rows
 
     def _revisions(self):
