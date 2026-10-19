@@ -7,6 +7,33 @@ const current=()=>typeof session==='string'?session:null;
 const ready=()=>state.online&&!state.busy&&!state.closed&&!document.hidden;
 const say=x=>{el('resolutionStatus').textContent=x;};
 const target=()=>rows.find(x=>x.id===el('resolutionTarget').value);
+const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const fields=(x,keys)=>object(x)&&Object.keys(x).length===keys.length&&keys.every(k=>Object.prototype.hasOwnProperty.call(x,k));
+const payloadKeys=['target_id','target_fingerprint','source','reference','snapshot_sha256','fact_sha256','selected_fact','reason'];
+const countKeys=['planned','executed','passed','failed','cancelled','timed_out'];
+const reviewSummary='Record an owner interpretation of conflicting historical evidence.';
+const reviewEffect='Original observations and conflict warnings remain unchanged. No execution or retry is authorized.';
+function counts(x){
+ return fields(x,countKeys)&&countKeys.every(k=>Number.isInteger(x[k])&&x[k]>=0&&x[k]<=64)&&x.executed<=x.planned&&x.passed+x.failed+x.cancelled+x.timed_out===x.executed;
+}
+function factValid(f,source){
+ if(!fields(f,['status','checks','rollback','evidence_sha256'])||!hex(f.evidence_sha256,64)||f.checks!==null&&!counts(f.checks))return false;
+ if(source==='application')return ['active','failed','rolled_back','recovery_required'].includes(f.status)&&f.checks===null&&f.rollback===null;
+ if(source==='project')return ['passed','failed','cancelled','unchanged','applied_without_checks'].includes(f.status)&&['not_attempted','restored','needs_attention','unknown'].includes(f.rollback)&&(f.status!=='passed'||f.rollback==='not_attempted'&&f.checks!==null&&f.checks.planned>0&&f.checks.passed===f.checks.planned);
+ if(source!=='worker'||f.rollback!==null)return false;
+ if(['tool_failed','cancelled','expired'].includes(f.status))return f.checks===null;
+ if(!['checks_passed','checks_failed'].includes(f.status)||f.checks===null||f.checks.planned===0)return false;
+ return f.status==='checks_passed'?f.checks.passed===f.checks.planned:f.checks.failed>0;
+}
+function reviewValid(row){
+ if(!object(row)||row.kind!=='evidence_resolution'||!hex(row.id,32)||!hex(row.fingerprint,64)||!hex(row.session,32)||row.session!==current()||typeof row.policy_revision!=='string'||!row.policy_revision.length||row.policy_revision.length>256||/[\u0000-\u001f]/.test(row.policy_revision))return false;
+ const p=row.payload,r=row.review;
+ if(!fields(p,payloadKeys)||!fields(r,[...payloadKeys,'summary','effect'])||r.summary!==reviewSummary||r.effect!==reviewEffect)return false;
+ if(!hex(p.target_id,32)||!['target_fingerprint','reference','snapshot_sha256','fact_sha256'].every(k=>hex(p[k],64))||!factValid(p.selected_fact,p.source))return false;
+ if(typeof p.reason!=='string'||!p.reason.trim()||p.reason!==p.reason.trim()||[...p.reason].length>2000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(p.reason)||/[\uD800-\uDFFF]/u.test(p.reason))return false;
+ if(!payloadKeys.filter(k=>k!=='selected_fact').every(k=>p[k]===r[k])||!factValid(r.selected_fact,r.source))return false;
+ return ['status','rollback','evidence_sha256'].every(k=>p.selected_fact[k]===r.selected_fact[k])&&(p.selected_fact.checks===null?r.selected_fact.checks===null:r.selected_fact.checks!==null&&countKeys.every(k=>p.selected_fact.checks[k]===r.selected_fact.checks[k]));
+}
 function controls(){
  const locked=!ready()||reading||sending;
  el('resolutionRefresh').disabled=locked;
@@ -15,9 +42,10 @@ function controls(){
  for(const id of ['resolutionApprove','resolutionReject'])el(id).disabled=locked||!pending;
 }
 function review(row){
- pending=row?.kind==='evidence_resolution'&&hex(row.id,32)&&hex(row.fingerprint,64)&&row.session===current()?row:null;
+ pending=reviewValid(row)?row:null;
  el('resolutionReview').replaceChildren();el('resolutionReview').hidden=!pending;el('resolutionDecisions').hidden=!pending;
  if(pending){const p=document.createElement('pre');p.textContent=JSON.stringify(pending.review,null,2);el('resolutionReview').append(p);say('Approve or deny this exact interpretation. Changed evidence requires a new review.');}
+ else if(row?.kind==='evidence_resolution')say('Exact interpretation review unavailable. Refresh before making a decision.');
  controls();
 }
 function clear(message){epoch++;reading=false;active=null;rows=[];pending=null;el('resolutionTarget').replaceChildren();el('resolutionFact').replaceChildren();el('resolutionFacts').replaceChildren();el('resolutionReason').value='';review(null);say(message);}
@@ -40,7 +68,7 @@ async function load(){
   if(history?.schema_version!==1||history.read_only!==true||!Array.isArray(history.items)||history.items.length>50)throw Error('Invalid history');
   rows=history.items.filter(valid);const select=el('resolutionTarget');select.replaceChildren();select.add(new Option('Choose conflicting evidence…',''));
   for(const row of rows)select.add(new Option(row.evidence_conflict.source+' · '+row.id.slice(0,12),row.id));
-  facts();review(live.approval);if(!pending)say(live.approval?'Another proposal is pending. Finish its review first.':rows.length+' conflicting records in the latest 50 decisions. Original results remain unchanged.');
+  facts();review(live.approval);if(!pending&&live.approval?.kind!=='evidence_resolution')say(live.approval?'Another proposal is pending. Finish its review first.':rows.length+' conflicting records in the latest 50 decisions. Original results remain unchanged.');
  }catch(error){if(mark===epoch)clear('Conflict reviews unavailable. Refresh when the connection is ready.');}
  finally{if(mark===epoch){reading=false;controls();}}
 }

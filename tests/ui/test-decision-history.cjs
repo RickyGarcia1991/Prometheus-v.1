@@ -12,6 +12,18 @@ test('interpretations show stale and competing decisions without hiding failed e
  const unrecorded=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'unrecorded',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(unrecorded.elements.decisionHistoryList),/completion unconfirmed/);noAuthority(unrecorded);
  const consumed=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'approve',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(consumed.elements.decisionHistoryList),/completion unconfirmed \(owner decision: approve\)/);assert.doesNotMatch(flatten(consumed.elements.decisionHistoryList),/Approved interpretation/);noAuthority(consumed);
 });
+
+test('saved interpretation reasons use the same Unicode code point bound as owner review',async()=>{
+ const original=investigatedRow();
+ for(const [reason,valid] of [['x'.repeat(2000),true],['\u{1F600}'.repeat(1001),true],['\u{1F600}'.repeat(2000),true],['\u{1F600}'.repeat(2001),false]]){
+  const entry={approval_id:'8'.repeat(32),fingerprint:'8'.repeat(64),target_id:original.id,target_fingerprint:original.fingerprint,source:'worker',reference:'9'.repeat(64),snapshot_sha256:'7'.repeat(64),fact_sha256:'6'.repeat(64),reason,decision:'approve',recording_state:'recorded',currency:'stale',interpretation_conflict:false};
+  const f=await revisionHistory([{...original,evidence_resolutions:{schema_version:1,read_only:true,freshness:'historical',total:1,truncated:false,items:[entry]}}]);
+  const shown=flatten(f.elements.decisionHistoryList);
+  if(valid){assert(shown.includes(reason));assert.doesNotMatch(shown,/interpretation history unavailable/);}
+  else assert.match(shown,/interpretation history unavailable/);
+  assert.match(shown,/checks found failures/i);noAuthority(f);
+ }
+});
 const script=fs.readFileSync(path.join(__dirname,'../../src/prometheus_assistant/ui_assets/decision-history.js'),'utf8');
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 const row={id:'a',fingerprint:'b',session:'c',kind:'project_edit',decision:'request_changes',feedback:'<img onerror=bad>',decided_at:1};

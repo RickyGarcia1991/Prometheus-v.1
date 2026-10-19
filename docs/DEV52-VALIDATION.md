@@ -1,61 +1,39 @@
-# Dev52 evidence interpretations — tested candidate
+# Dev52 revision 3 — corrected package in final validation
 
-Owners can review an exact interpretation of conflicting recorded evidence.
-The review binds the selected native fact, collected input snapshot and reason
-to the current owner session. Approval rechecks those inputs and appends the
-interpretation without erasing original observations, failures or contradictions.
-Rejection remains visible. An interrupted completion is unconfirmed; restart
-does not recreate a pending review or replay work. Competing completed approvals
-are displayed as competing interpretations, without selecting a winner.
+Installed dev51 remains active, with the production Surface worker unchanged.
+The earlier agent-capacity error cleared on retry. Independent source review
+is now complete and found two UI defects, both corrected: an incomplete review
+could enable decision controls, and valid long Unicode reasons were hidden in
+saved history. The original candidates, failing probes and earlier passing
+release evidence remain preserved.
 
-The existing receipt schema is retained. A bounded additive sidecar records
-interpretation history. Signed dev51 read the new generated history without
-changing bytes or restoring pending authority. Backup/restore preserved both
-completed and unconfirmed interpretations.
+The final thirteen-file source is independently reviewed and frozen. Revision 3
+is signed with 1,020 payload files. All 34 packaged interface suites, 91 focused
+UI checks, and 32 independent backend/UI/history probes passed. Portable preview
+startup and native fixture checks passed. All 132 installer, 10 native-helper,
+and 21 independent installer probes passed; final installer and release-gate
+review are being completed.
 
-## Verification
+The full revision 3 Windows regression is running. The new authenticated browser
+check needs the normal owner passkey unlock at http://localhost:54605/ after the
+restart that loaded the corrections. Earlier full regression and live recovery
+passed on revision 1; those are retained as earlier evidence, not relabeled as
+new revision 3 runs.
 
-- Full signed Windows package: **4,581 passed, 14 skipped, one exclusion**;
-  exact test collection and JUnit inventory matched. One skip occurs at collection.
-- All **34 packaged UI suites passed**.
-- Ubuntu Surface: **206 passed**, no failures or skips, exact result readback
-  verified; production worker unchanged.
-- Isolated installer/helper checks: **132 passed**.
-- The new installed-interpretation helper passed **ten checks against the candidate**.
-  Its retained first run exposed an enum-expectation error in the helper, corrected
-  without changing signed application bytes. Installed acceptance has not run.
-- Normal-owner browser: approve, reject, reload, saved history and process restart
-  passed. An undecided review was absent after restart; completed history and
-  every original observation were preserved.
-- Post-test signature, 1,020-file payload, archive and frozen source verification
-  passed. The installed dev51 baseline remains unchanged.
+The 206 passing Surface native checks are reused only after verifying all 22
+input files are byte-identical in revision 3. No new Surface run or production
+worker change is claimed. The unchanged backend retains original failures and
+contradictions; an owner interpretation does not authorize execution or retries.
 
-The browser examples are labeled generated history, not model acceptance or real
-worker execution. The original failed fixture check is retained. Normal status
-polling added one unconfirmed observation; the corrected external verifier checks
-the exact original seed digest and includes the addition in the live history.
-Seven verifier checks passed. Application bytes did not change for that correction.
+The repository's draft review and both drives already contain revision 1
+preparation evidence (145 matching files plus a nine-file status supplement).
+Revision 3 source and final evidence will be checkpointed separately. Once the
+release gates pass, standing owner permission permits the fresh stopped-data
+backup, verified isolated restore, activation with dev51 rollback and installed
+acceptance. Normal device authentication after activation still needs the user.
 
-Skips cover unavailable Windows symlink privileges, Linux-only native limits and
-an offline signer migration preparer outside the application payload. The single
-inherited exclusion requires a different native-host identity; it is not a new
-feature test. All records remain in the release evidence.
+Five broader workstreams and optional Ubuntu remain unfinished.
 
-## Remaining release work
+Manifest SHA256: `23a2ba224ebbfb760e101838e72c05ab64cbb5735438c7d182b37a3d1166d20c`
 
-This is a draft tested candidate, **not installed**. The direct source review is
-recorded; independent agents exhausted their usage allowance before an audit
-could finish, so an independent audit is not claimed. Read-only installation
-preflight passed. Final installer review, fresh stopped-data backup/restore, activation and installed
-interface acceptance remain required. The existing installer validation still
-requires independent review; no passing flag has been invented or waived.
-
-SSD and flash preparation copies each verified 145 public source/evidence files,
-including the signed archive. Neither copy installs or activates the candidate.
-
-Dev51 is the intended rollback release. Existing identities, owner data and the
-Surface production worker are retained. The wider roadmap remains unfinished.
-
-Manifest SHA256: `63727623b0180ff6496785b35584c03198c84008c16c5eeecf07f1165fa0a59b`
-
-Archive SHA256: `605bddda02e241130477f7ed59e116367c561b5b5af36377acab339e1114ff0c`
+Archive SHA256: `09538a8dc613a4cd49dc10b35cb64675ef336b44d7c2a76ace468ddbde8fb720`
