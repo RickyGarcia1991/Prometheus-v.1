@@ -21,3 +21,9 @@ Candidate manifest: `ef125f89a814e2f61c478d9df377d2cdf27d625a34e37a029de88b6380e
 Archive SHA256: `922a69d444a8a2a5ca9090345497adf16085ce0da0d19450ab67e3af7c33b6b0`.
 
 1,010 signed payload files. Installation is separately recorded with a fresh verified backup/restore and dev49 revision 2 retained for rollback. The broader roadmap remains unfinished: conflict-resolution proposals and other workflow families, additional scheduler measurements, broader reviewer acceptance, update/requalification lifecycle, and heterogeneous device cooperation remain.
+
+## Installation status — 2026-10-19
+
+The authorized installation verified a fresh 184-file backup and isolated restore, plus all three signed application copies. Its six applicable native health checks passed. USB-storage reset and disk-retry events then interrupted activation; the installation journal remains incomplete, and the installed interface has not passed acceptance. This is not recorded as a successful installation. The original journal and diagnostics are preserved; dev49 revision 2 and verified recovery copies remain available.
+
+The full package qualification above is unchanged. Recovery must first restore stable storage access and reconcile the existing transaction, then complete startup, retained-history and installed-interface acceptance. No second installer has been run and no worker or security settings were changed. A separate flash checkpoint verified 344 public files, including the signed archive and failure evidence, without accessing the stalled SSD. The final SSD evidence checkpoint is pending.
