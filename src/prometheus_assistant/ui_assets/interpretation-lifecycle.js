@@ -57,7 +57,7 @@ function renderHistory(parent,row){
  if(p.truncated)paragraph(parent,'Showing '+p.items.length+' of '+p.total+' interpretation histories.');
  paragraph(parent,'Interpretation changes grant no execution, repair or retry authority.');
 }
-window.PrometheusInterpretationLifecycle=Object.freeze({renderHistory});
+window.PrometheusInterpretationLifecycle=Object.freeze({renderHistory,validateProjection:projectionValid,validatePayload:payloadValid});
 if(!box)return;
 let state={online:false,busy:false,closed:false},epoch=0,reading=false,sending=false,active=null,pending=null,items=[],rows=[];
 const current=()=>typeof session==='string'?session:null;

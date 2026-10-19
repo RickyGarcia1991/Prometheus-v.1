@@ -15,6 +15,7 @@ UI_MODES = frozenset('chat coding ask vision reach capabilities library calculat
 UI_MODES |= frozenset({'self_improve', 'approval_decision'})
 UI_MODES |= frozenset({'evidence_resolution_prepare'})
 UI_MODES |= frozenset({'interpretation_change_prepare'})
+UI_MODES |= frozenset({'evidence_followup_prepare','evidence_followup_tick','evidence_followup_cancel','evidence_followup_recover'})
 UI_MODES |= frozenset({'integration', 'integration_access', 'voice_prepare'})
 UI_MODES |= frozenset({'project_edit', 'idle_config', 'idle_status', 'idle_run'})
 UI_MODES |= frozenset({'runtime_status', 'runtime_config', 'remote_syntax_info', 'remote_syntax_prepare', 'remote_syntax_recover'})

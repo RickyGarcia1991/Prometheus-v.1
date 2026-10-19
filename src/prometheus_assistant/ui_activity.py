@@ -24,6 +24,10 @@ LABELS = {
     'scheduled_syntax_tick': 'Checking approved waiting work',
     'scheduled_syntax_cancel': 'Cancelling waiting work',
     'scheduled_syntax_recover': 'Recovering the original syntax result',
+    'evidence_followup_prepare': 'Preparing an evidence follow-up review',
+    'evidence_followup_tick': 'Checking approved evidence follow-ups',
+    'evidence_followup_cancel': 'Cancelling a waiting evidence follow-up',
+    'evidence_followup_recover': 'Recovering the original follow-up result',
     'integration': 'Preparing an integration action', 'integration_access': 'Reviewing task access',
     'dictate': 'Preparing local recording', 'voice_prepare': 'Preparing voice · microphone off',
 }
@@ -86,6 +90,20 @@ def outcome(action, result):
         return 'error', 'Component checks need attention'
     if details.get('self_improvement', {}).get('state') in {'failed', 'error', 'cancelled'}:
         return 'error', 'Application change needs attention · see its result'
+    followup = details.get('evidence_followup')
+    if isinstance(followup, dict):
+        status = followup.get('state')
+        if status in {'failed', 'unconfirmed', 'incomplete', 'unrecorded'}:
+            return 'error', 'Follow-up check failed' if status == 'failed' else 'Follow-up outcome unconfirmed · do not repeat execution'
+        if status in {'rejected', 'cancelled', 'expired'}:
+            return 'cancelled', 'Follow-up ' + status + ' · no new execution'
+        if status == 'waiting':
+            return 'review', 'Follow-up waiting on its approved destination'
+        if status == 'completed':
+            evidence = (followup.get('result') or {}).get('evidence') or {}
+            if evidence.get('status') == 'passed':
+                return 'done', 'Follow-up checks passed · original evidence retained'
+            return 'error', 'Follow-up checks failed · see findings' if evidence.get('status') == 'failed' else 'Follow-up evidence unconfirmed · inspect the original result'
     return 'done', 'Completed · see the task result'
 
 

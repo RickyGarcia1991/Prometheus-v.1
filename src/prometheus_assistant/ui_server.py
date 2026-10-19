@@ -24,7 +24,7 @@ from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
 from . import ui_workspace, self_improvement_ui, integration_ui, project_tasks_ui, runtime_settings_ui, remote_jobs_ui, capability_revision_ui
 from . import evidence_resolution_ui
-from . import interpretation_lifecycle_ui
+from . import interpretation_lifecycle_ui, evidence_followup_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -46,7 +46,7 @@ MODES |= integration_ui.MODES
 MODES |= project_tasks_ui.MODES
 MODES |= runtime_settings_ui.MODES | remote_jobs_ui.MODES
 MODES |= evidence_resolution_ui.MODES
-MODES |= interpretation_lifecycle_ui.MODES
+MODES |= interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES
 MODES.add('voice_prepare')
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -150,7 +150,8 @@ def validate_job(body):
     capability_revision_ui.validate(body if isinstance(body, dict) else {})
     evidence_resolution_ui.validate(body if isinstance(body, dict) else {})
     interpretation_lifecycle_ui.validate(body if isinstance(body, dict) else {})
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | evidence_resolution_ui.FIELDS | interpretation_lifecycle_ui.FIELDS | approval_fields):
+    evidence_followup_ui.validate(body if isinstance(body, dict) else {})
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | evidence_resolution_ui.FIELDS | interpretation_lifecycle_ui.FIELDS | evidence_followup_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
@@ -187,7 +188,7 @@ def validate_job(body):
         raise ValueError('Use a prompt of at most 4000 characters.')
     if mode == 'voice_prepare' and (set(body) - {'mode', 'prompt'} or prompt.strip()):
         raise ValueError('Voice preparation accepts only its mode and an empty prompt.')
-    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES | project_tasks_ui.NO_PROMPT | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES and not prompt.strip():
+    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES | project_tasks_ui.NO_PROMPT | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -213,7 +214,8 @@ def validate_job(body):
     integration_ui.validate(body)
     project_tasks_ui.validate(body)
     runtime_settings_ui.validate(body)
-    remote_jobs_ui.validate(body)
+    if mode not in evidence_followup_ui.MODES:
+        remote_jobs_ui.validate(body)
     return {**body, 'prompt': prompt.strip()}
 
 
@@ -376,8 +378,13 @@ class Interface:
             return {'preparing': True}
 
     def idle_maintenance(self):
-        if remote_jobs_ui.scheduled_syntax_ui.idle(self):
-            return
+        # Alternate successful queue turns; neither kind can starve the other.
+        queues = (remote_jobs_ui.scheduled_syntax_ui.idle, evidence_followup_ui.idle)
+        first = getattr(self, '_verification_queue_turn', 0)
+        for index in (first, 1-first):
+            if queues[index](self):
+                self._verification_queue_turn = 1-index
+                return
         if time.monotonic() < self.next_maintenance or self.closing:
             return
         self.next_maintenance = time.monotonic()+60
@@ -483,7 +490,7 @@ class Interface:
 
     def submit(self, request, *, grant_owner=None, approval_binding=None, background=False):
         request = validate_job(request)
-        if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates', 'idle_run', 'scheduled_syntax_tick'}:
+        if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates', 'idle_run', 'scheduled_syntax_tick', 'evidence_followup_tick'}:
             raise ValueError('Only approved scheduled research and maintenance checks can be background jobs.')
         from .application_policy import require_dispatch
         require_dispatch('ui.'+request['mode'])
@@ -503,7 +510,7 @@ class Interface:
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
                                  'speech_epoch': 0, 'speech_streamable': False,
                                  'action': request['mode'],
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'voice_prepare', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision', 'project_edit', 'idle_run', 'scheduled_syntax_prepare', 'scheduled_syntax_tick', 'scheduled_syntax_recover'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'voice_prepare', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision', 'project_edit', 'idle_run', 'scheduled_syntax_prepare', 'scheduled_syntax_tick', 'scheduled_syntax_recover', 'evidence_followup_prepare', 'evidence_followup_tick', 'evidence_followup_recover'}}
             if request['mode'] == 'dictate':
                 self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
             self._speech_owners[job_id] = {'binding': approval_binding}
@@ -555,6 +562,8 @@ class Interface:
                         result = evidence_resolution_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
                         result = interpretation_lifecycle_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = evidence_followup_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None and request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
                         result = project_tasks_ui.run_idle(self)
                     elif result is None:
@@ -620,7 +629,7 @@ class Interface:
         require_dispatch('ui.'+request['mode'])
         if request['mode'] == 'core':
             raise ValueError('Scoped Core execution requires the authenticated job path.')
-        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES | project_tasks_ui.MODES | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES:
+        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES | project_tasks_ui.MODES | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES:
             raise ValueError('Application changes and integrations require the authenticated owner approval path.')
         mode, prompt = request['mode'], request['prompt']
         from .ui_activity import task_label
@@ -1009,6 +1018,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/decision-history.js': ('decision-history.js', 'text/javascript; charset=utf-8'),
                   '/evidence-resolution.js': ('evidence-resolution.js', 'text/javascript; charset=utf-8'),
                   '/interpretation-lifecycle.js': ('interpretation-lifecycle.js', 'text/javascript; charset=utf-8'),
+                  '/evidence-followups.js': ('evidence-followups.js', 'text/javascript; charset=utf-8'),
                   '/capability-revisions.js': ('capability-revisions.js', 'text/javascript; charset=utf-8'),
                   '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
                   '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
@@ -1064,6 +1074,11 @@ class Handler(BaseHTTPRequestHandler):
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'approval': app.action_approvals.pending(owner=owner,
                         binding=hashlib.sha256((self.owner_session() or '').encode()).hexdigest())})
+            elif self.path == '/api/evidence/followups':
+                cookie=self.owner_session()
+                self.respond(200,evidence_followup_ui.status(app,
+                    grant_owner=lambda: access.grant_owner(cookie),
+                    binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/syntax-queue':
                 cookie=self.owner_session()
                 self.respond(200,remote_jobs_ui.scheduled_syntax_ui.status(app,
