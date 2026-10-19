@@ -65,3 +65,8 @@ Dev52 revision 3 is the retained rollback target. It preserves the lifecycle sid
 Manifest SHA256: `61d873757944044d83066462814aacffef5306de0e2d95e9bc5123134aeb4e73`
 
 Archive SHA256: `00e670e19d41e98d7b07f6b2fbb0e5c73488d09dd5f6907823ed95ac8591631c`
+
+
+## Final verified checkpoint
+
+The completed acceptance snapshot contains 96 hash-verified files on each identified drive. Each copy also reverified its existing 159-file preparation base, including the exact signed archive. Both immutable readback receipts are recorded in Prometheus-dev53-acceptance-checkpoint-20261019T061254686265Z.json. No new USB reset or disk-retry event appeared during installation and the final acceptance copy. Earlier resets remain recorded; this does not establish a hardware repair.
