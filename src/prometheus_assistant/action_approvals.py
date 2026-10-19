@@ -43,6 +43,7 @@ class ActionApprovals:
         self._pending = {}
         self._revision_intents = {}
         self._capability_revision_intents = {}
+        self._application_starts = {}
         self._lock = threading.RLock()
         self.receipt_root = Path(receipt_root) if receipt_root is not None else None
         from .decision_history import DecisionHistory
@@ -55,6 +56,8 @@ class ActionApprovals:
                                   if row['created_at'] <= now < row['expires_at']}
         self._capability_revision_intents = {key: row for key,row in self._capability_revision_intents.items()
                                              if row['created_at'] <= now < row['expires_at']}
+        self._application_starts = {key: value for key,value in self._application_starts.items()
+                                    if value['expires_at'] > now}
 
     @staticmethod
     def _key(owner, binding):
@@ -148,12 +151,17 @@ class ActionApprovals:
             if decision in {'approve', 'request_changes'} and row['policy_revision'] != policy_revision:
                 del self._pending[key]
                 raise ValueError('Application policy changed. Prepare a new review before approval.')
+            if decision == 'approve' and row['kind'] == 'self_improve' and len(self._application_starts) >= 128:
+                raise ValueError('Too many unfinished application evidence starts.')
             if self.decision_history is not None:
                 self.decision_history.record(dict(schema_version=1,id=row['id'],owner=owner,
                     fingerprint=row['fingerprint'],session=row['session'],
                     kind=row['kind'] if row['kind'] in KINDS else 'other',
                     decision=decision,feedback=feedback,decided_at=time.time()))
             del self._pending[key]
+            if decision == 'approve' and row['kind'] == 'self_improve':
+                self._application_starts[(owner,row['id'],row['fingerprint'])] = dict(
+                    row=copy.deepcopy(row), binding=binding, expires_at=self.clock()+self.lifetime)
             return copy.deepcopy(row)
 
     def history(self, *, owner, limit=50):
@@ -167,6 +175,7 @@ class ActionApprovals:
                 for row in all_rows if row['owner']==owner][:limit]
         events = self._outcomes().read()
         capability_events = self.capability_outcomes().read()
+        application_events = self.application_outcomes().read(decisions=all_rows)
         revisions,recorded_children = self._revisions().read_with_states()
         capability_revisions,capability_children = self._capability_revisions().read_with_states()
         from .shared_capability_evidence import for_owner
@@ -175,11 +184,13 @@ class ActionApprovals:
         # Compare the complete bounded owner ledger, not just the displayed page.
         # A contradictory original result may be older than the latest 50 rows.
         lifecycle = lifecycle_for_owner(owner,decisions=all_rows,
-            project_events=events,capability_events=capability_events)
+            project_events=events,capability_events=capability_events,application_events=application_events)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
                                          if o==owner and i==row['id'] and f==row['fingerprint']]
+            row['application_outcomes'] = [event for o,i,f,event in application_events
+                                          if o==owner and i==row['id'] and f==row['fingerprint']]
             row['revisions'] = [{**{k:link[k] for k in ('parent_id','parent_fingerprint','child_id','child_fingerprint','created_at')},
                 'child_state':'recorded' if (owner,link['child_id']) in recorded_children else 'unrecorded'}
                 for link in revisions if link['owner']==owner and
@@ -239,6 +250,25 @@ class ActionApprovals:
         if self.decision_history is None:raise ValueError('Decision history is not configured.')
         from .capability_outcomes import CapabilityOutcomes
         return CapabilityOutcomes(self.decision_history)
+
+    def application_outcomes(self):
+        from .application_outcomes import ApplicationOutcomes
+        return ApplicationOutcomes(self.decision_history)
+
+    def start_application_outcome(self, *, owner, row):
+        """Only this process's freshly consumed row can establish a new link."""
+        self._key(owner, '0'*64)
+        if type(row) is not dict:raise ValueError('Fresh consumed application decision required.')
+        from .decision_history import _identity
+        _identity(row.get('id'),32); _identity(row.get('fingerprint'),64)
+        with self._lock:
+            self._expire()
+            key = owner, row.get('id'), row.get('fingerprint')
+            fresh = self._application_starts.pop(key, None)
+            if fresh is None or fresh['row'] != row:
+                raise ValueError('Fresh consumed application decision required.')
+            receipt = self.approved_job(owner=owner,job_id=row['payload']['job_id'])
+            return self.application_outcomes().start(owner=owner,row=row,approved_job=receipt)
 
     def _capability_revisions(self):
         if self.decision_history is None:raise ValueError('Decision history is not configured.')
@@ -317,6 +347,7 @@ class ActionApprovals:
             self._pending = {key: row for key, row in self._pending.items() if key[1] != binding}
             self._revision_intents = {key:row for key,row in self._revision_intents.items() if row['binding']!=binding}
             self._capability_revision_intents = {key:row for key,row in self._capability_revision_intents.items() if row['binding']!=binding}
+            self._application_starts = {key:row for key,row in self._application_starts.items() if row['binding']!=binding}
 
     def _receipt_path(self, job_id):
         if self.receipt_root is None:

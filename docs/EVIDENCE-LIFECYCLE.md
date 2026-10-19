@@ -1,21 +1,21 @@
 # Historical evidence lifecycle and conflict isolation
 
 The owner history projection summarizes recorded facts for project executions,
-worker jobs and immediate capability observations. It does not inspect current
+worker jobs, application activation attempts and immediate capability observations. It does not inspect current
 files, contact a provider, replay a job, adopt a digest, write history or restore
 approval authority. All lifecycle summaries have `freshness: historical` and
 `read_only: true`. Timestamps are display metadata, never identity, expiry or a
 way to choose between conflicting results.
 
 `evidence_lifecycle.for_owner(owner, *, decisions, project_events,
-capability_events)` accepts complete bounded canonical decision receipts and
+capability_events, application_events=None)` accepts complete bounded canonical decision receipts and
 validated native event collections before the fifty-row display limit. The
 projection also checks exact owner, approval ID, fingerprint, kind and event
 sequence. It returns a map keyed by `(approval_id, fingerprint)`.
 
 Every entry has exactly `schema_version: 1`, `state`, `source`, `freshness`,
 `reference`, `reason`, `linked_decisions`, `related_decisions`, `truncated` and
-`read_only`. Sources are `none`, `project`, `worker` or `capability` (an immediate
+`read_only`. Sources are `none`, `project`, `worker`, `application` or `capability` (an immediate
 native observation). The public `validate_projection(value)` rejects malformed
 or semantically contradictory summary metadata.
 
@@ -29,7 +29,8 @@ or semantically contradictory summary metadata.
 | unconfirmed | restoration_unconfirmed | Explicit Undo failed or automatic rollback needs attention. |
 | recorded | native_result_recorded | A terminal observation is recorded; this is not a success judgment. |
 | restored | project_restored | The final explicit Undo observation records restoration. |
-| conflicting | native_identity_conflict | Distinct decisions record inconsistent facts for the exact native identity. |
+| restored | application_restored | Native activation records restoration of the previous application release. |
+| conflicting | native_identity_conflict | The exact native identity has incompatible recorded results. |
 
 Recorded failures, tool failures, cancellations, expiration and saved settings
 remain their original statuses. A successful automatic rollback does not rename
@@ -62,7 +63,11 @@ A non-null native reference has a count including the current decision and up to
 and truncation flag. A null reference always has count zero, no related references
 and no truncation. Data belonging to another owner is excluded before grouping.
 
-No database schema or persisted observation is changed. The retained release can
+Existing database schemas and persisted observations are unchanged. Application
+attempts use a separate bounded sidecar and keep one exact decision per job; a
+terminal conflict can therefore exist within that one decision. Legacy attempts
+without a fresh exact link remain missing evidence. See [APPLICATION-EVIDENCE.md](APPLICATION-EVIDENCE.md)
+for result identity, restart observations and read-only history rules. The retained release can
 read the same legacy receipts and sidecars. Historical evidence is not described
 as current validation or as expired merely because time has passed; checking
 current source validity would require a separately recorded native binding.

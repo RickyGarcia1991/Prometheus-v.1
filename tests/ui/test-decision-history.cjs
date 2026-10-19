@@ -185,3 +185,32 @@ test('late lifecycle conflicts do not reappear after authentication is lost',asy
  const f=fixture();let resolve;f.set(()=>new Promise(r=>resolve=r));f.busy();f.open();await settle();f.emit('prometheus-auth-lost');
  resolve({schema_version:1,read_only:true,items:[{...projectPass,evidence_lifecycle:lifecycle({state:'conflicting',reason:'native_identity_conflict',linked_decisions:2,related_decisions:sharedGroup.related_decisions})}]});await settle();assert.equal(f.elements.decisionHistoryList.children.length,0);assert.match(f.elements.decisionHistoryStatus.textContent,/Unlock/);assert.equal(f.submitted.length,0);
 });
+
+const applicationEvent=(status,index=0,extra={})=>({event_id:(index+1).toString(16).padStart(32,'0'),phase:status==='started'?'started':'observed',observed_at:index+1,status,job_id:'d'.repeat(32),candidate_fingerprint:'e'.repeat(64),evidence_sha256:['started','unconfirmed'].includes(status)?null:'c'.repeat(64),...extra});
+const applicationRow=(states,reason='native_result_recorded',state='recorded')=>({...row,id:'a'.repeat(32),fingerprint:'b'.repeat(64),kind:'self_improve',decision:'approve',feedback:'',application_outcomes:['started',...states].map((s,i)=>applicationEvent(s,i)),evidence_lifecycle:lifecycle({source:'application',reason,state})});
+test('application activation history preserves native failures and rollback without manual Undo or current health claims',async()=>{
+ const cases=[
+  [applicationRow(['active']),/Application activation was recorded; this does not confirm the currently selected release/],
+  [applicationRow(['failed']),/Application activation failed/],
+  [applicationRow(['failed','rolled_back'],'application_restored','restored'),/Application activation failed.*Previous application release was restored/],
+  [applicationRow(['recovery_required'],'restoration_unconfirmed','unconfirmed'),/Application recovery requires attention/],
+  [applicationRow(['promotion_pending'],'execution_pending','pending'),/Exact application change queued; activation is not confirmed/],
+  [applicationRow([],'outcome_unconfirmed','unconfirmed'),/dispatch is unconfirmed/],
+  [applicationRow(['active','failed'],'native_identity_conflict','conflicting'),/No result is selected as authoritative.*Application activation was recorded.*Application activation failed/]
+ ];
+ for(const [item,expected] of cases){const f=await revisionHistory([item]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,expected);assert.doesNotMatch(text,/lifecycle unknown|Manual restoration|Native checks passed/);assert.match(text,/does not select a release, confirm current health, restore approval or repeat activation/);noAuthority(f);}
+});
+test('application lifecycle handles late pending and uncertain refresh without erasing historical active result',async()=>{
+ for(const tail of ['promotion_pending','unconfirmed']){const f=await revisionHistory([applicationRow(['active',tail])]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/A native result is recorded/);assert.match(text,/Application activation was recorded/);assert.doesNotMatch(text,/lifecycle unknown/);noAuthority(f);}
+});
+test('malformed application observation identity, phase and native proof fail closed',async()=>{
+ const initial=applicationEvent('started'),active=applicationEvent('active',1);
+ const bad=[null,{},[active],[initial,{...active,job_id:'f'.repeat(32)}],[initial,{...active,candidate_fingerprint:'f'.repeat(64)}],[initial,{...active,status:'future'}],[initial,{...active,evidence_sha256:null}],[initial,{...active,error:'PRIVATE'}],[initial,{...active,phase:'started'}],[initial,{...active,event_id:initial.event_id}],[initial,active,applicationEvent('active',2)]];
+ for(const events of bad){const f=await revisionHistory([{...applicationRow(['active']),application_outcomes:events}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);noAuthority(f);}
+ for(const patch of [{kind:'runtime_config'},{decision:'reject'},{outcomes:[outcome('started','started')]}]){const f=await revisionHistory([{...applicationRow(['active']),...patch}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);noAuthority(f);}
+});
+test('false application lifecycle is unknown while original native observations remain',async()=>{
+ const base=applicationRow(['failed']);
+ for(const patch of [{reason:'application_restored',state:'restored'},{linked_decisions:2,related_decisions:[{id:'f'.repeat(32),fingerprint:'f'.repeat(64)}]},{reason:'native_identity_conflict',state:'conflicting'},{source:'worker'}]){const f=await revisionHistory([{...base,evidence_lifecycle:{...base.evidence_lifecycle,...patch}}]);assert.match(flatten(f.elements.decisionHistoryList),/Evidence lifecycle unknown.*Application activation failed/);noAuthority(f);}
+ const f=await revisionHistory([{...applicationRow([]),application_outcomes:[],evidence_lifecycle:lifecycle({state:'missing',source:'application',reason:'no_recorded_start',reference:null,linked_decisions:0})}]);assert.match(flatten(f.elements.decisionHistoryList),/No execution start is recorded/);noAuthority(f);
+});

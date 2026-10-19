@@ -79,13 +79,14 @@ const lifecycleReasons={
  restoration_pending:['unconfirmed','Restoration was started; completion is not confirmed.'],
  restoration_unconfirmed:['unconfirmed','Restoration is unconfirmed or needs attention.'],
  project_restored:['restored','Manual restoration was recorded. The original native result is retained below.'],
+ application_restored:['restored','The previous application release was restored after this activation attempt. Original observations are retained below.'],
  native_identity_conflict:['conflicting','Conflicting native observations refer to the same recorded execution identity. No result is selected as authoritative.']
 };
 function evidenceLifecycle(row){
  if(row.evidence_lifecycle===undefined)return null;
  const value=row.evidence_lifecycle,fields=['schema_version','state','source','freshness','reference','reason','linked_decisions','related_decisions','truncated','read_only'];
  try{
-  if(!value||typeof value!=='object'||Object.keys(value).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(value,k))||value.schema_version!==1||typeof value.reason!=='string'||!Object.prototype.hasOwnProperty.call(lifecycleReasons,value.reason)||value.state!==lifecycleReasons[value.reason][0]||!['none','project','worker','capability'].includes(value.source)||value.freshness!=='historical'||value.read_only!==true||!Number.isSafeInteger(value.linked_decisions)||value.linked_decisions<0||value.linked_decisions>8192||!Array.isArray(value.related_decisions)||value.related_decisions.length>16||typeof value.truncated!=='boolean'||!/^[a-f0-9]{32}$/.test(row.id)||!/^[a-f0-9]{64}$/.test(row.fingerprint))throw Error('Invalid evidence lifecycle');
+  if(!value||typeof value!=='object'||Object.keys(value).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(value,k))||value.schema_version!==1||typeof value.reason!=='string'||!Object.prototype.hasOwnProperty.call(lifecycleReasons,value.reason)||value.state!==lifecycleReasons[value.reason][0]||!['none','project','worker','capability','application'].includes(value.source)||value.freshness!=='historical'||value.read_only!==true||!Number.isSafeInteger(value.linked_decisions)||value.linked_decisions<0||value.linked_decisions>8192||!Array.isArray(value.related_decisions)||value.related_decisions.length>16||typeof value.truncated!=='boolean'||!/^[a-f0-9]{32}$/.test(row.id)||!/^[a-f0-9]{64}$/.test(row.fingerprint))throw Error('Invalid evidence lifecycle');
   if(value.reference===null){if(value.linked_decisions!==0||value.related_decisions.length||value.truncated)throw Error('Unexpected evidence links');}
   else if(typeof value.reference!=='string'||!/^[a-f0-9]{64}$/.test(value.reference)||value.linked_decisions<1||value.related_decisions.length!==Math.min(value.linked_decisions-1,16)||value.truncated!==(value.linked_decisions>17))throw Error('Invalid evidence links');
   const ids=new Set();
@@ -93,13 +94,16 @@ function evidenceLifecycle(row){
    if(!related||typeof related!=='object'||Object.keys(related).length!==2||typeof related.id!=='string'||!/^[a-f0-9]{32}$/.test(related.id)||typeof related.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(related.fingerprint)||related.id===row.id||ids.has(related.id))throw Error('Invalid related evidence decision');
    ids.add(related.id);
   }
-  const project=events(row),capabilities=capabilityEvents(row),rows=project.length?project:capabilities,last=rows.at(-1),original=project.find(event=>event.phase==='result');
-  const source=row.decision!=='approve'?'none':['project_edit','project_task'].includes(row.kind)?'project':['remote_syntax','scheduled_syntax'].includes(row.kind)?'worker':revisionKinds.includes(row.kind)?'capability':'none';
+  const project=events(row),capabilities=capabilityEvents(row),application=applicationEvents(row),rows=project.length?project:capabilities.length?capabilities:application,last=rows.at(-1),original=project.find(event=>event.phase==='result');
+  const source=row.decision!=='approve'?'none':['project_edit','project_task'].includes(row.kind)?'project':['remote_syntax','scheduled_syntax'].includes(row.kind)?'worker':revisionKinds.includes(row.kind)?'capability':row.kind==='self_improve'?'application':'none';
   if(value.source!==source||project.length&&!['project_edit','project_task'].includes(row.kind))throw Error('Evidence source mismatch');
-  const nativeIdentity=source==='worker'&&!!capabilities.length||source==='project'&&!!original?.edit_id;
+  const nativeIdentity=source==='worker'&&!!capabilities.length||source==='project'&&!!original?.edit_id||source==='application'&&!!application.length;
   if((value.reference!==null)!==nativeIdentity)throw Error('Evidence identity mismatch');
   if(row.decision!=='approve'){if(value.reason!=='decision_not_approved'||rows.length)throw Error('Unapproved evidence');}
   else if(!rows.length){if(value.reason!=='no_recorded_start')throw Error('Missing evidence');}
+  else if(source==='application'){
+   if(value.linked_decisions!==1||value.reason!==applicationReason(application))throw Error('Application lifecycle mismatch');
+  }
   else if(value.reason==='native_identity_conflict'){
    if(!nativeIdentity||value.linked_decisions<2||(row.shared_evidence||[]).length)throw Error('Invalid conflict projection');
   }else if(value.reason==='execution_pending'){
@@ -132,6 +136,34 @@ function lifecycleSummary(item,lifecycle){
 }
 const capabilityLabels={started:'Capability execution started',settings_saved:'Settings saved; future behavior has not been verified',access_granted:'Access issued; this does not confirm a provider action',adapter_returned:'Integration adapter returned; result correctness is not independently verified',waiting:'Waiting at the approved destination; no execution confirmed',deferred:'Execution deferred',unconfirmed:'Execution unconfirmed; do not infer success or repeat execution',unknown:'Outcome unknown',cancelled:'Waiting job cancelled',expired:'Waiting permission expired',checks_passed:'Native worker checks passed',checks_failed:'Native worker checks found failures',tool_failed:'Verification tool failed; this is not a code-defect finding'};
 const capabilityTerminal=new Set(['settings_saved','access_granted','adapter_returned','cancelled','expired','checks_passed','checks_failed','tool_failed']);
+const applicationLabels={started:'Approved application attempt recorded; dispatch is unconfirmed',unconfirmed:'Application outcome unconfirmed; do not infer success or retry',promotion_pending:'Exact application change queued; activation is not confirmed',validating:'Application candidate validation recorded',retesting:'Application candidate tests recorded in progress',signing:'Application signing recorded in progress',waiting_for_shutdown:'Application activation recorded waiting for shutdown',starting:'Application startup recorded in progress',active:'Application activation was recorded; this does not confirm the currently selected release',failed:'Application activation failed',rolled_back:'Previous application release was restored',recovery_required:'Application recovery requires attention'};
+const applicationPending=new Set(['promotion_pending','validating','retesting','signing','waiting_for_shutdown','starting']);
+function applicationEvents(row){
+ const rows=row.application_outcomes===undefined?[]:row.application_outcomes;
+ if(!Array.isArray(rows)||rows.length>32||rows.length&&(row.decision!=='approve'||row.kind!=='self_improve'||events(row).length||capabilityEvents(row).length))throw Error('Invalid application outcomes');
+ const fields=['event_id','phase','observed_at','status','job_id','candidate_fingerprint','evidence_sha256'],ids=new Set(),seen=new Set();let binding=null;
+ for(const event of rows){
+  if(!event||typeof event!=='object'||Object.keys(event).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(event,k))||typeof event.event_id!=='string'||!/^[a-f0-9]{32}$/.test(event.event_id)||ids.has(event.event_id)||typeof event.status!=='string'||!Object.prototype.hasOwnProperty.call(applicationLabels,event.status)||seen.has(event.status)||!['started','observed'].includes(event.phase)||(event.phase==='started')!==(event.status==='started')||!Number.isFinite(event.observed_at)||event.observed_at<0||event.observed_at>253402300799||typeof event.job_id!=='string'||!/^[a-f0-9]{32}$/.test(event.job_id)||typeof event.candidate_fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(event.candidate_fingerprint))throw Error('Invalid application event');
+  const identity=event.job_id+'/'+event.candidate_fingerprint;
+  if(binding===null?event.status!=='started':binding!==identity||event.status==='started')throw Error('Invalid application sequence');
+  if(['started','unconfirmed'].includes(event.status)?event.evidence_sha256!==null:typeof event.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(event.evidence_sha256))throw Error('Invalid application native evidence');
+  binding=identity;ids.add(event.event_id);seen.add(event.status);
+ }
+ return rows;
+}
+function applicationReason(rows){
+ const states=new Set(rows.map(event=>event.status));
+ if(states.has('active')&&['failed','rolled_back','recovery_required'].some(s=>states.has(s))||states.has('rolled_back')&&states.has('recovery_required'))return 'native_identity_conflict';
+ if(states.has('rolled_back'))return 'application_restored';
+ if(states.has('recovery_required'))return 'restoration_unconfirmed';
+ if(states.has('active')||states.has('failed'))return 'native_result_recorded';
+ return applicationPending.has(rows.at(-1)?.status)?'execution_pending':'outcome_unconfirmed';
+}
+function applicationTimeline(item,rows){
+ const ordered=document.createElement('ol');item.append(ordered);
+ for(const event of rows){const li=document.createElement('li');paragraph(li,new Date(event.observed_at*1000).toLocaleString()+' · '+applicationLabels[event.status]);ordered.append(li);}
+ paragraph(item,'Historical application observations only. This does not select a release, confirm current health, restore approval or repeat activation.');
+}
 function capabilityEvents(row){
  const rows=row.capability_outcomes===undefined?[]:row.capability_outcomes;
  if(!Array.isArray(rows)||rows.length>16||row.decision!=='approve'&&rows.length)throw Error('Invalid capability outcomes');
@@ -172,6 +204,7 @@ function timeline(item,row){
  const rows=events(row);
  if(row.decision!=='approve'){paragraph(item,'This decision authorized no execution.');return;}
  const capabilities=capabilityEvents(row);if(capabilities.length){capabilityTimeline(item,capabilities);return;}
+ const application=applicationEvents(row);if(application.length){applicationTimeline(item,application);return;}
  if(!rows.length){paragraph(item,'No linked execution evidence. Approval alone does not confirm execution or success.');return;}
  const timeline=document.createElement('ol');item.append(timeline);
  for(const event of rows){const li=document.createElement('li');paragraph(li,new Date(event.observed_at*1000).toLocaleString()+' · '+(event.phase==='undo_started'?'Manual restoration started':event.status==='passed'&&(!event.checks||event.checks.executed===0)?'Execution reported passed, but native check evidence is unavailable; behavior is unverified':statuses[event.status]));
@@ -192,7 +225,7 @@ async function load(){
   const data=await api('/api/decisions/history');if(version!==generation||!ready()||!box.open)return;
   if(!data||data.schema_version!==1||data.read_only!==true||!Array.isArray(data.items)||data.items.length>50)throw Error('Invalid history');
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
-  for(const row of data.items){events(row);capabilityEvents(row);revisions(row);revisions(row,true);sharedEvidence(row);}
+  for(const row of data.items){events(row);capabilityEvents(row);applicationEvents(row);revisions(row);revisions(row,true);sharedEvidence(row);}
   let unknownLifecycles=0;
   list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
   status.textContent=data.items.length+' saved decisions. '+(unknownLifecycles?unknownLifecycles+' evidence lifecycle summaries are unknown. ':'')+'History does not authorize or resume work.';

@@ -52,11 +52,25 @@ def _native_decision_state(row):
     if decision not in {'approve', 'reject', 'request_changes'} or not isinstance(kind, str):
         raise ValueError('Invalid decision')
     project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
-    if any(not isinstance(events, list) or len(events)>16 for events in (project, capability)) or project and capability:
+    application = row.get('application_outcomes', [])
+    if (any(not isinstance(events, list) or len(events)>16 for events in (project, capability))
+            or not isinstance(application, list) or len(application)>32
+            or sum(bool(events) for events in (project,capability,application))>1):
         raise ValueError('Invalid evidence')
     if decision != 'approve':
-        if project or capability:raise ValueError('Unapproved evidence')
+        if project or capability or application:raise ValueError('Unapproved evidence')
         return 'no_execution'
+    if application:
+        from .application_outcomes import summary
+        if kind != 'self_improve':raise ValueError('Invalid application evidence kind')
+        state, reason = summary(application)
+        if len({event['event_id'] for event in application}) != len(application):raise ValueError('Repeated application event')
+        if state == 'conflicting':return 'application_conflicting'
+        if state == 'restored':return 'application_restored'
+        if reason == 'restoration_unconfirmed':return 'application_recovery_required'
+        if state == 'recorded':
+            return 'application_failed' if any(e['status']=='failed' for e in application) else 'application_active'
+        return 'activation_pending' if state == 'pending' else 'unknown'
     prior=[];identities=set()
     for event in project or capability:
         if project:
@@ -92,8 +106,15 @@ def _decision_state(row):
     validate_projection(lifecycle)
     state, source = lifecycle['state'], lifecycle['source']
     project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
+    application = row.get('application_outcomes', [])
     if row['decision'] != 'approve':
         if state != 'not_applicable':raise ValueError('Unapproved lifecycle')
+        return native
+    if application:
+        from .application_outcomes import summary
+        if (source != 'application' or (state,lifecycle['reason']) != summary(application)
+                or lifecycle['linked_decisions'] != 1 or lifecycle['reference'] is None):
+            raise ValueError('Application lifecycle differs from native observations')
         return native
     if not project and not capability:
         if state != 'missing':raise ValueError('Lifecycle without observations')
@@ -153,6 +174,12 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
         decision_source['truncated']=True
     sources['decisions']=decision_source
     labels={
+        'application_conflicting':('Conflicting historical application activation results require review; no result is selected.','critical'),
+        'application_restored':('The previous application release was restored after a recorded activation attempt; current health is not implied.','info'),
+        'application_recovery_required':('Recorded application activation requires recovery attention; history cannot retry it.','warning'),
+        'application_failed':('Recorded application activation failed; inspect the retained native observations.','warning'),
+        'application_active':('Application activation was recorded; this does not confirm the currently selected release or current health.','info'),
+        'activation_pending':('Application activation was recorded in progress; completion is unconfirmed and history cannot resume it.','info'),
         'conflicting':('Conflicting historical results share the same native identity; inspect all recorded observations.','warning'),
         'unknown':('Recorded decision has no confirmed outcome; history cannot resume work.','warning'),
         'restoration_unknown':('Recorded restoration is unconfirmed or needs attention; inspect its history.','warning'),
