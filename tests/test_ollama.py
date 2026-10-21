@@ -55,7 +55,8 @@ def test_idle_model_release_adapts_to_small_and_busy_hosts(monkeypatch):
         sent.append(payload)
         return {"done": True, "message": {"content": "Complete answer"}}
     monkeypatch.setattr(client, "_request", request)
-    cases = [(8, 5, "30s"), (32, 1, "30s"), (32, 12, "5m"), (64, None, "30s")]
+    cases = [(8, 5, "30s"), (32, .9, "30s"), (32, 1.5, "2m"),
+             (32, 12, "15m"), (64, None, "30s")]
     for total, available, expected in cases:
         monkeypatch.setattr("prometheus_assistant.hardware.detect_hardware",
                             lambda: HardwareProfile(total, 8, "Windows", available))
@@ -90,10 +91,12 @@ def test_streaming_idle_residency_matches_memory_policy(monkeypatch):
             pass
     client = OllamaClient()
     monkeypatch.setattr('http.client.HTTPConnection', Connection)
-    for total, available, expected in [(8, 5, '30s'), (16, 1, '30s'), (16, 6, '5m'), (64, None, '30s')]:
+    for total, available, expected in [(8, 5, '30s'), (16, .9, '30s'),
+                                       (16, 1.5, '2m'), (16, 6, '15m'), (64, None, '30s')]:
         monkeypatch.setattr('prometheus_assistant.hardware.detect_hardware',
                             lambda: HardwareProfile(total, 8, 'Windows', available))
-        assert client.chat_stream([{'role': 'user', 'content': 'Hello'}])[0] == 'Ready.'
+        assert client.chat_stream([{'role': 'user', 'content': 'Hello'}], json_format=True)[0] == 'Ready.'
+        assert sent[-1]['format'] == 'json'
         assert sent[-1]['keep_alive'] == expected
 
 

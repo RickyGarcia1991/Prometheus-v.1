@@ -31,6 +31,12 @@ def validate(body):
 def library(app, *, semantic=True):
     from .document_library import DocumentLibrary, OllamaEmbeddingClient
     def allowed():
+        from .specialist_resources import admit
+        try:
+            if admit(app)['decision'] != 'run_local':
+                return False
+        except Exception:
+            return False
         free = detect_hardware().available_ram_gib
         return free is not None and free >= 2.75
     client = OllamaEmbeddingClient() if semantic else None
@@ -61,8 +67,66 @@ def workspace(app, request):
     return CodingWorkspace(root, app.data_root/'Coding', protected_roots=protected)
 
 
-def execute(app, request):
+def result_summary(mode, result):
+    """Keep routine workbench activity readable; full evidence stays in details."""
+    if mode == 'health_check':
+        return result['summary']
+    if mode == 'document_list':
+        return f"Document library refreshed: {len(result.get('documents', []))} saved versions. Open Documents to browse them."
+    if mode == 'document_import':
+        action = 'Existing version retained' if result.get('duplicate') else 'Document imported'
+        return f"{action}: {result.get('title', 'document')}. {result.get('passage_count', 0)} searchable passages. Meaning index: {result.get('embedding_status', 'pending').replace('_', ' ')}."
+    if mode == 'document_index':
+        return f"Meaning index: {result.get('status', 'unknown').replace('_', ' ')}. {result.get('indexed', 0)} passages indexed; {result.get('pending', 0)} pending. Keyword search remains available."
+    if mode == 'code_open':
+        return f"Project opened: {len(result.get('files', []))} supported files. Choose a file in the Code workbench."
+    if mode == 'code_read':
+        return f"Opened {result['path']} in the editor. Changes are held for review before applying."
+    if mode == 'code_preview':
+        return f"Changes to {result['path']} are ready to review in Code. Nothing has been applied." if result['changed'] else 'The editor matches the file; no changes to apply.'
+    if mode == 'code_apply':
+        return f"Reviewed changes applied to {result['path']}. Undo is available in Code." if result['changed'] else 'No file changes were needed.'
+    if mode == 'code_undo':
+        return f"Restored the saved version of {result['path']}. Open the file again to review it."
+    if mode == 'code_tests':
+        status = 'cancelled' if result.get('cancelled') else 'timed out' if result.get('timed_out') else 'passed' if result.get('exit_code') == 0 else 'failed'
+        return f"Project check {status}. Review its output in Code."
+    if mode == 'maintenance':
+        paused = len(result.get('model_evidence', {}).get('paused_roles', []))
+        return f"Readiness refreshed. {paused} helper roles remain paused by their recorded task checks. Review hardware and backup details in Maintenance."
+    if mode in {'component_updates', 'configure_updates', 'check_updates'}:
+        rows = result.get('entries', [])
+        def needs_attention(row):
+            return bool(row.get('error') or row.get('pending_recovery') or row.get('status') in {'check_failed', 'rolled_back', 'cancelled'})
+        def manually_updated(row):
+            return row.get('provider') == 'pinned' or row.get('status') == 'check_unavailable'
+        failures = sum(needs_attention(row) for row in rows)
+        candidates = sum(not needs_attention(row) and not manually_updated(row) and row.get('status') in {'update_available', 'upstream_changed', 'staged_verified'} for row in rows)
+        manual = sum(manually_updated(row) and not needs_attention(row) for row in rows)
+        state = 'enabled' if result.get('enabled') else 'paused'
+        return f"Automatic update checks {state}. {failures} checks need attention; {candidates} updates need review; {manual} entries use manual updates. See Maintenance for versions and next steps."
+    if mode == 'model_benchmark':
+        checked, passed = result.get('checked', 0), result.get('passed', 0)
+        state = result.get('state', 'unknown').replace('_', ' ')
+        return f"Helper checks: {passed} of {checked} scored cases passed; {checked - passed} failed. Run status: {state}. Review skipped cases and individual results in Maintenance. These checks do not establish overall accuracy."
+    if mode == 'watch_source':
+        return f"Source watch {'enabled' if result['enabled'] else 'disabled'} for {result['provider']}: {result['query']}."
+    if mode == 'check_sources':
+        checks = result.get('checks', [])
+        failures = sum(bool(row.get('error')) for row in checks)
+        return f"Source checks: {len(checks)} checked; {failures} failed. Earlier saved versions are retained." + (f" {result['reason']}" if result.get('reason') else '')
+    if mode in {'backup', 'restore_check'}:
+        label = 'Backup' if mode == 'backup' else 'Restore check'
+        return f"{label} {'verified' if result.get('verified') else 'needs review'}. Review the destination and full result in Maintenance."
+    raise ValueError('No workbench summary for this action.')
+
+
+def execute(app, request, *, decision_owner=None):
     mode = request['mode']
+    from .application_policy import require_dispatch
+    if mode not in MODES:
+        raise ValueError('Unmapped workspace capability.')
+    require_dispatch('ui.'+mode)
     result = None
     if mode == 'documents':
         result = library(app).search(request['prompt'], include_history=request.get('include_history', False))
@@ -74,13 +138,14 @@ def execute(app, request):
             raise ValueError('Invalid uploaded document encoding.') from error
         result = library(app, semantic=False).import_bytes(request.get('name', ''), data,
             source_url=request.get('source_url') or None, source_date=request.get('source_date') or None,
-            document_id=request.get('document_id') or None)
+            document_id=request.get('document_id') or None, cancel_event=app.cancel_event)
     elif mode == 'document_list':
         result = {'documents': library(app).list_documents(include_history=True)}
     elif mode == 'document_index':
-        if (detect_hardware().available_ram_gib or 0) >= 2.75:
+        documents = library(app)
+        if documents.embedding_allowed():
             app.ensure_runtime()
-        result = library(app).index_missing_embeddings(limit=32)
+        result = documents.index_missing_embeddings(limit=32)
     elif mode == 'model_benchmark':
         from .model_benchmarks import run_benchmarks
         from .ui_server import installed_models
@@ -93,13 +158,28 @@ def execute(app, request):
         project = workspace(app, request)
         if mode == 'code_open':
             result = project.describe()
+            from .project_change_set import latest_group
+            from .project_recovery import latest
+            result['latest_edit'] = latest(project) or latest_group(project, result.get('latest_edit')) or result.get('latest_edit')
+            from .project_resources import service
+            service(app).select_project(str(project.root))
         elif mode == 'code_read':
             result = project.read_file(request.get('file', ''))
         elif mode in {'code_preview', 'code_apply'}:
             action = project.preview_edit if mode == 'code_preview' else project.apply_edit
             result = action(request.get('file', ''), request.get('content', ''), request.get('expected_sha256', ''))
         elif mode == 'code_undo':
-            result = project.undo_edit(request.get('edit_id', ''))
+            edit_id = request.get('edit_id', '')
+            def restore_edit():
+                if edit_id.startswith('recovery-'):
+                    from .project_recovery import restore
+                    return restore(project, edit_id)
+                if edit_id.startswith('group-'):
+                    from .project_change_set import undo_group
+                    return undo_group(project, edit_id)
+                return project.undo_edit(edit_id)
+            from .project_decision_outcomes import undo
+            result = undo(app, project, decision_owner, edit_id, restore_edit)
         elif mode == 'code_tests':
             result = project.run_tests(request.get('preset', ''), request.get('target', ''),
                                        cancel_event=app.cancel_event, on_output=app.append_partial)
@@ -130,11 +210,12 @@ def execute(app, request):
         if not destination:
             raise ValueError('Choose a backup folder on a different drive.')
         result = create_backup(app.memory_path, destination,
-            data_dirs={name: app.data_root/name for name in ('Library','Coding','Maintenance','PublicHistory','Routing')})
+            data_dirs={**{name: app.data_root/name for name in ('Library','Coding','Maintenance','PublicHistory','Routing')},
+                       'AgentMemory': app.data_root/'Integrations/AgentMemory',
+                       'AgentMemoryService': app.data_root/'Integrations/AgentMemoryService'})
         app.last_backup = result
     elif mode == 'restore_check':
         from .maintenance import restore_backup
         result = restore_backup(request.get('backup_path', ''), request.get('destination', ''))
-    from .ui_server import readable_result
-    return {'reply': result['summary'] if mode == 'health_check' else readable_result(result),
+    return {'reply': result_summary(mode, result),
             'details': result, 'label': mode.replace('_', ' ').capitalize(), 'action': mode}

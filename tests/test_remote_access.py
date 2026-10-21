@@ -125,6 +125,17 @@ def test_offline_just_before_dispatch_sends_no_command(connection):
     assert not [p for _, p in bridge.calls if p.get('name') == 'start_process']
 
 
+def test_queued_shared_policy_denial_settles_without_provider_effect(connection,monkeypatch):
+    manager,bridge=connection
+    pending=prepare(manager)
+    monkeypatch.setenv('PROMETHEUS_DENY_CAPABILITIES','remote.dispatch')
+    manager.action({'action':'execute','pending_id':pending['id']})
+    result=settled(manager)
+    assert result['phase']=='error'
+    assert 'not sent' in result['message']
+    assert not [p for _,p in bridge.calls if p.get('name')=='start_process']
+
+
 def test_timeout_marks_unknown_without_replaying(connection):
     manager, bridge = connection
     pending = prepare(manager)

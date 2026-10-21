@@ -32,8 +32,40 @@ def infer_role(prompt, task='general', *, image=False):
         return 'vision'
     if task == 'coding':
         return 'coding'
-    words = set(re.findall(r'[a-z+#]+', prompt.lower()))
-    if words & {'code', 'coding', 'debug', 'debugging', 'function', 'programming', 'python',
+    text = prompt.lower()
+    words = set(re.findall(r'[a-z+#]+', text))
+    # Translating technical prose is a language task. Porting source to another
+    # programming language remains coding; a quoted language name alone does
+    # not override an explicit translation request.
+    translation = re.match(r'\s*(?:(?:please|can you|could you|would you)\s+)?'
+                           r'(?:translate|traducir|traduce)\b', text)
+    destinations = re.findall(r'\b(?:to|into)\s+([a-z+#]+)\b', text)
+    code_destination = bool(translation and destinations and destinations[-1] in {
+        'python', 'javascript', 'typescript', 'java', 'rust', 'go', 'sql',
+        'c', 'c++', 'c#', 'bash', 'powershell', 'html', 'css'})
+    if translation and not code_destination:
+        return 'translation'
+    coding_words = words.copy()
+    # Remove only the ambiguous cue. Other programming terms still win, as in
+    # "Explain the function of Python enumerate" or "debug a class named Snake".
+    if not re.search(r'\bfunction\b', re.sub(r'\bfunction\s+of\b', '', text)):
+        coding_words.discard('function')
+    programming_context = bool(words & {'programming', 'coding', 'debug', 'debugging',
+        'compiler', 'compile', 'refactor', 'class', 'syntax', 'variable', 'method',
+        'library', 'package', 'ownership', 'borrowing', 'cargo', 'maven', 'pip'})
+    if not programming_context and words & {'corrosion', 'metal', 'bicycle', 'chain', 'oxidation'}:
+        coding_words.discard('rust')
+    if not programming_context and words & {'coffee', 'island', 'indonesia'}:
+        coding_words.discard('java')
+    if not programming_context and words & {'snake', 'snakes', 'reptile', 'habitat', 'venom', 'pet'}:
+        coding_words.discard('python')
+    if (not programming_context and not words & {'run', 'execute'}
+            and words & {'film', 'movie', 'play', 'podcast', 'screenplay', 'dialogue'}):
+        coding_words.discard('script')
+    if not re.search(r'\bcode\b', re.sub(
+            r'\b(?:postal|zip|dress|morse|country|area|building)\s+code\b|\bcode\s+of\s+conduct\b', '', text)):
+        coding_words.discard('code')
+    if code_destination or coding_words & {'code', 'coding', 'debug', 'debugging', 'function', 'programming', 'python',
                 'javascript', 'typescript', 'compiler', 'sql', 'script', 'refactor', 'rust',
                 'docker', 'api', 'c++', 'c#', 'java', 'arduino', 'html', 'css'}:
         return 'coding'

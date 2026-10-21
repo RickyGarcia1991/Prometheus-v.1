@@ -29,7 +29,7 @@ def test_core_does_not_execute_mutating_tool_without_approval(tmp_path):
     with memory(tmp_path) as store:
         result = run_core(
             store, "make the edit", tool_requests=[request],
-            executors={("code", "write"): lambda _: called.append(True) or "changed"},
+            executors=registered({("code", "write"): lambda _: called.append(True) or "changed"}),
             responder=lambda *_: "done",
         )
     assert called == []
@@ -43,7 +43,7 @@ def test_explicit_approval_allows_exact_requested_tool(tmp_path):
     with memory(tmp_path) as store:
         result = run_core(
             store, "make the edit", tool_requests=[request], approved_request_ids=[0],
-            executors={("code", "write"): lambda _: "changed"},
+            executors=registered({("code", "write"): lambda _: "changed"}),
             responder=lambda plan, evidence: f"{plan.route}:{evidence[0].output}",
         )
     assert result.evaluation.passed
@@ -65,7 +65,7 @@ def test_executor_failure_is_evidence_not_a_reply(tmp_path):
         raise RuntimeError("fixture failure")
     with memory(tmp_path) as store:
         result = run_core(store, "inspect it", tool_requests=[request],
-                          executors={("local", "inspect"): broken},
+                          executors=registered({("local", "inspect"): broken}),
                           responder=lambda *_: "should not happen")
     assert not result.evaluation.passed
     assert result.evidence[0].status == "error"
@@ -79,7 +79,7 @@ def test_trace_records_plan_guardrail_and_evaluation(tmp_path):
     with memory(tmp_path) as store:
         result = run_core(
             store, "inspect source", tool_requests=[request],
-            executors={("local", "inspect"): lambda _: "ok"},
+            executors=registered({("local", "inspect"): lambda _: "ok"}),
             responder=lambda *_: "complete", trace=trace,
         )
     rows = trace.path.read_text(encoding="utf-8").splitlines()
@@ -95,7 +95,7 @@ def test_online_route_never_implies_network_permission(tmp_path):
     with memory(tmp_path) as store:
         result = run_core(
             store, "Search the web for latest robotics news", online_enabled=True,
-            tool_requests=[request], executors={("research", "http"): lambda _: "evidence"},
+            tool_requests=[request], executors=registered({("research", "http"): lambda _: "evidence"}),
         )
     assert result.plan.route == "research"
     assert result.evidence[0].status == "approval"
@@ -118,7 +118,7 @@ def test_approval_ids_are_bound_to_exact_plan(tmp_path):
         import pytest
         with pytest.raises(ValueError, match="exact plan"):
             run_core(store, "edit", tool_requests=[request], approved_request_ids=[1],
-                     executors={("code", "write"): lambda _: "changed"})
+                     executors=registered({("code", "write"): lambda _: "changed"}))
 
 
 def test_memory_context_is_bounded(tmp_path):
@@ -130,3 +130,14 @@ def test_memory_context_is_bounded(tmp_path):
     rendered = memory_context(plan.memory, max_chars=500)
     assert len(rendered) <= 560
     assert rendered.startswith("MEMORY EVIDENCE")
+
+
+def registered(mapping):
+    # Explicit trusted fixture registrations replace the removed unsafe plain
+    # mapping API. Existing approval/trace/evidence assertions remain unchanged.
+    from prometheus_assistant.tool_registry import ToolRegistry, ToolSpec
+    metadata = {('code', 'write'): {'mutates_state': True},
+                ('research', 'http'): {'external_network': True},
+                ('local', 'inspect'): {}}
+    return ToolRegistry([ToolSpec(worker, name, 'fixture capability', executor, {},
+                        **metadata[(worker,name)]) for (worker,name),executor in mapping.items()]).executors()

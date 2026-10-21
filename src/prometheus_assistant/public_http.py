@@ -1,6 +1,7 @@
-"""Bounded HTTPS GETs to explicit public publishers, with DNS pinning."""
+"""Bounded HTTPS requests to explicit public publishers, with DNS pinning."""
 import http.client
 import ipaddress
+import json
 import math
 import queue
 import socket
@@ -120,6 +121,12 @@ class PinnedHTTPSConnection(http.client.HTTPSConnection):
             self._track_transport(wrapped)
             wrapped.settimeout(self._socket_timeout())
             wrapped.do_handshake()
+            # Connect/TLS uses a short fallback for cancellation on platforms
+            # that do not interrupt those stages promptly. After the handshake,
+            # allow the registered service its response time; the watchdog still
+            # shuts down the socket on cancellation or the overall deadline.
+            wrapped.settimeout(min(self.timeout, self._request_limit.remaining())
+                               if self._request_limit is not None else self.timeout)
             self.sock=wrapped
         except BaseException:
             self.abort()
@@ -153,8 +160,44 @@ def _watch_request(connection,limit,finished):
             abort()
             return
 
+class PublicHTTPError(RuntimeError):
+    """HTTP status only: provider bodies and credentials never enter errors."""
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f'Publisher returned HTTP {status}; no alternate endpoint was contacted.')
+
+
 def fetch_public_bytes(url,allowed_hosts,*,timeout=20,max_bytes=MAX_PUBLIC_BYTES,accept='application/json',
                        cancel_event=None,overall_timeout=45):
+    return _request_public_bytes(url, allowed_hosts, timeout=timeout, max_bytes=max_bytes,
+                                 accept=accept, cancel_event=cancel_event, overall_timeout=overall_timeout)
+
+
+def post_public_json(url, allowed_hosts, payload, *, bearer_token=None, timeout=20,
+                     max_bytes=MAX_PUBLIC_BYTES, cancel_event=None, overall_timeout=45):
+    from .application_policy import require_dispatch
+    require_dispatch('public.fetch')
+    if not isinstance(payload, dict):
+        raise ValueError('A JSON object is required for public search.')
+    body = json.dumps(payload, ensure_ascii=False, allow_nan=False).encode('utf-8')
+    if len(body) > 20_000:
+        raise ValueError('Public search request exceeded the size limit.')
+    if bearer_token is not None and (not isinstance(bearer_token, str) or not 1 <= len(bearer_token) <= 512
+                                    or any(ord(c) < 33 or ord(c) > 126 for c in bearer_token)):
+        raise ValueError('Invalid public search API key format.')
+    headers = {'Content-Type': 'application/json'}
+    if bearer_token:
+        headers['Authorization'] = 'Bearer ' + bearer_token
+    return _request_public_bytes(url, allowed_hosts, method='POST', body=body, extra_headers=headers,
+                                 timeout=timeout, max_bytes=max_bytes, cancel_event=cancel_event,
+                                 overall_timeout=overall_timeout)
+
+
+def _request_public_bytes(url,allowed_hosts,*,method='GET',body=None,extra_headers=None,
+                          timeout=20,max_bytes=MAX_PUBLIC_BYTES,accept='application/json',
+                          cancel_event=None,overall_timeout=45):
+    from .application_policy import require_dispatch
+    require_dispatch('public.fetch')
     if type(max_bytes) is not int or not 1<=max_bytes<=20_000_000:
         raise ValueError('Invalid public download limit.')
     if timeout is not None and (isinstance(timeout,bool) or not isinstance(timeout,(int,float))
@@ -178,12 +221,17 @@ def fetch_public_bytes(url,allowed_hosts,*,timeout=20,max_bytes=MAX_PUBLIC_BYTES
         limit.check()
         path=parsed.path or '/'
         if parsed.query:path+='?'+parsed.query
-        connection.request('GET',path,headers={'Accept':accept,'Accept-Encoding':'identity',
-            'User-Agent':'Prometheus-PublicReference/1.0 (bounded user-initiated research)'})
+        headers = {'Accept':accept,'Accept-Encoding':'identity',
+            'User-Agent':'Prometheus-PublicReference/1.0 (bounded user-initiated research)'}
+        headers.update(extra_headers or {})
+        if method == 'GET':
+            connection.request('GET',path,headers=headers)
+        else:
+            connection.request(method,path,body=body,headers=headers)
         response=connection.getresponse()
         limit.check()
         if 300<=response.status<400:raise RuntimeError('Publisher redirects are refused; update the registered endpoint.')
-        if response.status!=200:raise RuntimeError(f'Publisher returned HTTP {response.status}; no alternate endpoint was contacted.')
+        if response.status!=200:raise PublicHTTPError(response.status)
         if response.getheader('Content-Encoding','identity').lower() not in ('identity',''):
             raise RuntimeError('Unexpected compressed response.')
         length=response.getheader('Content-Length')

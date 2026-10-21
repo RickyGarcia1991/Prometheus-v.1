@@ -155,6 +155,7 @@ class CodingWorkspace:
 
     def describe(self):
         return {'project': str(self.root), 'files': self.list_files(),
+                'latest_edit': self.latest_edit(),
                 'test_presets': self.test_presets(), 'max_file_bytes': MAX_FILE_BYTES,
                 'test_execution': 'Run tests executes this project as your Windows user; choose a trusted project.'}
 
@@ -214,6 +215,8 @@ class CodingWorkspace:
                     'diff': diff, 'changed': before != after}
 
     def apply_edit(self, path, content, expected_sha256):
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.apply')
         with self.lock:
             resolved, before, after, _, _ = self._proposal(path, content, expected_sha256)
             relative = resolved.relative_to(self.root).as_posix()
@@ -235,6 +238,8 @@ class CodingWorkspace:
             return {'edit_id': edit_id, 'path': relative, 'sha256': _sha(after), 'changed': True}
 
     def undo_edit(self, edit_id):
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.undo')
         if not isinstance(edit_id, str) or not re.fullmatch(r'[a-f0-9]{32}', edit_id):
             raise ValueError('Invalid edit identifier.')
         with self.lock:
@@ -260,6 +265,39 @@ class CodingWorkspace:
             record['undone'] = True
             _write_atomic(record_path, json.dumps(record).encode('utf-8'))
             return {'path': record['path'], 'sha256': _sha(before), 'undone': True}
+
+    def latest_edit(self):
+        """Recover a valid undo choice after restart without changing any files."""
+        with self.lock:
+            _no_links(self.history)
+            if not self.history.is_dir():
+                return None
+            # Bound reads even for a long-lived history. Newest filesystem
+            # records are only candidates; actual content/hash checks decide.
+            paths = sorted(self.history.glob('*.json'), key=lambda path: path.stat().st_mtime,
+                           reverse=True)[:200]
+            for path in paths:
+                try:
+                    _no_links(path)
+                    if not re.fullmatch(r'[a-f0-9]{32}', path.stem) or path.stat().st_size > 16_000:
+                        continue
+                    record = json.loads(path.read_text(encoding='utf-8'))
+                    if not isinstance(record, dict):
+                        continue
+                    if (record.get('project') != str(self.root) or record.get('edit_id') != path.stem
+                            or record.get('undone')):
+                        continue
+                    _, current, _ = self._read(record['path'])
+                    backup = self.history / (path.stem + '.before')
+                    _no_links(backup)
+                    if backup.stat().st_size > MAX_FILE_BYTES:
+                        continue
+                    if (_sha(current) == record['after_sha256']
+                            and _sha(backup.read_bytes()) == record['before_sha256']):
+                        return {key: record[key] for key in ('edit_id', 'path', 'project')}
+                except (OSError, ValueError, KeyError, TypeError):
+                    continue
+            return None
 
     def _runtimes(self):
         python = Path(sys.executable)
@@ -310,6 +348,8 @@ class CodingWorkspace:
 
     def run_tests(self, preset, target='', *, timeout=120, cancel_event=None, on_output=None):
         """Run an explicit preset. Never call this automatically from model output."""
+        from .application_policy import require_dispatch
+        require_dispatch('workspace.tests')
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 600:
             raise ValueError('Test timeout must be greater than zero and at most 600 seconds.')
         argv = self._command(preset, target)
@@ -368,6 +408,7 @@ class CodingWorkspace:
             # Test suites sometimes leave a child holding stdout open. Close all
             # descendants before waiting for the output reader, even on success.
             if process_job is not None:
+                process_job.capture_metrics()
                 process_job.close()
             elif os.name != 'nt':
                 try:
@@ -382,7 +423,11 @@ class CodingWorkspace:
                 process_job.close()
             if not reader_thread.is_alive():
                 process.stdout.close()
-        return {'argv': argv, 'exit_code': process.returncode,
+        from .project_check_metrics import capture
+        measurements = capture(process)
+        if process_job is not None:
+            measurements['job_metrics'] = process_job.metrics
+        return {'argv': argv, 'exit_code': process.returncode, 'resource_measurements': measurements,
                 'output': chunks.decode('utf-8', errors='replace'), 'truncated': total > MAX_OUTPUT_BYTES,
                 'cancelled': bool(cancelled), 'timed_out': timed_out,
                 'duration_seconds': round(time.monotonic() - started, 3)}
@@ -413,6 +458,8 @@ class _WindowsJob:
 
     def __init__(self, process):
         from ctypes import wintypes
+
+        self.metrics = None
 
         class BasicLimits(ctypes.Structure):
             _fields_ = [('process_time', ctypes.c_longlong), ('job_time', ctypes.c_longlong),
@@ -456,6 +503,28 @@ class _WindowsJob:
         finally:
             if owned_process:
                 self.kernel.CloseHandle(owned_process)
+
+    def capture_metrics(self):
+        """Take one diagnostic snapshot while the job is still queryable.
+
+        Committed job memory is not direct-process working-set RAM. A snapshot
+        may still show active members even after wait because accounting lags.
+        Measurement failure cannot change test results or delay job cleanup.
+        """
+        if self.metrics is None:
+            self.metrics = dict(schema_version=1, scope='job_associated_processes',
+                peak_commit_gib=None, cpu_seconds=None, io_mib=None,
+                total_processes=None, active_processes=None, snapshot_complete=None,
+                memory_scope='peak committed memory; not resident working set',
+                io_scope='OS transfer volume; includes non-disk I/O',
+                coverage='Only job-associated processes; complete descendant coverage is not established.',
+                sources={})
+            try:
+                from .project_job_metrics import capture_job
+                self.metrics = capture_job(self.handle)
+            except Exception:
+                pass
+        return self.metrics
 
     def close(self):
         if self.handle:

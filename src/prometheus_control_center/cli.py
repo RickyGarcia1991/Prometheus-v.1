@@ -25,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    from prometheus_assistant.application_policy import require_dispatch
+    require_dispatch('control.'+args.command)
     config = PrometheusConfig.from_env()
     if args.command == "init":
         config.ensure_directories()

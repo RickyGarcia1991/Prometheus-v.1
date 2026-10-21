@@ -12,20 +12,26 @@ from pathlib import Path
 from .guardrails import ToolRequest, evaluate_tool_request
 
 SCHEMA_VERSION = 1
-POLICY_SCOPE = 'Built-in Core default policy only; no plan approvals or custom guardrails supplied.'
+POLICY_SCOPE = 'Registered Core risk policy plus host deny restrictions; no plan approvals, scoped grants or custom guardrails supplied.'
 GAPS = [
-    'Browser handlers do not share Core authorization; their outcomes remain conditional on action-specific validators.',
-    'CLI/headless commands, HTTP routes, background workers and host helpers are not fully mapped to a common policy.',
-    'No persistent scoped grant store, argument-bound approval, expiry or revocation migration is implemented here.',
+    'Shared application checks supplement existing Core/browser/CLI and provider boundaries; target checks remain separate.',
+    'Signed host/bootstrap/controller/signing/recovery helpers retain independent OS/signature authority and cannot use application grants.',
+    'Exact Core grants and reviewed integration task access require a configured authenticated owner on the issuing host. Task access can last until revoked; it is selected explicitly for a conversation.',
+    'Generic in-process Python extension executors remain trusted application code; this is not an OS sandbox for arbitrary Python callers.',
     'OS privileges, disk encryption, provider accounts, devices, installed models and physical portability are not probed.',
     'Update preferences, watch schedules, smart-home credentials and remote pending actions are not read by this view.',
 ]
 SOURCE_FILES = (
+    'application_policy.py', 'scoped_grants.py', 'host_authority.py',
     'guardrails.py', 'core.py', 'tool_registry.py', 'builtin_tools.py',
     'capabilities.py', 'ui_server.py', 'ui_workspace.py', 'owner_access.py',
     'coding_workspace.py', 'public_http.py', 'ollama.py', 'hosted_preview.py',
     'component_updates.py', 'remote_access.py', 'smart_home.py', 'voice.py',
     'owner_profile.py', 'worker_policy.py', 'personality.py', 'permissions_inventory.py',
+    'action_approvals.py', 'self_improvement.py', 'self_improvement_runtime.py', 'self_improvement_ui.py', 'autonomous_promotion.py',
+    'integration_ui.py', 'integration_contracts.py', 'agent_memory.py', 'agent_memory_service.py',
+    'browser_agent.py', 'voice_preparation.py',
+    'project_tasks_ui.py', 'project_editor.py', 'project_edit_runtime.py', 'idle_research.py',
 )
 
 
@@ -69,7 +75,8 @@ def preview_core(body):
         request = spec.request('Read-only policy preview', body['arguments'])
     except (ValueError, TypeError):
         return {**refusal, 'reason': 'Arguments do not match the registered tool schema.'}
-    result = evaluate_tool_request(request)
+    from .application_policy import registered_decision
+    result = registered_decision(spec, request)
     return {**refusal, 'outcome': result.decision.value,
             'capability': spec.worker+'/'+spec.name,
             'reason': result.reason or 'Default Core policy allows this risk class.',
@@ -78,13 +85,17 @@ def preview_core(body):
 
 def snapshot(*, owner=None):
     from .ui_server import MODES, BROWSER_PERMISSIONS_POLICY
-    from . import ui_workspace
+    from . import ui_workspace, project_tasks_ui
     rows = []
     core, evidence = _registries()
     core_catalog = core.structured_catalog()
     for entry in core_catalog:
         request = ToolRequest(entry['worker'], entry['name'], 'Inventory', **entry['risk'])
         result = evaluate_tool_request(request)
+        from .application_policy import decision
+        overlay = decision('core.'+entry['worker']+'.'+entry['name'])
+        if overlay.decision.value == 'deny':
+            result = overlay
         rows.append(_row('core.'+entry['worker']+'.'+entry['name'],
             entry['worker']+'/'+entry['name'], 'application', result.decision.value,
             result.reason or 'Default Core policy allows this risk class.',
@@ -100,6 +111,8 @@ def snapshot(*, owner=None):
             basis='runtime_registry'))
     for mode in sorted(MODES):
         handler = 'ui_workspace.py:execute' if mode in ui_workspace.MODES else 'ui_server.py:Interface.execute'
+        if mode in project_tasks_ui.MODES:
+            handler = 'project_tasks_ui.py:execute / run_idle after approved configuration'
         rows.append(_row('browser.'+mode, 'Browser: '+mode, 'application', 'conditional',
             'Registered browser mode. Explicit requests use the HTTP owner gate and mode-specific checks; Core approval is not inferred.',
             'ui_server.py:MODES; ui_workspace.py:MODES', handler,
@@ -130,6 +143,32 @@ def snapshot(*, owner=None):
         scope='Browser capture APIs', requirements='Browser enforces the response header. Native dictation is a separate path.',
         basis='runtime_constant'))
     reviews = [
+        ('integrations.owner_tasks', 'Owner-approved integration tasks', 'application', 'conditional',
+         'AgentMemory and Browser Use explain actions, effects, resources and duration before exact text, voice or button approval. Task access lasts for the owner-selected duration or until revoked; task selection is explicit per conversation. Model output cannot approve access.',
+         'integration_ui.py; integration_contracts.py; scoped_grants.py; action_approvals.py',
+         'ActionApprovals.consume; GrantStore.run_task; provider dispatch', 'Reviewed project memory or public-browser access',
+         'Configured owner, pinned portable runtime, supported operation and current task scope. Expanded access needs a new review. Revoke and Stop remain available.'),
+        ('integrations.semantic_memory', 'AgentMemory semantic service', 'application', 'conditional',
+         'A separate approval or selected semantic-memory task grant opens one named project. The local embedding engine starts for the approved operation and stops afterward. Classic note grants do not authorize this service.',
+         'integration_contracts.py; integration_ui.py; agent_memory_service.py',
+         'ActionApprovals.consume; GrantStore.run_task; agent_memory_service.execute', 'One approved project and supported memory operation',
+         'Pinned qualified runtime. The viewer is disabled; raw engine sockets are temporary loopback listeners without a separate bearer token. Portable files and listeners are not isolated from other programs running as the same OS user.'),
+        ('updates.self_improvement', 'Model-generated application changes', 'application', 'conditional',
+         'One existing implementation file per proposal, up to three repair attempts, complete source context and both full regression groups. The owner reviews the exact diff and approves by text, voice or button before signed activation.',
+         'self_improvement.py; self_improvement_runtime.py; autonomous_promotion.py; action_approvals.py',
+         'SelfImprovementEngine.propose / promote; ActionApprovals.consume; WindowsPromotionHost',
+         'Current signed application on a configured Windows host',
+         'Enrolled owner, fitting local model, complete passing tests and pinned host signing tools. This view does not test readiness.'),
+        ('updates.self_improvement_scope', 'Application-change edit boundaries', 'application', 'enforced',
+         'Existing Python, JavaScript, CSS or HTML implementation only; the current adapter bounds complete files to 1500 bytes. Tests, dependency pins, signing, approval and policy implementation are excluded from generated edits.',
+         'self_improvement.py:_eligible; self_improvement_runtime.py:get_self_improvement',
+         'Source catalog, exact replacement, payload and context validation', 'One bounded implementation file',
+         'Larger or multi-file work needs a separate reviewed development update. Passing tests are not proof of every possible behavior.'),
+        ('updates.owner_confirmation', 'Text and voice approval', 'authentication_integrity', 'enforced',
+         'Only an exact unquoted approval phrase for the pending review in the same authenticated owner/browser/conversation can approve. Reviews expire after ten minutes and are single-use; rejection, logout or changed content cannot approve.',
+         'action_approvals.py; self_improvement_ui.py; ui_server.py',
+         'ActionApprovals.consume; authenticated pre-model chat dispatch', 'Exact reviewed action',
+         'Voice transcription enters the same deterministic path as typed text. Model replies do not constitute owner approval.'),
         ('files.project', 'Project files and tests', 'authentication_integrity', 'conditional',
          'Selected roots, private-file/link checks and stale-hash checks remain enforced. Tests execute with host user permissions.',
          'coding_workspace.py:CodingWorkspace; builtin_tools.py:build_builtin_registry',
@@ -168,10 +207,23 @@ def snapshot(*, owner=None):
     fingerprints = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                     for name in SOURCE_FILES}
     revision = hashlib.sha256(json.dumps(fingerprints, sort_keys=True).encode()).hexdigest()
+    from .application_policy import inventory
+    shared = inventory()
+    for entry in shared['dispatch']:
+        rows.append(_row('shared.'+entry['capability'], 'Application: '+entry['capability'],
+                         'application', entry['outcome'], entry['reason'],
+                         'application_policy.py:require_dispatch', entry['enforcement'],
+                         scope='Shared application layer; explicit workflow authority and target checks remain',
+                         requirements='No readiness, owner, provider or OS authority is conferred by this outcome.',
+                         basis='runtime_evaluator', grant='unsupported'))
     return {'schema_version': SCHEMA_VERSION, 'generated_at_utc': datetime.now(timezone.utc).isoformat(),
-            'policy_revision': revision, 'source_sha256': fingerprints,
+            'policy_revision': shared['revision'], 'source_sha256': fingerprints,
             'read_only': True, 'authorizes_execution': False, 'rows': rows,
             'preview_tools': core_catalog,
+            'shared_application_policy': shared,
+            'grant_management': {'supported_capabilities': ['research/public', 'project/tests'],
+                                 'requires_enrolled_owner': True, 'max_seconds': 900, 'max_uses': 5,
+                                 'storage': 'Host-local authority database with independent continuity witness; excluded from portable backups'},
             'coverage': {'complete': False, 'core_tools_evaluated': len(core_catalog),
                          'evidence_tools_listed': len(evidence.structured_catalog()),
                          'browser_modes_listed': len(MODES), 'boundary_rows': len(rows),

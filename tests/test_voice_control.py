@@ -95,3 +95,24 @@ def test_decoder_error_is_bounded(audio_runtime,monkeypatch):
     monkeypatch.setattr(voice.subprocess,'Popen',start)
     with pytest.raises(ValueError,match='transcription failed') as result:voice.transcribe(audio_runtime)
     assert len(str(result.value))<700
+
+
+def test_transcription_diagnostics_contain_only_bounded_numeric_timings(audio_runtime, monkeypatch):
+    original = subprocess.Popen
+    diagnostics = []
+    def start(argv, **options):
+        output = argv[argv.index('-of')+1]+'.txt'
+        script = ('import pathlib,sys;pathlib.Path(sys.argv[1]).write_text("private fixture words");'
+            'sys.stderr.write("secret/path private words\\nwhisper_print_timings: load time = 125.00 ms\\n'
+            'whisper_print_timings: encode time = 222.00 ms / 1 runs\\n'
+            'whisper_print_timings: decode time = 99999999999 ms\\n")')
+        return original([sys.executable, '-B', '-c', script, output], **options)
+    monkeypatch.setattr(voice.subprocess, 'Popen', start)
+    result = voice.transcribe(audio_runtime, on_diagnostics=diagnostics.append)
+    assert result['text'] == 'private fixture words'
+    assert len(diagnostics) == 1
+    assert diagnostics[0]['asr_load_seconds'] == .125
+    assert diagnostics[0]['asr_encode_seconds'] == .222
+    assert 'asr_decode_seconds' not in diagnostics[0]
+    assert all(type(v) in (int, float) and 0 <= v <= 3600 for v in diagnostics[0].values())
+    assert 0 < diagnostics[0]['transcription_seconds'] < 5

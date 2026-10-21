@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "auto_check": true,
-  "prepared_on": "2026-10-10",
+  "prepared_on": "2026-10-13",
   "entries": [
     {
       "id": "package-cffi",
@@ -48,7 +48,7 @@
       "label": "pypdf",
       "category": "package",
       "provider": "pypi",
-      "installed_revision": "6.10.0",
+      "installed_revision": "6.20.1",
       "source_url": "https://pypi.org/project/pypdf/",
       "package": "pypdf",
       "reason": "Version checks only. A compatible tested signed release is required to replace this installed package."
@@ -222,7 +222,7 @@
       "label": "Portable Python 3.12",
       "category": "runtime",
       "provider": "github_release",
-      "installed_revision": "v3.12.14",
+      "installed_revision": "v3.12.15",
       "source_url": "https://github.com/python/cpython",
       "repo": "python/cpython",
       "version_prefix": "v3.12.",
@@ -233,7 +233,7 @@
       "label": "Portable Ollama",
       "category": "runtime",
       "provider": "github_release",
-      "installed_revision": "v0.35.1",
+      "installed_revision": "v0.40.3",
       "source_url": "https://github.com/ollama/ollama",
       "repo": "ollama/ollama",
       "reason": "Release checks only. Keep the current runtime until staged binaries, models and restart tests are verified."
@@ -243,7 +243,7 @@
       "label": "Prometheus signed application",
       "category": "application",
       "provider": "pinned",
-      "installed_revision": "Prometheus-v0.8.0-dev3-updates-20261010",
+      "installed_revision": "Prometheus-v0.8.0-dev20-approved-integrations-20261013",
       "source_url": "",
       "reason": "No authenticated public release feed is configured. Use the existing verified build, signing, backup, activation and recovery workflow on the main workstation."
     },
@@ -312,10 +312,10 @@
       "label": "automotive-catalog-opendbc.md",
       "category": "resource",
       "provider": "github_commit",
-      "installed_revision": "",
+      "installed_revision": "6e813249996254ff47d207098a49b7c22237795b",
       "source_url": "https://github.com/commaai/opendbc",
       "reason": "Watch upstream revision metadata; the original catalog summary is retained until reviewed content is imported.",
-      "installed_sha256": "8fc70d1b493275c2f60776c09859a8ec2bc129ae3dfecd4d8128d4e384788e20",
+      "installed_sha256": "98f3a95726ca0563b07a6f14a3be1f5754351534a1a094066f6e00b49060b0ff",
       "auto_import": false,
       "rights": "original_summary_and_link_only",
       "import_name": "automotive-catalog-opendbc.md",
@@ -512,10 +512,10 @@
       "label": "automotive-catalog-rusefi.md",
       "category": "resource",
       "provider": "github_commit",
-      "installed_revision": "",
+      "installed_revision": "c035bc205c9f99cd7514f2bb07276f169755fcdc",
       "source_url": "https://github.com/rusefi/rusefi",
       "reason": "Watch upstream revision metadata; the original catalog summary is retained until reviewed content is imported.",
-      "installed_sha256": "d316a1e658ea757607aedde267877da3e410ed515b2cb9f982b2fc88e8eb3373",
+      "installed_sha256": "5f1ab4515b840120c730ee458eb2763a34f55dfa2740b20fc275c4de852cde7d",
       "auto_import": false,
       "rights": "original_summary_and_link_only",
       "import_name": "automotive-catalog-rusefi.md",
@@ -1604,7 +1604,7 @@
     },
     {
       "id": "archive-libretexts-en-stats",
-      "label": "Statistics LibreTexts — Statistics courses and bookshelves from LibreTexts.org",
+      "label": "Statistics LibreTexts \u2014 Statistics courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1614,7 +1614,7 @@
     },
     {
       "id": "archive-libretexts-en-k12",
-      "label": "K-12 Education LibreTexts — K-12 Education courses and bookshelves from LibreTexts.org",
+      "label": "K-12 Education LibreTexts \u2014 K-12 Education courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1624,7 +1624,7 @@
     },
     {
       "id": "archive-libretexts-en-workforce",
-      "label": "Workforce LibreTexts — Workforce courses and bookshelves from LibreTexts.org",
+      "label": "Workforce LibreTexts \u2014 Workforce courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1634,7 +1634,7 @@
     },
     {
       "id": "archive-gutenberg-en-lcc-pa",
-      "label": "Project Gutenberg Library — Greek and Latin language and literature",
+      "label": "Project Gutenberg Library \u2014 Greek and Latin language and literature",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-03",
@@ -1644,7 +1644,7 @@
     },
     {
       "id": "archive-libretexts-en-phys",
-      "label": "Physics LibreTexts — Physics courses and bookshelves from LibreTexts.org",
+      "label": "Physics LibreTexts \u2014 Physics courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1654,7 +1654,7 @@
     },
     {
       "id": "archive-gutenberg-en-lcc-l",
-      "label": "Project Gutenberg Library — Education",
+      "label": "Project Gutenberg Library \u2014 Education",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-03",
@@ -1664,7 +1664,7 @@
     },
     {
       "id": "archive-libretexts-en-eng",
-      "label": "Engineering LibreTexts — Engineering courses and bookshelves from LibreTexts.org",
+      "label": "Engineering LibreTexts \u2014 Engineering courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-01",
@@ -1674,7 +1674,7 @@
     },
     {
       "id": "archive-gutenberg-en-lcc-pe",
-      "label": "Project Gutenberg Library — English language",
+      "label": "Project Gutenberg Library \u2014 English language",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-03",
@@ -1684,7 +1684,7 @@
     },
     {
       "id": "archive-libretexts-en-math",
-      "label": "Mathematics LibreTexts — Mathematics courses and bookshelves from LibreTexts.org",
+      "label": "Mathematics LibreTexts \u2014 Mathematics courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1694,7 +1694,7 @@
     },
     {
       "id": "archive-libretexts-en-biz",
-      "label": "Business LibreTexts — Business courses and bookshelves from LibreTexts.org",
+      "label": "Business LibreTexts \u2014 Business courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1704,7 +1704,7 @@
     },
     {
       "id": "archive-libretexts-en-geo",
-      "label": "Geosciences LibreTexts — Geosciences courses and bookshelves from LibreTexts.org",
+      "label": "Geosciences LibreTexts \u2014 Geosciences courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-01",
@@ -1714,7 +1714,7 @@
     },
     {
       "id": "archive-libretexts-en-med",
-      "label": "Medicine LibreTexts — Medicine courses and bookshelves from LibreTexts.org",
+      "label": "Medicine LibreTexts \u2014 Medicine courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-01",
@@ -1724,7 +1724,7 @@
     },
     {
       "id": "archive-gutenberg-en-lcc-c",
-      "label": "Project Gutenberg Library — Auxiliary sciences of history",
+      "label": "Project Gutenberg Library \u2014 Auxiliary sciences of history",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-12",
@@ -1734,7 +1734,7 @@
     },
     {
       "id": "archive-gutenberg-en-lcc-r",
-      "label": "Project Gutenberg Library — Medicine",
+      "label": "Project Gutenberg Library \u2014 Medicine",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-03",
@@ -1744,7 +1744,7 @@
     },
     {
       "id": "archive-libretexts-en-socialsci",
-      "label": "Social Sciences LibreTexts — Social Sciences courses and bookshelves from LibreTexts.org",
+      "label": "Social Sciences LibreTexts \u2014 Social Sciences courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-01",
@@ -1754,7 +1754,7 @@
     },
     {
       "id": "archive-libretexts-en-chem",
-      "label": "Chemistry LibreTexts — Chemistry courses and bookshelves from LibreTexts.org",
+      "label": "Chemistry LibreTexts \u2014 Chemistry courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-01",
@@ -1764,7 +1764,7 @@
     },
     {
       "id": "archive-libretexts-en-bio",
-      "label": "Biology LibreTexts — Biology courses and bookshelves from LibreTexts.org",
+      "label": "Biology LibreTexts \u2014 Biology courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2025-01",
@@ -1774,7 +1774,7 @@
     },
     {
       "id": "archive-libretexts-en-human",
-      "label": "Humanities LibreTexts — Humanities courses and bookshelves from LibreTexts.org",
+      "label": "Humanities LibreTexts \u2014 Humanities courses and bookshelves from LibreTexts.org",
       "category": "archive",
       "provider": "pinned",
       "installed_revision": "2026-07",

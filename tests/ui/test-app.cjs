@@ -10,18 +10,20 @@ function deferred() { let resolve, reject; const promise = new Promise((a, b) =>
 function response(data, status = 200) { return {ok: status >= 200 && status < 300, status, json: async () => data}; }
 async function settle() { for (let index = 0; index < 40; index++) await Promise.resolve(); }
 
-async function fixture() {
+async function fixture({voice = null, autoVoicePrepare = true} = {}) {
   const dom = setup({runWorkspace: false}), {elements, context, documentRoot} = dom;
   const requests = [], timers = [], storageWrites = [], jobs = new Map(), queued = new Map();
   let serial = 0;
   const server = {token: 'first-token', statusFailure: false, pendingPost: null};
-  const statusData = {busy: false, job: null, state: 'idle', closing: false,
+  const statusData = {version: '0.8.0.fixture', busy: false, job: null, state: 'idle', closing: false,
     hardware: {ram_gib: 8, available_ram_gib: 2, cpu_threads: 4, chat_ready: true}};
   context.document.hidden = false;
   context.document.querySelectorAll = selector => documentRoot.querySelectorAll(selector);
-  context.document.addEventListener = () => {};
+  const documentEvents = {};
+  context.document.addEventListener = (name, callback) => { (documentEvents[name] ||= []).push(callback); };
+  if (voice) context.window.PrometheusVoice = {LocalVoice: class {constructor() {return voice;}}};
   context.window.dispatchEvent = event => dom.emit(event.type, event.detail);
-  context.CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
+  context.CustomEvent = class { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } };
   context.matchMedia = () => ({matches: false, addEventListener() {}});
   context.PrometheusAdaptive = {AdaptiveDisplay: class { update() { return {level: 0, name: 'Still', fps: 0, size: 0, reason: 'test'}; } }};
   context.Image = class { constructor() { this.complete = false; this.naturalWidth = 0; } };
@@ -29,6 +31,7 @@ async function fixture() {
   context.localStorage = {getItem: () => null, setItem(key, value) {storageWrites.push({key, value});}, removeItem() {}};
   context.requestAnimationFrame = () => 1; context.cancelAnimationFrame = () => {};
   context.setTimeout = (fn, delay) => { timers.push({fn, delay}); return timers.length; };
+  context.clearTimeout = id => { if(timers[id-1])timers[id-1].cancelled=true; };
   context.AbortSignal = {timeout: () => ({})};
   context.URL = URL;
   context.fetch = async (url, options = {}) => {
@@ -44,6 +47,10 @@ async function fixture() {
     if (url === '/api/jobs') {
       if (server.pendingPost) { const pending = server.pendingPost; server.pendingPost = null; return await pending.promise; }
       const id = 'job-' + (++serial); jobs.set(id, {state: 'running', partial: 'working text', stage: 'Generating', cancellable: true});
+      if(JSON.parse(options.body).mode==='dictate')jobs.set(id,{state:'running',action:'dictate',partial:'',stage:'Opening microphone',cancellable:true,recording:false});
+      if(JSON.parse(options.body).mode==='voice_prepare')jobs.set(id,autoVoicePrepare?
+        {state:'done',action:'voice_prepare',seconds:.1,result:{voice_ready:true,model:'fixture-model',context:2048,threads:2,batch:32}}:
+        {state:'running',action:'voice_prepare',stage:'Preparing conversation · microphone off',cancellable:true});
       return response({id});
     }
     if (url.startsWith('/api/job/')) {
@@ -51,20 +58,36 @@ async function fixture() {
       return row ? response(row) : response({error: 'Job not found'}, 404);
     }
     if (url === '/api/cancel') return response({cancel_requested: true});
+    if (url === '/api/speech/cancel') return response({cancel_requested: true});
+    if (url === '/api/speech') return response({encoding: 'wav-base64', audio: 'AAAA'});
+    if (url === '/api/dictation/finish') return response({finish_requested: true});
+    if (url === '/api/dictation/pulse') return response({recording: true});
+    if (url === '/api/voice/pulse') return response({preparing: true});
+    if (url === '/api/owner/lock') return response({locked: true});
     if (url === '/api/close') return response({closing: true, busy: false});
     throw new Error('Unexpected test request: ' + url);
   };
   const runtime = vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(asset, 'transport.js'), 'utf8'), runtime, {filename: 'transport.js'});
+  vm.runInContext(fs.readFileSync(path.join(asset, 'folded-core.js'), 'utf8'), runtime, {filename: 'folded-core.js'});
+  vm.runInContext(fs.readFileSync(path.join(asset, 'activity-panel.js'), 'utf8'), runtime, {filename: 'activity-panel.js'});
   vm.runInContext(fs.readFileSync(path.join(asset, 'app.js'), 'utf8'), runtime, {filename: 'app.js'});
   await settle();
   const run = expression => vm.runInContext(expression, runtime);
   assert.equal(run('online'), true, 'fixture initialized');
-  return {...dom, run, server, statusData, requests, timers, jobs, queued, storageWrites};
+  return {...dom, run, server, statusData, requests, timers, jobs, queued, storageWrites, documentEvents};
 }
 
-(async () => {
+module.exports = {fixture, settle, deferred, response};
+if (require.main === module) (async () => {
   const app = await fixture(), {run, elements: e, server, requests, jobs, queued, timers, context} = app;
+  assert.equal(e.runtimeVersion.textContent, '0.8.0.fixture', 'footer uses the running server version');
+  app.statusData.version = '0.9.0.updated';
+  await run('status()');
+  assert.equal(e.runtimeVersion.textContent, '0.9.0.updated', 'footer follows a new runtime version');
+  delete app.statusData.version;
+  await run('status()');
+  assert.equal(e.runtimeVersion.textContent, 'Unavailable', 'missing version cannot retain a stale release label');
   const results = [];
   context.window.addEventListener('prometheus-result', event => results.push(event.detail));
   const postCount = () => requests.filter(item => item.url === '/api/jobs').length;
@@ -303,4 +326,71 @@ async function fixture() {
   assert.equal(links.elements.messages.children.at(-1).querySelectorAll('.source-link')[0].textContent,'example.com','standalone excerpt source URLs use a compact domain label');
   console.log('Source links passed: live/saved replies, exact destination, compact label, safe new tab, literal unsafe input.');
   console.log('Saved evidence passed: exact metadata, labels, literal rendering, legacy history, and conversation status reset.');
+  const retainedAdvice = {status: 'unavailable', reason: 'Memory was low', report: null};
+  const displayedAdvice = [];
+  links.context.window.PrometheusProjectAgent = {renderAdvisoryReview: (box, report) => displayedAdvice.push(report)};
+  const jobPosts = links.requests.filter(row => row.url === '/api/jobs').length;
+  links.elements.history.value = 'saved-evidence';
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([
+    {role: 'assistant', content: 'Saved project result', details: {project_edit: {advisory_review: retainedAdvice}}}]))]);
+  await links.elements.history.onchange();
+  assert.deepEqual(displayedAdvice.at(-1), retainedAdvice, 'history renders the original advisory record');
+  assert.equal(links.requests.filter(row => row.url === '/api/jobs').length, jobPosts, 'history cannot run a new review');
+  const retainedTeam = {schema_version: 1, pipeline_version: 'project-specialists-v1', status: 'incomplete',
+    stages: [{role: 'correctness', status: 'deferred', advice: null}]};
+  const displayedTeams = [], adviceCount = displayedAdvice.length;
+  links.context.window.PrometheusProjectAgent.renderSpecialistReview = (box, report) => {
+    if (report == null) return false;
+    displayedTeams.push(report); return true;
+  };
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([
+    {role: 'assistant', content: 'Saved partial team', details: {project_edit: {specialist_review: retainedTeam, advisory_review: retainedAdvice}}},
+    {role: 'assistant', content: 'Saved team review', details: {task_review: {specialist_review: retainedTeam}}},
+    {role: 'assistant', content: 'Saved approval review', details: {approval: {review: {specialist_review: retainedTeam}}}}
+  ]))]);
+  await links.elements.history.onchange();
+  assert.equal(displayedTeams.length, 3, 'all saved project review surfaces render retained specialist reports');
+  assert.deepEqual(displayedTeams[0], retainedTeam);
+  assert.equal(displayedAdvice.length, adviceCount, 'team history suppresses duplicate legacy review');
+  assert.equal(links.requests.filter(row => row.url === '/api/jobs').length, jobPosts, 'team history never dispatches workers');
+  const reach = await fixture();
+  reach.elements.mode.value = 'reach'; reach.elements.reachAction.value = 'github-releases';
+  reach.elements.mode.onchange();
+  assert.equal(reach.elements.reachField.hidden, false);
+  assert.equal(reach.elements.prompt.placeholder, 'Panniantong/Agent-Reach');
+  reach.elements.prompt.value = 'Panniantong/Agent-Reach';
+  await reach.run('submit()'); await settle();
+  assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.reach_action, 'github-releases');
+  assert.equal(reach.requests.findLast(r=>r.url==='/api/jobs').body.mode, 'reach');
+  const webSearch = await fixture();
+  webSearch.elements.mode.value = 'reach'; webSearch.elements.reachAction.value = 'web-search';
+  webSearch.elements.mode.onchange();
+  assert.equal(webSearch.elements.prompt.placeholder, 'Search the web for a topic…');
+  webSearch.elements.prompt.value = 'portable document readers';
+  await webSearch.run('submit()'); await settle();
+  const searchBody = webSearch.requests.findLast(r=>r.url==='/api/jobs').body;
+  assert.equal(searchBody.reach_action, 'web-search');
+  assert.equal(searchBody.prompt, 'portable document readers');
+  for (const query of ['', 'coding assistant']) {
+    const catalogue = await fixture();
+    catalogue.elements.mode.value = 'reach'; catalogue.elements.reachAction.value = 'agent-resources';
+    catalogue.elements.reachAction.onchange();
+    assert.equal(catalogue.elements.prompt.placeholder, 'Project, capability, or all');
+    assert.equal(catalogue.elements.prompt.required, false, 'native form validation permits browsing without a query');
+    assert.equal(catalogue.elements.prompt.maxLength, 240);
+    assert.match(catalogue.elements.reachHelp.textContent, /local.*catalogue.*No web access is required/);
+    catalogue.elements.prompt.value = query;
+    await catalogue.run('submit()'); await settle();
+    const body = catalogue.requests.findLast(r=>r.url==='/api/jobs').body;
+    assert.equal(body.reach_action, 'agent-resources');
+    assert.equal(body.prompt, query || 'all', 'only an empty catalogue query becomes all');
+  }
+  const emptyWeb = await fixture();
+  emptyWeb.elements.mode.value = 'reach'; emptyWeb.elements.reachAction.value = 'agent-resources'; emptyWeb.elements.mode.onchange();
+  emptyWeb.elements.reachAction.value = 'web-search'; emptyWeb.elements.reachAction.onchange();
+  assert.equal(emptyWeb.elements.prompt.required, true); assert.equal(emptyWeb.elements.prompt.maxLength, 4000);
+  assert.match(emptyWeb.elements.reachHelp.textContent, /sends your query to Firecrawl/);
+  await emptyWeb.run('submit()');
+  assert(!emptyWeb.requests.some(r=>r.url==='/api/jobs'), 'empty online search never becomes an all query');
+  console.log('Public reach UI passed: explicit online mode, Firecrawl search, operation guidance and exact job fields.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

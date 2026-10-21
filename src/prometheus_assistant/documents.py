@@ -55,6 +55,12 @@ def ranked_lines(content, query_spec, *, excerpt_limit=600, context=False):
         row = {'line': index + 1, 'excerpt': line[:excerpt_limit], 'matched_terms': len(overlap),
                'rank_score': len(overlap) + 3 * len(symbols & overlap) + 4 * int(phrase_match)}
         if context:
+            # A symbol's declaration outranks its imports, calls and prose
+            # mentions. The returned citation remains the actual matching line.
+            declared = re.match(r'\s*(?:async\s+)?(?:def|class|function)\s+([\w]+)\b', line)
+            if declared and declared[1].casefold() in wanted:
+                row['rank_score'] += 5
+        if context:
             start, end = max(0, index - 1), min(len(lines), index + 2)
             fragments = [item[:399] for item in lines[start:end]]
             row.update(context='\n'.join(fragments), context_start_line=start + 1,

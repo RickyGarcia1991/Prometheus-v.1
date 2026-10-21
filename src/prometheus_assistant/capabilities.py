@@ -130,6 +130,10 @@ def _diverse_passages(rows, query):
 
 
 def retrieve(app, request):
+    from .application_policy import require_dispatch
+    require_dispatch('evidence.retrieve')
+    from .application_policy import require_dispatch
+    require_dispatch('evidence.retrieve')
     source = request.get('source', 'documents')
     if source not in SOURCES:
         raise ValueError('Choose documents, a project, or offline references.')
@@ -184,10 +188,11 @@ def catalog(app):
         ('ask', 'Ask with evidence', 'Choose imported documents, a project folder, or an offline collection. One local inference when memory permits; cited excerpts otherwise.', False, False),
         ('chat', 'Conversation and automatic helpers', 'Requires an installed local model and enough available RAM. Small benchmark checks guide selection, not general accuracy guarantees.', False, False),
         ('vision', 'Ask about an image', 'Select a PNG/JPEG up to 8 MiB. Requires a local vision model and enough memory. Image bytes are not retained.', False, False),
-        ('documents', 'Versioned document library', 'Import TXT, Markdown, CSV, text PDF or DOCX; keyword search needs no model. Meaning indexing is an explicit action.', True, False),
+        ('documents', 'Versioned document library', 'Import TXT, Markdown and CSV, plus text PDF, DOCX, PPTX and XLSX using bundled offline MarkItDown. Keyword search needs no model. Scanned pages need OCR first. Meaning indexing is an explicit action.', True, False),
         ('coding', 'Project editing and checks', 'Select a development project; preview and apply changes with undo. Running project checks executes its code.', True, False),
-        ('voice', 'Local dictation and speech', 'Dictation needs installed whisper.cpp, a speech model and a working microphone. Playback needs an installed local browser voice.', False, False),
+        ('voice', 'Local dictation and speech', 'Dictation uses the local speech detector, whisper.cpp and your microphone. Spoken + text supports hands-free turns. Playback uses local Windows speech and your speakers.', False, False),
         ('math', 'Exact mathematics', 'Bounded rational arithmetic is available without a model; symbolic helpers are also exposed through the CLI tool registry.', False, False),
+        ('reach', 'Public reach: web search, pages and public sources', 'Firecrawl web search uses limited keyless access and sends your query to the service. Direct pages/feeds, GitHub and public YouTube captions remain available. Results retain source links. No social sign-in or browser sessions.', True, True),
         ('research', 'Public research and saved versions', 'Explicit online search sends the query to the selected publisher. Source watches must be enabled individually.', True, True),
         ('remote', 'Connected computers', 'Requires a configured connection, identity review and specific action authorization.', True, True),
         ('home', 'Smart home', 'Requires a configured Home Assistant hub, named devices and the control key.', True, True),

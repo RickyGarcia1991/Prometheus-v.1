@@ -232,6 +232,8 @@ class HomeClient:
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
     def request(self, path, body=None):
+        from .application_policy import require_dispatch
+        require_dispatch('home.request')
         request = urllib.request.Request(self.endpoint + path,
             data=None if body is None else json.dumps(body).encode('utf-8'),
             headers={'Authorization': 'Bearer ' + self._token, 'Content-Type': 'application/json', 'Accept': 'application/json'})

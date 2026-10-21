@@ -3,14 +3,22 @@ from contextlib import closing
 import hashlib
 import io
 import math
+import os
 import sqlite3
 import stat
+import sys
 import zipfile
 
 import pytest
 
 from prometheus_assistant import document_library as module
 from prometheus_assistant.document_library import DocumentLibrary, OllamaEmbeddingClient
+
+
+requires_portable_markitdown = pytest.mark.skipif(
+    os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32,
+    reason='Native document converters require bundled Windows x64 Python 3.12',
+)
 
 
 def docx(text='The contract renewal date is January.', *, extra=None, xml=None):
@@ -135,24 +143,29 @@ def test_version_one_metadata_migrates_without_losing_content(tmp_path):
 
 
 def test_pdf_deadline_removes_temporary_source(tmp_path, monkeypatch):
+    from prometheus_assistant import markitdown_documents as converter
     library = DocumentLibrary(tmp_path)
-    def timeout(*args, **kwargs):
-        raise module.subprocess.TimeoutExpired(args[0], 20)
-    monkeypatch.setattr(module.subprocess, 'run', timeout)
-    with pytest.raises(ValueError, match='20-second'):
+    monkeypatch.setattr(converter, 'TIMEOUT', 0)
+    monkeypatch.setattr(converter.tempfile, 'tempdir', str(tmp_path))
+    with pytest.raises(ValueError, match='time limit'):
         library.import_bytes('slow.pdf', b'%PDF-1.7\nslow')
-    assert not list(tmp_path.glob('prometheus-pdf-*'))
+    assert not list(tmp_path.glob('prometheus-markitdown-*'))
     assert not library.list_documents()
 
 
-def test_import_file_csv_docx_and_pdf(tmp_path):
+def test_import_file_csv(tmp_path):
     library = DocumentLibrary(tmp_path / 'library')
     path = tmp_path / 'inventory.csv'
     path.write_text('part,count\ntransistor,14', encoding='utf-8-sig')
     library.import_file(path)
+    assert library.search('transistor')['results'][0]['title'] == 'inventory.csv'
+
+
+@requires_portable_markitdown
+def test_import_docx_and_pdf(tmp_path):
+    library = DocumentLibrary(tmp_path / 'library')
     library.import_bytes('contract.docx', docx())
     library.import_bytes('purchase.pdf', pdf_bytes())
-    assert library.search('transistor')['results'][0]['title'] == 'inventory.csv'
     assert library.search('renewal')['results'][0]['title'] == 'contract.docx'
     pdf = library.search('purchase')['results'][0]
     assert pdf['title'] == 'purchase.pdf' and pdf['location'].startswith('page 1')
@@ -212,12 +225,17 @@ def test_docx_entity_declaration_and_symlink_are_rejected(tmp_path):
         library.import_bytes('link.docx', output.getvalue())
 
 
-def test_invalid_pdf_and_no_text_pdf(tmp_path):
+def test_invalid_pdf(tmp_path):
     library = DocumentLibrary(tmp_path)
     with pytest.raises(ValueError, match='header'):
         library.import_bytes('fake.pdf', b'not a pdf')
     with pytest.raises(ValueError):
         library.import_bytes('bad.pdf', b'%PDF-1.7\ngarbage')
+
+
+@requires_portable_markitdown
+def test_no_text_pdf(tmp_path):
+    library = DocumentLibrary(tmp_path)
     from pypdf import PdfWriter
     writer = PdfWriter()
     writer.add_blank_page(width=100, height=100)

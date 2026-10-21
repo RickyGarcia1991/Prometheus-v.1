@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from prometheus_assistant import health_check as health
+from prometheus_assistant import autonomous_promotion as promotion
 from prometheus_assistant.hardware import HardwareProfile
 
 
@@ -56,6 +57,70 @@ def run(installation, **kwargs):
 
 def check(report, identity):
     return next(item for item in report['checks'] if item['id'] == identity)
+
+
+def admit_promotion_health(report, tmp_path):
+    """Exercise the host's report boundary without launching or changing the SSD."""
+    host = promotion.WindowsPromotionHost.__new__(promotion.WindowsPromotionHost)
+    host.ssd = tmp_path
+    host.tool = lambda name: name
+
+    def run_care(arguments, timeout, *, log):
+        assert arguments[3:6] == ['check', '--root', tmp_path]
+        Path(arguments[-1]).write_text(json.dumps(report), encoding='utf-8')
+
+    host.run = run_care
+    host.health(tmp_path / 'release', tmp_path)
+
+
+@pytest.mark.parametrize('explicit_zero_counts', [False, True])
+def test_promotion_accepts_real_healthy_report(installation, tmp_path, explicit_zero_counts):
+    report = run(installation)
+    assert report['counts'] == {'pass': 6, 'untested': 2}
+    if explicit_zero_counts:
+        report['counts'].update(fail=0, blocked=0)
+    admit_promotion_health(report, tmp_path)
+
+
+@pytest.mark.parametrize('problem', [
+    'failure', 'blocked', 'untested_required', 'missing_required', 'duplicate',
+    'unknown_status', 'unknown_count', 'incorrect_count', 'boolean_count',
+    'negative_count', 'hidden_failure', 'missing_checks', 'invalid_row', 'invalid_report',
+])
+def test_promotion_rejects_incomplete_or_contradictory_health(installation, tmp_path, problem):
+    report = run(installation)
+    if problem in {'failure', 'blocked', 'untested_required'}:
+        status = {'failure': 'fail', 'blocked': 'blocked', 'untested_required': 'untested'}[problem]
+        report['checks'][0]['status'] = status
+        report['counts']['pass'] -= 1
+        report['counts'][status] = report['counts'].get(status, 0) + 1
+    elif problem == 'missing_required':
+        report['checks'].pop(0)
+        report['counts']['pass'] -= 1
+    elif problem == 'duplicate':
+        report['checks'].append(report['checks'][0])
+        report['counts']['pass'] += 1
+    elif problem == 'unknown_status':
+        report['checks'][0]['status'] = 'healthy'
+    elif problem == 'unknown_count':
+        report['counts']['healthy'] = 0
+    elif problem == 'incorrect_count':
+        report['counts']['pass'] = 100
+    elif problem == 'boolean_count':
+        report['counts']['fail'] = False
+    elif problem == 'negative_count':
+        report['counts']['fail'] = -1
+    elif problem == 'hidden_failure':
+        report['checks'][-1]['status'] = 'fail'
+    elif problem == 'missing_checks':
+        del report['checks']
+    elif problem == 'invalid_row':
+        report['checks'][0] = None
+    else:
+        report = []
+    message = 'Expected a JSON object' if problem == 'invalid_report' else 'installed health checks failed'
+    with pytest.raises(ValueError, match=message):
+        admit_promotion_health(report, tmp_path)
 
 
 def test_read_only_health_reports_explicit_scope_and_remaining_acceptance(installation):
@@ -188,3 +253,33 @@ def test_workspace_health_action_does_not_start_runtime_or_create_memory(install
     assert result['action'] == 'health_check'
     assert check(result['details'], 'memory_database')['status'] == 'blocked'
     assert not installation.memory.exists()
+
+
+@pytest.mark.parametrize('ticks', [[0, 0, 0, 0, 31], [0, 0, 0, 0, 0, 31]],
+                         ids=['between-files', 'during-read'])
+def test_checksum_timeout_preserves_previously_detected_failure(installation, monkeypatch, ticks):
+    missing = {'path': 'missing.py', 'size_bytes': 1, 'sha256': '0' * 64}
+    rows = [installation.entries[0], missing, installation.entries[1]]
+    (installation.release / 'SHA256-MANIFEST.json').write_text(json.dumps(rows))
+    clock = iter(ticks)
+    with monkeypatch.context() as patch:
+        patch.setattr(health.time, 'monotonic', lambda: next(clock))
+        result = health._code_manifest(installation.release)
+
+    assert result['status'] == 'fail'
+    assert result['checked_files'] == 1
+    assert result['issue_count'] == 1
+    assert result['files_needing_review'] == ['missing.py']
+    assert result['scan_complete'] is False
+    assert 'untested' in result['next_step']
+
+
+def test_checksum_timeout_without_known_failure_remains_blocked(installation, monkeypatch):
+    clock = iter([0, 0, 0, 31])
+    with monkeypatch.context() as patch:
+        patch.setattr(health.time, 'monotonic', lambda: next(clock))
+        result = health._code_manifest(installation.release)
+
+    assert result['status'] == 'blocked'
+    assert result['checked_files'] == 1
+    assert result['scan_complete'] is False

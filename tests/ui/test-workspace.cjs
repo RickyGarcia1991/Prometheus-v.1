@@ -32,6 +32,7 @@ class Element {
   setAttribute(name, value) { this.attrs[name] = String(value); }
   getAttribute(name) { return this.attrs[name]; }
   focus() { this.focused = true; }
+  scrollIntoView(options) { this.scrollRequest = options; }
   closest(tag) { let item = this; while (item && item.tagName !== tag.toUpperCase()) item = item.parentElement; return item; }
   querySelectorAll(selector) {
     const all = [];
@@ -187,13 +188,25 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   result('health_check', {checked_utc: '2026-10-10T00:00:00Z', counts: {pass: 1, fail: 1, blocked: 1, untested: 1}, checks: [
     {title: 'Code files', status: 'fail', summary: '<script>literal</script>', next_step: 'Review the intended release.'},
     {title: 'Available RAM', status: 'blocked', summary: 'Close unused applications.'},
-    {title: 'Microphone acceptance', status: 'untested', summary: 'No recording was performed.'}
+    {title: 'Microphone acceptance', status: 'untested', summary: 'No recording was performed by this check.'},
+    {title: 'Runtime', status: 'pass', summary: 'Runtime files are present.'}
   ]});
   assert(e.healthResults.children[0].textContent.includes('1 failed'));
-  assert.equal(e.healthResults.children[1].children[0].textContent, 'FAIL · Code files');
+  assert.equal(e.healthResults.children[1].children[0].textContent, 'Needs attention · Code files');
   assert.equal(e.healthResults.children[1].children[1].textContent, '<script>literal</script>', 'health output is literal text');
   assert(e.healthResults.children[1].children[2].textContent.includes('Review the intended release'));
-  assert(e.healthResults.children[3].children[0].textContent.startsWith('UNTESTED'));
+  assert(e.healthResults.children[3].children[0].textContent.startsWith('Not run by this check'));
+  for (const [index, status] of ['fail', 'blocked', 'untested', 'pass'].entries()) {
+    assert.equal(e.healthResults.children[index + 1].getAttribute('data-health-status'), status);
+    assert.equal(e.healthResults.children[index + 1].className, 'workspace-card health-' + status);
+  }
+  assert.match(e.workspaceStatus.textContent, /1 failed, 1 blocked/);
+  assert.match(e.workspaceStatus.textContent, /Review the cards needing attention/);
+  result('health_check', {counts: {pass: 6, untested: 2}, checks: [
+    {title: 'Physical acceptance', status: 'untested'}, {title: 'Unknown check', status: 'future_status'}
+  ]});
+  assert.equal(e.workspaceStatus.textContent, 'Health check complete: 6 passed, 0 failed, 0 blocked. 2 checks were not run by this passive check.');
+  assert(e.healthResults.children.slice(1).every(card => card.className === 'workspace-card health-untested'), 'untested and unknown results never receive passing styling');
   e.documentQuery.value = 'source history'; e.documentHistory.checked = true;
   await e.searchDocuments.click(); assert.deepEqual(last(), {mode: 'documents', prompt: 'source history', include_history: true});
   e.documentFile.files = [{name: 'large.txt', size: 8 * 1024 * 1024 + 1, content: ''}]; e.documentFile.dispatch('change');
@@ -202,6 +215,21 @@ function busy(value) { emit('prometheus-busy', {busy: value, online: true, close
   e.documentUrl.value = 'https://example.org/doc'; e.documentDate.value = '2026-10-09';
   await e.importDocument.click();
   assert.deepEqual(last(), {mode: 'document_import', content: 'dGVzdA==', name: 'example.md', source_url: 'https://example.org/doc', source_date: '2026-10-09', document_id: ''});
+  result('document_import', {});
+  for (const name of ['slides.pptx', 'inventory.xlsx', 'SLIDES.PPTX', 'INVENTORY.XLSX']) {
+    e.documentFile.files = [{name, size: 4, content: 'test'}]; e.documentFile.dispatch('change');
+    const beforeImport = submitted.length;
+    await e.importDocument.click();
+    assert.equal(submitted.length, beforeImport + 1, name + ' reaches the document importer');
+    assert.deepEqual(last(), {mode: 'document_import', content: 'dGVzdA==', name, source_url: 'https://example.org/doc', source_date: '2026-10-09', document_id: ''});
+    result('document_import', {});
+  }
+  for (const name of ['macros.xlsm', 'legacy.ppt', 'program.exe']) {
+    e.documentFile.files = [{name, size: 4, content: 'test'}]; e.documentFile.dispatch('change');
+    const beforeImport = submitted.length;
+    await e.importDocument.click();
+    assert.equal(submitted.length, beforeImport, name + ' remains unsupported');
+  }
   e.backupDestination.value = 'C:\\Backups'; await e.createBackup.click(); assert.deepEqual(last(), {mode: 'backup', destination: 'C:\\Backups'});
   e.restoreBackupPath.value = 'C:\\Backups\\saved'; e.restoreDestination.value = 'C:\\Backups\\new-restore'; await e.restoreCheck.click();
   assert.deepEqual(last(), {mode: 'restore_check', backup_path: 'C:\\Backups\\saved', destination: 'C:\\Backups\\new-restore'});

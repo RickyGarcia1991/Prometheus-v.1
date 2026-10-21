@@ -1,11 +1,14 @@
-import hashlib, json, subprocess, tempfile
+import hashlib, json, os, subprocess, tempfile
 from pathlib import Path
+import pytest
 
 ROOT=Path(__file__).resolve().parents[1]
 HOST=ROOT/"tools"/"Prometheus.HostAgent"
 RECOVERY=HOST/"Prometheus-Security-Recovery.ps1"
 
 def ps(mode, root):
+    if os.name != 'nt':
+        pytest.skip('Recovery integration requires Windows PowerShell')
     r=subprocess.run(["powershell","-NoProfile","-ExecutionPolicy","Bypass","-File",str(RECOVERY),"-Mode",mode,"-HostRoot",str(root)],capture_output=True,text=True)
     return r, json.loads(r.stdout)
 

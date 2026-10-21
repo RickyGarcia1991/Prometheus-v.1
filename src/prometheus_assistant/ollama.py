@@ -17,9 +17,12 @@ def output_token_budget(model, num_predict=384):
 def _idle_residency():
     from .hardware import detect_hardware
     hardware = detect_hardware()
-    short = (hardware.ram_gib < 12 or hardware.available_ram_gib is None
-             or hardware.available_ram_gib < 2)
-    return '30s' if short else '5m'
+    free = hardware.available_ram_gib
+    if hardware.ram_gib < 12 or free is None or free < 1:
+        return '30s'
+    # Loading from portable storage can dominate reply latency. Allow a natural
+    # conversation pause without keeping a model resident indefinitely.
+    return '2m' if free < 2 else '15m'
 
 
 class LocalModelError(RuntimeError):
@@ -27,6 +30,11 @@ class LocalModelError(RuntimeError):
 
 
 class GenerationCancelled(LocalModelError):
+    pass
+
+
+class ModelDeferred(LocalModelError):
+    """Admission/ownership deferral, never evidence of poor model quality."""
     pass
 
 
@@ -121,8 +129,71 @@ class OllamaClient:
         self.num_thread = num_thread
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
         self.last_metrics = {}
+        self.last_lifecycle = {}
 
-    def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384):
+    def chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384, json_format=False):
+        return self._chat_stream(messages, on_token=on_token, cancel_event=cancel_event,
+                                 num_predict=num_predict, json_format=json_format)
+
+    def prepare(self, *, cancel_event=None):
+        """Load the selected options without a user message or generated answer."""
+        self._chat_stream([], cancel_event=cancel_event, preparing=True)
+        return dict(self.last_metrics)
+
+    def _chat_stream(self, messages, *, on_token=None, cancel_event=None, num_predict=384,
+                     json_format=False, preparing=False):
+        from .model_lifecycle import governor, LifecycleError, LifecycleCancelled
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.stream')
+        self.last_metrics = {}
+        entered = False
+        try:
+            with governor.lease(self.base_url, self.model, self.num_ctx, cancel_event=cancel_event) as lease:
+                entered = True
+                try:
+                    result = self._chat_stream_owned(messages, on_token=on_token, cancel_event=cancel_event,
+                        num_predict=num_predict, json_format=json_format, preparing=preparing, lease=lease)
+                    lease.check()
+                    return result
+                except GenerationCancelled as error:
+                    raise LifecycleCancelled(str(error)) from error
+        except LifecycleCancelled as error:
+            if entered:
+                self.release_model()
+            raise GenerationCancelled(str(error)) from error
+        except LifecycleError as error:
+            if entered:
+                self.release_model()
+            raise ModelDeferred(str(error)) from error
+        except LocalModelError:
+            if entered:
+                self.release_model()
+            raise
+
+    def release_model(self):
+        """Bounded cleanup of this client's model; report absence, never assume it."""
+        import time
+        started = time.monotonic()
+        cleanup = OllamaClient(self.base_url, self.model, timeout=.25, num_ctx=self.num_ctx)
+        try:
+            response = cleanup._request('/api/generate', {'model': self.model, 'keep_alive': 0})
+            if response.get('done') is not True:
+                raise LocalModelError('Runtime did not confirm model release.')
+            rows = cleanup._request('/api/ps').get('models')
+            if not isinstance(rows, list):
+                raise LocalModelError('Runtime residency was unavailable.')
+            remaining = [row for row in rows if isinstance(row, dict) and row.get('name', row.get('model')) == self.model]
+            self.last_lifecycle = dict(state='released' if not remaining else 'resident',
+                                       model=self.model, seconds=time.monotonic()-started)
+        except Exception:
+            # Best-effort cleanup must never replace the original cancellation
+            # or failure. Its unconfirmed outcome stays explicit.
+            self.last_lifecycle = dict(state='unconfirmed', model=self.model,
+                                       seconds=time.monotonic()-started)
+        return dict(self.last_lifecycle)
+
+    def _chat_stream_owned(self, messages, *, on_token=None, cancel_event=None, num_predict=384,
+                           json_format=False, preparing=False, lease):
         """Bounded NDJSON streaming; disconnect the owned request on cancellation."""
         import http.client
         import socket
@@ -136,13 +207,16 @@ class OllamaClient:
         first = None
         owned_socket = response = None
         def check():
+            lease.check()
             if cancel_event is not None and cancel_event.is_set():
                 raise GenerationCancelled('Request cancelled; partial text was not saved.')
             if time.monotonic()-started > self.timeout:
                 raise LocalModelError('Local generation exceeded its time budget.')
-        payload = {'model': self.model, 'messages': messages, 'stream': True, 'keep_alive': _idle_residency(),
+        payload = {'model': self.model, 'messages': messages, 'stream': True, 'keep_alive': lease.keep_alive(default_seconds=_idle_residency()),
                    'options': {'num_ctx': self.num_ctx, 'num_predict': output_token_budget(self.model, num_predict), 'temperature': .2,
                                'num_thread': self.num_thread or 2, 'num_batch': 32 if self.num_ctx <= 2048 else 128}}
+        if json_format:
+            payload['format'] = json_format if isinstance(json_format, dict) else 'json'
         family = self.model.split(':')[0]
         if family in {'qwen3', 'qwen3.5'}:
             payload['think'] = False
@@ -209,6 +283,10 @@ class OllamaClient:
             self.last_metrics = metrics
             if final.get('done_reason') == 'length':
                 raise LocalModelError('The answer reached its output limit; partial text was not saved. Try a narrower question.')
+            if preparing:
+                if reply or final.get('eval_count', 0) not in (None, 0):
+                    raise LocalModelError('Voice preparation unexpectedly generated text; readiness was not accepted.')
+                return '', 0
             if not reply:
                 raise LocalModelError('The local stream ended without a complete answer.')
             return reply, final.get('eval_count')
@@ -227,6 +305,50 @@ class OllamaClient:
             connection.close()
 
     def _request(self, path, payload=None):
+        from .model_lifecycle import governor, LifecycleError, LifecycleCancelled
+        from .application_policy import require_dispatch
+        require_dispatch('ollama.request')
+        inference = path in {'/api/chat', '/api/generate', '/api/embed', '/api/embeddings'} and payload is not None
+        if not inference:
+            return self._request_owned(path, payload)
+        if not isinstance(payload, dict) or payload.get('model') != self.model:
+            raise ValueError('Inference payload must use the selected local model.')
+        options = payload.get('options', {})
+        if not isinstance(options, dict):
+            raise ValueError('Invalid model request options.')
+        context = options.get('num_ctx', self.num_ctx)
+        if type(context) is not int or not 512 <= context <= 32768:
+            raise ValueError('Invalid effective model context.')
+        # Cleanup is serialized as well: it must never unload another active request.
+        cleanup = (path == '/api/generate' and payload.get('keep_alive') == 0
+                   and not payload.get('prompt') and not payload.get('messages')
+                   and not payload.get('images'))
+        entered = False
+        try:
+            with governor.lease(self.base_url, self.model, context, maintenance=cleanup) as lease:
+                entered = True
+                body = dict(payload)
+                body['keep_alive'] = 0 if cleanup else lease.keep_alive(default_seconds=body.get('keep_alive', '2m'))
+                lease.check()
+                result = self._request_owned(path, body)
+                # Blocking requests cannot be interrupted mid-read; discard their result
+                # if the task was cancelled or its admission changed before return.
+                lease.check()
+                return result
+        except LifecycleCancelled as error:
+            if entered and not cleanup:
+                self.release_model()
+            raise GenerationCancelled(str(error)) from error
+        except LifecycleError as error:
+            if entered and not cleanup:
+                self.release_model()
+            raise ModelDeferred(str(error)) from error
+        except LocalModelError:
+            if entered and not cleanup:
+                self.release_model()
+            raise
+
+    def _request_owned(self, path, payload=None):
         data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode("utf-8")
         request = Request(self.base_url + path, data=data, headers={"Content-Type": "application/json"})
         try:
@@ -234,7 +356,13 @@ class OllamaClient:
                 body = response.read(MAX_RESPONSE_BYTES + 1)
         except HTTPError as error:
             raise LocalModelError(f"Ollama HTTP error {error.code}; no cloud fallback was used.") from error
-        except (URLError, OSError, TimeoutError) as error:
+        except TimeoutError as error:
+            raise LocalModelError("Local model request exceeded its time budget; no completed answer was returned.") from error
+        except URLError as error:
+            if isinstance(error.reason, TimeoutError):
+                raise LocalModelError("Local model request exceeded its time budget; no completed answer was returned.") from error
+            raise LocalModelError("Cannot reach local Ollama. Open Ollama and retry; no cloud fallback was used.") from error
+        except OSError as error:
             raise LocalModelError("Cannot reach local Ollama. Open Ollama and retry; no cloud fallback was used.") from error
         if len(body) > MAX_RESPONSE_BYTES:
             raise LocalModelError("Ollama response exceeded the safe size limit.")
@@ -282,7 +410,7 @@ class OllamaClient:
             "options": {"num_ctx": self.num_ctx, "num_predict": output_token_budget(self.model, num_predict), "temperature": 0.2},
         }
         if json_format:
-            payload["format"] = "json"
+            payload["format"] = json_format if isinstance(json_format, dict) else "json"
         if self.model.split(":", 1)[0] == "gpt-oss":
             # GPT-OSS cannot disable reasoning. Leave room for a final answer.
             payload["think"] = "low"

@@ -1,0 +1,536 @@
+{
+  "schema_version": 1,
+  "upstream": "https://github.com/microsoft/markitdown",
+  "version": "0.1.8",
+  "upstream_revision": "b8f79c57ebc0044be41323d89b2a45d3fda8460e",
+  "supplemental_licenses": [
+    {
+      "filename": "MARKITDOWN-LICENSE.txt",
+      "source_url": "https://raw.githubusercontent.com/microsoft/markitdown/b8f79c57ebc0044be41323d89b2a45d3fda8460e/LICENSE",
+      "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
+    }
+  ],
+  "runtime": "CPython 3.12, Windows x64; uses the bundled SSD interpreter",
+  "adapter": "Unmodified format-specific MarkItDown converters, loaded without the generic auto-detection or network facade.",
+  "wheels": [
+    {
+      "name": "beautifulsoup4",
+      "normalized_name": "beautifulsoup4",
+      "version": "4.15.0",
+      "filename": "beautifulsoup4-4.15.0-py3-none-any.whl",
+      "sha256": "d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9",
+      "bytes": 109924,
+      "source_url": "https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl",
+      "license": "MIT License",
+      "license_files": [
+        "beautifulsoup4-4.15.0.dist-info/licenses/AUTHORS",
+        "beautifulsoup4-4.15.0.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "cffi",
+      "normalized_name": "cffi",
+      "version": "2.1.1",
+      "filename": "cffi-2.1.1-cp312-cp312-win_amd64.whl",
+      "sha256": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a",
+      "bytes": 185919,
+      "source_url": "https://files.pythonhosted.org/packages/d9/79/615cc094e2fb508cade7de88d3b4f6c4ec2bab695c97bce9153dc65aadf5/cffi-2.1.1-cp312-cp312-win_amd64.whl",
+      "license": "MIT-0",
+      "license_files": [
+        "cffi-2.1.1.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "charset-normalizer",
+      "normalized_name": "charset-normalizer",
+      "version": "3.5.2",
+      "filename": "charset_normalizer-3.5.2-cp312-cp312-win_amd64.whl",
+      "sha256": "780fbe7cab297b81dad9fb8dc5eb003c0468ffb0d9e5f65068c53a34661a96bc",
+      "bytes": 207486,
+      "source_url": "https://files.pythonhosted.org/packages/eb/e6/e6e083884cbcfd49c64865af05027fe7011be7b2d9179524f099a1b611f3/charset_normalizer-3.5.2-cp312-cp312-win_amd64.whl",
+      "license": "MIT",
+      "license_files": [
+        "charset_normalizer-3.5.2.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "cobble",
+      "normalized_name": "cobble",
+      "version": "0.1.4",
+      "filename": "cobble-0.1.4-py3-none-any.whl",
+      "sha256": "36c91b1655e599fd428e2b95fdd5f0da1ca2e9f1abb0bc871dec21a0e78a2b44",
+      "bytes": 3984,
+      "source_url": "https://files.pythonhosted.org/packages/d5/e1/3714a2f371985215c219c2a70953d38e3eed81ef165aed061d21de0e998b/cobble-0.1.4-py3-none-any.whl",
+      "license": null,
+      "license_files": [
+        "cobble-0.1.4.dist-info/METADATA"
+      ],
+      "formats": [
+        ".docx"
+      ]
+    },
+    {
+      "name": "cryptography",
+      "normalized_name": "cryptography",
+      "version": "50.0.2",
+      "filename": "cryptography-50.0.2-cp311-abi3-win_amd64.whl",
+      "sha256": "7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c",
+      "bytes": 3824692,
+      "source_url": "https://files.pythonhosted.org/packages/9a/4f/adfc442765721292fff86d314ce385d3249d22db42295c0dd057727b60f3/cryptography-50.0.2-cp311-abi3-win_amd64.whl",
+      "license": "Apache-2.0 OR BSD-3-Clause",
+      "license_files": [
+        "cryptography-50.0.2.dist-info/licenses/LICENSE",
+        "cryptography-50.0.2.dist-info/licenses/LICENSE.APACHE",
+        "cryptography-50.0.2.dist-info/licenses/LICENSE.BSD"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "defusedxml",
+      "normalized_name": "defusedxml",
+      "version": "0.7.1",
+      "filename": "defusedxml-0.7.1-py2.py3-none-any.whl",
+      "sha256": "a352e7e428770286cc899e2542b6cdaedb2b4953ff269a210103ec58f6198a61",
+      "bytes": 25604,
+      "source_url": "https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl",
+      "license": "PSFL",
+      "license_files": [
+        "defusedxml-0.7.1.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "et_xmlfile",
+      "normalized_name": "et-xmlfile",
+      "version": "2.0.0",
+      "filename": "et_xmlfile-2.0.0-py3-none-any.whl",
+      "sha256": "7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa",
+      "bytes": 18059,
+      "source_url": "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "et_xmlfile-2.0.0.dist-info/LICENCE.python",
+        "et_xmlfile-2.0.0.dist-info/LICENCE.rst"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "lxml",
+      "normalized_name": "lxml",
+      "version": "6.1.3",
+      "filename": "lxml-6.1.3-cp312-cp312-win_amd64.whl",
+      "sha256": "3e9a00d1c2c30936f7add097c41afc5da6556c580909104aafd382cac92a855c",
+      "bytes": 4005999,
+      "source_url": "https://files.pythonhosted.org/packages/3a/5b/6ed903e4e6278a020c8a6f0dbbe78030d041840a6b4a64ea441a1e414077/lxml-6.1.3-cp312-cp312-win_amd64.whl",
+      "license": "BSD-3-Clause",
+      "license_files": [
+        "lxml-6.1.3.dist-info/licenses/LICENSE.txt",
+        "lxml-6.1.3.dist-info/licenses/LICENSES.txt"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx"
+      ]
+    },
+    {
+      "name": "mammoth",
+      "normalized_name": "mammoth",
+      "version": "1.11.0",
+      "filename": "mammoth-1.11.0-py2.py3-none-any.whl",
+      "sha256": "c077ab0d450bd7c0c6ecd529a23bf7e0fa8190c929e28998308ff4eada3f063b",
+      "bytes": 54752,
+      "source_url": "https://files.pythonhosted.org/packages/ca/54/2e39566a131b13f6d8d193f974cb6a34e81bb7cc2fa6f7e03de067b36588/mammoth-1.11.0-py2.py3-none-any.whl",
+      "license": "BSD-2-Clause",
+      "license_files": [
+        "mammoth-1.11.0.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".docx"
+      ]
+    },
+    {
+      "name": "markdownify",
+      "normalized_name": "markdownify",
+      "version": "1.2.3",
+      "filename": "markdownify-1.2.3-py3-none-any.whl",
+      "sha256": "a189a0bedfd14009030fde5f85bb6f77c56897cb839b5c25315dd7d4e3e290ba",
+      "bytes": 15732,
+      "source_url": "https://files.pythonhosted.org/packages/04/10/fa543d484e8b1199243fe20eedd02cc5af050edebce98a7293a5773df592/markdownify-1.2.3-py3-none-any.whl",
+      "license": null,
+      "license_files": [
+        "markdownify-1.2.3.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "markitdown",
+      "normalized_name": "markitdown",
+      "version": "0.1.8",
+      "filename": "markitdown-0.1.8-py3-none-any.whl",
+      "sha256": "de7375a50578a39bcbbf13b48c67d99033d988e0ae8ad25af46ed432dbe4cbab",
+      "bytes": 89737,
+      "source_url": "https://files.pythonhosted.org/packages/33/de/0b23cd8d8955221a39438ba8e4cf583e4f510fc79c6891fff88fb3e61198/markitdown-0.1.8-py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "MARKITDOWN-LICENSE.txt"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx",
+        ".pdf"
+      ]
+    },
+    {
+      "name": "numpy",
+      "normalized_name": "numpy",
+      "version": "2.5.4",
+      "filename": "numpy-2.5.4-cp312-cp312-win_amd64.whl",
+      "sha256": "a7b1b6353e36a7e50de2973a38d705c88ee93adcf120673cee7f45a4a3fa223a",
+      "bytes": 12573091,
+      "source_url": "https://files.pythonhosted.org/packages/12/33/fefe62073dc8acfd0f2b9ed7c003af2f50aa61555e113e6db02b8f79f145/numpy-2.5.4-cp312-cp312-win_amd64.whl",
+      "license": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0",
+      "license_files": [
+        "numpy/ma/LICENSE",
+        "numpy/random/LICENSE.md",
+        "numpy/_core/include/numpy/random/LICENSE.txt",
+        "numpy-2.5.4.dist-info/licenses/",
+        "numpy-2.5.4.dist-info/licenses/numpy/",
+        "numpy-2.5.4.dist-info/licenses/LICENSE.txt",
+        "numpy-2.5.4.dist-info/licenses/numpy/fft/",
+        "numpy-2.5.4.dist-info/licenses/numpy/linalg/",
+        "numpy-2.5.4.dist-info/licenses/numpy/ma/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/",
+        "numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/",
+        "numpy-2.5.4.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/",
+        "numpy-2.5.4.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt",
+        "numpy-2.5.4.dist-info/licenses/numpy/ma/LICENSE",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/distributions/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/philox/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/include/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/multiarray/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/highway/LICENSE",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/",
+        "numpy-2.5.4.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "openpyxl",
+      "normalized_name": "openpyxl",
+      "version": "3.1.5",
+      "filename": "openpyxl-3.1.5-py2.py3-none-any.whl",
+      "sha256": "5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2",
+      "bytes": 250910,
+      "source_url": "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "openpyxl-3.1.5.dist-info/LICENCE.rst"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "pandas",
+      "normalized_name": "pandas",
+      "version": "3.0.6",
+      "filename": "pandas-3.0.6-cp312-cp312-win_amd64.whl",
+      "sha256": "3ef908d28590b3f42d7070e7ad8f9b34b442b260b7f3c1afb57e0040c58cdb1b",
+      "bytes": 9661439,
+      "source_url": "https://files.pythonhosted.org/packages/bd/2a/14b3b17cd75cef4a1ee1af4234eb41cc1afe4103b98c2d80e8916abfd42b/pandas-3.0.6-cp312-cp312-win_amd64.whl",
+      "license": "BSD 3-Clause License\n         \n         Copyright (c) 2008-2011, AQR Capital Management, LLC, Lambda Foundry, Inc. and PyData Development Team\n         All rights reserved.\n         \n         Copyright (c) 2011-2026, Open source contributors.\n         \n         Redistribution and use in source and binary forms, with or without\n         modification, are permitted provided that the following conditions are met:\n         \n         * Redistributions of source code must retain the above copyright notice, this\n           list of conditions and the following disclaimer.\n         \n         * Redistributions in binary form must reproduce the above copyright notice,\n           this list of conditions and the following disclaimer in the documentation\n           and/or other materials provided with the distribution.\n         \n         * Neither the name of the copyright holder nor the names of its\n           contributors may be used to endorse or promote products derived from\n           this software without specific prior written permission.\n         \n         THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"\n         AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE\n         IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n         DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE\n         FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL\n         DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR\n         SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER\n         CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,\n         OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n         OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n         ",
+      "license_files": [
+        "pandas-3.0.6.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "pdfminer.six",
+      "normalized_name": "pdfminer-six",
+      "version": "20260107",
+      "filename": "pdfminer_six-20260107-py3-none-any.whl",
+      "sha256": "366585ba97e80dffa8f00cebe303d2f381884d8637af4ce422f1df3ef38111a9",
+      "bytes": 6592252,
+      "source_url": "https://files.pythonhosted.org/packages/20/8b/28c4eaec9d6b036a52cb44720408f26b1a143ca9bce76cc19e8f5de00ab4/pdfminer_six-20260107-py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "pdfminer_six-20260107.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "pdfplumber",
+      "normalized_name": "pdfplumber",
+      "version": "0.11.10",
+      "filename": "pdfplumber-0.11.10-py3-none-any.whl",
+      "sha256": "7741ea81bf165b474b153e6789d10d18e06b6ddcf3ec84289c3ef2fed6802580",
+      "bytes": 60047,
+      "source_url": "https://files.pythonhosted.org/packages/a2/9a/07d658e1e7fad860f1c541ab941348125dbdab773be3a0afaf32361866c7/pdfplumber-0.11.10-py3-none-any.whl",
+      "license": null,
+      "license_files": [
+        "pdfplumber-0.11.10.dist-info/licenses/LICENSE.txt"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "pillow",
+      "normalized_name": "pillow",
+      "version": "12.3.0",
+      "filename": "pillow-12.3.0-cp312-cp312-win_amd64.whl",
+      "sha256": "a2b55dd6b2a4c4b7d87ffa56bdb33fdc5fdb9a462173861a7bc097f17d91cb09",
+      "bytes": 7227137,
+      "source_url": "https://files.pythonhosted.org/packages/45/89/da2f7971a317f83d807fdd4065c0af40208e59e692cc43d315a71a0e96d1/pillow-12.3.0-cp312-cp312-win_amd64.whl",
+      "license": "MIT-CMU",
+      "license_files": [
+        "pillow-12.3.0.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pptx",
+        ".pdf"
+      ]
+    },
+    {
+      "name": "pycparser",
+      "normalized_name": "pycparser",
+      "version": "3.11",
+      "filename": "pycparser-3.11-py3-none-any.whl",
+      "sha256": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+      "bytes": 51178,
+      "source_url": "https://files.pythonhosted.org/packages/90/11/0e6f11117525ff0eec40ebac3d313376f102df93ca44ad9e893ee85e4f89/pycparser-3.11-py3-none-any.whl",
+      "license": "BSD-3-Clause",
+      "license_files": [
+        "pycparser-3.11.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "pypdf",
+      "normalized_name": "pypdf",
+      "version": "6.20.1",
+      "filename": "pypdf-6.20.1-py3-none-any.whl",
+      "sha256": "aa5a55ddcffdc5e5ab291d5decb23f6383f4e56f8e3263dc39af41fff03885ad",
+      "bytes": 402665,
+      "source_url": "https://files.pythonhosted.org/packages/71/f8/4cbd09988b4b158260b7e0df38bf16f19e998bf0e257a18661a8da04280e/pypdf-6.20.1-py3-none-any.whl",
+      "license": "BSD-3-Clause",
+      "license_files": [
+        "pypdf-6.20.1.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "pypdfium2",
+      "normalized_name": "pypdfium2",
+      "version": "5.14.0",
+      "filename": "pypdfium2-5.14.0-py3-none-win_amd64.whl",
+      "sha256": "149fd5c6397b8df8bf7911a93506eff0be874f877afe7ac936cf5d37d21a6a06",
+      "bytes": 3947280,
+      "source_url": "https://files.pythonhosted.org/packages/00/dc/ca7874924c9cfd701ad53f89529968523790e70473e0b71e834668316148/pypdfium2-5.14.0-py3-none-win_amd64.whl",
+      "license": "BSD-3-Clause, Apache-2.0, dependency licenses",
+      "license_files": [
+        "pypdfium2-5.14.0.dist-info/licenses/LICENSES/Apache-2.0.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/LICENSES/BSD-3-Clause.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/LICENSES/CC-BY-4.0.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/abseil.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/agg23.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/fast_float.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/freetype.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/icu.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/lcms.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.md",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libpng.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/llvm-libc.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/simdutf.txt",
+        "pypdfium2-5.14.0.dist-info/licenses/data/windows_x64/BUILD_LICENSES/zlib.txt"
+      ],
+      "formats": [
+        ".pdf"
+      ]
+    },
+    {
+      "name": "python-dateutil",
+      "normalized_name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "filename": "python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "sha256": "a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427",
+      "bytes": 229892,
+      "source_url": "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+      "license": "Dual License",
+      "license_files": [
+        "python_dateutil-2.9.0.post0.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "python-pptx",
+      "normalized_name": "python-pptx",
+      "version": "1.0.2",
+      "filename": "python_pptx-1.0.2-py3-none-any.whl",
+      "sha256": "160838e0b8565a8b1f67947675886e9fea18aa5e795db7ae531606d68e785cba",
+      "bytes": 472788,
+      "source_url": "https://files.pythonhosted.org/packages/d9/4f/00be2196329ebbff56ce564aa94efb0fbc828d00de250b1980de1a34ab49/python_pptx-1.0.2-py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "python_pptx-1.0.2.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".pptx"
+      ]
+    },
+    {
+      "name": "six",
+      "normalized_name": "six",
+      "version": "1.17.0",
+      "filename": "six-1.17.0-py2.py3-none-any.whl",
+      "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+      "bytes": 11050,
+      "source_url": "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "six-1.17.0.dist-info/LICENSE"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "soupsieve",
+      "normalized_name": "soupsieve",
+      "version": "3.0.3",
+      "filename": "soupsieve-3.0.3-py3-none-any.whl",
+      "sha256": "fa30e3ba4809cb81ce1f3209f2fbe3e779fc445f0439bc147a0d7c4601743f21",
+      "bytes": 41705,
+      "source_url": "https://files.pythonhosted.org/packages/49/ca/f639c80449997b88aba7bc9705d25dd76cc0844f45f187862fd8f8bb18fa/soupsieve-3.0.3-py3-none-any.whl",
+      "license": "MIT",
+      "license_files": [
+        "soupsieve-3.0.3.dist-info/licenses/LICENSE.md"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "typing_extensions",
+      "normalized_name": "typing-extensions",
+      "version": "4.16.0",
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "bytes": 45571,
+      "source_url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "license": "PSF-2.0",
+      "license_files": [
+        "typing_extensions-4.16.0.dist-info/licenses/LICENSE"
+      ],
+      "formats": [
+        ".docx",
+        ".pptx",
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "tzdata",
+      "normalized_name": "tzdata",
+      "version": "2026.5",
+      "filename": "tzdata-2026.5-py2.py3-none-any.whl",
+      "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac",
+      "bytes": 347996,
+      "source_url": "https://files.pythonhosted.org/packages/94/21/1e5995a1c920cce14e4bffae20c665ec10e7ed03ab25e006cd741092b718/tzdata-2026.5-py2.py3-none-any.whl",
+      "license": "Apache-2.0",
+      "license_files": [
+        "tzdata-2026.5.dist-info/licenses/LICENSE",
+        "tzdata-2026.5.dist-info/licenses/licenses/LICENSE_APACHE"
+      ],
+      "formats": [
+        ".xlsx"
+      ]
+    },
+    {
+      "name": "xlsxwriter",
+      "normalized_name": "xlsxwriter",
+      "version": "3.2.9",
+      "filename": "xlsxwriter-3.2.9-py3-none-any.whl",
+      "sha256": "9a5db42bc5dff014806c58a20b9eae7322a134abb6fce3c92c181bfb275ec5b3",
+      "bytes": 175315,
+      "source_url": "https://files.pythonhosted.org/packages/3a/0c/3662f4a66880196a590b202f0db82d919dd2f89e99a27fadef91c4a33d41/xlsxwriter-3.2.9-py3-none-any.whl",
+      "license": "BSD-2-Clause",
+      "license_files": [
+        "xlsxwriter-3.2.9.dist-info/LICENSE.txt"
+      ],
+      "formats": [
+        ".pptx"
+      ]
+    }
+  ]
+}

@@ -114,7 +114,12 @@ def _response_metadata(details):
     if 'metrics' in details:
         result['metrics'] = _metadata_fields(details['metrics'], strings={'model': 240}, numbers=(
             'seconds', 'first_token_seconds', 'eval_count', 'context', 'load_seconds', 'total_seconds',
-            'output_tokens', 'prompt_eval_count', 'prompt_eval_seconds', 'eval_seconds'))
+            'output_tokens', 'prompt_eval_count', 'prompt_eval_seconds', 'eval_seconds',
+            'input_utf8_bytes', 'input_message_count'))
+        for key in ('input_utf8_bytes', 'input_message_count'):
+            count = result['metrics'].get(key)
+            if count is not None and (type(count) is not int or count < 0):
+                raise ValueError('Turn metadata input counts must be nonnegative bounded integers.')
         if 'attempts' in details['metrics']:
             attempts = details['metrics']['attempts']
             if not isinstance(attempts, list) or len(attempts)>2:
@@ -125,7 +130,41 @@ def _response_metadata(details):
         result['routing'] = _metadata_fields(details['routing'],
             strings={'role': 100, 'model': 240, 'reason': 2000},
             numbers=('attempts',), booleans=('automatic',))
+    # Retain advisory provenance for display, never candidate source or live
+    # approval payloads. Old saved reviews cannot become executable approvals.
+    from .advisory_review import validate_saved_advice
+    for key in ('project_edit', 'task_review'):
+        item = details.get(key)
+        if isinstance(item, dict) and (item.get('advisory_review') is not None or item.get('specialist_review') is not None or item.get('measured_review') is not None):
+            saved = _metadata_fields(item, strings={'project': 4000, 'path': 4000,
+                'state': 100, 'status': 100, 'edit_id': 100})
+            if item.get('specialist_review') is not None:
+                from .project_specialists import validate_saved_team
+                # The team already contains correctness advice. Avoid duplicating
+                # it and preserve the existing total metadata bound.
+                saved['specialist_review'] = validate_saved_team(item['specialist_review'])
+            elif item.get('advisory_review') is not None:
+                saved['advisory_review'] = validate_saved_advice(item['advisory_review'])
+            if item.get('measured_review') is not None:
+                from .measured_review_runtime import validate_saved_review
+                saved['measured_review'] = validate_saved_review(item['measured_review'])
+            result[key] = saved
     encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+    if len(encoded.encode('utf-8')) > MAX_TURN_METADATA_BYTES:
+        # Individual advisory limits do not guarantee the combined turn fits.
+        # Preserve earlier provenance and explicit measured failure counts.
+        for key in ('project_edit', 'task_review'):
+            measured = result.get(key, {}).get('measured_review')
+            report = measured.get('report') if measured else None
+            if report is not None:
+                compact = dict(measured, report=None, history_summary=dict(
+                    status=report['status'], measured_check_count=len(report['measured_checks']),
+                    failed_check_count=len(report['failed_checks']),
+                    reviewer_omission_count=len(report['reviewer_omissions']),
+                    reason='detail_exceeds_history_limit', may_present_as_checks_passed=False))
+                from .measured_review_runtime import validate_saved_review
+                result[key]['measured_review'] = validate_saved_review(compact)
+        encoded = json.dumps(result, ensure_ascii=False, separators=(',', ':'), allow_nan=False)
     if len(encoded.encode('utf-8')) > MAX_TURN_METADATA_BYTES:
         raise ValueError('Turn metadata exceeds the supported storage bound.')
     return encoded

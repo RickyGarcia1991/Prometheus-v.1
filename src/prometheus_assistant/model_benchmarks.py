@@ -363,6 +363,12 @@ def run_benchmarks(evidence, installed, hardware=None, *, base_url='http://127.0
                         return finish(guard.memory_reason)
                     raise
                 except LocalModelError as error:
+                    from .ollama import ModelDeferred
+                    if isinstance(error, ModelDeferred):
+                        row.update(state='resource_deferred', passed=None,
+                                   seconds=time.monotonic()-before, error=str(error)[:500])
+                        report['cases'].append(row)
+                        return finish('completed_with_deferrals')
                     if stopped():
                         return finish()
                     seconds = time.monotonic()-before

@@ -84,6 +84,8 @@ class MCPBridge:
                    'env': dict(env), 'bufsize': 0}
         if os.name == 'nt':
             options['creationflags'] = subprocess.CREATE_NO_WINDOW
+        from .application_policy import require_dispatch
+        require_dispatch('remote.transport')
         try:
             self._process = subprocess.Popen(list(command), **options)
         except (OSError, ValueError):

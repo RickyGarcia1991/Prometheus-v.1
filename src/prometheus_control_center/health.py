@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 import sys
+import tempfile
 
 from .config import PrometheusConfig
 
@@ -21,9 +22,12 @@ def run_checks(config: PrometheusConfig) -> list[Check]:
     for name, path in (("home", config.home), ("archive_dir", config.archive_dir)):
         try:
             path.mkdir(parents=True, exist_ok=True)
-            probe = path / ".prometheus-write-test"
-            probe.write_text("ok", encoding="utf-8")
-            probe.unlink()
+            # Exclusive creation cannot overwrite or follow an existing probe
+            # name; the context cleans up only the temporary file we created.
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path,
+                                             prefix=".prometheus-write-test-") as probe:
+                probe.write("ok")
+                probe.flush()
             checks.append(Check(name, True, str(path)))
         except OSError as exc:
             checks.append(Check(name, False, f"{path}: {exc}"))

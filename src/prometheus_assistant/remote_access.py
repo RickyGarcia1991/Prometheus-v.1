@@ -25,6 +25,8 @@ CLIENT_SHA256 = '29c668867838b2b3b56b45676ce967d42ca8e65a68d8c17a775fecd9a2eacfc
 MAX_ARGUMENTS = 128_000
 DEVICE_ID = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
 TOOL_NAME = re.compile(r'^[A-Za-z0-9_.-]{1,160}$')
+HEALTH_TTL_SECONDS = 30
+MAX_HEALTH_TIMESTAMP = 253402300769  # Leave room for the TTL before year 10000.
 
 
 def plain(path):
@@ -220,6 +222,32 @@ def parse_devices(result):
     return devices[:100]
 
 
+def _device_health_rows(result, devices):
+    """Keep legacy dispatch parsing, but require explicit status for health claims."""
+    structured = result.get('structuredContent')
+    rows = structured.get('devices') if isinstance(structured, dict) else None
+    if not isinstance(rows, list):
+        # The text parser accepts only explicit ID + Online/Offline records.
+        return [{'id': row['id'], 'status': row['status']} for row in devices]
+    statuses = {}
+    accepted = {row['id'] for row in devices}
+    for row in rows[:100]:
+        if not isinstance(row, dict):
+            continue
+        identity = row.get('id', row.get('deviceId', ''))
+        if not isinstance(identity, str) or identity not in accepted:
+            continue
+        signals = []
+        if 'online' in row:
+            signals.append(('online' if row['online'] else 'offline')
+                           if type(row['online']) is bool else 'unknown')
+        if 'status' in row:
+            status = row['status'].lower() if isinstance(row['status'], str) else 'unknown'
+            signals.append(status if status in {'online', 'offline'} else 'unknown')
+        statuses[identity] = signals[0] if signals and len(set(signals)) == 1 else 'unknown'
+    return [{'id': row['id'], 'status': statuses.get(row['id'], 'unknown')} for row in devices]
+
+
 def account_id(result):
     if not isinstance(result, dict) or result.get('isError'):
         raise ValueError('Could not verify the connected account.')
@@ -237,8 +265,10 @@ def account_id(result):
 
 
 class RemoteAccess:
-    def __init__(self, *, bridge_factory=launch_bridge, audit_root=None, clock=time.time):
+    def __init__(self, *, bridge_factory=launch_bridge, audit_root=None, clock=time.time,
+                 monotonic=time.monotonic):
         self.factory, self.audit_root, self.clock = bridge_factory, audit_root, clock
+        self.monotonic = monotonic
         self.lock = threading.RLock()
         self.generation = 0
         self.client = None
@@ -250,6 +280,62 @@ class RemoteAccess:
         self.account_id = None
         self.result = None
         self.threads = []
+        self._health_observation = None
+        self._health_valid = False
+
+    def health_snapshot(self):
+        """Return only cached, time-qualified counts without probing or expiring reviews.
+
+        This dashboard seam deliberately does not use state(), which can expire
+        pending approval. Stale observations retain their time and row count, but
+        every device becomes unknown rather than implying it is still online.
+        """
+        with self.lock:
+            phase = self.phase if self.phase in {'disconnected', 'connecting', 'ready', 'working', 'error'} else 'unknown'
+            observation = self._health_observation
+            if observation and observation['generation'] != self.generation:
+                observation = None
+            current = False
+            if observation and self._health_valid and self.client is not None and phase in {'ready', 'working'}:
+                try:
+                    wall_age = self.clock() - observation['observed_at']
+                    mono_age = self.monotonic() - observation['observed_monotonic']
+                    current = (math.isfinite(wall_age) and math.isfinite(mono_age)
+                               and 0 <= wall_age < HEALTH_TTL_SECONDS
+                               and 0 <= mono_age < HEALTH_TTL_SECONDS)
+                except (TypeError, ValueError, OverflowError):
+                    current = False
+            rows = observation['devices'] if observation else ()
+            counts = {'online': 0, 'offline': 0, 'unknown': 0, 'total': len(rows)}
+            for _, status in rows:
+                counts[status if current else 'unknown'] += 1
+            selected_state = 'unselected' if self.selected is None else 'unknown'
+            if current and self.selected is not None:
+                selected_state = next((status for identity, status in rows if identity == self.selected), 'missing')
+            observed_at = observation['observed_at'] if observation else None
+            return {'schema_version': 1, 'phase': phase,
+                    'generation': min(self.generation, 2**31 - 1),
+                    'freshness': 'current' if current else 'stale' if observation else 'unavailable',
+                    'observed_at': observed_at,
+                    'expires_at': observed_at + HEALTH_TTL_SECONDS if observation else None,
+                    'ttl_seconds': HEALTH_TTL_SECONDS, 'counts': counts,
+                    'selected_state': selected_state}
+
+    def _record_health(self, generation, devices, *, observed_times=None):
+        """Publish an observation under the caller's lock, only for this connection."""
+        if generation != self.generation:
+            return
+        self._health_valid = False
+        wall, mono = observed_times if observed_times is not None else (self.clock(), self.monotonic())
+        if (type(wall) not in {int, float} or not math.isfinite(wall)
+                or not 0 <= wall <= MAX_HEALTH_TIMESTAMP
+                or type(mono) not in {int, float} or not math.isfinite(mono) or mono < 0):
+            return
+        self._health_observation = {'generation': generation, 'observed_at': wall,
+            'observed_monotonic': mono,
+            'devices': tuple((row['id'], row['status'] if row['status'] in {'online', 'offline'} else 'unknown')
+                             for row in devices[:100])}
+        self._health_valid = True
 
     def state(self):
         with self.lock:
@@ -274,6 +360,7 @@ class RemoteAccess:
             if self.phase in {'connecting', 'working'}:
                 raise RuntimeError('Wait for the current connection action to finish, or disconnect.')
             self.phase, self.message = phase, message
+            self._health_valid = False
             generation = self.generation
             self.result = None
             thread = threading.Thread(target=function, args=(generation,), daemon=True)
@@ -286,6 +373,8 @@ class RemoteAccess:
             if generation != self.generation:
                 return
             self.phase, self.message, self.result = phase, message, result
+            if phase == 'error':
+                self._health_valid = False
 
     def _catalog(self, client):
         tools, cursor = [], None
@@ -309,8 +398,13 @@ class RemoteAccess:
             raise ValueError('The remote provider does not expose a valid device list.')
         return tools
 
-    def _devices(self, client):
-        return parse_devices(client.request('tools/call', {'name': 'list_devices', 'arguments': {}}))
+    def _devices(self, client, *, with_health=False):
+        result = client.request('tools/call', {'name': 'list_devices', 'arguments': {}})
+        observed_times = self.clock(), self.monotonic()
+        devices = parse_devices(result)
+        if with_health:
+            return devices, _device_health_rows(result, devices), observed_times
+        return devices
 
     def _connect(self, generation):
         client = None
@@ -324,7 +418,7 @@ class RemoteAccess:
             client.initialize(timeout=180)
             catalog = self._catalog(client)
             identity = account_id(client.request('tools/call', {'name': 'who_am_i', 'arguments': {}}))
-            devices = self._devices(client)
+            devices, health_rows, observed_times = self._devices(client, with_health=True)
             allowed = []
             for tool in catalog:
                 schema = tool.get('inputSchema', {})
@@ -337,6 +431,7 @@ class RemoteAccess:
                 self.tools, self.devices, self.selected, self.pending = allowed, devices, None, None
                 self.account_id = identity
                 self.has_result_tool = any(x['name'] == 'get_tool_result' for x in catalog)
+                self._record_health(generation, health_rows, observed_times=observed_times)
             self._audit('connected')
             self._finish(generation, message='Account connected. Choose a computer by its name and device ID.')
         except Exception:
@@ -346,13 +441,14 @@ class RemoteAccess:
 
     def _refresh(self, generation):
         try:
-            devices = self._devices(self.client)
+            devices, health_rows, observed_times = self._devices(self.client, with_health=True)
             with self.lock:
                 if generation != self.generation:
                     return
                 self.devices, self.pending = devices, None
                 if not any(d['id'] == self.selected and d['status'] == 'online' for d in devices):
                     self.selected = None
+                self._record_health(generation, health_rows, observed_times=observed_times)
             self._finish(generation, message='Computer list refreshed. No remote action was run.')
         except Exception:
             self._finish(generation, phase='error', message='Could not refresh computers. Reconnect before running another action.')
@@ -387,11 +483,12 @@ class RemoteAccess:
             self.result = None
 
     def _execute(self, generation, pending):
+        from .application_policy import require_dispatch
         dispatched = False
         try:
             client = self.client
             # Read-only online check immediately before dispatch; never silently retarget.
-            devices = self._devices(client)
+            devices, health_rows, observed_times = self._devices(client, with_health=True)
             identity = account_id(client.request('tools/call', {'name': 'who_am_i', 'arguments': {}}))
             if identity != self.pending_account_id:
                 raise ValueError('The connected account changed. Reconnect and review again.')
@@ -402,6 +499,11 @@ class RemoteAccess:
             with self.lock:
                 if generation != self.generation:
                     return
+                self._record_health(generation, health_rows, observed_times=observed_times)
+                if pending['expires_at'] <= self.clock():
+                    raise ValueError('Reviewed action expired before dispatch.')
+                require_dispatch('remote.dispatch', scope={'account': self.pending_account_id,
+                    'device': pending['device_id'], 'tool': pending['tool'], 'arguments_sha256': digest})
             dispatched = True
             result = client.request('tools/call', {'name': pending['tool'], 'arguments': pending['arguments']}, timeout=60)
             # Only a structured control envelope identifies an owned background call.
@@ -434,6 +536,8 @@ class RemoteAccess:
             self._finish(generation, phase='error', message=message)
 
     def action(self, body):
+        from .application_policy import require_dispatch
+        require_dispatch('remote.action')
         if not isinstance(body, dict):
             raise ValueError('Invalid remote action.')
         action = body.get('action')
@@ -488,6 +592,8 @@ class RemoteAccess:
             self.result = None
             self.account_id = None
             self.devices, self.tools = [], []
+            self._health_observation = None
+            self._health_valid = False
             self.message = ('Disconnected. Work already started on the other computer may continue.' if was_working else
                             'Disconnected. Revoke account access in the provider dashboard when needed.')
         if client:

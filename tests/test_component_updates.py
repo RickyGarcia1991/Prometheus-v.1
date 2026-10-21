@@ -452,3 +452,50 @@ def test_owner_citation_date_change_is_not_mistaken_for_failed_update_version(tm
     assert row['status'] == 'check_failed' and row['pending_recovery']
     assert library.list_documents()[0]['source_date'] == '2026-10-10'
     assert len(library.list_documents(include_history=True)) == 3
+
+
+def application_fixture(tmp_path, monkeypatch):
+    import prometheus_control_center
+    root = tmp_path / 'Prometheus-v0.8.0-dev42-test'
+    location = root / 'src/prometheus_assistant/component_updates.py'
+    location.parent.mkdir(parents=True)
+    monkeypatch.setattr(module, '__file__', str(location))
+    monkeypatch.setattr(prometheus_control_center, '__version__', '0.8.0.dev42')
+    record = entry(id='application-prometheus', label='Prometheus', category='application',
+                   provider='pinned', installed_revision='Prometheus-v0.8.0-dev3-old', source_url='')
+    manager = module.ComponentUpdates(tmp_path / 'updates', catalog(record))
+    return manager, root, record
+
+
+def test_application_status_uses_running_provenance_without_mutating_catalog_or_database(tmp_path, monkeypatch):
+    manager, root, record = application_fixture(tmp_path, monkeypatch)
+    (root / 'RELEASE-PROVENANCE.json').write_text(json.dumps({'release': root.name, 'version': '0.8.0.dev42'}))
+    with manager._db() as db:
+        before = dict(db.execute('SELECT * FROM components').fetchone())
+    status = manager.status()
+    assert status['entries'][0]['installed_revision'] == root.name
+    assert record['installed_revision'] == 'Prometheus-v0.8.0-dev3-old'
+    assert manager.entries['application-prometheus']['installed_revision'] == record['installed_revision']
+    assert status['entries'][0]['status'] == 'check_unavailable' and not status['network_used']
+    with manager._db() as db:
+        assert dict(db.execute('SELECT * FROM components').fetchone()) == before
+
+
+@pytest.mark.parametrize('content', [None, '', 'not json', '[]', '{"release":"../outside","version":"0.8.0.dev42"}',
+    '{"release":"Prometheus-v0.8.0-dev42-other","version":"0.8.0.dev42"}',
+    '{"release":"Prometheus-v0.8.0-dev42-test","version":"0.8.0.dev1"}', ' ' * 65537],
+    ids=['missing', 'empty', 'invalid-json', 'array', 'unsafe-name', 'wrong-folder', 'wrong-version', 'oversized'])
+def test_unusable_release_provenance_preserves_recorded_catalog_identity(tmp_path, monkeypatch, content):
+    manager, root, record = application_fixture(tmp_path, monkeypatch)
+    if content is not None:
+        (root / 'RELEASE-PROVENANCE.json').write_text(content)
+    assert manager.status()['entries'][0]['installed_revision'] == record['installed_revision']
+
+
+def test_linked_release_provenance_is_not_used_as_application_identity(tmp_path, monkeypatch):
+    manager, root, record = application_fixture(tmp_path, monkeypatch)
+    (root / 'RELEASE-PROVENANCE.json').write_text(json.dumps({'release': root.name, 'version': '0.8.0.dev42'}))
+    from pathlib import Path
+    original = Path.is_symlink
+    monkeypatch.setattr(Path, 'is_symlink', lambda path: path.name == 'RELEASE-PROVENANCE.json' or original(path))
+    assert manager.status()['entries'][0]['installed_revision'] == record['installed_revision']

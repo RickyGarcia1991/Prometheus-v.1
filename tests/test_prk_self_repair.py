@@ -1,9 +1,12 @@
 import json, os, shutil, subprocess, tempfile
 from pathlib import Path
+import pytest
 ROOT=Path(__file__).resolve().parents[1]
 ENGINE=ROOT/"tools"/"Prometheus-PRK-SelfRepair.ps1"
 
 def run_ps(action, drive, stage, local, cleanup=False):
+    if os.name != 'nt':
+        pytest.skip('Recovery integration requires Windows PowerShell')
     cmd=["powershell","-NoProfile","-ExecutionPolicy","Bypass","-File",str(ENGINE),"-Action",action,"-Drive",str(drive),"-StageRoot",str(stage),"-LocalPrometheusRoot",str(local)]
     if cleanup: cmd.append("-AllowStateCleanup")
     return subprocess.run(cmd,capture_output=True,text=True,check=True)

@@ -1,83 +1,47 @@
-# Read-only permissions and boundaries
+# Application policy, grants and independent boundaries
 
-This isolated architecture phase adds a **Boundaries** tab to the workbench,
-`GET /api/permissions`, `POST /api/permissions/preview`, and
-`python prometheus.py permissions`. It does not change effective grants or move
-existing dispatch paths to a new policy engine. No settings-write or grant API
-is added.
+The Boundaries view, GET /api/permissions and `python prometheus.py permissions` expose the running policy revision and concrete dispatch checks. POST /api/permissions/preview validates exactly worker/tool/arguments against the built-in registry and composes default Core rules with shared host denials. Preview never executes, grants, probes targets or substitutes for a plan approval. Inventory rows distinguish conditional/default/host decisions from actual target validation. Loading inventory does not start a model or provider.
 
-The inventory is generated from the running source's built-in Core ToolSpecs,
-the existing `evaluate_tool_request` function, the evidence registry, registered
-browser modes, the actual browser capture response-header constant and the
-current HTTP owner's in-memory session state. Source SHA-256 fingerprints form
-the policy revision. Version 1 is the response schema; the revision identifies
-the reviewed policy/source implementation, not a newly signed release.
+## Enforced application seams
 
-Each row gives an outcome, scope, reason, source, enforcement point, observation
-basis, current grant/expiry observation, adjustment availability and external
-requirements. The four categories separate application permissions,
-authentication/integrity, advisory behavior and external limits. Source-review
-rows and conditional browser rows are explicitly distinguished from evaluated
-Core outcomes. `not_configured`, `unavailable`, `not_observed`, `conditional`
-and `deny` have different meanings.
+| Surface | Concrete enforcement | Preserved authority |
+| --- | --- | --- |
+| Core and agent/headless helpers | ToolRegistry registered metadata; core.run_core and execute_authorized recheck before executor | Exact-plan approvals, immutable arguments, tool-specific risk and target checks. Nonempty plain executor mappings are refused. |
+| Browser jobs | Interface.submit, Interface.execute and ui_workspace.execute validate known mode; queued jobs pass execute again | Existing owner, origin, token, fetch-site, capture and request schema gates |
+| Main CLI | cli.main: permissions, ui, huggingface, security-hardware, research, legal, math, library, see, voice-status, transcribe, coding-tools, code, media, ask, backup-memory, restore-memory, sources, resources, search, sessions, history, doctor, inspect-host, chat, voice-chat | Local OS caller authority; CLI does not invent enrolled-owner authority or issue grants |
+| Control CLI | prometheus_control_center.cli.main: init, doctor, snapshot, verify | Existing configured roots and snapshot checks |
+| Network/model adapters | public_http.fetch_public_bytes; HttpJsonResearchProvider.search; OllamaClient._request/chat_stream; Interface.ensure_runtime before probe/helper start; HomeClient.request; hf_resources.compare_remote | Public DNS/path/HTTPS rules, loopback model endpoint, named provider/device credentials |
+| Local effects | CodingWorkspace.apply_edit/undo_edit/run_tests; coding.launch_coding; media.launch_media/nvidia_devices; voice.record_windows/transcribe/speak; DocumentLibrary.import_bytes/index_missing_embeddings and extraction | Workspace root/no-links/protected paths, preview/undo, bounded subprocess/capture checks |
+| Retrieval/transport | capabilities.retrieve; integrations.launch_integrations; archive_worker.search/main; MCPBridge before process creation | Capability/runtime readiness, provider catalog, OS subprocess limits |
+| Backup/restore | maintenance.create_backup/restore_backup | Existing lock, SQLite integrity, staged restore and safe archive checks; host grant authority is outside portable backup |
+| Source watches | FreshnessSchedule.run_due_checks at entry and after lease with selected provider/query digest | Existing online consent, provider validation and lease accounting |
+| Component updates | ComponentUpdates.run_due_checks after entry selection, before discovery, and before document fetch/import | Exact entry ID and policy digest, bundle signatures, staged target validation and rollback |
+| Connected computers | RemoteAccess.action and queued _execute before concrete dispatch, plus MCPBridge | Existing account/device/generation, exact reviewed arguments, expiry, one-use pending action and uncertain-outcome rules. Policy refusal reaches normal error completion. |
 
-An `allow` outcome is limited to the named policy layer. Inventory does not
-validate arbitrary file paths, check model readiness, authenticate standalone
-CLI use, encrypt data or establish device availability. Core inventory and
-preview use default policy with no plan approvals or custom guardrails. The
-existing HTTP owner gate is optional when no owner setup exists; the view says
-`not_configured` rather than implying a verified owner in that case. HTTP
-inventory and preview otherwise require the same current owner session, local
-request token, Host/origin and fetch-site checks as existing protected routes.
+Known UI modes are the immutable UI_MODES set in application_policy.py: chat, coding, ask, vision, capabilities, library, calculate, research, project, dictate, tools, models, home, documents, document_import, document_list, document_index, code_open, code_read, code_preview, code_apply, code_undo, code_tests, maintenance, watch_source, check_sources, backup, restore_check, model_benchmark, health_check, component_updates, check_updates, configure_updates and core. Unknown modes fail closed rather than falling through to chat.
 
-The Core preview takes exactly `worker`, `tool` and `arguments`. It looks up a
-registered built-in tool, validates its existing argument schema, derives risk
-flags from its ToolSpec and calls the existing evaluator. Unknown capabilities,
-malformed arguments (including explicit JSON null) and caller-supplied risk/approval fields are refused. The arguments value must be a JSON object. It
-never calls an executor, creates a plan, returns a grant, stores arguments or
-echoes their content. Every response says `authorizes_execution: false`.
-Target-specific validation still happens at the actual execution boundary.
+The default shared decision preserves the existing workflow; PROMETHEUS_DENY_CAPABILITIES adds exact named denials or global `*` denial, never authorization. PROMETHEUS_DENY_SCOPES adds an exact capability plus canonical selected-scope SHA-256 denial for source/update/remote dispatch. This is a trusted host configuration, not a payload principal or a user-editable grant policy. Core names are accepted only through a registered ToolSpec. A shared allow leaves every downstream check in force. Ordinary local execution paths do not suddenly require a browser grant, so existing explicit approvals and OS workflows remain compatible.
 
-The CLI command runs before memory/activity setup and reports owner state as
-unobserved. Neither surface instantiates maintenance workers or reads saved
-watch schedules, update preferences, smart-home credentials, remote pending
-actions, owner public-key records or personal memory. Merely loading this view
-does not start a model, contact a provider or probe hardware. The browser renders
-metadata as text, clears observations on lock/disconnect/close and immediately on
-any shared API authentication loss, rejects late responses after those transitions, and supports searching, categories and normal
-workbench keyboard navigation. Snapshot time and partial coverage are visible.
+## Explicit persistent grants
 
-## Scope and remaining work
+Only `research/public` (one exact provider/query) and `project/tests` (one exact bounded target and canonical project root) support grants. A configured, enrolled and authenticated owner uses separate Review exact grant and Create reviewed grant actions, then Run exact action once if desired. Grant creation does not execute. Maximum duration is 15 minutes and maximum budget five attempts. A failed or uncertain attempt is spent and must not be replayed. No live grant is created by installation or this release.
 
-All currently registered Core tools, evidence tools and browser modes are
-enumerated. Enumeration is not proof that every effect has common policy
-enforcement. CLI/headless commands, HTTP dispatch, background work, provider
-adapters and host lifecycle/signing/recovery helpers still need complete mapping.
-The 23 built-in Core tools include the dev4 read-only Hugging Face and security
-hardware catalogs; those catalogs do not enable downloads or device actions.
+GET /api/permissions/grants inspects the current owner's grants. POST routes `/api/permissions/grants/review`, `/issue` and `/revoke` retain normal HTTP protection and additionally require enrolled owner identity. The execution job accepts only mode=core, worker, tool, arguments, grant_id and invocation_id; caller risk, owner, approvals and unrelated fields are refused. The queued worker reauthenticates while holding the owner gate through dispatch. Grant UI polls its returned job directly, including fast completions/errors, refreshes budgets and clears sensitive observations on lock/authentication loss.
 
-This phase deliberately does not migrate approvals, introduce expiring task
-grants, change path/DNS validators, relax capture rules, modify owner setup,
-activate updates or promote a model. Future integration must preserve browser
-and CLI distinctions and keep rejected-action tests at each execution boundary.
+Authority is stored under the host's LOCALAPPDATA/Prometheus/Authority (or XDG_STATE_HOME equivalent), never on the portable data drive. Machine identity, enrolled owner's credential identity and source plus effective normalized host-policy revision bind every grant. The SQLite ledger and independent continuity witness retain attempts/revocations across ordinary process restart. A process lock serializes database reservation and dispatch against revoke across processes. A reserved final use remains valid if concurrent inspection marks its zero budget exhausted; only that recorded invocation may finish. Expiry/host/owner/revision/shared policy are rechecked before effects, using clocks sampled after ledger-lock acquisition.
 
-## Validation and acceptance limits
+Rolling back either authority file, a partial write, or restoring both behind a running process fails closed. Backward wall/monotonic time retires old grants; a new explicit owner review is possible after the new clock epoch. Expiry remains bounded by both recorded wall and monotonic deadlines. A same-OS-account process or administrator able to restore all authoritative host files before process start is outside this application threat boundary. Complete protection from that actor requires an external or hardware monotonic authority. A corrupted continuity store stays disabled; it must not be reset as an ordinary restore or used to resurrect grants. Existing non-grant workflows remain available under their own checks.
 
-`tests/test_permissions_inventory.py` exercises live registry/evaluator output,
-default/custom deny precedence, malformed and unknown previews, side-effect
-traps, owner-state observations, real loopback HTTP handling with synthetic
-sessions, lock/expiry/token/origin checks and CLI memory non-creation.
-`tests/ui/test-permissions.cjs` exercises discovery, filtering, literal rendering,
-preview requests and busy/error/lock/disconnect/stale-response transitions in a
-minimal DOM fixture. Existing owner cryptography and runtime tests remain in
-the full regression suite; no real owner passkey is used by these fixtures.
+Inspection stores/displays only scope digests, capability, minimal target, timestamps, state and remaining uses. Raw query arguments are kept in the owner's current explicit review form, not the ledger. Review form values clear on authentication loss. Never enter secrets. Project test grants execute local project code; source trust and OS permissions remain necessary.
 
-The isolated worker's accompanying evidence records exact runs and line
-observations. Line coverage is not branch or exhaustive security coverage.
-Synthetic Chrome rendering and the failed-navigation authentication race passed
-on Dell at desktop, laptop and narrow widths. This does not establish Windows
-Hello, local-model hardware reasoning, physical device or cross-host SSD acceptance.
-Release status is recorded separately in RELEASE-PROVENANCE.json and the release
-receipt. A source checkout alone does not establish signing, activation or live acceptance.
-The integrated test-permissions-auth.cjs regression covers authentication loss
-from other API calls, both inventory endpoints and pending inventory/preview replies.
+## External authority and support limits
+
+The following inspected helpers remain independently signed/OS-controlled: tools/Verify-Repair-Core.ps1, tools/Prometheus-PRK-SelfRepair.ps1, tools/Repair-Prometheus-Controller.ps1, tools/Sign-Capability-Update.ps1, tools/Prometheus.DriveController, tools/Prometheus.HostAgent, tools/Prometheus.PRK.Controller, tools/portable-host-check.ps1 and portable launch/session-lock/recovery scripts in the signed resource layout. The established non-exporting Sign-PrometheusRelease.ps1 helper remains host-local. Python owner sessions/grants cannot authorize these helpers, key export, media removal, OS actions or provider access. No signer/verifier trust pin is changed. The retired portable-graceful-shutdown script is not a supported close command.
+
+This map covers the application's public dispatch surfaces and effect adapters; it is not a sandbox around arbitrary Python extensions or private data helpers. Full OS/provider and physical portability coverage is not claimed. No remote desktop capability, device support, cloud model, new model weight or grant for external helpers is invented.
+
+## Verification and release distinction
+
+Focused tests prove refusal before effects, registered-risk derivation, plan-approval compatibility, owner enrollment, cross-owner isolation, path binding, expiry, clock/ledger rollback, replay, restart persistence, revocation ordering, final-use inspection and spawned-process use limits. Real loopback HTTP fixtures retain origin/token/owner gates. Browser fixtures and isolated Chrome renderings cover visible shared denials, grant review/issue distinction, terminal job feedback and authentication loss. Synthetic fixtures do not establish a new owner passkey ceremony.
+
+Real configured-model qualification retains raw failures and limited alternative/held-out results. Deterministic system/arithmetic/search evidence is distinguished from generated prose. Physical acoustic acceptance, safe removal/reinsertion and a second host remain separate acceptance work. RELEASE-PROVENANCE.json describes source scope; the external release receipt binds exact published SHA, signed payload and installed validation.

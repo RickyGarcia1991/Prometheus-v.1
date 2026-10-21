@@ -31,6 +31,8 @@ class HttpJsonResearchProvider:
         return fetch_public_json(url,{urlsplit(self.endpoint).hostname},timeout=self.timeout)
 
     def search(self, query: str) -> ResearchResult:
+        from .application_policy import require_dispatch
+        require_dispatch('research.provider')
         query = query.strip()
         if not query:
             raise ValueError("Research query cannot be empty.")

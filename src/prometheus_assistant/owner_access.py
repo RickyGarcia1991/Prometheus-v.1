@@ -3,7 +3,7 @@
 Protects this HTTP interface, not files from an OS user who can read the SSD.
 Private passkey material stays with the authenticator. No camera access here.
 """
-from contextlib import closing
+from contextlib import closing, contextmanager
 import hashlib
 import json
 from pathlib import Path
@@ -77,6 +77,28 @@ class OwnerAccess:
             return {'required': self.required, 'ready': self.ready,
                     'unlocked': not self.required or remaining > 0,
                     'expires_in_seconds': remaining if self.required and remaining > 0 else None}
+
+    @contextmanager
+    def grant_owner(self, cookie):
+        """Server-derived owner binding, serialized with logout/key changes.
+
+        Unconfigured owner access deliberately cannot mint/use grants. The
+        ordinary application's legacy optional-owner behavior is unchanged.
+        """
+        with self.lock:
+            if not self.required or not self.ready or not self.authenticated(cookie):
+                raise ValueError('Unlock a configured owner before managing scoped grants.')
+            rows = self._rows()
+            if not rows:
+                raise ValueError('An enrolled owner is required for scoped grants.')
+            with closing(sqlite3.connect(self.path)) as db:
+                value = db.execute("SELECT value FROM settings WHERE key='user_id'").fetchone()
+            if not value:
+                raise ValueError('Owner binding is unavailable.')
+            digest = hashlib.sha256(value[0])
+            for row in sorted(rows, key=lambda row: row[0]):
+                digest.update(bytes(row[1]))
+            yield digest.hexdigest()
 
     def begin(self, kind, cookie=None, setup_ticket=''):
         if not self.ready or kind not in {'register', 'authenticate'}:

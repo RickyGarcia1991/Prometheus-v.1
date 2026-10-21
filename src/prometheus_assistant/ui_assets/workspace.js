@@ -4,12 +4,12 @@ const element = id => document.getElementById(id);
 const panel = element('workbench');
 const main = panel.closest('main');
 let state = {busy: false, online: false, closed: false};
-let preparing = false, pending = null, selectedProject = '', opened = null, reviewed = null, lastEdit = null;
+let preparing = false, pending = null, selectedProject = '', opened = null, reviewed = null, lastEdit = null, diskChanged = false;
 
 function message(text) { element('workspaceStatus').textContent = text; }
 function dirty() { return !!opened && element('codeEditor').value !== opened.content; }
 function projectMatches() { return !!selectedProject && element('projectRoot').value.trim() === selectedProject; }
-function openedFileMatches() { return projectMatches() && !!opened && element('codeFile').value === opened.path; }
+function openedFileMatches() { return projectMatches() && !diskChanged && !!opened && element('codeFile').value === opened.path; }
 function textNode(tag, text, className) {
   const node = document.createElement(tag); node.textContent = text;
   if (className) node.className = className;
@@ -36,7 +36,7 @@ function controls() {
     element(id).querySelectorAll('input, select').forEach(input => { input.disabled = locked; });
   });
   const fileReady = openedFileMatches();
-  element('codeEditor').disabled = locked || !fileReady;
+  element('codeEditor').disabled = locked || !projectMatches() || !opened || element('codeFile').value !== opened.path;
   element('readCode').disabled = locked || !projectMatches() || !element('codeFile').value;
   element('previewCode').disabled = locked || !fileReady || !dirty();
   element('applyCode').disabled = locked || !fileReady || !reviewed || reviewed.content !== element('codeEditor').value;
@@ -46,15 +46,19 @@ function controls() {
   element('importDocument').disabled = locked || !element('documentFile').files.length;
   element('enableWatch').disabled = locked || !element('watchProvider').value;
   element('disableWatch').disabled = locked || !element('watchProvider').value;
+  window.PrometheusProjectAgent?.workspaceChanged();
 }
 function showWorkbench(show) {
   panel.hidden = !show; main.classList.toggle('workspace-open', show);
   element('openWorkbench').setAttribute('aria-expanded', String(show));
+  element('ownerPanel').hidden = true;
+  element('ownerPanelToggle').setAttribute('aria-expanded', 'false');
   if (show) element('workbench').querySelector('[role=tab][aria-selected=true]').focus();
   else element('prompt').focus();
 }
+window.addEventListener('prometheus-show-conversation', () => showWorkbench(false));
 function switchPanel(name, focus = false) {
-  ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'].forEach(item => {
+  ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'].forEach(item => {
     const selected = item === name, tab = element('tab' + item);
     tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
     element('panel' + item).hidden = !selected;
@@ -84,7 +88,7 @@ function preserveDraft() {
 }
 function invalidatePreview() {
   reviewed = null; element('codeDiffPanel').hidden = true;
-  element('codeFileStatus').textContent = opened ? opened.path + (dirty() ? ' · unapplied editor changes' : ' · matches opened file') : '';
+  element('codeFileStatus').textContent = opened ? opened.path + (diskChanged ? ' · changed on disk; reopen to refresh' : dirty() ? ' · unapplied editor changes' : ' · matches opened file') : '';
   controls();
 }
 function syncProviders() {
@@ -163,26 +167,66 @@ function renderUpdates(data) {
   const holder = element('componentUpdates'); holder.replaceChildren();
   holder.append(textNode('p', `Automatic checks ${data.enabled ? 'enabled' : 'paused'} · ${data.due_count || 0} components due`, 'fine'));
   if (data.disclosure) holder.append(textNode('p', data.disclosure, 'fine'));
-  for (const row of data.entries || []) {
-    const card = textNode('details', '', 'workspace-detail');
-    card.append(textNode('summary', `${row.label || row.id} · ${String(row.status || 'unchecked').replaceAll('_', ' ')}`));
-    card.append(textNode('p', `${row.category || 'Component'} · installed ${row.installed_revision || 'unrecorded'} · available ${row.available_revision || 'not checked'}`, 'fine'));
-    if (row.last_checked_utc) card.append(textNode('p', 'Checked ' + row.last_checked_utc, 'fine'));
-    if (row.reason) card.append(textNode('p', row.reason, 'fine'));
-    if (row.error) card.append(textNode('p', row.error, 'fine'));
-    if (row.source_url) card.append(sourceLink(row.source_url));
-    holder.append(card);
+  const groups = {
+    attention: {title: 'Checks needing attention', rows: [], open: true},
+    review: {title: 'Updates awaiting review', rows: [], open: true},
+    checked: {title: 'Checked components', rows: [], open: false},
+    pending: {title: 'Checks not yet completed', rows: [], open: false},
+    manual: {title: 'Manual updates and pinned references', rows: [], open: false}
+  };
+  const labels = {
+    update_available: 'Update available · review required', upstream_changed: 'Upstream reference changed · review required',
+    no_update: 'No newer version found', baseline_recorded: 'Upstream baseline recorded',
+    installed: 'Version recorded · not checked yet', check_failed: 'Check failed',
+    staged_verified: 'Document staged · review required', auto_applied: 'Document update applied',
+    rolled_back: 'Previous document restored · review needed', cancelled: 'Check cancelled · retry available'
+  };
+  const rows = Array.isArray(data.entries) ? data.entries : [];
+  for (const row of rows) {
+    const manual = row.provider === 'pinned' || row.status === 'check_unavailable';
+    const attention = row.error || row.pending_recovery || ['check_failed', 'rolled_back', 'cancelled'].includes(row.status);
+    const group = attention ? 'attention' : manual ? 'manual'
+      : ['update_available', 'upstream_changed', 'staged_verified'].includes(row.status) ? 'review'
+      : ['no_update', 'baseline_recorded', 'auto_applied'].includes(row.status) ? 'checked' : 'pending';
+    groups[group].rows.push(row);
   }
-  if (!data.entries?.length) holder.append(textNode('p', 'No component catalog is available.', 'fine'));
+  for (const [name, group] of Object.entries(groups)) {
+    if (!group.rows.length) continue;
+    const section = textNode('details', '', 'workspace-detail'); section.open = group.open;
+    section.dataset.updateGroup = name;
+    section.append(textNode('summary', `${group.title} · ${group.rows.length}`));
+    if (name === 'manual') section.append(textNode('p', 'These entries use manual review. Their registered policy has no automatic version check.', 'fine'));
+    for (const row of group.rows) {
+      const manual = name === 'manual';
+      const status = row.pending_recovery ? 'Recovery pending · review required' : manual
+        ? row.source_url ? 'Pinned component · manual review' : 'Manual updates · no configured feed'
+        : labels[row.status] || String(row.status || 'Not checked').replaceAll('_', ' ');
+      const card = textNode('details', '', 'workspace-detail');
+      card.append(textNode('summary', `${row.label || row.id} · ${status}`));
+      const installed = row.installed_revision || (row.provider === 'github_commit' ? 'local reference; no upstream version assigned' : 'unrecorded');
+      const available = manual ? '' : ` · available ${row.available_revision || 'not checked'}`;
+      card.append(textNode('p', `${row.category || 'Component'} · installed ${installed}${available}`, 'fine source-location'));
+      if (row.last_checked_utc) card.append(textNode('p', 'Checked ' + row.last_checked_utc, 'fine'));
+      if (row.reason) card.append(textNode('p', row.reason, 'fine'));
+      if (row.details?.reason && row.details.reason !== row.reason) card.append(textNode('p', row.details.reason, 'fine'));
+      if (row.error) card.append(textNode('p', row.error, 'fine'));
+      if (row.source_url) card.append(sourceLink(row.source_url));
+      section.append(card);
+    }
+    holder.append(section);
+  }
+  if (!rows.length) holder.append(textNode('p', 'No component catalog is available.', 'fine'));
 }
 function renderHealth(data) {
   const holder = element('healthResults'); holder.replaceChildren();
   const counts = data.counts || {};
   holder.append(textNode('p', `Checked ${data.checked_utc || 'now'} · ${counts.pass || 0} passed · ${counts.fail || 0} failed · ${counts.blocked || 0} blocked · ${counts.untested || 0} untested`, 'fine'));
+  const labels = {pass: 'Passed', fail: 'Needs attention', blocked: 'Could not complete', untested: 'Not run by this check'};
   for (const row of data.checks || []) {
-    const card = textNode('article', '', 'workspace-card');
     const status = ['pass', 'fail', 'blocked', 'untested'].includes(row.status) ? row.status : 'untested';
-    card.append(textNode('strong', `${status.toUpperCase()} · ${row.title || 'Check'}`));
+    const card = textNode('article', '', 'workspace-card health-' + status);
+    card.setAttribute('data-health-status', status);
+    card.append(textNode('strong', `${labels[status]} · ${row.title || 'Check'}`));
     card.append(textNode('p', row.summary || 'No result available.'));
     if (row.next_step) card.append(textNode('p', 'Next step: ' + row.next_step, 'fine'));
     if (row.models?.length) card.append(textNode('p', 'Complete model files: ' + row.models.join(', '), 'fine'));
@@ -191,6 +235,9 @@ function renderHealth(data) {
     if (row.scope) card.append(textNode('p', row.scope, 'fine'));
     holder.append(card);
   }
+  const summary = `Health check complete: ${counts.pass || 0} passed, ${counts.fail || 0} failed, ${counts.blocked || 0} blocked.`;
+  const remaining = counts.untested ? ` ${counts.untested} checks were not run by this passive check.` : '';
+  return summary + remaining + ((counts.fail || counts.blocked) ? ' Review the cards needing attention below.' : '');
 }
 
 element('openWorkbench').onclick = () => showWorkbench(panel.hidden);
@@ -199,7 +246,7 @@ panel.querySelectorAll('[data-panel]').forEach(button => {
   button.onclick = () => switchPanel(button.dataset.panel);
   button.onkeydown = event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Remote', 'Permissions'];
+    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'];
     let index = names.indexOf(button.dataset.panel);
     index = event.key === 'Home' ? 0 : event.key === 'End' ? names.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : names.length - 1)) % names.length;
     switchPanel(names[index], true);
@@ -216,7 +263,7 @@ element('indexDocuments').onclick = () => action({mode: 'document_index'});
 element('documentFile').onchange = controls;
 element('importDocument').onclick = async () => {
   const file = element('documentFile').files[0];
-  if (!file || !/\.(txt|md|csv|pdf|docx)$/i.test(file.name)) { message('Choose TXT, Markdown, CSV, PDF or DOCX.'); return; }
+  if (!file || !/\.(txt|md|csv|pdf|docx|pptx|xlsx)$/i.test(file.name)) { message('Choose TXT, Markdown, CSV, PDF, DOCX, PPTX or XLSX.'); return; }
   if (!file.size || file.size > 8 * 1024 * 1024) { message('Choose a file containing 1 byte to 8 MiB.'); return; }
   const metadata = {name: file.name, source_url: element('documentUrl').value.trim(), source_date: element('documentDate').value,
                     document_id: element('documentVersion').value};
@@ -292,6 +339,27 @@ element('restoreCheck').onclick = () => {
   action({mode: 'restore_check', backup_path, destination});
 };
 
+function checkMeasurements(data) {
+  if (!data || data.scope !== 'direct_process') return '\n\nMeasurements unavailable.';
+  const number = (value, unit, scale = 1) => typeof value === 'number' && Number.isFinite(value) && value >= 0
+    ? (value * scale).toFixed(1) + ' ' + unit : 'unavailable';
+  const lines = ['\n\nMeasured resources:',
+    'Direct process: ' + number(data.ram_gib, 'MiB peak working set', 1024) +
+    '; ' + number(data.cpu_seconds, 'CPU seconds') + '; ' + number(data.io_mib, 'MiB OS transfers') + '.'];
+  const job = data.job_metrics;
+  if (job) {
+    const count = Number.isSafeInteger(job.total_processes) && job.total_processes >= 0
+      ? job.total_processes + ' associated processes' : 'process count unavailable';
+    lines.push('Windows job: ' + number(job.peak_commit_gib, 'MiB peak committed memory', 1024) +
+      '; ' + number(job.cpu_seconds, 'CPU seconds') + '; ' + number(job.io_mib, 'MiB OS transfers') +
+      '; ' + count + '.');
+    lines.push(job.snapshot_complete === true ? 'No active associated processes at the final snapshot.'
+      : 'Job snapshot incomplete or unavailable.');
+    lines.push('Coverage may exclude descendants created before assignment. Committed memory is separate from working-set RAM.');
+  }
+  lines.push('OS transfers include non-disk I/O; not physical disk traffic.');
+  return lines.join('\n');
+}
 window.addEventListener('prometheus-busy', event => { state = {...state, ...event.detail}; controls(); });
 window.addEventListener('prometheus-partial', event => {
   if (pending?.mode === 'code_tests') element('codeTestOutput').textContent = String(event.detail?.text || '').slice(0, 32000);
@@ -309,6 +377,10 @@ window.addEventListener('prometheus-result', event => {
       ? ' Your draft is still in the editor. Copy it before discarding changes and reopening the current file.' : ''));
     pending = null; controls(); return;
   }
+  if (result.origin !== 'observed' && (data.project_edit || ['project_task', 'project_edit'].includes(data.approval?.kind))) {
+    message(data.project_edit ? 'Project task finished. Review its checks and verification evidence below.'
+      : 'Project review ready. No proposed changes have been applied.');
+  }
   if (mode === 'document_list') { renderDocuments(data.documents || []); message('Document versions refreshed.'); }
   else if (mode === 'documents') { renderSearch(data); message('Document search completed.'); }
   else if (mode === 'document_import') {
@@ -317,7 +389,7 @@ window.addEventListener('prometheus-result', event => {
   } else if (mode === 'document_index') { message(`Meaning index: ${data.status} · ${data.indexed || 0} passages indexed · ${data.pending || 0} pending.`); }
   else if (mode === 'code_open') {
     selectedProject = data.project; element('projectRoot').value = selectedProject; element('project').value = selectedProject;
-    opened = reviewed = null; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
+    opened = reviewed = null; diskChanged = false; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
     element('codeFile').replaceChildren(new Option('Choose a source file…', ''));
     for (const file of data.files || []) element('codeFile').add(new Option(`${file.path} · ${file.size} bytes`, file.path));
     element('testPreset').replaceChildren();
@@ -328,6 +400,7 @@ window.addEventListener('prometheus-result', event => {
     const available = [...element('testPreset').options].find(option => !option.disabled); if (available) element('testPreset').value = available.value;
     message(`Project opened · ${(data.files || []).length} supported files listed.`);
   } else if (mode === 'code_read') {
+    diskChanged = false;
     element('codeEditor').value = data.content; opened = {path: data.path, sha256: data.sha256, content: element('codeEditor').value};
     element('codeFile').value = data.path; invalidatePreview(); message('File opened. Your edits are held in the editor until applied.');
   } else if (mode === 'code_preview') {
@@ -341,14 +414,14 @@ window.addEventListener('prometheus-result', event => {
     if (data.edit_id) lastEdit = {id: data.edit_id, project: selectedProject, file: data.path};
     invalidatePreview(); message(data.changed ? 'Reviewed edit applied. A verified backup is available for undo.' : 'No file changes were needed.');
   } else if (mode === 'code_undo') {
-    lastEdit = null; opened = reviewed = null; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
+    lastEdit = null; opened = reviewed = null; diskChanged = false; element('codeEditor').value = ''; element('codeFileStatus').textContent = ''; element('codeDiffPanel').hidden = true;
     message('Saved bytes restored. Open the file again to review the restored content.');
   } else if (mode === 'code_tests') {
     const status = data.cancelled ? 'Cancelled' : data.timed_out ? 'Timed out' : data.exit_code === 0 ? 'Passed' : 'Failed';
-    element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}`;
+    element('codeTestOutput').textContent = `${status} · exit ${data.exit_code ?? 'none'} · ${data.duration_seconds} s\nCommand: ${JSON.stringify(data.argv)}\n\n${data.output || '(no output)'}${data.truncated ? '\n\n[Output limit reached]' : ''}` + checkMeasurements(data.resource_measurements);
     message('Project check ' + status.toLowerCase() + '.');
   } else if (mode === 'maintenance') { renderReadiness(data); message('Readiness refreshed. Physical checks remain separate from device detection.'); }
-  else if (mode === 'health_check') { renderHealth(data); message('Health check completed. Review failed, blocked and untested checks below.'); }
+  else if (mode === 'health_check') { message(renderHealth(data)); }
   else if (['component_updates', 'check_updates', 'configure_updates'].includes(mode)) {
     renderUpdates(data);
     message(mode === 'check_updates' ? 'Component check finished. Review its result and any pending activation below.' : 'Component update settings refreshed.');
@@ -365,9 +438,24 @@ window.addEventListener('prometheus-result', event => {
 window.addEventListener('beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
 element('compose').addEventListener('submit', () => { if (!state.busy && element('prompt').value.trim()) showWorkbench(false); }, true);
 element('prompt').addEventListener('keydown', event => {
-  if (event.key === 'Enter' && !event.shiftKey && !state.busy && element('prompt').value.trim()) showWorkbench(false);
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229 && !state.busy && element('prompt').value.trim()) showWorkbench(false);
 }, true);
 new MutationObserver(syncProviders).observe(element('provider'), {childList: true});
+window.PrometheusWorkspace = {
+  context: () => ({project: projectMatches() ? selectedProject : '', dirty: dirty(), file: opened?.path || '', stale: diskChanged}),
+  show: name => switchPanel(name),
+  invalidate(project, path) {
+    if (project !== selectedProject) return;
+    lastEdit = null;
+    if (opened && (!path || opened.path === path)) {
+      diskChanged = true; invalidatePreview();
+      message('The project task changed this file on disk. ' + (dirty()
+        ? 'Your unapplied editor draft is preserved. Copy or discard it before reopening the file.'
+        : 'Open the file again to review the current contents.'));
+    }
+    controls();
+  }
+};
 element('projectRoot').value = element('project').value;
 syncProviders(); controls();
 })();

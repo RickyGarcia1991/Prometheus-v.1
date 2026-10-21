@@ -1,0 +1,374 @@
+{
+  "schema": 1,
+  "verified_on": "2026-10-13",
+  "resources": [
+    {
+      "id": "browser-use",
+      "name": "Browser Use",
+      "aliases": [
+        "browseruse",
+        "AI browser agent"
+      ],
+      "publisher": "Browser Use organization",
+      "source_url": "https://github.com/browser-use/browser-use",
+      "documentation_url": "https://docs.browser-use.com/open-source/supported-models",
+      "category": "browser automation",
+      "license": "MIT library; hosted services have separate terms",
+      "requirements": [
+        "Pinned Browser Use 0.13.11, Chromium 155.0.8059.39 and portable Python 3.12 Windows bundle",
+        "Owner approval for an exact read or a selected public-web task grant"
+      ],
+      "availability": "reviewed-adapter",
+      "capability": "Navigate interactive websites and extract information using an AI browser agent.",
+      "limitations": "Prometheus includes a public HTTPS reader using a temporary Browser Use browser. Same-host GET assets only; no account flows or qualified model-driven actions. The full native Agent failed two held-out link and fact tasks with Qwen3:1.7b / 4096 context and remains unqualified.",
+      "next_step": "Open Integrations, check the portable runtime, enter a public HTTPS URL and review the action.",
+      "verified_on": "2026-10-13",
+      "source_commit": null,
+      "verification_status": "pinned-runtime-and-native-operations-qualified"
+    },
+    {
+      "id": "agentmemory-rohitg00",
+      "name": "AgentMemory",
+      "aliases": [
+        "agentmemory",
+        "persistent memory for AI coding agents",
+        "rohitg00/agentmemory"
+      ],
+      "publisher": "Rohit Ghumare / rohitg00",
+      "source_url": "https://github.com/rohitg00/agentmemory",
+      "documentation_url": "https://github.com/rohitg00/agentmemory#install",
+      "category": "coding agent memory",
+      "license": "Apache-2.0",
+      "requirements": [
+        "Pinned AgentMemory 0.9.30 and portable Node 24.21.0 Windows bundle; the semantic service additionally uses iii 0.22.1 and local MiniLM embeddings",
+        "Owner approval for an exact action or a selected task grant"
+      ],
+      "availability": "reviewed-adapter",
+      "capability": "Store and retrieve project decisions and coding-session context across supported agents.",
+      "limitations": "Separate owner-reviewed classic keyword and full semantic service adapters support project remember, recall and forget. The semantic engine starts on demand and verifies writes across restart. Neither adapter automatically captures conversations. Windows x64 runtime qualification does not establish Ubuntu compatibility.",
+      "next_step": "Open Integrations, select AgentMemory classic or AgentMemory semantic service, check its runtime, then review an action or approve its separate task access.",
+      "verified_on": "2026-10-13",
+      "source_commit": null,
+      "verification_status": "pinned-runtime-and-native-operations-qualified"
+    },
+    {
+      "id": "openviking",
+      "name": "OpenViking",
+      "aliases": [
+        "volcengine/OpenViking",
+        "context database"
+      ],
+      "publisher": "Volcengine / ByteDance",
+      "source_url": "https://github.com/volcengine/OpenViking",
+      "documentation_url": "https://docs.openviking.ai/en/getting-started/01-introduction",
+      "category": "context and document retrieval",
+      "license": "Core AGPL-3.0; CLI/examples use separately documented licenses",
+      "requirements": [
+        "Python >=3.10 and qualified native/service dependencies",
+        "Embedding and VLM configuration",
+        "Separate context service and explicit storage/authentication settings"
+      ],
+      "availability": "requires-setup",
+      "capability": "Organize documents, memories and skills in a virtual file system with layered context retrieval.",
+      "limitations": "No Prometheus service or adapter is installed. Version 0.5.0 and its native Windows imports passed isolated checks on this host. The full memory workflow remains unqualified: the prescribed local 4B model, embedding model and context budget exceed the currently verified memory headroom.",
+      "next_step": "Keep the verified candidate staged on the host until the full model workflow can pass within the available memory budget; no owner data has been migrated.",
+      "verified_on": "2026-10-13",
+      "source_commit": "20f9c11362ad16193b0daa4a414e1095061af427",
+      "verification_status": "native-imports-qualified-full-workflow-unqualified"
+    },
+    {
+      "id": "bolt-new",
+      "name": "Bolt.new",
+      "aliases": [
+        "bolt",
+        "stackblitz/bolt.new"
+      ],
+      "publisher": "StackBlitz",
+      "source_url": "https://github.com/stackblitz/bolt.new",
+      "documentation_url": "https://support.bolt.new/",
+      "category": "web application development",
+      "license": "MIT example/core repository; hosted Bolt.new and WebContainers have separate terms",
+      "requirements": [
+        "Compatible browser and hosted account for the commercial product",
+        "Open example: Node 20.15.1, pnpm 9.4.0, WebContainers and configured AI provider"
+      ],
+      "availability": "reference",
+      "capability": "Create and preview full-stack web applications in a browser-based development workspace.",
+      "limitations": "The open repository is an example/core codebase, not the complete hosted service. No offline Prometheus adapter or automatic deployment is provided.",
+      "next_step": "Use as an external development reference and review explicitly exported project source through the existing project workflow.",
+      "verified_on": "2026-10-13",
+      "source_commit": null,
+      "verification_status": "primary-sources-reviewed"
+    },
+    {
+      "id": "agent-reach",
+      "name": "Agent-Reach",
+      "aliases": [
+        "agent reach",
+        "Panniantong/Agent-Reach",
+        "public reach"
+      ],
+      "publisher": "Panniantong / Neo Reid",
+      "source_url": "https://github.com/Panniantong/Agent-Reach",
+      "documentation_url": "https://github.com/Panniantong/Agent-Reach/blob/main/docs/README_en.md",
+      "category": "public web and media sources",
+      "license": "MIT upstream project; Prometheus uses its own scoped adaptation",
+      "requirements": [
+        "Existing Public reach operations require explicit online selection or approval",
+        "Upstream package requires Python >=3.10 and channel-specific dependencies/accounts"
+      ],
+      "availability": "existing-public-adapter",
+      "capability": "Prometheus already provides scoped public web/search, RSS, GitHub and YouTube metadata/caption operations inspired by this channel architecture.",
+      "limitations": "The complete upstream package and its authenticated social channels are not installed. Captions may be absent or service-limited; each operation needs its own check.",
+      "next_step": "Use the existing Public reach options; qualify any new account-based channel through a dedicated reviewed adapter.",
+      "verified_on": "2026-10-13",
+      "source_commit": null,
+      "verification_status": "primary-sources-reviewed"
+    },
+    {
+      "id": "awesome-free-llm-apis",
+      "name": "Awesome Free LLM APIs",
+      "aliases": [
+        "Awesome-Free-LLM-APIs",
+        "mnfst/awesome-free-llm-apis"
+      ],
+      "publisher": "mnfst / Manifest community",
+      "source_url": "https://github.com/mnfst/awesome-free-llm-apis",
+      "documentation_url": "https://github.com/mnfst/awesome-free-llm-apis",
+      "category": "official provider discovery",
+      "license": "CC0-1.0 list; provider terms are separate",
+      "requirements": [
+        "Provider account and provider-issued credentials where required",
+        "Current quota, privacy and billing review before cloud configuration"
+      ],
+      "availability": "reference",
+      "capability": "Compare links to providers that advertise free API tiers.",
+      "limitations": "This is one matching list, not a uniquely identified resource or a credential supply. Free limits can change; cloud requests send data off the SSD. No provider is enabled by this catalogue.",
+      "next_step": "Choose a provider, verify its current official terms, and configure only an owner-issued key through a reviewed adapter.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "heretic",
+      "name": "Heretic",
+      "aliases": [
+        "p-e-w/heretic",
+        "model abliteration"
+      ],
+      "publisher": "Philipp Emanuel Weidmann / p-e-w",
+      "source_url": "https://github.com/p-e-w/heretic",
+      "documentation_url": "https://github.com/p-e-w/heretic",
+      "category": "model-weight research",
+      "license": "AGPL-3.0-or-later; input models retain their own terms",
+      "requirements": [
+        "Python >=3.10, PyTorch and compatible transformer model weights",
+        "Separate hardware/GPU-memory qualification and model-quality evaluation"
+      ],
+      "availability": "reference",
+      "capability": "Research tool that changes transformer weights using directional ablation and parameter optimization.",
+      "limitations": "Not installed or qualified on this CPU/16 GB workstation. It is not a voice latency fix, an application-code editor, or a direct rewrite of installed Ollama GGUF files. Reduced refusal is not proof of answer quality.",
+      "next_step": "Review model and tool licenses and qualify a separate research environment before considering any transformed model.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "gods-eye-view",
+      "name": "God's Eye View",
+      "aliases": [
+        "Guards-I-View",
+        "Guards I View",
+        "gods eye view",
+        "bilawalsidhu/gods-eye-view",
+        "WorldView"
+      ],
+      "publisher": "Bilawal Sidhu",
+      "source_url": "https://github.com/bilawalsidhu/gods-eye-view",
+      "documentation_url": "https://github.com/bilawalsidhu/gods-eye-view",
+      "category": "3D public geospatial visualization",
+      "license": "MIT source code; data and assets have separate licenses, some non-commercial",
+      "requirements": [
+        "Node.js 24.14+ in the 24.x line or 26.x and a capable browser",
+        "Separate application and provider/data terms; optional provider keys"
+      ],
+      "availability": "reference",
+      "capability": "Display public geospatial feeds on an interactive 3D globe.",
+      "limitations": "Likely match for the spoken name Guards-I-View; identity is not confirmed. This separate 3D application can add substantial browser/network load. It is not installed or a Prometheus interface component.",
+      "next_step": "Confirm the intended project, then evaluate a separate public-data-only demo and its performance before proposing an adapter.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "scientific-agent-skills",
+      "name": "Scientific Agent Skills",
+      "aliases": [
+        "Scientific agent skills",
+        "K-Dense-AI/scientific-agent-skills"
+      ],
+      "publisher": "K-Dense Inc. / K-Dense-AI",
+      "source_url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "documentation_url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "category": "scientific workflow references",
+      "license": "MIT repository; each SKILL.md declares its own license",
+      "requirements": [
+        "Agent Skills-compatible host and individually reviewed skills",
+        "Workflow-specific dependencies; repository tooling currently requires Python >=3.13 and uv, Windows setup documents WSL2"
+      ],
+      "availability": "reference",
+      "capability": "Provide task instructions and examples for scientific computation, data analysis and literature workflows.",
+      "limitations": "The collection is not a running scientific agent. Skill files do not install scientific dependencies, and Prometheus has not qualified these workflows.",
+      "next_step": "Select one relevant skill, inspect its license and dependencies, and validate a small public-data example in an isolated environment.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "diagram-design",
+      "name": "Diagram Design",
+      "aliases": [
+        "Diagram designs",
+        "cathrynlavery/diagram-design"
+      ],
+      "publisher": "Cathryn Lavery",
+      "source_url": "https://github.com/cathrynlavery/diagram-design",
+      "documentation_url": "https://github.com/cathrynlavery/diagram-design",
+      "category": "diagram design references",
+      "license": "MIT repository; bundled third-party material has separate notices",
+      "requirements": [
+        "Agent capable of producing reviewed HTML/SVG files",
+        "Browser for local viewing; optional export tooling has its own requirements"
+      ],
+      "availability": "reference",
+      "capability": "Design readable diagrams as self-contained HTML and SVG with reusable layout guidance.",
+      "limitations": "This catalogue supplies a reference, not an installed skill runner or automatic diagram renderer. Generated artifacts still need visual review.",
+      "next_step": "Adapt a small reviewed diagram pattern into the existing artifact workflow and check labels, contrast and exported output.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "anthropic-cybersecurity-skills",
+      "name": "Anthropic Cybersecurity Skills (community)",
+      "aliases": [
+        "Anthropic cybersecurity skills",
+        "mukul975/Anthropic-Cybersecurity-Skills"
+      ],
+      "publisher": "mukul975 community project",
+      "source_url": "https://github.com/mukul975/Anthropic-Cybersecurity-Skills",
+      "documentation_url": "https://github.com/mukul975/Anthropic-Cybersecurity-Skills",
+      "category": "defensive security workflow references",
+      "license": "Apache-2.0",
+      "requirements": [
+        "Agent Skills-compatible host",
+        "Skill-specific tools and an explicitly authorized target or isolated lab"
+      ],
+      "availability": "reference",
+      "capability": "Offer structured security workflow instructions, including defensive review and incident-response guidance.",
+      "limitations": "Independent community project, not affiliated with Anthropic PBC. No scanners, network attacks or security-tool execution are enabled by this entry.",
+      "next_step": "Review a defensive skill against the existing audit process and test it on a synthetic local fixture before any adapter work.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "awesome-harness-engineering",
+      "name": "Awesome Harness Engineering",
+      "aliases": [
+        "ai-boost/awesome-harness-engineering",
+        "awesome harness engineering"
+      ],
+      "publisher": "ai-boost community",
+      "source_url": "https://github.com/ai-boost/awesome-harness-engineering",
+      "documentation_url": "https://github.com/ai-boost/awesome-harness-engineering",
+      "category": "agent engineering references",
+      "license": "CC0-1.0 list; linked projects retain their own licenses",
+      "requirements": [
+        "No runtime for catalogue reading",
+        "Individual linked tools need separate review and qualification"
+      ],
+      "availability": "reference",
+      "capability": "Collect patterns and templates for agent tools, context, memory, permissions and evaluation.",
+      "limitations": "One matching curated list among similarly named projects. It is not an installable agent or a guarantee that its linked tools work with Prometheus.",
+      "next_step": "Use relevant evaluation and permission patterns to review existing Prometheus behavior before selecting additional dependencies.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    },
+    {
+      "id": "breach-directory",
+      "name": "BreachDirectory (unverified)",
+      "aliases": [
+        "breach directory",
+        "BreachDirectory.org"
+      ],
+      "publisher": "Publisher and current service terms not verified",
+      "source_url": "https://breachdirectory.org/",
+      "documentation_url": "https://haveibeenpwned.com/API/v3",
+      "category": "unverified breach-service request",
+      "license": "Not verified",
+      "requirements": [
+        "Verified current official documentation and terms",
+        "Owner-provided authorized identifier and a separately reviewed integration"
+      ],
+      "availability": "ambiguous/not-integrated",
+      "capability": "Records the requested service name for review; no breach lookup is available through this catalogue.",
+      "limitations": "Official site/API documentation could not be retrieved during review. Provider identity, returned data and operating terms remain unverified. Not enabled; no personal data was queried.",
+      "next_step": "Use the official Have I Been Pwned API documentation as an alternative for an explicitly authorized account check.",
+      "verified_on": "2026-10-13",
+      "verification_status": "unverified",
+      "source_commit": null
+    },
+    {
+      "id": "leaked-credentials-request",
+      "name": "GitHub-Leaked-API-Keys-and-Secrets.md (not integrated)",
+      "aliases": [
+        "GitHub-Leaked-API-Keys-and-Secrets.md",
+        "leaked API keys",
+        "leaked credentials",
+        "secrets.md"
+      ],
+      "publisher": "No exact verified publisher",
+      "source_url": null,
+      "documentation_url": null,
+      "category": "unverified credential-resource request",
+      "license": "Not verified",
+      "requirements": [
+        "Use an account owner's provider-issued credentials and approved secrets storage"
+      ],
+      "availability": "ambiguous/not-integrated",
+      "capability": "Records the requested filename and explains why it does not provide a usable provider integration.",
+      "limitations": "Leaked secrets are not provider-issued credentials for this user. No collection was retrieved, indexed, stored or enabled, and no data-source link is supplied.",
+      "next_step": "Use the official signup/key page for a selected provider; rotate an exposed key through its provider if it belongs to the owner.",
+      "verified_on": "2026-10-13",
+      "verification_status": "not-retrieved",
+      "source_commit": null
+    },
+    {
+      "id": "have-i-been-pwned",
+      "name": "Have I Been Pwned API",
+      "aliases": [
+        "HIBP",
+        "authorized breach check"
+      ],
+      "publisher": "Have I Been Pwned",
+      "source_url": "https://haveibeenpwned.com/API/v3",
+      "documentation_url": "https://haveibeenpwned.com/API/v3",
+      "category": "authorized account exposure checks",
+      "license": "Hosted API terms and subscription requirements; not a bundled software license",
+      "requirements": [
+        "Owner-provided identifier with authorization to check it",
+        "HIBP subscription API key for email/domain lookup; domain verification for domain search",
+        "Separate reviewed adapter and explicit online action"
+      ],
+      "availability": "requires-setup",
+      "capability": "Official API can report known exposure for an explicitly authorized account or verified domain.",
+      "limitations": "No Prometheus adapter is installed and no account was queried. Email/domain APIs require authorization; the separate Pwned Passwords API has different access requirements.",
+      "next_step": "First implement and validate against official synthetic test accounts; request an exact owner-authorized identifier before any real query.",
+      "verified_on": "2026-10-13",
+      "verification_status": "primary-sources-reviewed",
+      "source_commit": null
+    }
+  ]
+}

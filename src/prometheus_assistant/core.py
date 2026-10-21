@@ -5,7 +5,7 @@ and durable memory. It does not execute arbitrary commands or network requests i
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from typing import Callable, Iterable, Mapping, Sequence
 
 from .guardrails import Decision, ToolRequest, evaluate_tool_request
@@ -60,7 +60,15 @@ class CoreResult:
     reply: str | None
 
     def as_dict(self) -> dict:
-        return asdict(self)
+        def plain(value):
+            if is_dataclass(value):
+                return {field.name: plain(getattr(value, field.name)) for field in fields(value)}
+            if isinstance(value, Mapping):
+                return {key: plain(item) for key, item in value.items()}
+            if isinstance(value, (tuple, list)):
+                return [plain(item) for item in value]
+            return value
+        return plain(self)
 
 
 def _terms(text: str) -> set[str]:
@@ -155,10 +163,18 @@ def authorize_plan(plan: CorePlan, *, approved_request_ids: Iterable[int] = (),
 
 
 def execute_authorized(decisions, executors: Mapping[tuple[str, str], Callable[[ToolRequest], str]]):
+    from .tool_registry import RegisteredExecutors
+    if executors and not isinstance(executors, RegisteredExecutors):
+        raise ValueError('Executors must use explicit trusted ToolRegistry registrations; plain mappings are not authorized.')
     evidence = []
     actual = []
     authorization_ok = True
     for request, decision, reason in decisions:
+        if hasattr(executors, 'specs'):
+            from .application_policy import registered_decision
+            checked = registered_decision(executors.specs[(request.worker, request.tool)], request)
+            if checked.decision is Decision.DENY:
+                decision, reason = checked.decision, checked.reason
         if decision is not Decision.ALLOW:
             authorization_ok = False
             evidence.append(ToolEvidence(request.worker, request.tool, decision.value, reason))
@@ -198,6 +214,11 @@ def run_core(memory, prompt: str, *, online_enabled: bool = False,
              responder: Callable[[CorePlan, tuple[ToolEvidence, ...]], str] | None = None,
              trace: LocalTraceLog | None = None) -> CoreResult:
     """Run one bounded Core cycle. Durable knowledge is never inferred automatically."""
+    from .tool_registry import RegisteredExecutors
+    if executors and not isinstance(executors, RegisteredExecutors):
+        raise ValueError('Executors must use explicit trusted ToolRegistry registrations; plain mappings are not authorized.')
+    if hasattr(executors, 'validate'):
+        executors.validate(tool_requests)
     plan = build_plan(memory, prompt, online_enabled=online_enabled, tool_requests=tool_requests)
     if trace:
         trace.record(trace_id=plan.trace_id, kind="plan", actor="core", action=plan.route,

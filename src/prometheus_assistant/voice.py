@@ -21,8 +21,10 @@ def voice_paths():
 
 
 def voice_status():
+    from .speech_activity import detector_status
     executable, models = voice_paths()
     return {'transcriber_installed': executable.is_file(),
+            'speech_detector': detector_status(),
             'models': {name:(models/f'ggml-{name}.bin').is_file() for name in ('tiny.en','base.en')},
             'speech_recognition':'OpenAI Whisper via whisper.cpp, local English models',
             'microphone':'off; starts only when requested in voice-chat',
@@ -51,7 +53,10 @@ def _transcriber(model):
     return executable, weights, model, hardware
 
 
-def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
+def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None, on_diagnostics=None):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.transcribe')
+    transcription_started = time.monotonic()
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
     audio = Path(audio).resolve(strict=True)
@@ -101,6 +106,18 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
                     errors.seek(0,2)
                     errors.seek(max(0,errors.tell()-600))
                     raise ValueError('Local Whisper transcription failed: '+errors.read(600).decode('utf-8',errors='replace'))
+                numeric_timings = {}
+                if on_diagnostics:
+                    # Keep only recognized numeric timings; never expose stderr,
+                    # file names or transcript text in timing diagnostics.
+                    import re
+                    errors.seek(0, 2)
+                    errors.seek(max(0, errors.tell()-8192))
+                    timing_text = errors.read(8192).decode('utf-8', errors='replace')
+                    for name, value in re.findall(r'whisper_print_timings:\s*(load|encode|decode|total) time\s*=\s*([0-9]+(?:\.[0-9]+)?)\s*ms', timing_text):
+                        seconds = float(value)/1000
+                        if 0 <= seconds <= 3600:
+                            numeric_timings['asr_'+name+'_seconds'] = round(seconds, 4)
             finally:
                 if process.poll() is None:
                     process.terminate()
@@ -116,10 +133,15 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None):
         text=transcript.read_text(encoding='utf-8-sig').strip()
         if not text:raise ValueError('No transcription returned; nothing was submitted.')
         _cancelled(cancel_event)
+        if on_diagnostics:
+            on_diagnostics({**numeric_timings, 'transcription_seconds':
+                round(min(3600., max(0., time.monotonic()-transcription_started)), 4)})
         return {'text':text,'model':model,'local':True}
 
 
 def record_windows(destination, seconds=8, *, cancel_event=None):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.record')
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
     if os.name!='nt':raise ValueError('Microphone capture currently supports Windows.')
@@ -165,9 +187,98 @@ def capture_prompt(*, cancel_event=None, on_stage=None):
     return result['text']
 
 
+def capture_prompt_continuous(*, cancel_event=None, finish_event=None, on_stage=None,
+                              on_level=None, on_started=None, lease_alive=lambda: True, on_diagnostics=None):
+    """UI voice turn: local capture, silence/manual finish, then local transcription."""
+    from .application_policy import require_dispatch
+    from .continuous_capture import record_continuous
+    cancel_event = cancel_event if cancel_event is not None else threading.Event()
+    _cancelled(cancel_event)
+    # Refuse disabled transcription before opening a microphone or collecting audio.
+    require_dispatch('voice.record')
+    require_dispatch('voice.transcribe')
+    _transcriber('auto')
+    with tempfile.TemporaryDirectory(prefix='prometheus-capture-') as temp:
+        audio = Path(temp)/'capture.wav'
+        def started():
+            if on_started:
+                on_started()
+            if on_stage:
+                on_stage('Listening · pause when finished, or press Stop recording')
+        record_continuous(audio, cancel_event=cancel_event, finish_event=finish_event,
+                          lease_alive=lease_alive, on_level=on_level, on_started=started,
+                          **({'on_diagnostics': on_diagnostics} if on_diagnostics else {}))
+        # Device context has closed before status changes or Whisper is invoked.
+        if on_stage:
+            on_stage('Microphone off · transcribing locally')
+        result = transcribe(audio, cancel_event=cancel_event,
+                            **({'on_diagnostics': on_diagnostics} if on_diagnostics else {}))
+    _cancelled(cancel_event)
+    return result['text']
+
+
 def speak(text):
+    from .application_policy import require_dispatch
+    require_dispatch('voice.speak')
     if os.name!='nt':raise ValueError('Speech output currently supports Windows SAPI.')
     script="$ErrorActionPreference='Stop'; $voice=New-Object -ComObject SAPI.SpVoice; $utterance=[Console]::In.ReadToEnd(); [void]$voice.Speak($utterance)"
     result=subprocess.run(['powershell.exe','-NoProfile','-Command',script],input=text[:4000],text=True,
                           capture_output=True,timeout=180,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
     if result.returncode:raise ValueError('Windows speech output failed; the answer remains visible in text.')
+
+
+def synthesize_wav(text, *, cancelled=lambda: False):
+    """Render installed Windows speech to bounded PCM; this never plays or records audio."""
+    from .application_policy import require_dispatch
+    require_dispatch('voice.speak')
+    if not isinstance(text, str) or not text.strip() or len(text) > 4000 or '\x00' in text:
+        raise ValueError('Speech requires 1–4000 characters of answer text.')
+    if os.name != 'nt':
+        raise ValueError('Local speech output requires Windows. The answer remains in text.')
+    if cancelled():
+        raise ValueError('Voice preparation stopped.')
+    # Text travels through stdin; neither answer text nor a request path becomes code.
+    script = """$ErrorActionPreference='Stop'
+[Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)
+Add-Type -AssemblyName System.Speech
+$voice=New-Object System.Speech.Synthesis.SpeechSynthesizer
+try {
+ $format=New-Object System.Speech.AudioFormat.SpeechAudioFormatInfo(16000,[System.Speech.AudioFormat.AudioBitsPerSample]::Sixteen,[System.Speech.AudioFormat.AudioChannel]::Mono)
+ $voice.SetOutputToWaveFile($env:PROMETHEUS_SPEECH_OUTPUT,$format)
+ $voice.Speak([Console]::In.ReadToEnd())
+} finally { $voice.Dispose() }
+"""
+    with tempfile.TemporaryDirectory(prefix='prometheus-speech-') as temp:
+        destination = Path(temp)/'answer.wav'
+        env = {**os.environ, 'PROMETHEUS_SPEECH_OUTPUT': str(destination)}
+        with tempfile.TemporaryFile() as errors, tempfile.TemporaryFile() as input_stream:
+            input_stream.write(text.encode('utf-8'))
+            input_stream.seek(0)
+            process = subprocess.Popen(['powershell.exe', '-NoProfile', '-Command', script],
+                                       stdin=input_stream, stdout=subprocess.DEVNULL, stderr=errors,
+                                       text=True, encoding='utf-8', env=env,
+                                       creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            try:
+                deadline = time.monotonic()+45
+                while process.poll() is None:
+                    if cancelled():
+                        raise ValueError('Voice preparation stopped.')
+                    if time.monotonic() >= deadline or (destination.exists() and destination.stat().st_size > 9_600_256):
+                        raise ValueError('Local voice output exceeded its limit; use text or a shorter answer.')
+                    time.sleep(.05)
+                if process.returncode or cancelled() or not destination.is_file():
+                    raise ValueError('Local voice preparation failed; your answer remains in text.')
+                if destination.stat().st_size > 9_600_256:
+                    raise ValueError('Local voice output exceeded five minutes.')
+                with wave.open(str(destination), 'rb') as audio:
+                    if (audio.getnchannels(), audio.getsampwidth(), audio.getframerate()) != (1, 2, 16000) or not 0 < audio.getnframes() <= 4_800_000:
+                        raise ValueError('Invalid local voice output.')
+                return destination.read_bytes()
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=3)

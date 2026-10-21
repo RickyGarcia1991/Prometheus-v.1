@@ -78,6 +78,18 @@ def _metadata(root, resources, version):
 def _code_manifest(root):
     identity, title = 'code_manifest', 'Listed code file checksums'
     matched, total, seen, issues = 0, 0, set(), []
+    scope = 'Checks listed files only. Unlisted files and signature authenticity were not checked.'
+
+    def timed_out():
+        summary = f'Time budget reached after {matched} matching files.'
+        next_step = 'Retry when disk activity is lower; the remaining files are untested.'
+        if issues:
+            summary = f'{len(issues)} listed files are missing, changed or unreadable. ' + summary
+            next_step = 'Review the detected file failures. ' + next_step
+        return _result(identity, title, 'fail' if issues else 'blocked', summary, next_step,
+                       checked_files=matched, issue_count=len(issues), files_needing_review=issues[:20],
+                       scan_complete=False, scope=scope)
+
     try:
         rows = _json(root / 'SHA256-MANIFEST.json')
         if not isinstance(rows, list) or not 1 <= len(rows) <= MAX_CODE_FILES:
@@ -101,8 +113,7 @@ def _code_manifest(root):
         deadline = time.monotonic() + 30
         for row in rows:
             if time.monotonic() > deadline:
-                return _result(identity, title, 'blocked', f'Time budget reached after {matched} matching files.',
-                               'Retry when disk activity is lower; the remaining files are untested.', checked_files=matched)
+                return timed_out()
             try:
                 file = _plain_path(root / row['path'])
                 if not file.is_file() or file.stat().st_size != row['size_bytes']:
@@ -114,8 +125,7 @@ def _code_manifest(root):
                     while block := stream.read(1024 * 1024):
                         read_bytes += len(block)
                         if time.monotonic() > deadline:
-                            return _result(identity, title, 'blocked', f'Time budget reached after {matched} matching files.',
-                                           'Retry when disk activity is lower; the remaining files are untested.', checked_files=matched)
+                            return timed_out()
                         if read_bytes > row['size_bytes']:
                             raise ValueError('File changed while reading')
                         digest.update(block)
@@ -125,7 +135,6 @@ def _code_manifest(root):
                     matched += 1
             except (OSError, ValueError):
                 issues.append(row['path'])
-        scope = 'Checks listed files only. Unlisted files and signature authenticity were not checked.'
         if issues:
             return _result(identity, title, 'fail', f'{len(issues)} listed files are missing, changed or unreadable; {matched} match.',
                            'Review modified files against the intended release. Development edits can make a saved manifest stale.',
@@ -268,7 +277,7 @@ def run_health_check(memory_path, resources_root=None, *, release_root=None, run
                           installed_ram_gib=hardware.ram_gib, available_ram_gib=hardware.available_ram_gib,
                           scope='Estimate with no resident-model credit. Successful loading, speed and answer quality are untested.'))
     checks.append(_result('physical_acceptance', 'Microphone, speaker and portability acceptance', 'untested',
-                          'No recording, audio playback, eject/reconnect or second-computer test was performed.',
+                          'This passive check does not record audio, play a reply, eject/reconnect the SSD or test another computer. Any separate user-confirmed tests remain separate evidence.',
                           'Review a spoken transcript, listen to a reply, then explicitly test safe eject/reconnect and startup on another computer.'))
     checks.append(_result('model_acceptance', 'Model task acceptance', 'untested',
                           'No model inference or answer-quality test was run by this health check.',
