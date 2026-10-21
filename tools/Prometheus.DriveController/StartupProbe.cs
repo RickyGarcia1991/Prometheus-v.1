@@ -7,6 +7,14 @@ namespace Prometheus.DriveController;
 
 public sealed class StartupProbe
 {
+    public static bool VerificationMode => Environment.GetCommandLineArgs().Contains("--verify-layout");
+    public static bool EjectSuppressed => VerificationMode || DepartureMarkerPresent(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Prometheus", "eject-mode.json"));
+    internal static bool DepartureMarkerPresent(string path, Func<string,FileAttributes>? attributes = null) {
+        try { (attributes ?? File.GetAttributes)(path); return true; }
+        catch(FileNotFoundException) { return false; }
+        catch(DirectoryNotFoundException) { return false; }
+        catch(Exception ex) when(ex is IOException || ex is UnauthorizedAccessException || ex is System.Security.SecurityException) { return true; }
+    }
     DateTime _checkedAt = DateTime.MinValue;
     string? _checkedRoot;
     JsonElement? _readiness;
@@ -17,6 +25,7 @@ public sealed class StartupProbe
 
     public string? FindPrometheusDrive()
     {
+        if (VerificationMode) throw new InvalidOperationException("Live drive discovery is disabled during fixture verification.");
         foreach (var drive in DriveInfo.GetDrives())
             try { if (drive.IsReady && drive.VolumeLabel.Equals("Prometheus-2TB", StringComparison.OrdinalIgnoreCase)) return drive.RootDirectory.FullName; } catch { }
         return null;
@@ -24,6 +33,7 @@ public sealed class StartupProbe
 
     public (bool Healthy, string Message) DriveHealth(string root)
     {
+        if (VerificationMode) throw new InvalidOperationException("Live drive reads are disabled during fixture verification.");
         try {
             var drive = new DriveInfo(root);
             if (!drive.IsReady || drive.VolumeLabel != "Prometheus-2TB") return (false, "Prometheus volume is not readable.");
@@ -34,6 +44,7 @@ public sealed class StartupProbe
 
     public string? FindActiveRelease(string root)
     {
+        if (VerificationMode) throw new InvalidOperationException("Live drive reads are disabled during fixture verification.");
         try {
             using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "PROMETHEUS-SSD-STATUS.json")));
             var name = Path.GetFileName(doc.RootElement.GetProperty("code_release").GetString()!.TrimEnd('\\', '/'));
@@ -45,6 +56,7 @@ public sealed class StartupProbe
 
     public static async Task<JsonElement?> RunJsonAsync(string python, string directory, params string[] args)
     {
+        if (EjectSuppressed) return null;
         var info = new ProcessStartInfo(python) { UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardOutput = true, RedirectStandardError = true, WorkingDirectory = directory };
         info.ArgumentList.Add("-B");
@@ -62,6 +74,7 @@ public sealed class StartupProbe
 
     public async Task<JsonElement?> HardwareProfileAsync(string root, bool refresh = false)
     {
+        if (EjectSuppressed) return null;
         if (!refresh && _checkedRoot == root && DateTime.UtcNow - _profileAt < TimeSpan.FromSeconds(60)) return _profile;
         var release = FindActiveRelease(root);
         if (release == null) return null;
@@ -74,6 +87,7 @@ public sealed class StartupProbe
     public async Task<HashSet<string>> MeasureAsync(string? drive = null)
     {
         var done = new HashSet<string>();
+        if (EjectSuppressed) return done;
         var root = drive ?? FindPrometheusDrive();
         if (root == null || !DriveHealth(root).Healthy) return done;
         done.Add("Verify Prometheus SSD identity");
@@ -110,6 +124,7 @@ public sealed class StartupProbe
 
     public async Task<bool> WarmModelAsync()
     {
+        if (EjectSuppressed) return false;
         var root = FindPrometheusDrive();
         if (root == null) return false;
         var profile = await HardwareProfileAsync(root, true);
