@@ -6,6 +6,8 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, build_opener, HTTPSHandler, HTTPRedirectHandler
 
 from .research import ResearchResult, ResearchSource
+from .public_http import fetch_public_json,validate_public_url
+from .public_resources import safe_reference_url
 
 
 class NoResearchRedirects(HTTPRedirectHandler):
@@ -20,18 +22,13 @@ class HttpJsonResearchProvider:
         parsed = urlsplit(endpoint)
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
             raise ValueError("Research search endpoint must be a valid HTTPS URL without credentials or fragments.")
+        validate_public_url(endpoint,{parsed.hostname})
         self.endpoint = endpoint
         self.fetch = fetch or self._fetch
         self.timeout = timeout
 
     def _fetch(self, url: str) -> bytes:
-        request = Request(url, headers={"Accept": "application/json", "User-Agent": "Prometheus/0.2"})
-        # An HTTPS-only opener with no redirect handler prevents cross-origin redirects.
-        opener = build_opener(HTTPSHandler, NoResearchRedirects)
-        with opener.open(request, timeout=self.timeout) as response:
-            if response.geturl() != url:
-                raise RuntimeError("Research provider redirected unexpectedly.")
-            return response.read(2_000_001)
+        return fetch_public_json(url,{urlsplit(self.endpoint).hostname},timeout=self.timeout)
 
     def search(self, query: str) -> ResearchResult:
         query = query.strip()
@@ -58,7 +55,7 @@ class HttpJsonResearchProvider:
             if not all(isinstance(value, str) and value.strip() for value in (source_url, title, content)):
                 continue
             parsed = urlsplit(source_url)
-            if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            if not safe_reference_url(source_url):
                 continue
             excerpt = item.get("excerpt")
             if excerpt is not None and not isinstance(excerpt, str):

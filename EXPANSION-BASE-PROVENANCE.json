@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-10-09T06:32:47.195475+00:00",
+  "base_release": "Prometheus-v0.8.0-dev1-agents-20261009",
+  "base_git_commit": "8c17eab47935aa176658220c30f12aaea144449e",
+  "git_status": "Tested local patch; not a new Git commit",
+  "core_tests_passed": 340,
+  "source_collection_searches_passed": 24,
+  "math_medical_searches_passed": 6,
+  "additions": [
+    "38 registered offline book and reference archives",
+    "Pinned medical, mathematics, OpenAI and engineering search indexes",
+    "Bounded exact arithmetic and linear/quadratic solvers",
+    "Public GSM8K preparation and evaluation scaffold"
+  ],
+  "limitations": [
+    "No model-weight training performed",
+    "AVR compiler Windows loader failure is unresolved",
+    "Controller signing/eject, other-host detection, live orb UI and camera acceptance remain separate"
+  ],
+  "search_routing_fix": "Recognize ordinary topic terms; prefer broad reference archives for unclassified queries",
+  "routing_fix_utc": "2026-10-09T06:39:42.317566+00:00"
+}

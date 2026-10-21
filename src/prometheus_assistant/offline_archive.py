@@ -16,12 +16,17 @@ class ArchiveItem:
     sha256: str
     version: str
     license_note: str
+    reference_url: str | None = None
+    subjects: tuple[str, ...] = ()
 
 ARCHIVES=(
  ArchiveItem("wikipedia-en-all-nopic","wikipedia","Wikipedia English — full text, no images","en","nopic","wikipedia_en_all_nopic_2026-06.zim","https://download.kiwix.org/zim/wikipedia/wikipedia_en_all_nopic_2026-06.zim","441a56d9e05b2d98f8ae9acb7986a513ed47904d73852c92dc6b7d50baa122e5","2026-06","Wikimedia content licenses apply; see source content."),
  ArchiveItem("wiktionary-en-all-nopic","wiktionary","Wiktionary English — no images","en","nopic","wiktionary_en_all_nopic_2026-08.zim","https://download.kiwix.org/zim/wiktionary/wiktionary_en_all_nopic_2026-08.zim","5276f63a2e451518ec5b7c4452ca9a4f72fae48991da3fe7ebc47df74bae760a","2026-08","Wikimedia content licenses apply; see source content."),
  ArchiveItem("wikisource-en-all-nopic","wikisource","Wikisource English — no images","en","nopic","wikisource_en_all_nopic_2026-09.zim","https://download.kiwix.org/zim/wikisource/wikisource_en_all_nopic_2026-09.zim","6180cd199142862fb0d276861ccc5b48a40f7bae427b8427b2b6a573796e2f98","2026-09","Source texts have per-work rights/license status; preserve attribution."),
 )
+
+ARCHIVES += tuple(ArchiveItem(**{**row, 'subjects': tuple(row.get('subjects', ()))})
+                  for row in json.loads(Path(__file__).with_name('offline_collections.json').read_text(encoding='utf-8')))
 
 def archive_root(resource_root: str|Path)->Path:
     return Path(resource_root)/"Knowledge"/"Kiwix"

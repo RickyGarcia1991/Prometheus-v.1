@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "endpoint": "http://192.168.1.50:8123",
+  "allow_insecure_http": false,
+  "allow_remote_https": false,
+  "devices": {
+    "bedroom lights": {"entity_id": "light.replace_with_real_bedroom_entity", "actions": ["on", "off", "brightness", "color", "status"]},
+    "front porch lights": {"entity_id": "light.replace_with_real_porch_entity", "actions": ["on", "off", "status"]},
+    "living room speaker": {"entity_id": "media_player.replace_with_real_speaker_entity", "actions": ["play", "pause", "stop", "volume", "status"]}
+  }
+}

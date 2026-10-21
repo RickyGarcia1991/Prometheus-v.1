@@ -44,8 +44,14 @@ def test_configured_runtime_with_spaces(tmp_path):
     import sys
     # Use a path containing spaces through a directory junction to the real runtime.
     runtime = tmp_path / "portable python"
-    subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(runtime),
-                    str(Path(sys.executable).parent)], check=True, capture_output=True)
+    result = subprocess.run(["cmd.exe", "/d", "/c", "mklink", "/J", str(runtime),
+                             str(Path(sys.executable).parent)], capture_output=True)
+    if result.returncode:
+        # Restricted Windows hosts can deny junction creation. A real copy
+        # exercises the same launcher quoting without requiring that privilege.
+        import shutil
+        shutil.copytree(Path(sys.executable).parent, runtime,
+                        ignore=shutil.ignore_patterns('__pycache__'))
     env = dict(os.environ, PROMETHEUS_PYTHON=str(runtime / Path(sys.executable).name))
     result = subprocess.run(["cmd.exe", "/d", "/c", str(ROOT / "START_PROMETHEUS.cmd"), "--help"],
                             env=env, cwd=tmp_path, capture_output=True, text=True, timeout=15)

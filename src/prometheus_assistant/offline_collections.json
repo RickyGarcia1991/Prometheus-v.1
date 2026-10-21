@@ -1,0 +1,671 @@
+[
+  {
+    "id": "devdocs-en-bash",
+    "project": "devdocs",
+    "title": "Bash Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_bash_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_bash_2026-10.zim",
+    "sha256": "ea4afb04ddf90f31363829ef9fa2485405dc05bd1fc62b4626245fe70c24735d",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/bash",
+    "subjects": [
+      "coding",
+      "programming",
+      "bash"
+    ]
+  },
+  {
+    "id": "devdocs-en-typescript",
+    "project": "devdocs",
+    "title": "TypeScript Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_typescript_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_typescript_2026-10.zim",
+    "sha256": "127b42420f86d71c76444a2f0c7726265cfa376dfded159a455a5729779ec402",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/typescript",
+    "subjects": [
+      "coding",
+      "programming",
+      "typescript"
+    ]
+  },
+  {
+    "id": "devdocs-en-c",
+    "project": "devdocs",
+    "title": "C Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_c_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_c_2026-10.zim",
+    "sha256": "5b5c00cd83c0cbfc7e89220721afbbc15ce82210d62229ac3639a169a3352431",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/c",
+    "subjects": [
+      "coding",
+      "programming",
+      "c"
+    ]
+  },
+  {
+    "id": "devdocs-en-node",
+    "project": "devdocs",
+    "title": "Node.js Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_node_2026-08.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_node_2026-08.zim",
+    "sha256": "3060bd03ee436920b03b54de908de368a58e34d9e96534ebd85bda7120686921",
+    "version": "2026-08",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/node",
+    "subjects": [
+      "coding",
+      "programming",
+      "node"
+    ]
+  },
+  {
+    "id": "devdocs-en-git",
+    "project": "devdocs",
+    "title": "Git Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_git_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_git_2026-10.zim",
+    "sha256": "9f458df135af723d54279b0a55cffe8428b4f6453adeeef830635a01f63f5a6a",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/git",
+    "subjects": [
+      "coding",
+      "programming",
+      "git"
+    ]
+  },
+  {
+    "id": "devdocs-en-html",
+    "project": "devdocs",
+    "title": "HTML Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_html_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_html_2026-10.zim",
+    "sha256": "c0e1f40b73fd9831b48cda124e167c0847a779972afc406a27cd842edc909516",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/html",
+    "subjects": [
+      "coding",
+      "programming",
+      "html"
+    ]
+  },
+  {
+    "id": "devdocs-en-http",
+    "project": "devdocs",
+    "title": "HTTP Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_http_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_http_2026-10.zim",
+    "sha256": "738f2c9992d20b90757320a81d3cb9df67cc716f13f99074d3d181b1977d6551",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/http",
+    "subjects": [
+      "coding",
+      "programming",
+      "http"
+    ]
+  },
+  {
+    "id": "devdocs-en-cmake",
+    "project": "devdocs",
+    "title": "CMake Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_cmake_2026-08.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_cmake_2026-08.zim",
+    "sha256": "74244f1581bc8f9cbf96e03a8712c2efa839ba782057d86c995cc9e6f5421b49",
+    "version": "2026-08",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/cmake",
+    "subjects": [
+      "coding",
+      "programming",
+      "cmake"
+    ]
+  },
+  {
+    "id": "devdocs-en-postgresql",
+    "project": "devdocs",
+    "title": "PostgreSQL Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_postgresql_2026-08.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_postgresql_2026-08.zim",
+    "sha256": "e4e73e3af5cfbce450cb9dc163dc21e20d3b1b59b848139761236574f37c50ea",
+    "version": "2026-08",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/postgresql",
+    "subjects": [
+      "coding",
+      "programming",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "devdocs-en-javascript",
+    "project": "devdocs",
+    "title": "JavaScript Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_javascript_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_javascript_2026-10.zim",
+    "sha256": "a4a70cffdc68d2c70d40ff6bd55bf42c70d2e18c2445e5b481b22d6b9495f344",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/javascript",
+    "subjects": [
+      "coding",
+      "programming",
+      "javascript"
+    ]
+  },
+  {
+    "id": "devdocs-en-css",
+    "project": "devdocs",
+    "title": "CSS Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_css_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_css_2026-10.zim",
+    "sha256": "3f286000670d80d013d0385c580ef13b9307a2065bd3be0cf7d6cf792c00bab2",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/css",
+    "subjects": [
+      "coding",
+      "programming",
+      "css"
+    ]
+  },
+  {
+    "id": "devdocs-en-sqlite",
+    "project": "devdocs",
+    "title": "SQLite Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_sqlite_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_sqlite_2026-10.zim",
+    "sha256": "d83fda4ba97a83a68d8c369cf1b2f3185a1d2683e5acdeca79be365df690f538",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/sqlite",
+    "subjects": [
+      "coding",
+      "programming",
+      "sqlite"
+    ]
+  },
+  {
+    "id": "devdocs-en-python",
+    "project": "devdocs",
+    "title": "Python Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_python_2026-08.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_python_2026-08.zim",
+    "sha256": "289e5d3e0e8c3d3470bf183e5c913be3be0b61a730ce52a247c23812799baa51",
+    "version": "2026-08",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/python",
+    "subjects": [
+      "coding",
+      "programming",
+      "python"
+    ]
+  },
+  {
+    "id": "devdocs-en-pandas",
+    "project": "devdocs",
+    "title": "pandas Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_pandas_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_pandas_2026-10.zim",
+    "sha256": "3beb528b31e80add10d80daf8f94c5b72db5a13744e52dc3d1df18399686fbb6",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/pandas",
+    "subjects": [
+      "coding",
+      "programming",
+      "pandas"
+    ]
+  },
+  {
+    "id": "devdocs-en-numpy",
+    "project": "devdocs",
+    "title": "NumPy Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_numpy_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_numpy_2026-10.zim",
+    "sha256": "bf52870e6e93dfadb1339f7da91bbce9f1d013c6a9ee20955213457b20c865b0",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/numpy",
+    "subjects": [
+      "coding",
+      "programming",
+      "numpy"
+    ]
+  },
+  {
+    "id": "devdocs-en-cpp",
+    "project": "devdocs",
+    "title": "C++ Docs",
+    "language": "en",
+    "variant": "curated",
+    "filename": "devdocs_en_cpp_2026-10.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/devdocs/devdocs_en_cpp_2026-10.zim",
+    "sha256": "ee485e3551b3b8fcd7690126ddfd8d96a63b8c85b7bd81c6cb34a89a1a0a0179",
+    "version": "2026-10",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://devdocs.io/cpp",
+    "subjects": [
+      "coding",
+      "programming",
+      "cpp"
+    ]
+  },
+  {
+    "id": "libretexts-en-stats",
+    "project": "libretexts",
+    "title": "Statistics LibreTexts \u2014 Statistics courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_stats_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_stats_2026-01.zim",
+    "sha256": "39697d1ef60ee5ae24c5b54514e0e1b8f2255ed7d12ef273af825a7f2ed5c5e7",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://stats.libretexts.org",
+    "subjects": [
+      "statistics",
+      "probability",
+      "regression",
+      "variance",
+      "distribution"
+    ]
+  },
+  {
+    "id": "libretexts-en-k12",
+    "project": "libretexts",
+    "title": "K-12 Education LibreTexts \u2014 K-12 Education courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_k12_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_k12_2026-01.zim",
+    "sha256": "101d5b54aba8ff5c6c63c263b2da6ef1a60eda3d5a600a4182bf55c6bc853895",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://k12.libretexts.org",
+    "subjects": [
+      "school",
+      "education",
+      "arithmetic",
+      "elementary",
+      "learning"
+    ]
+  },
+  {
+    "id": "libretexts-en-workforce",
+    "project": "libretexts",
+    "title": "Workforce LibreTexts \u2014 Workforce courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_workforce_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_workforce_2026-01.zim",
+    "sha256": "95a383e7ea4733c7bd37c19ff53a42614943e3eec9b832e78908264b3b7e7c67",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://workforce.libretexts.org",
+    "subjects": [
+      "practical",
+      "workforce",
+      "trades",
+      "career"
+    ]
+  },
+  {
+    "id": "gutenberg-en-lcc-pa",
+    "project": "gutenberg",
+    "title": "Project Gutenberg Library \u2014 Greek and Latin language and literature",
+    "language": "en",
+    "variant": "curated",
+    "filename": "gutenberg_en_lcc-pa_2026-03.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-pa_2026-03.zim",
+    "sha256": "8854203d1bcebebc41ed5f0c3b06a88f97de96e1775c617b6dcbe6ef19c338ef",
+    "version": "2026-03",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://www.gutenberg.org/",
+    "subjects": [
+      "greek",
+      "latin",
+      "classics",
+      "ancient",
+      "history"
+    ]
+  },
+  {
+    "id": "libretexts-en-phys",
+    "project": "libretexts",
+    "title": "Physics LibreTexts \u2014 Physics courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_phys_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_phys_2026-01.zim",
+    "sha256": "ace498581e085093cc86383439342d9ff5a4604bd87f6b82448c019e1264830f",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://phys.libretexts.org",
+    "subjects": [
+      "physics",
+      "mechanics",
+      "electricity",
+      "magnetism",
+      "quantum",
+      "optics"
+    ]
+  },
+  {
+    "id": "gutenberg-en-lcc-l",
+    "project": "gutenberg",
+    "title": "Project Gutenberg Library \u2014 Education",
+    "language": "en",
+    "variant": "curated",
+    "filename": "gutenberg_en_lcc-l_2026-03.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-l_2026-03.zim",
+    "sha256": "689bbb2afc1977e855f48bf0557548f7aba46d6526ff596aba9571aaeeb40638",
+    "version": "2026-03",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://www.gutenberg.org/",
+    "subjects": [
+      "education",
+      "teaching",
+      "historical"
+    ]
+  },
+  {
+    "id": "libretexts-en-eng",
+    "project": "libretexts",
+    "title": "Engineering LibreTexts \u2014 Engineering courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_eng_2025-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_eng_2025-01.zim",
+    "sha256": "3d4b25d03082172f4793625163b366a7d21655a5f8868d0758a9c3649ce9d5c2",
+    "version": "2025-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://eng.libretexts.org",
+    "subjects": [
+      "engineering",
+      "electronics",
+      "circuit",
+      "materials",
+      "thermodynamics"
+    ]
+  },
+  {
+    "id": "gutenberg-en-lcc-pe",
+    "project": "gutenberg",
+    "title": "Project Gutenberg Library \u2014 English language",
+    "language": "en",
+    "variant": "curated",
+    "filename": "gutenberg_en_lcc-pe_2026-03.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-pe_2026-03.zim",
+    "sha256": "8aeb9ea369a80a4d333f2d14ee46d8cb94de8a62efba08deb3008c6c3a9e8f4f",
+    "version": "2026-03",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://www.gutenberg.org/",
+    "subjects": [
+      "english",
+      "grammar",
+      "language",
+      "historical"
+    ]
+  },
+  {
+    "id": "libretexts-en-math",
+    "project": "libretexts",
+    "title": "Mathematics LibreTexts \u2014 Mathematics courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_math_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_math_2026-01.zim",
+    "sha256": "7a07f9a4c7ad1ca51c300d573bc74df27a5556f7c4c6fe9407bc337ad9b7b4c8",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://math.libretexts.org",
+    "subjects": [
+      "math",
+      "mathematics",
+      "algebra",
+      "quadratic",
+      "equation",
+      "calculus",
+      "geometry",
+      "trigonometry"
+    ]
+  },
+  {
+    "id": "libretexts-en-biz",
+    "project": "libretexts",
+    "title": "Business LibreTexts \u2014 Business courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_biz_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_biz_2026-01.zim",
+    "sha256": "1c969499cb8b800999921270a48b69af6f615e5d7d748fe1e26cbe532eaedfa3",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://biz.libretexts.org",
+    "subjects": [
+      "business",
+      "economics",
+      "accounting",
+      "finance",
+      "management"
+    ]
+  },
+  {
+    "id": "libretexts-en-geo",
+    "project": "libretexts",
+    "title": "Geosciences LibreTexts \u2014 Geosciences courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_geo_2026-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_geo_2026-01.zim",
+    "sha256": "ffceff9d0d14dbd2e154c6734658257daf301bde18962ee0d87aa1dd0d5cfaef",
+    "version": "2026-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://geo.libretexts.org",
+    "subjects": [
+      "geology",
+      "geography",
+      "earth",
+      "climate",
+      "ocean"
+    ]
+  },
+  {
+    "id": "libretexts-en-med",
+    "project": "libretexts",
+    "title": "Medicine LibreTexts \u2014 Medicine courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_med_2025-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_med_2025-01.zim",
+    "sha256": "1def4fb3c76d347cfd2af9eabd8f8edefd24086cc17b476130f710214a5bbc1e",
+    "version": "2025-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://med.libretexts.org",
+    "subjects": [
+      "medicine",
+      "medical",
+      "nursing",
+      "anatomy",
+      "health"
+    ]
+  },
+  {
+    "id": "gutenberg-en-lcc-c",
+    "project": "gutenberg",
+    "title": "Project Gutenberg Library \u2014 Auxiliary sciences of history",
+    "language": "en",
+    "variant": "curated",
+    "filename": "gutenberg_en_lcc-c_2025-12.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-c_2025-12.zim",
+    "sha256": "ff01bc12a76c5b98733802f1f0bf17abae0694de0297cde36797846ae10483bd",
+    "version": "2025-12",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://www.gutenberg.org/",
+    "subjects": [
+      "history",
+      "genealogy",
+      "chronology",
+      "archaeology",
+      "historical"
+    ]
+  },
+  {
+    "id": "gutenberg-en-lcc-r",
+    "project": "gutenberg",
+    "title": "Project Gutenberg Library \u2014 Medicine",
+    "language": "en",
+    "variant": "curated",
+    "filename": "gutenberg_en_lcc-r_2026-03.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/gutenberg/gutenberg_en_lcc-r_2026-03.zim",
+    "sha256": "10c4d100157628b15613cc2db47b42ca6bc16c316da97ec1280ac98c8410a400",
+    "version": "2026-03",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://www.gutenberg.org/",
+    "subjects": [
+      "historical",
+      "medicine",
+      "medical",
+      "obsolete"
+    ]
+  },
+  {
+    "id": "libretexts-en-socialsci",
+    "project": "libretexts",
+    "title": "Social Sciences LibreTexts \u2014 Social Sciences courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_socialsci_2025-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_socialsci_2025-01.zim",
+    "sha256": "ab5473ec0d662d14394a681d4c0a725fe768ff14cdefc9d99cd71d0a968e6151",
+    "version": "2025-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://socialsci.libretexts.org",
+    "subjects": [
+      "psychology",
+      "sociology",
+      "politics",
+      "anthropology",
+      "society"
+    ]
+  },
+  {
+    "id": "libretexts-en-chem",
+    "project": "libretexts",
+    "title": "Chemistry LibreTexts \u2014 Chemistry courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_chem_2025-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_chem_2025-01.zim",
+    "sha256": "83ba2fbfe36d72abe919661de5548103bb6674749bc26531cd61f83d8a825764",
+    "version": "2025-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://chem.libretexts.org",
+    "subjects": [
+      "chemistry",
+      "chemical",
+      "molecule",
+      "reaction",
+      "element"
+    ]
+  },
+  {
+    "id": "libretexts-en-bio",
+    "project": "libretexts",
+    "title": "Biology LibreTexts \u2014 Biology courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_bio_2025-01.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_bio_2025-01.zim",
+    "sha256": "aa914c19a690429b5d41ccbc91ba8cf7bc2980211b998c8a4a82ef3a21375321",
+    "version": "2025-01",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://bio.libretexts.org",
+    "subjects": [
+      "biology",
+      "genetics",
+      "cell",
+      "evolution",
+      "ecology"
+    ]
+  },
+  {
+    "id": "libretexts-en-human",
+    "project": "libretexts",
+    "title": "Humanities LibreTexts \u2014 Humanities courses and bookshelves from LibreTexts.org",
+    "language": "en",
+    "variant": "curated",
+    "filename": "libretexts.org_en_human_2026-07.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/libretexts/libretexts.org_en_human_2026-07.zim",
+    "sha256": "c172268bbcc37b0d3dd21e462c6f5e308edb7ad5d76e5c11fa2bbd1b11027cd8",
+    "version": "2026-07",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": "https://human.libretexts.org",
+    "subjects": [
+      "humanities",
+      "history",
+      "philosophy",
+      "art",
+      "literature",
+      "language"
+    ]
+  },
+  {
+    "id": "wikibooks-en-all",
+    "project": "wikibooks",
+    "title": "Wikibooks",
+    "language": "en",
+    "variant": "curated",
+    "filename": "wikibooks_en_all_maxi_2026-04.zim",
+    "source_url": "https://lb.download.kiwix.org/zim/wikibooks/wikibooks_en_all_maxi_2026-04.zim",
+    "sha256": "c2ded9afe4647c2b05aceb9d30260100369cbba22f3d00e467a634546da3f610",
+    "version": "2026-04",
+    "license_note": "Preserve each source page and book attribution and license; historical content is not current practical guidance.",
+    "reference_url": null,
+    "subjects": [
+      "textbook",
+      "math",
+      "science",
+      "history",
+      "computing",
+      "education"
+    ]
+  }
+]

@@ -12,8 +12,8 @@ public static class ProgressPlan
     [
         new("Request graceful chat shutdown", 10), new("Confirm zero active chat clients", 15),
         new("Verify SQLite integrity", 20), new("Stop Ollama and model workers", 15),
-        new("Confirm no Prometheus process references SSD", 15), new("Check PnP removal blockers", 15),
-        new("Check UASP removal state", 10)
+        new("Confirm no Prometheus process references SSD", 15), new("Close drive-related applications", 15),
+        new("Windows confirmed removal", 10)
     ];
     public static int Percent(IEnumerable<ProgressStep> steps) { var s=steps.ToArray(); var total=s.Sum(x=>x.Weight); return total==0?0:(int)Math.Round(100.0*s.Where(x=>x.Complete).Sum(x=>x.Weight)/total); }
 }

@@ -25,3 +25,6 @@ tools/Prometheus.DriveController/obj/
 
 tools/Prometheus.PRK.Controller/bin/
 tools/Prometheus.PRK.Controller/obj/
+
+**/SmartHome/config.json
+**/SmartHome/*.before-pairing-*

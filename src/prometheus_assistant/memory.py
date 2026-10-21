@@ -46,6 +46,14 @@ class MemoryStore:
                     created_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS turns_by_session ON turns(session_id, id);
+                CREATE TABLE IF NOT EXISTS model_events (
+                    id INTEGER PRIMARY KEY,
+                    session_id TEXT NOT NULL REFERENCES sessions(session_id),
+                    model TEXT NOT NULL,
+                    context_tokens INTEGER NOT NULL,
+                    cpu_threads INTEGER,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS knowledge (
                     id INTEGER PRIMARY KEY,
                     kind TEXT NOT NULL CHECK (kind IN ('preference', 'decision', 'fact', 'instruction')),
@@ -99,6 +107,14 @@ class MemoryStore:
             self.db.executemany(
                 "INSERT INTO turns (session_id, role, content, created_at) VALUES (?, ?, ?, ?)",
                 [(session_id, "user", prompt, now), (session_id, "assistant", reply, now)],
+            )
+
+    def record_model_use(self, session_id, model, context_tokens, cpu_threads):
+        self.session(session_id)
+        with self.db:
+            self.db.execute(
+                "INSERT INTO model_events (session_id, model, context_tokens, cpu_threads, created_at) VALUES (?, ?, ?, ?, ?)",
+                (session_id, model, context_tokens, cpu_threads, utc_now()),
             )
 
     def history(self, session_id, limit=None):
