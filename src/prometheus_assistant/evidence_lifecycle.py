@@ -21,7 +21,7 @@ _REASONS = {
     'pending': {'execution_pending'},
     'unconfirmed': {'outcome_unconfirmed', 'restoration_pending', 'restoration_unconfirmed'},
     'recorded': {'native_result_recorded'},
-    'restored': {'project_restored'},
+    'restored': {'project_restored', 'application_restored'},
     'conflicting': {'native_identity_conflict'},
 }
 
@@ -36,12 +36,14 @@ def validate_projection(value):
     state, source, reason = value['state'], value['source'], value['reason']
     if (type(state) is not str or state not in _REASONS or type(reason) is not str
             or reason not in _REASONS[state] or type(source) is not str
-            or source not in {'none', 'project', 'worker', 'capability'}):
+            or source not in {'none', 'project', 'worker', 'capability', 'application'}):
         raise ValueError('Invalid evidence lifecycle state.')
     if (state == 'not_applicable' and source != 'none'
             or source == 'none' and state not in {'not_applicable', 'missing'}
-            or reason in {'restoration_pending', 'restoration_unconfirmed', 'project_restored'} and source != 'project'
-            or state == 'conflicting' and source not in {'project', 'worker'}):
+            or reason in {'restoration_pending', 'project_restored'} and source != 'project'
+            or reason == 'restoration_unconfirmed' and source not in {'project', 'application'}
+            or reason == 'application_restored' and source != 'application'
+            or state == 'conflicting' and source not in {'project', 'worker', 'application'}):
         raise ValueError('Evidence lifecycle source differs.')
     count, related, reference = value['linked_decisions'], value['related_decisions'], value['reference']
     if (type(count) is not int or not 0 <= count <= MAX_DECISIONS
@@ -53,9 +55,11 @@ def validate_projection(value):
             raise ValueError('Native identity is missing.')
     else:
         _identity(reference, 64)
-        if count < 1 or source not in {'project', 'worker'} or state in {'missing', 'not_applicable'}:
+        if count < 1 or source not in {'project', 'worker', 'application'} or state in {'missing', 'not_applicable'}:
             raise ValueError('Unexpected native identity.')
-    if state == 'conflicting' and count < 2:
+    if source == 'application' and count not in {0, 1}:
+        raise ValueError('Application attempt cannot be adopted by another decision.')
+    if state == 'conflicting' and source != 'application' and count < 2:
         raise ValueError('Conflict requires distinct linked decisions.')
     ids = set()
     for row in related:
@@ -132,6 +136,10 @@ def _base(row, events, source):
         return 'not_applicable', 'none', 'decision_not_approved'
     if not events:
         return 'missing', source, 'no_recorded_start'
+    if source == 'application':
+        from .application_outcomes import summary
+        state, reason = summary(events)
+        return state, source, reason
     last = events[-1]
     if source == 'project':
         if last['phase'] == 'undo_result' and last['status'] == 'restored':
@@ -147,7 +155,7 @@ def _base(row, events, source):
     return 'recorded', source, 'native_result_recorded'
 
 
-def for_owner(owner, *, decisions, project_events, capability_events):
+def for_owner(owner, *, decisions, project_events, capability_events, application_events=None):
     """Project complete saved receipts/events, before any history-page truncation."""
     _identity(owner, 64)
     if type(decisions) is not list or len(decisions) > MAX_DECISIONS:
@@ -164,7 +172,28 @@ def for_owner(owner, *, decisions, project_events, capability_events):
         identifiers.add(row['id']); owned[(row['id'], row['fingerprint'])] = row
     projects = _events(owner, project_events, project=True)
     capabilities = _events(owner, capability_events, project=False)
-    if projects.keys() & capabilities.keys():
+    from .application_outcomes import MAX_EVENTS as APPLICATION_MAX, validate as application_validate, sequence as application_sequence
+    applications, jobs, app_ids = {}, {}, set()
+    if application_events is None:application_events = []
+    if type(application_events) is not list or len(application_events) > APPLICATION_MAX:
+        raise ValueError('Invalid application evidence collection.')
+    for item in application_events:
+        if type(item) not in (list, tuple) or len(item) != 4:raise ValueError('Invalid application evidence link.')
+        actual_owner, ident, fingerprint, event = item
+        if actual_owner != owner:continue
+        decision = ident, fingerprint
+        row = owned.get(decision)
+        if row is None or row['kind'] != 'self_improve' or row['decision'] != 'approve':
+            raise ValueError('Application evidence lacks an exact approved receipt.')
+        application_validate(event)
+        if event['event_id'] in app_ids:raise ValueError('Repeated application evidence event.')
+        app_ids.add(event['event_id'])
+        binding = (*decision, event['candidate_fingerprint'])
+        if event['job_id'] in jobs and jobs[event['job_id']] != binding:raise ValueError('Ambiguous application evidence binding.')
+        jobs[event['job_id']] = binding
+        prior = applications.setdefault(decision, [])
+        application_sequence(prior, event); prior.append(event)
+    if projects.keys() & capabilities.keys() or applications.keys() & (projects.keys() | capabilities.keys()):
         raise ValueError('A decision cannot mix native evidence namespaces.')
     for project, streams in ((True, projects), (False, capabilities)):
         for decision, events in streams.items():
@@ -181,11 +210,15 @@ def for_owner(owner, *, decisions, project_events, capability_events):
     result = {}
     for decision, row in owned.items():
         source = ('project' if row['kind'] in PROJECT_KINDS else 'worker' if row['kind'] in WORKER_KINDS
-                  else 'capability' if row['kind'] in CAPABILITY_KINDS else 'none')
-        events = projects.get(decision, capabilities.get(decision, []))
+                  else 'capability' if row['kind'] in CAPABILITY_KINDS else 'application' if row['kind']=='self_improve' else 'none')
+        events = projects.get(decision, capabilities.get(decision, applications.get(decision, [])))
         state, source, reason = _base(row, events, source)
         group = groups.get(memberships.get(decision))
         related, count, reference = [], 0, None
+        if source == 'application' and events:
+            count = 1
+            identity = ['owner-application-evidence-v1', owner, events[0]['job_id'], events[0]['candidate_fingerprint']]
+            reference = hashlib.sha256(json.dumps(identity, separators=(',', ':')).encode()).hexdigest()
         if group is not None:
             members = group['ordered']; count = len(members); reference = group['reference']
             related = [dict(id=i, fingerprint=f) for i, f in members[:MAX_RELATED + 1] if (i, f) != decision][:MAX_RELATED]

@@ -1,6 +1,29 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {test}=require('node:test');const {setup}=require('./test-workspace.cjs');
+test('interpretations show stale and competing decisions without hiding failed evidence or adding actions',async()=>{
+ const original=investigatedRow(), entry={approval_id:'8'.repeat(32),fingerprint:'8'.repeat(64),target_id:original.id,target_fingerprint:original.fingerprint,source:'worker',reference:'9'.repeat(64),snapshot_sha256:'7'.repeat(64),fact_sha256:'6'.repeat(64),reason:'<script>literal owner reason</script>',decision:'approve',recording_state:'recorded',currency:'stale',interpretation_conflict:true};
+ const projection={schema_version:1,read_only:true,freshness:'historical',total:1,truncated:false,items:[entry]};
+ const f=await revisionHistory([{...original,evidence_resolutions:projection}]);
+ assert.match(flatten(f.elements.decisionHistoryList),/Stale: collected evidence changed/);assert.match(flatten(f.elements.decisionHistoryList),/Conflicting approved interpretations/);assert.match(flatten(f.elements.decisionHistoryList),/checks found failures/i);assert.match(flatten(f.elements.decisionHistoryList),/literal owner reason/);noAuthority(f);
+ for(const bad of [{...projection,items:[{...entry,target_id:'0'.repeat(32)}]},{...projection,items:[{...entry,decision:'success'}]},{...projection,items:[{...entry,command:'run'}]},null]){
+  const g=await revisionHistory([{...original,evidence_resolutions:bad}]);assert.match(flatten(g.elements.decisionHistoryList),/interpretation history unavailable/);assert.match(flatten(g.elements.decisionHistoryList),/checks found failures/i);noAuthority(g);
+ }
+ const unrecorded=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'unrecorded',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(unrecorded.elements.decisionHistoryList),/completion unconfirmed/);noAuthority(unrecorded);
+ const consumed=await revisionHistory([{...original,evidence_resolutions:{...projection,items:[{...entry,decision:'approve',recording_state:'unrecorded',interpretation_conflict:false}]}}]);assert.match(flatten(consumed.elements.decisionHistoryList),/completion unconfirmed \(owner decision: approve\)/);assert.doesNotMatch(flatten(consumed.elements.decisionHistoryList),/Approved interpretation/);noAuthority(consumed);
+});
+
+test('saved interpretation reasons use the same Unicode code point bound as owner review',async()=>{
+ const original=investigatedRow();
+ for(const [reason,valid] of [['x'.repeat(2000),true],['\u{1F600}'.repeat(1001),true],['\u{1F600}'.repeat(2000),true],['\u{1F600}'.repeat(2001),false]]){
+  const entry={approval_id:'8'.repeat(32),fingerprint:'8'.repeat(64),target_id:original.id,target_fingerprint:original.fingerprint,source:'worker',reference:'9'.repeat(64),snapshot_sha256:'7'.repeat(64),fact_sha256:'6'.repeat(64),reason,decision:'approve',recording_state:'recorded',currency:'stale',interpretation_conflict:false};
+  const f=await revisionHistory([{...original,evidence_resolutions:{schema_version:1,read_only:true,freshness:'historical',total:1,truncated:false,items:[entry]}}]);
+  const shown=flatten(f.elements.decisionHistoryList);
+  if(valid){assert(shown.includes(reason));assert.doesNotMatch(shown,/interpretation history unavailable/);}
+  else assert.match(shown,/interpretation history unavailable/);
+  assert.match(shown,/checks found failures/i);noAuthority(f);
+ }
+});
 const script=fs.readFileSync(path.join(__dirname,'../../src/prometheus_assistant/ui_assets/decision-history.js'),'utf8');
 const settle=async()=>{for(let i=0;i<10;i++)await Promise.resolve();};
 const row={id:'a',fingerprint:'b',session:'c',kind:'project_edit',decision:'request_changes',feedback:'<img onerror=bad>',decided_at:1};
@@ -10,6 +33,15 @@ test('auth or hidden invalidates pending response and clears retained rows',asyn
 test('malformed failed and oversized responses show unavailable not empty success',async()=>{for(const value of [new Error('network'),{}, {schema_version:1,read_only:true,items:Array(51).fill(row)},{schema_version:1,read_only:true,items:[{...row,decision:'execute'}]}]){const f=fixture();f.set(value);f.busy();f.open();await settle();assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);}});
 test('unknown kind uses generic label; receipts cannot navigate or authorize',async()=>{const f=fixture();f.set({schema_version:1,read_only:true,items:[{...row,kind:'<private-kind>'}]});f.busy();f.open();await settle();assert.match(f.elements.decisionHistoryList.children[0].children[0].textContent,/Owner decision/);assert.equal(f.submitted.length,0);});
 const flatten=el=>[el.textContent,...el.children.map(flatten)].join(' ');
+test('follow-up history is rendered at its exact decision while original failure remains visible',async()=>{
+ const original=investigatedRow(),projection={schema_version:1,read_only:true,freshness:'historical',items:[],total:0,truncated:false};
+ const f=fixture(),seen=[];
+ f.context.window.PrometheusEvidenceFollowups={renderHistory:(parent,value)=>{seen.push(value);const p=f.context.document.createElement('p');p.textContent='Supplemental generated follow-up';parent.append(p);}};
+ f.set({schema_version:1,read_only:true,items:[{...original,evidence_followups:projection}]});f.busy();f.open();await settle();
+ assert.equal(seen.length,1);assert.equal(seen[0].id,original.id);assert.equal(seen[0].fingerprint,original.fingerprint);assert.equal(seen[0].evidence_followups,projection);
+ assert.match(flatten(f.elements.decisionHistoryList),/Supplemental generated follow-up/);assert.match(flatten(f.elements.decisionHistoryList),/checks found failures/i);noAuthority(f);
+ const g=await revisionHistory([{...original,evidence_followups:projection}]);assert.match(flatten(g.elements.decisionHistoryList),/Follow-up history unavailable/);assert.match(flatten(g.elements.decisionHistoryList),/checks found failures/i);noAuthority(g);
+});
 const outcome=(phase,status,extra={})=>({event_id:(phase==='started'?'1':'2').repeat(32),phase,status,observed_at:2,project_hash:'a'.repeat(64),edit_id:phase==='started'||status==='unknown'?'':'e'.repeat(32),checks:null,rollback:'unknown',evidence_sha256:phase==='result'&&status!=='unknown'||phase==='undo_result'?'b'.repeat(64):null,...extra});
 async function history(events,decision='approve'){const f=fixture();f.set({schema_version:1,read_only:true,items:[{...row,decision,outcomes:events}]});f.busy();f.open();await settle();return f;}
 test('failed native checks remain failed beside restored rollback',async()=>{const f=await history([outcome('started','started'),outcome('result','failed',{rollback:'restored',checks:{planned:1,executed:1,passed:0,failed:1,cancelled:0,timed_out:0}})]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/Execution failed/);assert.match(text,/Rollback: original content restored/);assert.match(text,/failed 1/);assert.equal(f.submitted.length,0);});
@@ -184,4 +216,79 @@ test('project provenance refers to the original result and retains its independe
 test('late lifecycle conflicts do not reappear after authentication is lost',async()=>{
  const f=fixture();let resolve;f.set(()=>new Promise(r=>resolve=r));f.busy();f.open();await settle();f.emit('prometheus-auth-lost');
  resolve({schema_version:1,read_only:true,items:[{...projectPass,evidence_lifecycle:lifecycle({state:'conflicting',reason:'native_identity_conflict',linked_decisions:2,related_decisions:sharedGroup.related_decisions})}]});await settle();assert.equal(f.elements.decisionHistoryList.children.length,0);assert.match(f.elements.decisionHistoryStatus.textContent,/Unlock/);assert.equal(f.submitted.length,0);
+});
+
+const applicationEvent=(status,index=0,extra={})=>({event_id:(index+1).toString(16).padStart(32,'0'),phase:status==='started'?'started':'observed',observed_at:index+1,status,job_id:'d'.repeat(32),candidate_fingerprint:'e'.repeat(64),evidence_sha256:['started','unconfirmed'].includes(status)?null:'c'.repeat(64),...extra});
+const applicationRow=(states,reason='native_result_recorded',state='recorded')=>({...row,id:'a'.repeat(32),fingerprint:'b'.repeat(64),kind:'self_improve',decision:'approve',feedback:'',application_outcomes:['started',...states].map((s,i)=>applicationEvent(s,i)),evidence_lifecycle:lifecycle({source:'application',reason,state})});
+test('application activation history preserves native failures and rollback without manual Undo or current health claims',async()=>{
+ const cases=[
+  [applicationRow(['active']),/Application activation was recorded; this does not confirm the currently selected release/],
+  [applicationRow(['failed']),/Application activation failed/],
+  [applicationRow(['failed','rolled_back'],'application_restored','restored'),/Application activation failed.*Previous application release was restored/],
+  [applicationRow(['recovery_required'],'restoration_unconfirmed','unconfirmed'),/Application recovery requires attention/],
+  [applicationRow(['promotion_pending'],'execution_pending','pending'),/Exact application change queued; activation is not confirmed/],
+  [applicationRow([],'outcome_unconfirmed','unconfirmed'),/dispatch is unconfirmed/],
+  [applicationRow(['active','failed'],'native_identity_conflict','conflicting'),/No result is selected as authoritative.*Application activation was recorded.*Application activation failed/]
+ ];
+ for(const [item,expected] of cases){const f=await revisionHistory([item]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,expected);assert.doesNotMatch(text,/lifecycle unknown|Manual restoration|Native checks passed/);assert.match(text,/does not select a release, confirm current health, restore approval or repeat activation/);noAuthority(f);}
+});
+test('application lifecycle handles late pending and uncertain refresh without erasing historical active result',async()=>{
+ for(const tail of ['promotion_pending','unconfirmed']){const f=await revisionHistory([applicationRow(['active',tail])]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/A native result is recorded/);assert.match(text,/Application activation was recorded/);assert.doesNotMatch(text,/lifecycle unknown/);noAuthority(f);}
+});
+test('malformed application observation identity, phase and native proof fail closed',async()=>{
+ const initial=applicationEvent('started'),active=applicationEvent('active',1);
+ const bad=[null,{},[active],[initial,{...active,job_id:'f'.repeat(32)}],[initial,{...active,candidate_fingerprint:'f'.repeat(64)}],[initial,{...active,status:'future'}],[initial,{...active,evidence_sha256:null}],[initial,{...active,error:'PRIVATE'}],[initial,{...active,phase:'started'}],[initial,{...active,event_id:initial.event_id}],[initial,active,applicationEvent('active',2)]];
+ for(const events of bad){const f=await revisionHistory([{...applicationRow(['active']),application_outcomes:events}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);assert.equal(f.elements.decisionHistoryList.children.length,0);noAuthority(f);}
+ for(const patch of [{kind:'runtime_config'},{decision:'reject'},{outcomes:[outcome('started','started')]}]){const f=await revisionHistory([{...applicationRow(['active']),...patch}]);assert.match(f.elements.decisionHistoryStatus.textContent,/unavailable/);noAuthority(f);}
+});
+test('false application lifecycle is unknown while original native observations remain',async()=>{
+ const base=applicationRow(['failed']);
+ for(const patch of [{reason:'application_restored',state:'restored'},{linked_decisions:2,related_decisions:[{id:'f'.repeat(32),fingerprint:'f'.repeat(64)}]},{reason:'native_identity_conflict',state:'conflicting'},{source:'worker'}]){const f=await revisionHistory([{...base,evidence_lifecycle:{...base.evidence_lifecycle,...patch}}]);assert.match(flatten(f.elements.decisionHistoryList),/Evidence lifecycle unknown.*Application activation failed/);noAuthority(f);}
+ const f=await revisionHistory([{...applicationRow([]),application_outcomes:[],evidence_lifecycle:lifecycle({state:'missing',source:'application',reason:'no_recorded_start',reference:null,linked_decisions:0})}]);assert.match(flatten(f.elements.decisionHistoryList),/No execution start is recorded/);noAuthority(f);
+});
+
+function investigation(source='worker',overrides={}){
+ const names={project:['passed','failed'],worker:['checks_passed','checks_failed'],application:['active','failed']};
+ const variants=names[source].map((status,i)=>({fact_sha256:String(i+1).repeat(64),status,checks:source==='application'?null:{planned:1,executed:1,passed:i===0?1:0,failed:i===0?0:1,cancelled:0,timed_out:0},rollback:source==='project'?'not_attempted':null,evidence_sha256:String(i+3).repeat(64),witnesses:[{id:String(i+5).repeat(32),fingerprint:String(i+6).repeat(64),event_id:String(i+7).repeat(32)}],observation_count:1,witnesses_truncated:false}));
+ return {schema_version:1,state:'unresolved',source,reference:'9'.repeat(64),snapshot_sha256:'8'.repeat(64),snapshot_scope:'collected_history_inputs',freshness:'historical',read_only:true,requires_new_review:true,suggested_action:{project:'review_project_check',worker:'review_worker_check',application:'inspect_application_recovery'}[source],variant_count:2,observation_count:2,variants,variants_truncated:false,...overrides};
+}
+function investigatedRow(source='worker'){
+ const projection=lifecycle({state:'conflicting',reason:'native_identity_conflict',source,linked_decisions:2,related_decisions:sharedGroup.related_decisions});
+ const base=source==='worker'?{...sharedRow,shared_evidence:[],evidence_lifecycle:projection}:source==='project'?{...projectPass,evidence_lifecycle:projection}:applicationRow(['active','failed'],'native_identity_conflict','conflicting');
+ const detail=investigation(source);
+ if(source==='application')for(const variant of detail.variants){const event=base.application_outcomes.find(e=>e.status===variant.status);variant.evidence_sha256=event.evidence_sha256;variant.witnesses=[{id:base.id,fingerprint:base.fingerprint,event_id:event.event_id}];}
+ return {...base,evidence_conflict:detail};
+}
+test('conflict investigation shows exact facts and fixed next steps without granting authority',async()=>{
+ for(const source of ['project','worker','application']){const f=await revisionHistory([investigatedRow(source)]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/Conflict investigation · unresolved/);assert.match(text,/2 distinct fact variants across 2 recorded observations/);assert(text.includes('8'.repeat(64)));assert.match(text,/Suggested next step/);assert.match(text,/New work requires a new review/);assert.doesNotMatch(text,/investigation unavailable/);noAuthority(f);}
+ const f=await revisionHistory([investigatedRow()]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/Native worker checks found failures/);assert.match(text,/failed 1/);assert.match(text,/An uncertain job must not be replayed/);
+});
+test('bad conflict metadata never hides the original failed check',async()=>{
+ const base=investigatedRow();
+ const bad=[null,{}, {...base.evidence_conflict,source:'application'}, {...base.evidence_conflict,reference:'f'.repeat(64)}, {...base.evidence_conflict,snapshot_sha256:'<img>'}, {...base.evidence_conflict,read_only:false}, {...base.evidence_conflict,requires_new_review:false}, {...base.evidence_conflict,suggested_action:'run shell'}, {...base.evidence_conflict,variant_count:131073}, {...base.evidence_conflict,observation_count:1}, {...base.evidence_conflict,variants_truncated:true}, {...base.evidence_conflict,secret:'PRIVATE'}];
+ for(const value of bad){const f=await revisionHistory([{...base,evidence_conflict:value}]);const text=flatten(f.elements.decisionHistoryList);assert.match(text,/Conflict investigation unavailable/);assert.match(text,/Native worker checks found failures/);assert.doesNotMatch(text,/<img>|run shell|PRIVATE/);assert.doesNotMatch(f.elements.decisionHistoryStatus.textContent,/unavailable/);noAuthority(f);}
+ for(const patch of [{checks:{planned:1,executed:1,passed:1,failed:1,cancelled:0,timed_out:0}},{status:'<img>'},{rollback:'restored'},{witnesses:[]},{witnesses_truncated:true},{evidence_sha256:null}]){const value=investigation();value.variants[0]={...value.variants[0],...patch};const f=await revisionHistory([{...base,evidence_conflict:value}]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Native worker checks found failures/);noAuthority(f);}
+});
+test('same status differing evidence is inspectable while duplicate facts or witnesses are rejected',async()=>{
+ const value=investigation();value.variants[0]={...value.variants[0],status:'checks_failed',checks:{...value.variants[1].checks}};
+ let f=await revisionHistory([{...investigatedRow(),evidence_conflict:value}]);assert.match(flatten(f.elements.decisionHistoryList),/Conflict investigation · unresolved/);noAuthority(f);
+ for(const field of ['fact_sha256','witnesses']){const changed=JSON.parse(JSON.stringify(value));changed.variants[1][field]=changed.variants[0][field];f=await revisionHistory([{...investigatedRow(),evidence_conflict:changed}]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Native worker checks found failures/);noAuthority(f);}
+});
+test('failure followed by rollback is not displayed as an incompatible witness pair',async()=>{
+ const value=investigation('application');value.variants[0].status='failed';value.variants[1].status='rolled_back';
+ const f=await revisionHistory([{...investigatedRow('application'),evidence_conflict:value}]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Application activation failed/);noAuthority(f);
+ const g=await revisionHistory([{...projectPass,evidence_lifecycle:lifecycle(),evidence_conflict:investigation('project')}]);assert.match(flatten(g.elements.decisionHistoryList),/investigation unavailable.*Native checks passed/);noAuthority(g);
+});
+test('bounded conflict variants and omitted witnesses remain visibly incomplete',async()=>{
+ const value=investigation();value.variants[0].observation_count=5;value.variants[0].witnesses_truncated=true;value.variants[0].witnesses=Array.from({length:4},(_,i)=>({id:(i+12).toString(16).padStart(32,'0'),fingerprint:'f'.repeat(64),event_id:(i+12).toString(16).padStart(32,'0')}));value.observation_count=6;
+ const f=await revisionHistory([{...investigatedRow(),evidence_conflict:value}]);assert.match(flatten(f.elements.decisionHistoryList),/6 recorded observations.*additional observations omitted/);noAuthority(f);
+ const expanded=investigation();expanded.variant_count=9;expanded.observation_count=9;expanded.variants_truncated=true;expanded.variants=Array.from({length:8},(_,i)=>({...expanded.variants[i%2],fact_sha256:(i+1).toString(16).padStart(64,'0'),witnesses:[{id:(i+1).toString(16).padStart(32,'0'),fingerprint:'f'.repeat(64),event_id:(i+1).toString(16).padStart(32,'0')}]}));
+ const g=await revisionHistory([{...investigatedRow(),evidence_conflict:expanded}]);assert.match(flatten(g.elements.decisionHistoryList),/9 distinct fact variants across 9 recorded observations; additional variants omitted/);noAuthority(g);
+});
+test('project witness variants require native digests and successful checks cannot claim rollback',async()=>{
+ for(const patch of [{evidence_sha256:null},{rollback:'restored'}]){const item=investigatedRow('project');Object.assign(item.evidence_conflict.variants[0],patch);const f=await revisionHistory([item]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Native checks passed/);noAuthority(f);}
+});
+test('known witnesses retain the exact row, event and observed facts',async()=>{
+ for(const patch of [{id:'f'.repeat(32)},{fingerprint:'f'.repeat(64)},{event_id:'f'.repeat(32)}]){const item=investigatedRow('application');Object.assign(item.evidence_conflict.variants[0].witnesses[0],patch);const f=await revisionHistory([item]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Application activation failed/);noAuthority(f);}
+ const item=investigatedRow();item.evidence_conflict.variants[0].witnesses=[{id:item.id,fingerprint:item.fingerprint,event_id:item.capability_outcomes.at(-1).event_id}];const f=await revisionHistory([item]);assert.match(flatten(f.elements.decisionHistoryList),/investigation unavailable.*Native worker checks found failures/);noAuthority(f);
 });
