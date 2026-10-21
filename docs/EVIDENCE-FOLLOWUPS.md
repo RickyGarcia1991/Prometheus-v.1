@@ -52,3 +52,23 @@ rejected and interrupted attempts. It stops accepting new associations when full
 it does not silently delete evidence. Each history projection displays at most 16
 linked attempts, with an explicit remaining count. Maintenance and broader check
 types remain future work. This feature does not complete the broader roadmap.
+
+## Inspect whether a saved result still applies
+
+Open the original saved project and choose **Check whether inputs still match**
+beside a completed check. This explicit inspection compares the current
+interpretation, collected evidence and reviewed source text with the inputs of
+that saved check. It reads only the original bounded file selection and does not
+run a worker, claim a queued job or create a new approval.
+
+The historical check result and current applicability are separate. A failed
+check remains failed even when all inputs match. Changed inputs are stale;
+missing inputs or changes detected during inspection are unavailable. The
+observation time is shown because this is a point-in-time comparison, not a live
+guarantee or a transaction preventing future edits. Source correspondence uses
+the reviewed text; it does not claim original byte-for-byte BOM preservation.
+
+The inspector verifies the exact saved result identity and does not rewrite its
+evidence, resolve the conflict or establish runtime correctness. A new check
+still requires the ordinary exact review and approval. Signing out, switching
+projects or hiding the page invalidates a pending display response.

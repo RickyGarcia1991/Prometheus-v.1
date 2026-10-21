@@ -19,8 +19,10 @@ function pending(){
 }
 function fixture(){
  const f=setup(),events={};let h=history(),p=null,jobs=[];f.context.session=hex('8',32);f.context.document.hidden=false;f.context.document.addEventListener=(name,fn)=>events[name]=fn;
+ f.context.crypto=require('node:crypto').webcrypto;f.context.TextEncoder=require('node:util').TextEncoder;
  f.project={project:'C:/generated-project',dirty:false,stale:false};f.context.window.PrometheusWorkspace={context:()=>f.project};
- f.context.api=async url=>url==='/api/decisions/history'?(typeof h==='function'?h():h):url==='/api/evidence/followups'?{schema_version:1,read_only:true,jobs}:{approval:p};
+ let assessment=null;f.assessmentRequests=[];f.setAssessment=value=>assessment=value;
+ f.context.api=async (url,body)=>{if(url==='/api/evidence/followups/assess'){f.assessmentRequests.push(body);return typeof assessment==='function'?assessment():assessment;}return url==='/api/decisions/history'?(typeof h==='function'?h():h):url==='/api/evidence/followups'?{schema_version:1,read_only:true,jobs}:{approval:p};};
  vm.runInNewContext(fs.readFileSync(path.join(assets,'interpretation-lifecycle.js'),'utf8'),f.context);
  vm.runInNewContext(fs.readFileSync(path.join(assets,'evidence-followups.js'),'utf8'),f.context);
  f.busy=(busy=false)=>f.emit('prometheus-busy',{online:true,busy,closed:false});f.busy();
@@ -79,6 +81,36 @@ test('completed job receipts bind the exact job files and evidence',async()=>{
  }
 });
 test('nonqueued interrupted attempts cannot recover or execute',async()=>{const f=fixture(),j=job('unconfirmed');j.queued=false;f.setJobs([j]);await f.open();assert.match(text(f.elements.followupJobs),/not durably queued/);assert(!f.elements.followupJobs.children.flatMap(x=>x.children).some(x=>x.tagName==='BUTTON'));});
+
+const canonicalResult=value=>Array.isArray(value)?'['+value.map(canonicalResult).join(',')+']':value&&typeof value==='object'?'{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonicalResult(value[k])).join(',')+'}':JSON.stringify(value).replace(/[\u007f-\uffff]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));
+const assessmentFor=j=>({schema_version:1,read_only:true,scope:'point_in_time_inputs_only',job_id:j.job_id,approval_id:j.approval_id,fingerprint:j.fingerprint,request_digest:j.provenance.request_digest,result_sha256:require('node:crypto').createHash('sha256').update(canonicalResult(j.result)).digest('hex'),observed_at:100,historical:{state:j.state,result_state:j.result.state,check_status:j.result.evidence.status,terminal:true},applicability:'matching_inputs',checks:Object.fromEntries(['interpretation','evidence','source'].map(k=>[k,{status:'matching_inputs',reason:'matching_inputs'}])),authorizes_execution:false,resolves_conflicts:false,verifies_runtime_correctness:false});
+const assessmentButton=f=>f.elements.followupJobs.children.flatMap(x=>x.children).find(x=>x.tagName==='BUTTON'&&x.textContent==='Check whether inputs still match');
+test('assessment is explicit, read-only and bound to the selected saved result',async()=>{
+ const f=fixture(),j=job('completed');f.setJobs([j]);f.setAssessment(assessmentFor(j));await f.open();
+ assert.equal(f.assessmentRequests.length,0);const button=assessmentButton(f);assert(button);await button.click();
+ assert.deepEqual(copy(f.assessmentRequests),[{job_id:j.job_id,project:f.project.project}]);
+ assert.match(text(f.elements.followupJobs),/Inputs match at this observation/);assert.match(text(f.elements.followupJobs),/does not resolve/);assert.equal(f.submitted.length,0);
+});
+test('assessment rejects foreign result identity and stale response after signout',async()=>{
+ const f=fixture(),j=job('completed');f.setJobs([j]);f.setAssessment({...assessmentFor(j),request_digest:hex('0')});await f.open();await assessmentButton(f).click();assert.match(text(f.elements.followupJobs),/Assessment unavailable/);
+ const g=fixture();g.setJobs([j]);let finish;g.setAssessment(()=>new Promise(r=>finish=r));await g.open();const pending=assessmentButton(g).click();await settle();g.emit('prometheus-auth-lost');finish(assessmentFor(j));await pending;assert.equal(g.elements.followupJobs.children.length,0);
+});
+test('matching inputs never hides a failed historical check',async()=>{
+ const f=fixture(),j=job('completed');j.result.receipt.checks[0].passed=false;j.result.evidence.status='failed';f.setJobs([j]);f.setAssessment(assessmentFor(j));await f.open();await assessmentButton(f).click();
+ assert.match(text(f.elements.followupJobs),/Historical check: failed/);assert.match(text(f.elements.followupJobs),/Inputs match at this observation/);assert.equal(f.submitted.length,0);
+});
+test('fresh review navigation reloads current history and copies no approval authority',async()=>{
+ const f=fixture(),j=job('completed');f.setJobs([j]);f.setAssessment(assessmentFor(j));await f.open();await assessmentButton(f).click();
+ const all=e=>[e,...e.children.flatMap(all)];const fresh=all(f.elements.followupJobs).find(x=>x.textContent==='Start a fresh follow-up review');assert(fresh);await fresh.click();
+ assert.equal(f.elements.followupFiles.value,'a.py');assert.equal(f.elements.followupReason.value,'');assert(f.elements.followupPrepare.disabled);assert.equal(f.submitted.length,0);assert.match(f.elements.followupStatus.textContent,/Nothing has been approved or run/);
+});
+test('changed project or hidden page discards an assessment response',async()=>{
+ for(const boundary of ['project','hidden','session']){const f=fixture(),j=job('completed');f.setJobs([j]);let finish;f.setAssessment(()=>new Promise(r=>finish=r));await f.open();const pending=assessmentButton(f).click();await settle();if(boundary==='project')f.project={project:'C:/different',dirty:false,stale:false};if(boundary==='hidden')f.hide();if(boundary==='session'){f.context.session=hex('a',32);f.emit('prometheus-session-changed');}finish(assessmentFor(j));await pending;assert.doesNotMatch(text(f.elements.followupJobs),/Inputs match at this observation/);}
+});
+test('dirty projects never start assessment and malformed positive claims are rejected',async()=>{
+ const dirty=fixture();dirty.setJobs([job('completed')]);await dirty.open();dirty.project.dirty=true;await assessmentButton(dirty).click();assert.equal(dirty.assessmentRequests.length,0);
+ for(const mutate of [a=>a.authorizes_execution=true,a=>a.historical.check_status='failed',a=>a.checks.source.status='stale',a=>a.result_sha256='bad',a=>a.observed_at=-1]){const f=fixture(),j=job('completed'),a=assessmentFor(j);mutate(a);f.setJobs([j]);f.setAssessment(a);await f.open();await assessmentButton(f).click();assert.match(text(f.elements.followupJobs),/Assessment unavailable/);assert.equal(f.submitted.length,0);}
+});
 test('follow-up history validates provenance against each parent without new authority',()=>{
  const f=fixture(),j=job('completed'),p={schema_version:1,read_only:true,freshness:'historical',items:[j],total:1,truncated:false};
  for(const [id,fp] of [[j.approval_id,j.fingerprint],[j.provenance.interpretation_id,j.provenance.interpretation_fingerprint],[j.provenance.interpretation_review_id,j.provenance.interpretation_review_fingerprint],[hex('a',32),hex('b')]]){const el=f.context.document.createElement('li');f.context.window.PrometheusEvidenceFollowups.renderHistory(el,{id,fingerprint:fp,evidence_followups:p});assert.match(text(el),/Supplemental check evidence: passed/);}
