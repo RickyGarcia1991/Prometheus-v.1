@@ -1,0 +1,53 @@
+{
+  "release": "Prometheus-v0.8.0-dev55-followup-applicability-20261019",
+  "manifest_sha256": "f093dcd0d45ee0efeb2d9135596f6a255e1c488f48818e69c6a49a0e6ba0fffa",
+  "archive_sha256": "df7f38e648c8e5de525cf1e3997e895f8a09bbd4b31ff9cdbbd99a55458c6073",
+  "rollback": "Prometheus-v0.8.0-dev54-evidence-followups-20261019-r2",
+  "backup_files": 184,
+  "backup_verified": true,
+  "isolated_restore_verified": true,
+  "signed_copies": 3,
+  "worker_changed": false,
+  "checks": {
+    "startup": "passed",
+    "retained_history": "passed",
+    "mode_policy": "passed",
+    "native_measurements": "passed",
+    "decision_history": "passed",
+    "device_health": "passed",
+    "capability_revisions": "passed",
+    "evidence_lifecycle": "passed",
+    "application_evidence": "passed",
+    "conflict_investigation": "passed",
+    "evidence_interpretations": "passed",
+    "interpretation_lifecycle": "passed",
+    "evidence_followups": "passed",
+    "installed_interface": "passed"
+  },
+  "acceptance_complete": true,
+  "acceptance_evidence_sha256": {
+    "Prometheus-dev55-startup-checks.json": "a2846a377243d387be838fdc4aab29f0f2fdc3fe444e2f36587b4cbbf0a1f9f1",
+    "Prometheus-dev55-installed-host-after.json": "5d3432d01ace2f286d9d463b34f0390d3a3b0a867e2b197439bbdeb81e9448f2",
+    "Prometheus-dev55-installed-mode.json": "6ed4540386250d4fc40ff46bac22d75641f575469fb21ccdd00fba5b4ef690a7",
+    "Prometheus-dev55-installed-native.json": "8096c48c732e2cb84470a44ce362ffaeb49f6c62b3d8ec3c0914613ebd157d4d",
+    "Prometheus-dev55-installed-decision-history.json": "3e56931b5548bff385f1febf0ab5c57413a37a2225f261160b8a8618be269d9c",
+    "Prometheus-dev55-installed-device-health.json": "b659595c4c3da5422863cba1ea905578c455ed55d1a127fffdf39a6196885d4f",
+    "Prometheus-dev55-installed-capability-revisions.json": "f7085f21d1cd035673b0ba7054659025cfdc69d83c56c8bfd0832c6313c5956a",
+    "Prometheus-dev55-installed-evidence-lifecycle.json": "d2377ed4d60cc62ac3ff82f2f545bfa5a938495d2b10ecddec86e03677fbe49b",
+    "Prometheus-dev55-installed-application-evidence.json": "af37de6510fef0634476b883d429e2286e5e332a6f36bf923a0b6f01f7227bb8",
+    "Prometheus-dev55-installed-conflict-investigation.json": "2cf34fc7dd7e208ad6ada10155bee22ba8b25db83dc305be0ea271e18258b0db",
+    "Prometheus-dev55-installed-interpretations.json": "e4e41fb5d70d0f773bdbe8dcc48ea50b45581eea20c37fbd95620e06053d6bc1",
+    "Prometheus-dev55-installed-interpretation-lifecycle.json": "cd33e9e886c034115099adafa9745be2d2d12f4780af5b0d346f93abaec28ac5",
+    "Prometheus-dev55-installed-evidence-followups.json": "5a3e831452e2f2dadd25a2de221ef940560c14744224f61c22d4bb6bfca5fd8d",
+    "Prometheus-dev55-installed-interface.json": "6a15785c7e2dde7c84cecab21dcf174a223523fb8e962c285124080589042917"
+  },
+  "qualification": {
+    "packaged_passed": 4797,
+    "documented_skips": 14,
+    "excluded": 1,
+    "ui_suites": 36,
+    "surface_native_checks": 277,
+    "installer_tests": 211
+  },
+  "broader_roadmap_complete": false
+}
