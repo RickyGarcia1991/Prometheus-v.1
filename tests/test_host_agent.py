@@ -20,11 +20,14 @@ def test_host_agent_contract():
 
 def test_watcher_is_event_driven_and_eject_aware():
     s = text("Prometheus-Volume-Watcher.ps1")
-    assert "Win32_VolumeChangeEvent" in s
+    assert "Prometheus-USB-Reconnect-Supervisor.ps1" in s
+    assert "Remove-Item" not in s
+    s = (ROOT / "tools/Prometheus.DriveController/Prometheus-USB-Reconnect-Supervisor.ps1").read_text(encoding="utf-8")
+    assert "Win32_DeviceChangeEvent" in s
     assert "EventType = 2 OR EventType = 3" in s
-    assert "Start-Sleep -Seconds 3" not in s
-    assert "cleared-eject-lock-on-new-arrival" in s
-    assert "arrival-suppressed-eject-lock" in s
+    assert "Get-PhysicalUsbPresence" in s
+    assert "TotalSeconds" not in s
+    assert "Resume-Lifecycle $state 'physical-usb-disconnection'" in s
 
 
 def test_installer_removes_legacy_tasks_and_is_repairable():
@@ -34,7 +37,8 @@ def test_installer_removes_legacy_tasks_and_is_repairable():
     assert "Prometheus Device Support" in s
     assert "Prometheus Volume Watcher" in s
     assert "Parser]::ParseFile" in s
-    assert "/SC ONLOGON" in s
+    assert "Install-Lifecycle-Tasks.ps1" in s
+    assert "New-ScheduledTaskTrigger -AtLogOn" in text("Install-Lifecycle-Tasks.ps1")
 
 
 def test_security_gate_is_fail_closed_and_host_bound():
@@ -56,7 +60,7 @@ def test_activation_has_bounded_rollback():
 
 def test_installer_authorizes_only_after_signed_package_validation():
     s = text("INSTALL-PROMETHEUS-HOST-AGENT.ps1")
-    assert "Prometheus-Host-Agent-v0.6.3" in s
+    assert "Prometheus-Host-Agent-v0.6.6" in s
     assert "UAC-approved-install" in s
     assert s.index("Host Agent manifest signature invalid") < s.index("UAC-approved-install")
 

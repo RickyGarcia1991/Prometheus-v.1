@@ -124,6 +124,7 @@ function harness(initial = {}) {
   };
   h.document = document;
   vm.runInNewContext(source, {
+    MoneyTools: require('./money.js'),
     document, fetch: h.fetch, URL: FakeURL, URLSearchParams, Blob, AbortController,
     createImageBitmap: file => h.decode(file),
     setTimeout(callback, delay) { const id = ++timerId; h.timers.set(id, {callback, delay}); return id; },
@@ -143,7 +144,7 @@ async function regions(h) {
 }
 const freshness = id => ({id, name: 'Region ' + id.toUpperCase(), url: 'https://download.geofabrik.de/' + id + '-latest.osm.pbf', bytes: '1048576', checked_utc: 'fixture', note: 'fixture'});
 
-test('every shipped button has its action binding; all six navigation buttons work', async () => {
+test('every shipped button has its action binding; all navigation buttons work', async () => {
   const h = await ready();
   const buttons = h.document.querySelectorAll('button');
   assert.ok(buttons.length >= 25);
@@ -155,6 +156,44 @@ test('every shipped button has its action binding; all six navigation buttons wo
   }
   assert.equal(h.$('autoFilter').disabled, false);
   assert.equal(h.$('closeApp').disabled, false);
+});
+
+test('money directory and local calculators work without network requests', async () => {
+  const h = await ready(), before = h.requests.length;
+  h.$('moneyFilter').value = 'New Jersey'; await h.$('moneyFilter').dispatch('input');
+  assert.match(h.$('moneyLinks').textContent, /New Jersey/);
+  await h.$('projectMoney').click(); assert.match(h.$('moneyProjectionResult').textContent, /Hypothetical ending/);
+  await h.$('checkOpportunity').click(); assert.match(h.$('moneyOpportunityResult').textContent, /150/);
+  h.$('moneyCompany').value = 'Example'; h.$('moneySource').value = 'https://www.sec.gov/edgar/search/';
+  h.$('moneyAsOf').value = '2020-01-01'; h.$('checkBusiness').checked = true;
+  await h.$('stockChecklist').click(); assert.match(h.$('stockChecklistResult').textContent, /1\/6/);
+  assert.equal(h.requests.length, before);
+  h.$('moneyInitial').value = '300'; await h.$('moneyInitial').dispatch('input');
+  assert.equal(h.$('moneyProjectionResult').textContent, '');
+});
+
+const pricesCsv = 'date,asset,benchmark\n' + Array.from({length: 100}, (_, i) =>
+  new Date(Date.UTC(2020, 0, i + 1)).toISOString().slice(0, 10) + `,${100 + i},100`).join('\n');
+test('historical result is exportable, invalidated on changes and never uploaded', async () => {
+  const h = await ready(), before = h.requests.length;
+  h.$('priceFile').files = [codeFile('prices.csv', pricesCsv)]; h.$('priceSource').value = 'synthetic test';
+  await h.$('runMoneyTest').click(); assert.match(h.$('moneyTestResult').textContent, /Direction accuracy: 100%/);
+  await h.$('exportMoneyTest').click();
+  assert.equal(JSON.parse(await h.downloads[0].blob.text()).testIntervals, 29);
+  assert.equal(h.requests.length, before);
+  h.$('moneyWindow').value = '30'; await h.$('moneyWindow').dispatch('input');
+  assert.equal(h.$('exportMoneyTest').disabled, true); assert.equal(h.$('moneyTestResult').textContent, '');
+});
+test('closing or changing an input while CSV loads cannot revive historical results', async () => {
+  for (const close of [false, true]) {
+    const h = await ready(), gate = deferred();
+    h.$('priceFile').files = [{name: 'prices.csv', size: 200, text: () => gate.promise}]; h.$('priceSource').value = 'fixture';
+    const pending = h.$('runMoneyTest').click();
+    if (close) await h.$('closeApp').click();
+    else { h.$('moneyCost').value = '20'; await h.$('moneyCost').dispatch('input'); }
+    gate.resolve(pricesCsv); await pending;
+    assert.equal(h.$('moneyTestResult').textContent, ''); assert.equal(h.$('exportMoneyTest').disabled, true);
+  }
 });
 
 test('initialization keeps dependencies disabled, checks HTTP status/schema, and retries', async () => {

@@ -5,6 +5,7 @@ arbitrary fetch URLs, reads browser-selected images, or stores account credentia
 """
 from __future__ import annotations
 import argparse
+import os
 import ast
 import datetime as dt
 import json
@@ -336,9 +337,9 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed():
             self.respond(403, {"error": "Use the local Prometheus address."}); return
         assets = {"/": ("index.html", "text/html; charset=utf-8"), "/studio.js": ("studio.js", "text/javascript; charset=utf-8"),
-                  "/studio.css": ("studio.css", "text/css; charset=utf-8"), "/catalog.json": ("catalog.json", "application/json; charset=utf-8")}
+                  "/money.js": ("money.js", "text/javascript; charset=utf-8"), "/studio.css": ("studio.css", "text/css; charset=utf-8"), "/catalog.json": ("catalog.json", "application/json; charset=utf-8")}
         if self.path == "/api/bootstrap":
-            self.respond(200, {"token": self.server.token, "version": "1.0.1", "network": "Public research, maps and external website links use the network when requested. Local image editing and code checks do not."})
+            self.respond(200, {"token": self.server.token, "version": "1.0.2", "network": "Public research, maps and external website links use the network when requested. Local image editing and code checks do not."})
         elif self.path in assets:
             name, kind = assets[self.path]
             self.respond(200, (ROOT / name).read_bytes(), kind)
@@ -387,6 +388,9 @@ def main():
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--ready-file", type=Path)
     args = parser.parse_args()
+    host = Path(os.environ.get("LOCALAPPDATA", str(ROOT))) / "Prometheus"
+    if (host / "eject-mode.json").exists():
+        raise RuntimeError("SSD eject is active. Reconnect the drive or explicitly Start Prometheus first.")
     with Server(("127.0.0.1", args.port)) as server:
         print(server.origin, flush=True)
         if args.ready_file:
@@ -396,7 +400,7 @@ def main():
             webbrowser.open(server.origin)
         server.timeout = 0.5
         try:
-            while not server.stop_requested:
+            while not server.stop_requested and not (host / "active-chat.shutdown").exists() and not (host / "eject-mode.json").exists():
                 server.handle_request()
         except KeyboardInterrupt:
             pass

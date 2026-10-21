@@ -3,6 +3,7 @@ $ErrorActionPreference = 'Stop'
 $studioRoot = $PSScriptRoot
 $studioLog = Join-Path $studioRoot 'startup-error.txt'
 try {
+if(Test-Path -LiteralPath (Join-Path $env:LOCALAPPDATA 'Prometheus\eject-mode.json')){throw 'SSD eject is active. Reconnect the drive or explicitly Start Prometheus first.'}
 # Only the sibling runtime of this installation is selected automatically.
 # A development caller may explicitly supply a trusted runtime directory.
 if (-not $RuntimeRoot) { $RuntimeRoot = Join-Path (Split-Path -Parent $studioRoot) 'Prometheus-Resources\Python' }
