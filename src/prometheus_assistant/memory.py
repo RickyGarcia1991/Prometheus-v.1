@@ -46,6 +46,14 @@ class MemoryStore:
                     created_at TEXT NOT NULL
                 );
                 CREATE INDEX IF NOT EXISTS turns_by_session ON turns(session_id, id);
+                CREATE TABLE IF NOT EXISTS model_events (
+                    id INTEGER PRIMARY KEY,
+                    session_id TEXT NOT NULL REFERENCES sessions(session_id),
+                    model TEXT NOT NULL,
+                    context_tokens INTEGER NOT NULL,
+                    cpu_threads INTEGER,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS knowledge (
                     id INTEGER PRIMARY KEY,
                     kind TEXT NOT NULL CHECK (kind IN ('preference', 'decision', 'fact', 'instruction')),
@@ -101,6 +109,14 @@ class MemoryStore:
                 [(session_id, "user", prompt, now), (session_id, "assistant", reply, now)],
             )
 
+    def record_model_use(self, session_id, model, context_tokens, cpu_threads):
+        self.session(session_id)
+        with self.db:
+            self.db.execute(
+                "INSERT INTO model_events (session_id, model, context_tokens, cpu_threads, created_at) VALUES (?, ?, ?, ?, ?)",
+                (session_id, model, context_tokens, cpu_threads, utc_now()),
+            )
+
     def history(self, session_id, limit=None):
         self.session(session_id)
         if limit is None:
@@ -129,6 +145,12 @@ class MemoryStore:
         now = utc_now()
         subject = subject.strip()
         with self.db:
+            existing = self.db.execute(
+                "SELECT id FROM knowledge WHERE kind = ? AND subject = ? AND value = ? AND source_type = ? AND source_ref = ? AND retention = ? AND confidence = ? AND superseded_at IS NULL",
+                (kind, subject, value.strip(), source_type.strip(), source_ref.strip(), retention, confidence),
+            ).fetchone()
+            if existing is not None:
+                return existing[0]
             if retention == "until_replaced":
                 self.db.execute(
                     "UPDATE knowledge SET superseded_at = ? WHERE kind = ? AND subject = ? AND superseded_at IS NULL",

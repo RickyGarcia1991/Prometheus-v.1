@@ -22,6 +22,9 @@ prometheusctl = "prometheus_control_center.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+prometheus_assistant = ["offline_collections.json", "source_indexes.json", "public_directory.json", "legal_rules.json", "ui_assets/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
