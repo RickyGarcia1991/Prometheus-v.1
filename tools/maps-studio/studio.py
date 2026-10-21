@@ -348,13 +348,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.allowed(post=True):
-            self.respond(403, {"error": "This action requires the local session."}); return
+            self.reject_post(403, {"error": "This action requires the local session."}); return
         if self.headers.get("Content-Type") != "application/json" or self.headers.get("Transfer-Encoding"):
-            self.respond(415, {"error": "Use JSON with a content length."}); return
+            self.reject_post(415, {"error": "Use JSON with a content length."}); return
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if not 0 < length <= MAX_BODY:
-                self.respond(413, {"error": "Request is too large."}); return
+                self.reject_post(413, {"error": "Request is too large."}); return
             body = json.loads(self.rfile.read(length))
             if not isinstance(body, dict):
                 raise ValueError("Expected a JSON object.")
@@ -380,6 +380,43 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(429, {"error": str(error)})
         except (OSError, urllib.error.URLError):
             self.respond(502, {"error": "The publisher could not be reached. Local image tools and code checks still work; retry later or open its website."})
+
+    def reject_post(self, status, data):
+        # Preserve the rejection before cleanup. Closing a Windows socket with
+        # a small unread POST body can reset it before the client reads the 403.
+        # Cleanup never parses or dispatches input and cannot keep a connection
+        # alive: bound both total time and bytes, including trickling clients.
+        self.close_connection = True
+        self.respond(status, data)
+        lengths = self.headers.get_all('Content-Length', [])
+        if self.headers.get('Transfer-Encoding') or len(lengths) != 1:
+            return
+        value = lengths[0]
+        if not value.isascii() or not value.isdecimal() or len(value) > 7:
+            return
+        length = int(value)
+        if not 0 < length <= MAX_BODY:
+            return
+        remaining = min(length, 65536)
+        deadline = time.monotonic() + .2
+        previous_timeout = self.connection.gettimeout()
+        try:
+            while remaining:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    break
+                self.connection.settimeout(left)
+                chunk = self.rfile.read1(min(remaining, 4096))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+        except OSError:
+            pass  # The already rejected client disconnected or exceeded its deadline.
+        finally:
+            try:
+                self.connection.settimeout(previous_timeout)
+            except OSError:
+                pass
 
 
 def main():
