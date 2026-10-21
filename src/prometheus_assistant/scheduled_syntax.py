@@ -113,6 +113,10 @@ def public_job(row):
 
 
 class ScheduledSyntax:
+    prepare_mode = 'ui.scheduled_syntax_prepare'
+    tick_mode = 'ui.scheduled_syntax_tick'
+    recover_mode = 'ui.scheduled_syntax_recover'
+
     def __init__(self, approvals, queue, *, adapters, grant_owner, binding,
                  cancelled=lambda:False, clock=time.time):
         self.approvals,self.queue,self.adapters=approvals,queue,adapters
@@ -135,7 +139,7 @@ class ScheduledSyntax:
                 self.approvals.validate_capability_revision_context(owner=owner, binding=self.binding,
                     session=session, kind='scheduled_syntax', subject_hash=capability_subject,
                     capability_revision_token=capability_revision_token)
-            require_dispatch('ui.scheduled_syntax_prepare')
+            require_dispatch(self.prepare_mode)
             policy=revision()
         selected=choose_destination(self.adapters,now=self.clock(),clock=self.clock,strategy=strategy,operation=operation)
         with self.grant_owner() as current:
@@ -167,9 +171,15 @@ class ScheduledSyntax:
                         'Run the pinned Ruff tool with isolated configuration and no fixes. Source is not executed. '
                         'Lint findings do not establish runtime correctness or qualify a model reviewer.',
                     limits=dict(child_memory_mib=512,child_cpu_seconds=5,timeout_seconds=10,max_diagnostics=16))
-            return self.approvals.review(owner=owner,binding=self.binding,session=session,kind='scheduled_syntax',
+            return self._review(owner=owner,binding=self.binding,session=session,kind='scheduled_syntax',
                 payload=payload,review=review,policy_revision=policy,
                 capability_revision_token=capability_revision_token, capability_subject=capability_subject)
+
+    def _review(self, **kwargs):
+        return self.approvals.review(**kwargs)
+
+    def _claim(self, row, *, now):
+        return self.queue.claim(row['request']['job_id'], now=now)
 
     def decide(self, *, session, approval_id, fingerprint, decision):
         if decision not in {'approve', 'reject'}:
@@ -219,7 +229,7 @@ class ScheduledSyntax:
     def _run_one(self, job_id=None, *, recover=False):
         with self.grant_owner() as owner:
             if owner!=self.queue.owner: raise ValueError('Queue belongs to another owner.')
-            require_dispatch('ui.scheduled_syntax_recover' if recover else 'ui.scheduled_syntax_tick')
+            require_dispatch(self.recover_mode if recover else self.tick_mode)
             self.queue.expire(now=self.clock())
             rows=[self.queue.get(job_id)] if job_id else self.queue.list()
             if recover and job_id and rows[0] and rows[0]['state'] in {'completed','failed'}:
@@ -270,7 +280,7 @@ class ScheduledSyntax:
             if current_adapter is None or not fresh(report,self.clock()):
                 return public_job(self.queue.update_wait(job_id,['Destination or resource reading changed before claim.'],
                     now=self.clock(),next_attempt_at=self.clock()+RECHECK_SECONDS))
-            claim=self.queue.claim(job_id,now=self.clock())
+            claim=self._claim(row,now=self.clock())
             if not claim['claimed']: return public_job(claim)
             try:
                 # A busy database can block claim. Never dispatch based on a
