@@ -196,6 +196,8 @@ class ActionApprovals:
         interpretation_changes = changes_for_owner(owner,
             records=self.interpretation_lifecycle().read(decisions=all_rows,resolutions=resolution_records),
             resolutions=resolution_records,decisions=all_rows,conflicts=conflicts)
+        from .evidence_followups import EvidenceFollowups
+        followups = EvidenceFollowups(self,owner).history_projection(decisions=all_rows)
         for row in rows:
             row['outcomes'] = [event for o,i,f,event in events if o==owner and i==row['id'] and f==row['fingerprint']]
             row['capability_outcomes'] = [event for o,i,f,event in capability_events
@@ -218,6 +220,7 @@ class ActionApprovals:
             row['evidence_conflict'] = conflicts.get((row['id'],row['fingerprint']))
             row['evidence_resolutions'] = interpretations.get((row['id'],row['fingerprint']),empty_projection())
             row['interpretation_lifecycle'] = interpretation_changes.get((row['id'],row['fingerprint']),empty_changes())
+            row['evidence_followups'] = followups.get((row['id'],row['fingerprint']),empty_changes())
         return rows
 
     def evidence_resolutions(self):

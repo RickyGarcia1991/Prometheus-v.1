@@ -1,8 +1,10 @@
 """Append-only interpretation changes; historical explanations, never authority."""
-from contextlib import closing
+from contextlib import closing, contextmanager
 import copy
 import json
+import os
 import sqlite3
+import tempfile
 
 from .decision_history import DecisionHistory, MAX_DATABASE_BYTES, _identity
 from .evidence_resolution import (EvidenceResolutions, canonical, digest, policy_text,
@@ -259,6 +261,52 @@ class EvidenceInterpretationLifecycle(DecisionHistory):
 
     def finish(self, value, *, check=None):
         return self._append('decision', value, check)
+
+    @contextmanager
+    def claim_guard(self, owner, interpretation_id, interpretation_fingerprint, state_sha256):
+        """Serialize a bounded external claim with every lifecycle append.
+
+        The caller validates native evidence and source snapshots while holding
+        this transaction, then commits its separate queue claim. No provider
+        call belongs inside this guard. A crash after that durable claim leaves
+        uncertainty, never permission to execute again.
+        """
+        for value, size in ((owner,64),(interpretation_id,32),
+                            (interpretation_fingerprint,64),(state_sha256,64)):
+            _identity(value,size)
+        self._plain();self.root.mkdir(parents=True,exist_ok=True);self._plain()
+        try:
+            if not self.path.exists():
+                # Publish an already valid empty store. Failed or interrupted
+                # first claims must not leave an empty, malformed history file.
+                handle, name=tempfile.mkstemp(prefix='.claim-',suffix='.sqlite3',dir=self.root)
+                os.close(handle)
+                try:
+                    with closing(sqlite3.connect(name)) as initial, initial:
+                        initial.execute('BEGIN IMMEDIATE');self._schema(initial,create=True)
+                    with open(name,'rb+') as saved:os.fsync(saved.fileno())
+                    try:os.link(name,self.path)
+                    except FileExistsError:pass
+                finally:
+                    os.unlink(name)
+            self._plain()
+            with closing(sqlite3.connect(self.path,timeout=5)) as db, db:
+                db.execute('PRAGMA synchronous=FULL')
+                page=db.execute('PRAGMA page_size').fetchone()[0]
+                db.execute('PRAGMA max_page_count='+str(MAX_DATABASE_BYTES//page))
+                db.execute('BEGIN IMMEDIATE')
+                self._schema(db,create=True)
+                decisions=self.history._all_rows()
+                roots=completed_roots(EvidenceResolutions(self.history).read(decisions=decisions))
+                _,states,_,_=self._rows(db,{(r['owner'],r['id']):r for r in decisions},roots)
+                key=owner,interpretation_id
+                state=states.get(key);root=roots.get(key)
+                if (not state or root[0]['fingerprint']!=interpretation_fingerprint
+                        or state['state']!='active' or state['head']!=state_sha256):
+                    raise ValueError('Interpretation state changed; prepare a fresh follow-up review.')
+                yield copy.deepcopy(state)
+        except sqlite3.Error as error:
+            raise ValueError('Interpretation claim guard is unavailable.') from error
 
 
 def empty_projection():
