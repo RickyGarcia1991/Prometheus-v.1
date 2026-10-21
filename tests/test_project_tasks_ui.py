@@ -467,6 +467,21 @@ def test_idle_scheduler_uses_only_approved_topic_after_inactivity(setup, monkeyp
     assert queued == [({'mode': 'idle_run', 'prompt': ''}, {'background': True})]
 
 
+@pytest.mark.parametrize('mode', ['Battery Saver', 'Critical Recovery'])
+def test_idle_mode_deferral_preserves_due_work_without_fetch(setup, monkeypatch, mode):
+    s = setup
+    store = tasks.research_store(s.app)
+    store.configure('Python testing', True, 15, owner=OWNER)
+    before = store.status()
+    s.app.project_resources.set_mode_preference(mode)
+    def forbidden(*args, **kwargs):
+        pytest.fail('Deferred research must not fetch')
+    monkeypatch.setattr('prometheus_assistant.firecrawl_search.search', forbidden)
+    result = tasks.run_idle(s.app, force=True)
+    assert result['details']['idle_research']['result']['state'] == 'resource_deferred'
+    assert store.status() == before
+
+
 def test_idle_background_cannot_be_forged_by_http_fields(setup):
     with pytest.raises(ValueError):
         ui.validate_job({'mode': 'idle_run', 'background': True})

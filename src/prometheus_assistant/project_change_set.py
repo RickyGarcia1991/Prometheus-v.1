@@ -105,11 +105,13 @@ def propose_group(editor, goal, files, **options):
         'check_reason': 'All files are applied before these checks run; shared checks run once.'}
 
 
-def apply_group(editor, candidate, **options):
+def apply_group(editor, candidate, *, on_result=None, **options):
     with editor.workspace.lock:
         from . import project_recovery
         journal = project_recovery.begin(editor, candidate['candidates'])
         result = _apply_group(editor, candidate, **options)
+        if on_result is not None:
+            on_result(result)
         project_recovery.finish(editor.workspace, journal, result)
         return result
 

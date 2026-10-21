@@ -9,14 +9,21 @@ from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .ollama import GenerationCancelled
 from . import ui_workspace
+from . import capability_revision_ui as capability_revisions
 
 MODES = {'project_edit', 'idle_config', 'idle_status', 'idle_run'}
 NO_PROMPT = {'idle_config', 'idle_status', 'idle_run'}
-FIELDS = {'edit_policy', 'research_query', 'interval_minutes', 'project_files', 'auto_files', 'specialist_review'}
+FIELDS = {'edit_policy', 'research_query', 'interval_minutes', 'project_files', 'auto_files', 'specialist_review', 'revision_token'}
 KINDS = {'project_edit', 'project_task', 'idle_config'}
 
 
 def validate(body):
+    if 'revision_token' in body:
+        if (body.get('mode') != 'project_edit' or type(body['revision_token']) is not str
+                or not re.fullmatch(r'[0-9a-f]{32}', body['revision_token'])
+                or body.get('edit_policy', 'ask_first') != 'ask_first'
+                or body.get('research_query', '').strip()):
+            raise ValueError('A revision context requires an exact project review without additional research.')
     if 'specialist_review' in body:
         if type(body['specialist_review']) is not bool:
             raise ValueError('Specialist review must be true or false.')
@@ -101,7 +108,8 @@ def _verify(app, grant_owner, owner):
 def _result(app, request, details, label, action='project_edit'):
     # Persist rollback evidence even after Stop; a cancelled chat save normally
     # suppresses output, which would hide the actual recovery result here.
-    return {**app.save({**request, 'mode': action}, details, label,
+    saved_request = {key: value for key, value in request.items() if key not in {'revision_token', capability_revisions.FIELD}}
+    return {**app.save({**saved_request, 'mode': action}, details, label,
                        model='owner-reviewed-project-task'), 'action': action}
 
 
@@ -117,8 +125,19 @@ def _review(app, request, owner, binding, kind, payload, review, resolved=None, 
         details['approval_resolved'] = resolved
     result = _result(app, request, details, 'Task · needs your approval',
                      'idle_config' if kind == 'idle_config' else 'project_edit')
+    revision_options = {}
+    if kind == 'idle_config':
+        revision_options = capability_revisions.review_options(app, request, owner=owner, binding=binding,
+            kind=kind, subject_hash=capability_revisions.subject(kind, 'local'))
+        payload = {**payload, 'request': capability_revisions.without_context(payload['request'])}
+    if request.get('revision_token'):
+        from .project_decision_outcomes import project_hash
+        revision_options = dict(revision_token=request['revision_token'],
+            project_hash=project_hash(ui_workspace.workspace(app, request)))
+        payload = {**payload, 'request': {key: value for key, value in payload['request'].items()
+                                        if key != 'revision_token'}}
     pending = app.action_approvals.review(owner=owner, binding=binding, session=result['session'],
-        kind=kind, payload=payload, review=review, policy_revision=review_revision)
+        kind=kind, payload=payload, review=review, policy_revision=review_revision, **revision_options)
     result['details']['approval'] = pending
     return result
 
@@ -153,7 +172,7 @@ def _research(query, app):
     return search(query, cancel_event=app.cancel_event)
 
 
-def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, resolved=None):
+def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, resolved=None, decision_link=None):
     specialist_policy_revision = revision() if request.get('specialist_review') else None
     workspace = ui_workspace.workspace(app, request)
     research = None
@@ -212,7 +231,8 @@ def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, reso
     specialist_escalation = specialists is not None and project_specialists.needs_exact_review(specialists)
     if delegated and not project_advisory.needs_exact_review(advisory) and not specialist_escalation:
         return _apply(app, request, candidate, owner=owner, grant_owner=grant_owner, resolved=resolved,
-                      model=getattr(engine, 'model', 'local helper'), advisory=advisory, specialists=specialists)
+                      model=getattr(engine, 'model', 'local helper'), advisory=advisory, specialists=specialists,
+                      decision_link=decision_link)
     review = {'action': 'Apply the proposed change to ' + candidate['path'],
         'reason': candidate['reason'], 'benefit': candidate['benefit'],
         'effects': 'Apply the displayed diff, run the displayed checks, and retain an undo record. '
@@ -239,7 +259,7 @@ def _prepare(app, request, *, owner, binding, grant_owner, delegated=False, reso
                    review, resolved, expected_revision=specialist_policy_revision)
 
 
-def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model='local helper', advisory=None, specialists=None):
+def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model='local helper', advisory=None, specialists=None, decision_link=None):
     from .project_resources import service
     from .project_task_evidence import prepare_evidence
     from .project_editor import ProjectEditor
@@ -261,10 +281,10 @@ def _apply(app, request, candidate, *, owner, grant_owner, resolved=None, model=
     with service(app).reserve(candidate, app.current or 'owner-project-task') as resources:
         return _apply_reserved(app, request, candidate, owner=owner, grant_owner=grant_owner,
             resolved=resolved, model=model, evidence=evidence, resources=resources, advisory=advisory,
-            specialists=specialists)
+            specialists=specialists, decision_link=decision_link)
 
 
-def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, model, evidence, resources, advisory=None, specialists=None):
+def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, model, evidence, resources, advisory=None, specialists=None, decision_link=None):
     from .project_editor import ProjectEditor
     _verify(app, grant_owner, owner)
     engine = ProjectEditor(ui_workspace.workspace(app, request), lambda *_: None, progress=app.progress)
@@ -277,17 +297,26 @@ def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, mo
         # Optional review limits must not reject a valid owner-approved edit.
         # proposed_files and the editor still validate the exact candidate.
         capture = None
-    if candidate.get('version') == 2:
-        from .project_change_set import apply_group
-        result = apply_group(engine, candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
-                             check_runner=capture.run_check if capture is not None else None)
-    else:
-        from . import project_recovery
-        with engine.workspace.lock:
-            journal = project_recovery.begin(engine, [candidate])
-            result = engine.apply(candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
-                                  check_runner=capture.run_check if capture is not None else None)
-            project_recovery.finish(engine.workspace, journal, result)
+    from .project_decision_outcomes import ProjectOutcome
+    outcome = ProjectOutcome(app, engine.workspace, owner, decision_link)
+    outcome.start()
+    try:
+        if candidate.get('version') == 2:
+            from .project_change_set import apply_group
+            result = apply_group(engine, candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
+                check_runner=capture.run_check if capture is not None else None,
+                on_result=lambda native: outcome.finish(native, len(candidate['checks'])))
+        else:
+            from . import project_recovery
+            with engine.workspace.lock:
+                journal = project_recovery.begin(engine, [candidate])
+                result = engine.apply(candidate, cancel_event=app.cancel_event, on_output=app.append_partial,
+                                      check_runner=capture.run_check if capture is not None else None)
+                outcome.finish(result, len(candidate['checks']))
+                project_recovery.finish(engine.workspace, journal, result)
+    except Exception:
+        outcome.unknown()
+        raise
     result.update(project=request['project'], state=result['status'], model=model,
                   reason=candidate['reason'], benefit=candidate['benefit'], diff=candidate['diff'])
     result['advisory_review'] = advisory
@@ -336,7 +365,10 @@ def _apply_reserved(app, request, candidate, *, owner, grant_owner, resolved, mo
 
 def run_idle(app, *, force=False):
     require_dispatch('ui.idle_run')
-    result = research_store(app).run_due(cancel_event=app.cancel_event, force=force, progress=app.progress)
+    from .project_resources import background_allowed
+    admission = background_allowed(app)
+    result = (research_store(app).run_due(cancel_event=app.cancel_event, force=force, progress=app.progress)
+              if admission['allowed'] else dict(state='resource_deferred', resource_admission=admission))
     status = research_store(app).status()
     return {'reply': 'Idle public research: ' + result['state'] + '.',
             'details': {'idle_research': {**status, 'result': result}},
@@ -385,10 +417,34 @@ def execute(app, request, *, grant_owner=None, binding=None):
             raise ValueError('Return to the conversation containing this proposal before deciding.')
         require_dispatch('ui.approval_decision')
         _verify(app, grant_owner, owner)
+        draft = None
+        if decision == 'request_changes':
+            if pending['kind'] != 'project_edit':
+                raise ValueError('Request changes is available only for an exact project edit.')
+            original = pending['payload']['request']
+            feedback = request.get('approval_feedback', '').strip()
+            if not feedback or len(feedback) > 2000 or '\x00' in feedback:
+                raise ValueError('Describe the requested changes in 1 to 2000 characters.')
+            prompt = original['prompt'] + '\n\nRequested changes from the owner:\n' + feedback
+            if len(prompt) > 4000:
+                raise ValueError('The original goal and requested changes must fit within 4000 characters. Shorten the feedback.')
+            draft = {key: original[key] for key in ('project', 'file', 'project_files', 'auto_files',
+                     'specialist_review', 'preset', 'target') if key in original}
+            draft.update(prompt=prompt, edit_policy='ask_first', research_query='', origin_approval=pending['id'])
         row = app.action_approvals.consume(owner=owner, binding=binding, session=request['session'],
             approval_id=pending['id'] if mode == 'chat' else request['approval_id'],
             fingerprint=pending['fingerprint'] if mode == 'chat' else request['approval_fingerprint'],
-            policy_revision=revision(), decision=decision)
+            policy_revision=revision(), decision=decision, feedback=request.get('approval_feedback', ''))
+        if decision == 'request_changes':
+            from .project_decision_outcomes import project_hash
+            context = app.action_approvals.revision_context(owner=owner, binding=binding,
+                session=row['session'], parent_row=row,
+                project_hash=project_hash(ui_workspace.workspace(app, row['payload']['request'])))
+            result = _result(app, request, {'reply': 'Changes requested. The old proposal is closed; no files were changed. '
+                'Review the revised goal and prepare a fresh exact proposal.',
+                'approval_resolved': row['id'], 'revision_draft': draft}, 'Task · changes requested', 'approval_decision')
+            # The token is returned only to this live response, never saved as a draft grant.
+            return {**result, 'details': {**result['details'], 'revision_draft': {**draft, **context}}}
         if decision == 'reject':
             return _result(app, request, {'reply': 'Denied. No proposed change was applied.',
                             'approval_resolved': row['id']}, 'Task · denied')
@@ -398,21 +454,31 @@ def execute(app, request, *, grant_owner=None, binding=None):
         if row['kind'] == 'project_edit':
             return _apply(app, original, payload['candidate'], owner=owner, grant_owner=grant_owner,
                           resolved=row['id'], model=payload['model'], advisory=payload.get('advisory_review'),
-                          specialists=payload.get('specialist_review'))
+                          specialists=payload.get('specialist_review'),
+                          decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         if row['kind'] == 'project_task':
             return _prepare(app, original, owner=owner, binding=binding, grant_owner=grant_owner,
-                            delegated=original.get('edit_policy') == 'delegated', resolved=row['id'])
+                            delegated=original.get('edit_policy') == 'delegated', resolved=row['id'],
+                            decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         _verify(app, grant_owner, owner)
-        research_store(app).configure(original['prompt'], original['enabled'],
-                                      original.get('interval_minutes', 60), owner=owner)
-        return _result(app, original, {'reply': 'Idle public research is configured.',
-            'approval_resolved': row['id'], 'idle_research': research_store(app).status()},
+        from .capability_outcome_hooks import tracking, gap_notice
+        with tracking(app.action_approvals, owner, row) as outcome:
+            configured = research_store(app).configure(original['prompt'], original['enabled'],
+                                          original.get('interval_minutes', 60), owner=owner)
+            settings = configured['settings']
+            observed = outcome.observe('settings_saved', evidence={'saved': True,
+                'revision': settings['revision'], 'enabled': settings['enabled'],
+                'interval_minutes': settings['interval_minutes']})
+        return _result(app, original, {'reply': 'Idle public research is configured.' + gap_notice(observed),
+            'approval_resolved': row['id'], 'idle_research': configured,
+            **({'decision_outcome': observed} if observed is not None else {})},
             'Idle public research', 'idle_config')
     if mode == 'idle_status':
         return {'reply': 'Current idle public research settings and retained findings.',
                 'details': {'idle_research': research_store(app).status()},
                 'action': mode, 'label': 'Idle public research'}
     if mode == 'idle_config' and not request['enabled']:
+        capability_revisions.validate(request)
         settings = research_store(app).status()['settings']
         if settings.get('owner'):
             research_store(app).configure(settings['topic'], False, settings['interval_minutes'], owner=owner)
@@ -441,7 +507,12 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if not request.get('project', '').strip():
         raise ValueError('Open a development project before requesting an edit.')
     require_dispatch('ui.project_edit')
-    ui_workspace.workspace(app, request)  # Validate selected root before approval.
+    workspace = ui_workspace.workspace(app, request)  # Validate selected root before approval.
+    if request.get('revision_token'):
+        from .project_decision_outcomes import project_hash
+        app.action_approvals.validate_revision_context(owner=owner, binding=binding,
+            session=request.get('session'), project_hash=project_hash(workspace),
+            revision_token=request['revision_token'])
     if request.get('edit_policy') == 'delegated' or request.get('research_query', '').strip():
         return _review(app, request, owner, binding, 'project_task', {'request': request}, _task_review(request))
     return _prepare(app, request, owner=owner, binding=binding, grant_owner=grant_owner)

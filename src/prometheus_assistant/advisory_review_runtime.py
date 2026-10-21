@@ -19,6 +19,7 @@ from .application_policy import require_dispatch
 from .compact_chat import MemorySignal, candidates
 from .hardware import detect_hardware, grounded_profile
 from .ollama import GenerationCancelled, LocalModelError, OllamaClient, output_token_budget
+from . import specialist_resources
 
 
 _URL = 'http://127.0.0.1:11434'
@@ -54,6 +55,7 @@ _REASONS = {
     'policy_denied': 'The host application policy does not permit this local review.',
     'cancelled': 'The owner stopped this review; no advisory result was accepted.',
     'resource_unavailable': 'Measured memory or a fitting local reviewer is unavailable.',
+    'resource_deferred': 'Current resource mode or headroom defers optional local review.',
     'identity_unavailable': 'No eligible installed local model has an unambiguous artifact identity.',
     'identity_changed': 'The selected local model identity changed or became unavailable.',
     'context_unavailable': 'The complete review does not fit an eligible local model context.',
@@ -81,6 +83,15 @@ def _allowed():
     except ValueError:
         return False
     return True
+
+
+def _admitted(app):
+    try:
+        admission = specialist_resources.admit(app)
+        specialist_resources.validate(admission)
+        return admission['schema_version'] == 2 and admission['decision'] == 'run_local'
+    except Exception:
+        return False
 
 
 def _cancelled(app):
@@ -183,6 +194,15 @@ class _Signal:
 
 
 def run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=120, role='correctness'):
+    from .model_lifecycle import task_scope
+    from .project_resources import inference_mode
+    with task_scope(mode_provider=lambda: inference_mode(app),
+                    optional=True, cancel_event=app.cancel_event):
+        return _run_review(app, candidate, reviewed_files, author=author,
+                           timeout_seconds=timeout_seconds, role=role)
+
+
+def _run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=120, role='correctness'):
     """Return status/reason/report for one sequential local review, without retries.
 
     The trusted app supplies cancel_event, model_evidence.order and optional
@@ -213,6 +233,8 @@ def run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=1
         return _result('cancelled', 'cancelled')
     if not _allowed():
         return _result('unavailable', 'policy_denied')
+    if not _admitted(app):
+        return _result('unavailable', 'resource_deferred')
     attempted, signal = False, None
     try:
         inventory_client = OllamaClient(base_url=_URL, timeout=_READ_TIMEOUT)
@@ -269,6 +291,8 @@ def run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=1
                 raise _OutputLimit('Invalid bounded advisory stream.')
 
         signal = _Signal(app.cancel_event, timeout_seconds)
+        if not _admitted(app):
+            return _result('unavailable', 'resource_deferred')
         started = monotonic()
         attempted = True
         response, _ = runtime.chat_stream(messages, json_format=_SCHEMA, num_predict=_output_tokens(profile),
@@ -294,6 +318,9 @@ def run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=1
     except (GenerationCancelled, LocalModelError, OSError) as error:
         if _cancelled(app):
             return _result('cancelled', 'cancelled', attempted=attempted)
+        from .ollama import ModelDeferred
+        if isinstance(error, ModelDeferred):
+            return _result('unavailable', 'resource_deferred', attempted=attempted)
         if signal is not None:
             signal.is_set()
             if signal.timed_out:
@@ -308,3 +335,4 @@ def run_review(app, candidate, reviewed_files, *, author=None, timeout_seconds=1
             return _result('unavailable', 'policy_denied', attempted=attempted)
         return _result('invalid_response' if attempted else 'unavailable',
                        'invalid_response' if attempted else 'runtime_unavailable', attempted=attempted)
+

@@ -52,6 +52,13 @@ def rig(monkeypatch):
     monkeypatch.setattr('prometheus_assistant.compact_chat.detect_hardware', lambda: state.hardware)
     state.app = SimpleNamespace(cancel_event=threading.Event(), progress=lambda *_: None,
         model_evidence=SimpleNamespace(order=lambda names, role: names))
+    state.mode = dict(requested='Balanced', effective='Balanced', dwell_pending=False)
+    state.app.lock = threading.RLock()
+    state.app.project_resources = SimpleNamespace(
+        scheduler=SimpleNamespace(policy=SimpleNamespace(reserve_ram_gib=2, cpu_ceiling=85)),
+        specialist_snapshot=lambda **kwargs: dict(mode=deepcopy(state.mode), observations=dict(
+            total_ram_gib=16, available_ram_gib=8, cpu_percent=10, plugged_in=True,
+            battery_percent=80, low_memory=False, thermal_distress=False, observed_at='fixture')))
     source = b'value = 1\nprint(value)\n'
     state.files = {'src/a.py': source}
     state.candidate = dict(version=1, path='src/a.py', content=source.decode(),
@@ -63,6 +70,28 @@ def rig(monkeypatch):
 
 def run(rig, **kwargs):
     return runtime.run_review(rig.app, rig.candidate, rig.files, author=rig.author, **kwargs)
+
+
+@pytest.mark.parametrize('mode', ['Idle', 'Battery Saver', 'Critical Recovery'])
+def test_optional_advisory_mode_defers_before_inventory(rig, mode):
+    from prometheus_assistant.advisory_review import validate_saved_advice
+    rig.mode.update(requested=mode, effective='Balanced', dwell_pending=True)
+    result = run(rig)
+    assert result['status'] == 'unavailable'
+    assert result['reason_code'] == 'resource_deferred'
+    assert result['attempted'] is False
+    assert not rig.clients and not rig.chats
+    assert validate_saved_advice(result) == result
+
+
+def test_optional_advisory_mode_change_after_selection_defers_before_stream(rig):
+    def change_mode(count):
+        if count == 2:
+            rig.mode.update(requested='Idle', effective='Balanced', dwell_pending=True)
+    rig.inventory_hook = change_mode
+    result = run(rig)
+    assert result['reason_code'] == 'resource_deferred'
+    assert result['attempted'] is False and not rig.chats
 
 
 def test_real_qualifier_uses_fresh_complete_context_and_distinct_inventory_artifact(rig):

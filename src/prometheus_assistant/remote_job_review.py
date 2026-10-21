@@ -4,6 +4,7 @@ Boundary callbacks are trusted application wiring, never request parameters.
 dispatch must authenticate returned receipts; this orchestration does not do so.
 No transport, key storage, UI or installation is implemented here.
 """
+from contextlib import ExitStack
 import hashlib
 import math
 import time
@@ -11,6 +12,7 @@ import time
 from .application_policy import require_dispatch, revision
 from .remote_job_envelope import seal_request
 from .remote_job_protocol import normalize_request, validate_receipt
+from .capability_outcome_hooks import tracking, observe_worker, attach
 
 
 class RemoteJobReview:
@@ -55,10 +57,14 @@ class RemoteJobReview:
             raise ValueError('The selected online target must match the exact device and worker.')
         return dict(value)
 
-    def prepare(self, request, *, session):
+    def prepare(self, request, *, session, capability_revision_token='', capability_subject=''):
         """Observe resources and create an exact review; never sign or claim work."""
         req = normalize_request(request)
         with self.grant_owner() as owner:
+            if capability_revision_token:
+                self.approvals.validate_capability_revision_context(owner=owner, binding=self.binding,
+                    session=session, kind='remote_syntax', subject_hash=capability_subject,
+                    capability_revision_token=capability_revision_token)
             require_dispatch('remote.action')
             target = self._target(req)
         resources = self._admission(req)
@@ -86,7 +92,8 @@ class RemoteJobReview:
                 duration='One claim only; uncertain execution is not automatically retried.')
             return self.approvals.review(owner=owner,binding=self.binding,session=session,
                 kind='remote_syntax',payload=dict(request=req,target=target),review=review,
-                policy_revision=revision())
+                policy_revision=revision(), capability_revision_token=capability_revision_token,
+                capability_subject=capability_subject)
 
     @staticmethod
     def _result(req, entry, approval_id, *, replayed=False):
@@ -98,6 +105,17 @@ class RemoteJobReview:
                     if entry['state']=='unconfirmed' else [])
 
     def decide(self, *, session, approval_id, fingerprint, decision):
+        if decision not in {'approve', 'reject'}:
+            raise ValueError('Worker execution accepts only an exact approval or rejection.')
+        observation = {}
+        with ExitStack() as stack:
+            result = self._decide(session=session, approval_id=approval_id,
+                fingerprint=fingerprint, decision=decision, stack=stack, observation=observation)
+            if observation:
+                attach(result, observe_worker(observation['outcome'], observation['request'], result))
+            return result
+
+    def _decide(self, *, session, approval_id, fingerprint, decision, stack, observation):
         """Consume exact owner approval, recheck target, then claim before signing.
 
         Signing/dispatch/persistence uncertainty leaves an unconfirmed claim.
@@ -112,6 +130,8 @@ class RemoteJobReview:
             req = row['payload']['request']
             if decision == 'reject':
                 return self._result(req,dict(state='rejected',receipt=None),row['id'])
+            outcome = stack.enter_context(tracking(self.approvals, owner, row, request=req))
+            observation.update(outcome=outcome, request=req)
             require_dispatch('remote.action')
             target = self._target(req)
             if target != row['payload']['target']:

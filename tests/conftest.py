@@ -6,6 +6,14 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
+def isolated_model_lifecycle(monkeypatch):
+    # Each test represents an independent app instance. Failed fake transports
+    # must not leave cooldowns in a different test's process-global governor.
+    from prometheus_assistant import model_lifecycle
+    monkeypatch.setattr(model_lifecycle, 'governor', model_lifecycle.ModelLifecycleGovernor())
+
+
+@pytest.fixture(autouse=True)
 def background_test_children(monkeypatch):
     if os.name != 'nt':
         return

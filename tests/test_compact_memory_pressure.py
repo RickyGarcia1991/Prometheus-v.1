@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from prometheus_assistant import compact_chat, ui_server
+from prometheus_assistant import compact_chat, ui_server, ollama
 from prometheus_assistant.hardware import HardwareProfile, ModelProfile
 from prometheus_assistant.memory import MemoryStore
 from prometheus_assistant.model_quality import ModelEvidence
@@ -102,6 +102,7 @@ def test_midstream_memory_drop_disconnects_unloads_once_and_saves_nothing(tmp_pa
             timeouts.append((path, self.timeout))
             return super()._request(path, payload)
     monkeypatch.setattr(compact_chat, 'OllamaClient', ObservedClient)
+    monkeypatch.setattr(ollama, 'OllamaClient', ObservedClient)
     monkeypatch.setattr(compact_chat, 'detect_hardware', lambda: HardwareProfile(8, 4, 'Windows', free[0]))
     evidence = ModelEvidence(tmp_path / 'evidence.sqlite3')
     memory_path = tmp_path / 'memory.sqlite3'
@@ -123,7 +124,7 @@ def test_midstream_memory_drop_disconnects_unloads_once_and_saves_nothing(tmp_pa
         assert [path for path, _ in requests] == ['/api/chat', '/api/generate']
         assert requests[-1][1] == {'model': 'first:tiny', 'keep_alive': 0}
     assert tokens == ['Incomplete text']
-    assert timeouts == [('/api/tags', 3), ('/api/generate', 2)]
+    assert timeouts == [('/api/tags', 3), ('/api/generate', .25)]
     assert evidence.summary()['failures'] == []
     with MemoryStore(memory_path) as memory:
         assert [row['content'] for row in memory.history(session)] == ['Previous question', 'Previous complete answer']

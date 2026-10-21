@@ -62,6 +62,7 @@ function renderJobs(jobs) {
     paragraph(card,'Files: '+(job.files || []).join(', '));
     if(job.approved_at)paragraph(card,'Approved '+date(job.approved_at)+'. Waiting permission ends '+date(job.expires_at)+'.');
     if(job.reasons?.length)paragraph(card,job.reasons.join(' '));
+    if(job.decision_outcome?.recorded===false)paragraph(card,'Decision history could not save this outcome. The native job result is retained; do not repeat execution to repair history.');
     if(job.state==='waiting') {
       paragraph(card,'Saved for this exact destination. Prometheus rechecks resources while open, unlocked and idle.');
       const expired=typeof job.expires_at==='number' && job.expires_at*1000<=Date.now();
