@@ -9,6 +9,7 @@ import ast
 import datetime as dt
 import json
 import math
+import os
 from pathlib import Path
 import re
 import secrets
@@ -387,6 +388,13 @@ def main():
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--ready-file", type=Path)
     args = parser.parse_args()
+    # Only the existing host's exact markers participate. Portable non-Windows
+    # sessions must not mistake the working directory for host lifecycle state.
+    local = os.environ.get('LOCALAPPDATA')
+    markers = tuple(Path(local) / 'Prometheus' / name for name in
+                    ('eject-mode.json', 'active-chat.shutdown')) if local else ()
+    if any(marker.exists() for marker in markers):
+        raise RuntimeError('Studio startup blocked: Prometheus shutdown or SSD eject is active.')
     with Server(("127.0.0.1", args.port)) as server:
         print(server.origin, flush=True)
         if args.ready_file:
@@ -396,7 +404,7 @@ def main():
             webbrowser.open(server.origin)
         server.timeout = 0.5
         try:
-            while not server.stop_requested:
+            while not server.stop_requested and not any(marker.exists() for marker in markers):
                 server.handle_request()
         except KeyboardInterrupt:
             pass

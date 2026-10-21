@@ -2,6 +2,16 @@ param([string]$RuntimeRoot, [switch]$CheckOnly, [switch]$NoBrowser, [switch]$NoD
 $ErrorActionPreference = 'Stop'
 $studioRoot = $PSScriptRoot
 $studioLog = Join-Path $studioRoot 'startup-error.txt'
+# Lifecycle refusal must not write a startup log on the ejecting volume or
+# open a blocking error dialog. Leave marker ownership to the host controller.
+if ($env:LOCALAPPDATA) {
+    $hostState = Join-Path $env:LOCALAPPDATA 'Prometheus'
+    foreach ($marker in @('eject-mode.json', 'active-chat.shutdown')) {
+        if (Test-Path -LiteralPath (Join-Path $hostState $marker)) {
+            throw 'Studio startup blocked: Prometheus shutdown or SSD eject is active.'
+        }
+    }
+}
 try {
 # Only the sibling runtime of this installation is selected automatically.
 # A development caller may explicitly supply a trusted runtime directory.
