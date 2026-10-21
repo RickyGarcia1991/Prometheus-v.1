@@ -23,8 +23,9 @@ const ready = {phase: 'ready', message: 'Connected.', selected_device_id: 'devic
 function harness(initial = ready) {
   const ui = setup();
   let current = clone(initial), failure = null;
-  const calls = [], timers = new Map(); let nextTimer = 0;
-  const ctx = {...ui.context, Date, setTimeout(fn) { const id = ++nextTimer; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); },
+  const calls = [], notices = [], timers = new Map(); let nextTimer = 0;
+  ui.context.window.dispatchEvent = event => { notices.push(event.type); ui.emit(event.type, event.detail); };
+  const ctx = {...ui.context, Date, CustomEvent: class { constructor(type) { this.type = type; } }, setTimeout(fn) { const id = ++nextTimer; timers.set(id, fn); return id; }, clearTimeout(id) { timers.delete(id); },
     api: async (url, body) => {
       calls.push({url, ...(body ? {body: clone(body)} : {})});
       if (failure) { const value = failure; failure = null; throw value; }
@@ -43,9 +44,20 @@ function harness(initial = ready) {
   const open = async () => { ui.emit('prometheus-busy', {online: true, closed: false, busy: false}); ui.elements.tabRemote.click(); await flush(); };
   const choose = () => { ui.elements.remoteTool.value = 'terminal'; ui.elements.remoteTool.dispatch('change'); };
   const fields = () => ui.elements.remoteFields.children.filter(item => item.tagName === 'LABEL').map(item => item.children[0]);
-  return {...ui, calls, timers, flush, open, choose, fields, set(value) { current = clone(value); }, fail(error) { failure = error; },
+  return {...ui, calls, notices, timers, flush, open, choose, fields, set(value) { current = clone(value); }, fail(error) { failure = error; },
     async tick() { const [id, fn] = timers.entries().next().value || []; if (fn) { timers.delete(id); await fn(); await flush(); } }};
 }
+
+test('connection changes and explicit refresh notify the passive dashboard, repeated state reads do not',async()=>{
+ const h=harness();await h.open();
+ assert.deepEqual(h.notices,['prometheus-remote-state-updated']);
+ h.elements.tabRemote.click();await h.flush();assert.equal(h.notices.length,1);
+ await h.elements.remoteRefresh.click();assert.equal(h.notices.length,2,'ready-to-ready refresh still replaces a health observation');
+ h.set({...ready,phase:'working'});h.elements.tabRemote.click();await h.flush();assert.equal(h.notices.length,3);
+ h.set(ready);await h.tick();assert.equal(h.notices.length,4,'async refresh completion updates health');
+ await h.elements.remoteDisconnect.click();assert.equal(h.notices.length,5);
+ assert.equal(h.calls.filter(call=>call.body?.action==='execute').length,0);
+});
 
 test('tab and account connection remain explicit; offline targets are disabled', async () => {
   const h = harness({phase: 'disconnected', devices: [], tools: [], pending: null}), e = h.elements;
@@ -71,6 +83,16 @@ test('tab and account connection remain explicit; offline targets are disabled',
   assert(!e.panelDocuments.hidden && e.panelPermissions.hidden, 'keyboard wraps across all five tabs');
   e.tabDocuments.dispatch('keydown', {key: 'End'});
   assert(!e.panelPermissions.hidden, 'End selects the last tab');
+});
+
+test('stable connection phase notifies only when selected device or device list changes',async()=>{
+ const h=harness();await h.open();assert.equal(h.notices.length,1);
+ h.set({...ready,selected_device_id:'device-3'});h.elements.tabRemote.click();await h.flush();assert.equal(h.notices.length,2);
+ const changed={...ready,selected_device_id:'device-3',devices:ready.devices.map(d=>d.id==='device-3'?{...d,status:'online'}:d)};
+ h.set(changed);h.elements.tabRemote.click();await h.flush();assert.equal(h.notices.length,3);
+ h.elements.tabRemote.click();await h.flush();assert.equal(h.notices.length,3);
+ assert(h.notices.every(name=>name==='prometheus-remote-state-updated'));
+ assert(h.calls.every(call=>call.url==='/api/remote/state' && !call.body));
 });
 
 test('schema fields create exact preview and execution consumes only that preview once', async () => {

@@ -57,10 +57,14 @@ class RemoteJobReview:
             raise ValueError('The selected online target must match the exact device and worker.')
         return dict(value)
 
-    def prepare(self, request, *, session):
+    def prepare(self, request, *, session, capability_revision_token='', capability_subject=''):
         """Observe resources and create an exact review; never sign or claim work."""
         req = normalize_request(request)
         with self.grant_owner() as owner:
+            if capability_revision_token:
+                self.approvals.validate_capability_revision_context(owner=owner, binding=self.binding,
+                    session=session, kind='remote_syntax', subject_hash=capability_subject,
+                    capability_revision_token=capability_revision_token)
             require_dispatch('remote.action')
             target = self._target(req)
         resources = self._admission(req)
@@ -88,7 +92,8 @@ class RemoteJobReview:
                 duration='One claim only; uncertain execution is not automatically retried.')
             return self.approvals.review(owner=owner,binding=self.binding,session=session,
                 kind='remote_syntax',payload=dict(request=req,target=target),review=review,
-                policy_revision=revision())
+                policy_revision=revision(), capability_revision_token=capability_revision_token,
+                capability_subject=capability_subject)
 
     @staticmethod
     def _result(req, entry, approval_id, *, replayed=False):
@@ -100,6 +105,8 @@ class RemoteJobReview:
                     if entry['state']=='unconfirmed' else [])
 
     def decide(self, *, session, approval_id, fingerprint, decision):
+        if decision not in {'approve', 'reject'}:
+            raise ValueError('Worker execution accepts only an exact approval or rejection.')
         observation = {}
         with ExitStack() as stack:
             result = self._decide(session=session, approval_id=approval_id,

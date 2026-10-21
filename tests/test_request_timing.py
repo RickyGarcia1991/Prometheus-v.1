@@ -27,6 +27,8 @@ def bare_app(monkeypatch, clock):
     app = object.__new__(ui.Interface)
     app.lock = threading.Lock()
     app.jobs = {}
+    # Match Interface's per-job browser binding store for authenticated polling.
+    app._speech_owners = {}
     from prometheus_assistant.ui_activity import ActivityHistory
     app.activity_history = ActivityHistory()
     app.activity_history.start('fixture', {'mode': 'chat'})
