@@ -70,6 +70,7 @@ async function fixture({voice = null, autoVoicePrepare = true} = {}) {
   const runtime = vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(asset, 'transport.js'), 'utf8'), runtime, {filename: 'transport.js'});
   vm.runInContext(fs.readFileSync(path.join(asset, 'folded-core.js'), 'utf8'), runtime, {filename: 'folded-core.js'});
+  vm.runInContext(fs.readFileSync(path.join(asset, 'activity-panel.js'), 'utf8'), runtime, {filename: 'activity-panel.js'});
   vm.runInContext(fs.readFileSync(path.join(asset, 'app.js'), 'utf8'), runtime, {filename: 'app.js'});
   await settle();
   const run = expression => vm.runInContext(expression, runtime);
@@ -325,6 +326,33 @@ if (require.main === module) (async () => {
   assert.equal(links.elements.messages.children.at(-1).querySelectorAll('.source-link')[0].textContent,'example.com','standalone excerpt source URLs use a compact domain label');
   console.log('Source links passed: live/saved replies, exact destination, compact label, safe new tab, literal unsafe input.');
   console.log('Saved evidence passed: exact metadata, labels, literal rendering, legacy history, and conversation status reset.');
+  const retainedAdvice = {status: 'unavailable', reason: 'Memory was low', report: null};
+  const displayedAdvice = [];
+  links.context.window.PrometheusProjectAgent = {renderAdvisoryReview: (box, report) => displayedAdvice.push(report)};
+  const jobPosts = links.requests.filter(row => row.url === '/api/jobs').length;
+  links.elements.history.value = 'saved-evidence';
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([
+    {role: 'assistant', content: 'Saved project result', details: {project_edit: {advisory_review: retainedAdvice}}}]))]);
+  await links.elements.history.onchange();
+  assert.deepEqual(displayedAdvice.at(-1), retainedAdvice, 'history renders the original advisory record');
+  assert.equal(links.requests.filter(row => row.url === '/api/jobs').length, jobPosts, 'history cannot run a new review');
+  const retainedTeam = {schema_version: 1, pipeline_version: 'project-specialists-v1', status: 'incomplete',
+    stages: [{role: 'correctness', status: 'deferred', advice: null}]};
+  const displayedTeams = [], adviceCount = displayedAdvice.length;
+  links.context.window.PrometheusProjectAgent.renderSpecialistReview = (box, report) => {
+    if (report == null) return false;
+    displayedTeams.push(report); return true;
+  };
+  links.queued.set('/api/history/saved-evidence', [Promise.resolve(response([
+    {role: 'assistant', content: 'Saved partial team', details: {project_edit: {specialist_review: retainedTeam, advisory_review: retainedAdvice}}},
+    {role: 'assistant', content: 'Saved team review', details: {task_review: {specialist_review: retainedTeam}}},
+    {role: 'assistant', content: 'Saved approval review', details: {approval: {review: {specialist_review: retainedTeam}}}}
+  ]))]);
+  await links.elements.history.onchange();
+  assert.equal(displayedTeams.length, 3, 'all saved project review surfaces render retained specialist reports');
+  assert.deepEqual(displayedTeams[0], retainedTeam);
+  assert.equal(displayedAdvice.length, adviceCount, 'team history suppresses duplicate legacy review');
+  assert.equal(links.requests.filter(row => row.url === '/api/jobs').length, jobPosts, 'team history never dispatches workers');
   const reach = await fixture();
   reach.elements.mode.value = 'reach'; reach.elements.reachAction.value = 'github-releases';
   reach.elements.mode.onchange();

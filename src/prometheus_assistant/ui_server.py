@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -21,7 +22,9 @@ from .hardware import detect_hardware, resource_root, select_model
 from .memory import MemoryStore
 from .reference_cache import reference_session
 from .model_routing import routing_record, ROLE_MODELS, choose_helper
-from . import ui_workspace, self_improvement_ui, integration_ui
+from . import ui_workspace, self_improvement_ui, integration_ui, project_tasks_ui, runtime_settings_ui, remote_jobs_ui, capability_revision_ui
+from . import evidence_resolution_ui
+from . import interpretation_lifecycle_ui, evidence_followup_ui
 from .model_quality import ModelEvidence
 from .ollama import OllamaClient, GenerationCancelled
 from .continuous_capture import EmptyRecording
@@ -40,6 +43,10 @@ MODES = {'chat', 'coding', 'ask', 'vision', 'reach', 'capabilities', 'library', 
 MODES |= ui_workspace.MODES
 MODES |= self_improvement_ui.MODES
 MODES |= integration_ui.MODES
+MODES |= project_tasks_ui.MODES
+MODES |= runtime_settings_ui.MODES | remote_jobs_ui.MODES
+MODES |= evidence_resolution_ui.MODES
+MODES |= interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES
 MODES.add('voice_prepare')
 PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
@@ -138,8 +145,13 @@ def validate_job(body):
         spec = build_builtin_registry(None).get(body['worker'], body['tool'])
         request, _ = scope(spec, body['arguments'])
         return {**body, 'arguments': dict(request.arguments)}
-    approval_fields = {'approval_id', 'approval_fingerprint', 'approval_decision'}
-    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key'} | ui_workspace.FIELDS | integration_ui.FIELDS | approval_fields):
+    approval_required = {'approval_id', 'approval_fingerprint', 'approval_decision'}
+    approval_fields = approval_required | {'approval_feedback'}
+    capability_revision_ui.validate(body if isinstance(body, dict) else {})
+    evidence_resolution_ui.validate(body if isinstance(body, dict) else {})
+    interpretation_lifecycle_ui.validate(body if isinstance(body, dict) else {})
+    evidence_followup_ui.validate(body if isinstance(body, dict) else {})
+    if not isinstance(body, dict) or set(body) - ({'mode', 'prompt', 'voice_reply', 'reach_action', 'source', 'profile', 'provider', 'session', 'language', 'project', 'home_key', capability_revision_ui.FIELD} | ui_workspace.FIELDS | integration_ui.FIELDS | project_tasks_ui.FIELDS | runtime_settings_ui.FIELDS | remote_jobs_ui.FIELDS | evidence_resolution_ui.FIELDS | interpretation_lifecycle_ui.FIELDS | evidence_followup_ui.FIELDS | approval_fields):
         raise ValueError('Invalid request fields.')
     mode = body.get('mode')
     if mode not in MODES:
@@ -147,13 +159,19 @@ def validate_job(body):
     if 'voice_reply' in body and (mode != 'chat' or type(body['voice_reply']) is not bool):
         raise ValueError('Voice reply must be a boolean in chat mode.')
     if mode == 'approval_decision':
-        if (not approval_fields <= body.keys() or not isinstance(body['approval_id'], str)
+        if (not approval_required <= body.keys() or not isinstance(body['approval_id'], str)
                 or not re.fullmatch(r'[0-9a-f]{32}', body['approval_id'])
                 or not isinstance(body['approval_fingerprint'], str)
                 or not re.fullmatch(r'[0-9a-f]{64}', body['approval_fingerprint'])
                 or not isinstance(body['approval_decision'], str)
-                or body['approval_decision'] not in {'approve', 'reject'}):
-            raise ValueError('Use the exact reviewed approval and choose approve or reject.')
+                or body['approval_decision'] not in {'approve', 'reject', 'request_changes'}):
+            raise ValueError('Use the exact reviewed approval and choose approve, reject or request changes.')
+        if body['approval_decision'] == 'request_changes':
+            feedback = body.get('approval_feedback')
+            if not isinstance(feedback, str) or not feedback.strip() or len(feedback) > 2000 or '\x00' in feedback:
+                raise ValueError('Describe the requested changes in 1 to 2000 characters.')
+        elif 'approval_feedback' in body:
+            raise ValueError('Feedback is only valid when requesting changes.')
     elif approval_fields & body.keys():
         raise ValueError('Approval fields are only valid for an exact approval decision.')
     from .capabilities import SOURCES
@@ -170,7 +188,7 @@ def validate_job(body):
         raise ValueError('Use a prompt of at most 4000 characters.')
     if mode == 'voice_prepare' and (set(body) - {'mode', 'prompt'} or prompt.strip()):
         raise ValueError('Voice preparation accepts only its mode and an empty prompt.')
-    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES and not prompt.strip():
+    if mode not in {'dictate', 'voice_prepare', 'tools', 'models', 'capabilities', 'approval_decision'} | ui_workspace.NO_PROMPT | integration_ui.MODES | project_tasks_ui.NO_PROMPT | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES and not prompt.strip():
         raise ValueError('Enter a question or expression.')
     if mode == 'reach' or 'reach_action' in body:
         from .public_reach import validate_request
@@ -194,6 +212,10 @@ def validate_job(body):
         raise ValueError('Select the project folder to use as evidence.')
     ui_workspace.validate(body)
     integration_ui.validate(body)
+    project_tasks_ui.validate(body)
+    runtime_settings_ui.validate(body)
+    if mode not in evidence_followup_ui.MODES:
+        remote_jobs_ui.validate(body)
     return {**body, 'prompt': prompt.strip()}
 
 
@@ -203,6 +225,11 @@ class Interface:
         self.preview = os.environ.get('PROMETHEUS_DEVELOPMENT_PREVIEW') == '1'
         self.data_root = self.memory_path.parent/'Interface/Data'
         self.model_evidence = ModelEvidence(self.data_root/'Routing/evidence.sqlite3')
+        from .project_resources import ProjectResources
+        from .disk_pressure_observations import DiskPressureProbe
+        self.project_resources = ProjectResources(self.data_root,
+            disk_probe=(DiskPressureProbe({'data': str(self.data_root.resolve())})
+                        if os.name == 'nt' else None))
         self.last_backup = None
         self.cancel_event = threading.Event()
         self.dictation_finish = threading.Event()
@@ -211,6 +238,8 @@ class Interface:
         self.next_maintenance = time.monotonic()+60
         self.token = secrets.token_urlsafe(32)
         self.jobs = {}
+        from .ui_activity import ActivityHistory
+        self.activity_history = ActivityHistory()
         self._speech_owners = {}
         self.integration_tasks = {}
         self.lock = threading.Lock()
@@ -218,12 +247,14 @@ class Interface:
         self.current = None
         self.closing = False
         self.last_seen = time.monotonic()
+        self.last_user_activity = self.last_seen
         self.state = 'idle'
         self.cache_context = None
         self.maintenance_error = None
         self.maintenance_turn = 1
         from .action_approvals import ActionApprovals
-        self.action_approvals = ActionApprovals(receipt_root=self.data_root/'Maintenance/Approvals')
+        self.action_approvals = ActionApprovals(receipt_root=self.data_root/'Maintenance/Approvals',
+            history_root=self.data_root/'Maintenance/DecisionHistory')
         from .remote_access import RemoteAccess
         self.remote = RemoteAccess()
         from .scoped_grants import GrantStore
@@ -234,12 +265,21 @@ class Interface:
         from prometheus_control_center import __version__
         self.last_seen = time.monotonic()
         hardware = hardware_status()
+        try:
+            resource_status = self.project_resources.status(foreground=self.current is not None)
+        except (OSError, ValueError) as error:
+            resource_status = {'mode': 'Unavailable', 'error': str(error)[:200]}
         with self.lock:
-            return {'version': __version__, 'hardware': hardware, 'state': self.state,
+            # The attention view reads this status cache without sampling again.
+            from copy import deepcopy
+            self._decision_resource_status = deepcopy(resource_status)
+            self._decision_resource_cached_at = time.monotonic()
+            return {'version': __version__, 'hardware': hardware, 'resource_status': resource_status, 'state': self.state,
                     'busy': self.current is not None, 'closing': self.closing,
                     'job': self.current, 'job_background': self.jobs.get(self.current, {}).get('background', False),
                     'saved_locally': True, 'development_preview': self.preview,
-                    'maintenance_error': self.maintenance_error}
+                    'maintenance_error': self.maintenance_error,
+                    'activity': self.activity_history.recent()}
 
     def append_partial(self, text):
         with self.lock:
@@ -251,6 +291,7 @@ class Interface:
         with self.lock:
             if self.current:
                 self.jobs[self.current]['stage'] = stage
+                self.activity_history.progress(self.current, stage)
                 if reset:
                     self.jobs[self.current]['partial'] = ''
                     row = self.jobs[self.current]
@@ -292,6 +333,7 @@ class Interface:
                 raise ValueError('This request is complete or cannot be interrupted safely.')
             self.cancel_event.set()
             self.jobs[job_id]['stage'] = 'Stopping current request…'
+            self.activity_history.progress(job_id, 'Stopping current request…')
         return {'cancel_requested': True}
 
     def dictation_control(self, job_id, *, finish=False):
@@ -305,6 +347,7 @@ class Interface:
             if finish:
                 self.dictation_finish.set()
                 row['stage'] = 'Finishing recording…'
+                self.activity_history.progress(job_id, 'Finishing recording…')
                 return {'finish_requested': True}
             self.dictation_last_pulse = time.monotonic()
             self.last_seen = self.dictation_last_pulse
@@ -335,13 +378,24 @@ class Interface:
             return {'preparing': True}
 
     def idle_maintenance(self):
+        # Alternate successful queue turns; neither kind can starve the other.
+        queues = (remote_jobs_ui.scheduled_syntax_ui.idle, evidence_followup_ui.idle)
+        first = getattr(self, '_verification_queue_turn', 0)
+        for index in (first, 1-first):
+            if queues[index](self):
+                self._verification_queue_turn = 1-index
+                return
         if time.monotonic() < self.next_maintenance or self.closing:
             return
         self.next_maintenance = time.monotonic()+60
         if self.current is not None:
             return
+        from .project_resources import background_allowed
+        if not background_allowed(self)['allowed']:
+            self.maintenance_error = 'Background maintenance deferred by current resource mode.'
+            return
         errors = []
-        source_due = update_due = False
+        source_due = update_due = research_due = False
         try:
             source_due = any(r.get('enabled') and r.get('due') for r in ui_workspace.schedule(self).status().get('watches', []))
         except Exception as error:
@@ -350,16 +404,29 @@ class Interface:
             update_due = ui_workspace.component_updates(self).status().get('due_count', 0) > 0
         except Exception as error:
             errors.append('Component updates: '+str(error)[:180])
+        try:
+            research_due = (time.monotonic() - self.last_user_activity >= 60
+                            and project_tasks_ui.research_store(self).status()['due'])
+        except Exception as error:
+            errors.append('Idle research: '+str(error)[:180])
         self.maintenance_error = '; '.join(errors) or None
         try:
-            # Alternate when both queues are due, so neither can starve the other.
-            if update_due and (not source_due or self.maintenance_turn % 2 == 0):
+            # Rotate three queues so research cannot starve existing maintenance.
+            if research_due and (not (source_due or update_due) or self.maintenance_turn % 3 == 0):
+                self.submit({'mode': 'idle_run', 'prompt': ''}, background=True)
+            elif update_due and (not source_due or self.maintenance_turn % 2 == 0):
                 self.submit({'mode': 'check_updates', 'prompt': ''}, background=True)
             elif source_due:
                 self.submit({'mode': 'check_sources', 'prompt': ''}, background=True)
             self.maintenance_turn += 1
         except Exception as error:
             self.maintenance_error = str(error)[:400]
+
+    def idle_research_enabled(self):
+        try:
+            return project_tasks_ui.research_store(self).status()['settings']['enabled']
+        except (OSError, ValueError):
+            return False
 
     def ensure_runtime(self, *, cancel_event=None):
         from .application_policy import require_dispatch
@@ -378,12 +445,19 @@ class Interface:
         require_dispatch('ollama.request')
         require_dispatch('ollama.start')
         self.progress('Starting local model runtime')
-        helper = Path(root)/'Tools/wait-ollama.ps1'
+        # Signed releases carry their own startup diagnostics and ownership
+        # behavior. Resource-only deployments retain their existing helper.
+        release_helper = Path(__file__).resolve().parents[2]/'tools/wait-ollama.ps1'
+        helper = release_helper if release_helper.is_file() else Path(root)/'Tools/wait-ollama.ps1'
+        runtime_env = os.environ.copy()
+        runtime_env.update(OLLAMA_EXE=str(Path(root)/'Ollama/runtime/ollama.exe'),
+                           OLLAMA_MODELS=str(Path(root)/'Ollama/.ollama/models'))
+        runtime_env = runtime_settings_ui.preferences(self).child_environment(runtime_env)
         # A background runtime can inherit pipe handles from its launcher. Read
         # actual readiness instead of waiting for those handles to reach EOF.
         with tempfile.TemporaryFile() as error_log:
             process = subprocess.Popen(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(helper)],
-                                       stdout=subprocess.DEVNULL, stderr=error_log,
+                                       stdout=subprocess.DEVNULL, stderr=error_log, env=runtime_env,
                                        creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
             deadline = time.monotonic()+130
             client.timeout = 1
@@ -416,8 +490,8 @@ class Interface:
 
     def submit(self, request, *, grant_owner=None, approval_binding=None, background=False):
         request = validate_job(request)
-        if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates'}:
-            raise ValueError('Only scheduled source and component checks can be background jobs.')
+        if type(background) is not bool or background and request['mode'] not in {'check_sources', 'check_updates', 'idle_run', 'scheduled_syntax_tick', 'evidence_followup_tick'}:
+            raise ValueError('Only approved scheduled research and maintenance checks can be background jobs.')
         from .application_policy import require_dispatch
         require_dispatch('ui.'+request['mode'])
         with self.lock:
@@ -429,25 +503,44 @@ class Interface:
                 del self.jobs[oldest]
                 self._speech_owners.pop(oldest, None)
             self.cancel_event.clear()
+            if not background:
+                self.last_user_activity = time.monotonic()
             self.dictation_finish.clear()
             self.dictation_last_pulse = time.monotonic()
             self.jobs[job_id] = {'id': job_id, 'state': 'running', 'stage': 'Starting request', 'partial': '', 'background': background,
                                  'speech_epoch': 0, 'speech_streamable': False,
                                  'action': request['mode'],
-                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'voice_prepare', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision'}}
+                                 'cancellable': request['mode'] in {'chat', 'coding', 'ask', 'vision', 'reach', 'document_import', 'code_tests', 'model_benchmark', 'dictate', 'voice_prepare', 'check_updates', 'self_improve', 'integration', 'integration_access', 'approval_decision', 'project_edit', 'idle_run', 'scheduled_syntax_prepare', 'scheduled_syntax_tick', 'scheduled_syntax_recover', 'evidence_followup_prepare', 'evidence_followup_tick', 'evidence_followup_recover'}}
             if request['mode'] == 'dictate':
                 self.jobs[job_id].update(recording=False, level=0., elapsed=0.)
             self._speech_owners[job_id] = {'binding': approval_binding}
             self.current = job_id
+            self.activity_history.start(job_id, request, background)
             self.state = 'listening' if request['mode'] == 'dictate' else 'thinking'
         self.executor.submit(self._work, job_id, request, grant_owner, approval_binding)
         return {'id': job_id, 'state': 'running'}
 
     def _work(self, job_id, request, grant_owner=None, approval_binding=None):
+        from .model_lifecycle import task_scope
+        from .project_resources import inference_mode
+        background = bool(self.jobs.get(job_id, {}).get('background'))
+        def current_mode():
+            return inference_mode(self, foreground=not background)
+        with task_scope(mode_provider=current_mode,
+                        optional=background,
+                        cancel_event=self.cancel_event):
+            return self._work_owned(job_id, request, grant_owner, approval_binding)
+
+    def _work_owned(self, job_id, request, grant_owner=None, approval_binding=None):
         start = time.monotonic()
         with RequestTiming(started=start, clock=time.monotonic,
                            cancelled_exceptions=(GenerationCancelled,)) as timing:
             try:
+                from .project_resources import background_allowed
+                if (self.jobs.get(job_id, {}).get('background')
+                        and request['mode'] in {'check_sources', 'check_updates', 'idle_run'}
+                        and not background_allowed(self)['allowed']):
+                    raise GenerationCancelled('Background maintenance deferred by current resource mode; due work remains queued.')
                 # Only the single worker owns the reference cache and its read locks.
                 if self.cache_context is None and request['mode'] not in {'dictate', 'voice_prepare'}:
                     with stage('reference_cache'):
@@ -458,8 +551,29 @@ class Interface:
                         raise ValueError('A current authenticated owner is required for grant execution.')
                     with grant_owner() as owner:
                         result = self.execute_core(request, owner=owner)
+                elif request['mode'] == 'code_undo':
+                    if grant_owner is None:
+                        raise ValueError('A current authenticated owner is required for undo.')
+                    with grant_owner() as owner:
+                        result = ui_workspace.execute(self, request, decision_owner=owner)
                 else:
-                    result = integration_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    result = capability_revision_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = evidence_resolution_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = interpretation_lifecycle_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = evidence_followup_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None and request['mode'] == 'idle_run' and self.jobs[job_id].get('background'):
+                        result = project_tasks_ui.run_idle(self)
+                    elif result is None:
+                        result = project_tasks_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = runtime_settings_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = remote_jobs_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
+                    if result is None:
+                        result = integration_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
                         result = self_improvement_ui.execute(self, request, grant_owner=grant_owner, binding=approval_binding)
                     if result is None:
@@ -488,6 +602,7 @@ class Interface:
                 self.jobs[job_id] = {'id': job_id, **result, **speech, 'action': request['mode'], 'background': background,
                                     'seconds': round(diagnostics['worker_total_seconds'], 3),
                                     'diagnostics': diagnostics}
+                self.activity_history.finish(job_id, result)
                 if request['mode'] == 'dictate':
                     self.jobs[job_id].update(recording=False, level=0., elapsed=recorded_seconds)
                 self.current = None
@@ -514,10 +629,11 @@ class Interface:
         require_dispatch('ui.'+request['mode'])
         if request['mode'] == 'core':
             raise ValueError('Scoped Core execution requires the authenticated job path.')
-        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES:
+        if request['mode'] in self_improvement_ui.MODES | integration_ui.MODES | project_tasks_ui.MODES | runtime_settings_ui.MODES | remote_jobs_ui.MODES | evidence_resolution_ui.MODES | interpretation_lifecycle_ui.MODES | evidence_followup_ui.MODES:
             raise ValueError('Application changes and integrations require the authenticated owner approval path.')
         mode, prompt = request['mode'], request['prompt']
-        self.progress(mode.replace('_', ' ').capitalize())
+        from .ui_activity import task_label
+        self.progress(task_label(request))
         if mode in {'chat', 'coding'}:
             from .structured_data import explicit_json_reply
             supplied = explicit_json_reply(prompt)
@@ -709,9 +825,17 @@ class Interface:
             data['memory_note'] = 'Available memory changed during startup. Source excerpts remain available; no model answer was generated.'
             return self.save(request, data, 'Memory pressure · source evidence')
         try:
-            self.enable_voice_stream(request, role)
+            remembered = project_tasks_ui.recall_sources(self, prompt) if mode == 'chat' else []
+            if remembered:
+                from .hardware import grounded_profile
+                # Saved-source qualification favored Qwen3 over the small coder.
+                # Reorder only already eligible helpers; preserve memory admission.
+                profiles = sorted((grounded_profile(p, hardware, resident) for p in profiles),
+                                  key=lambda p: p.model != 'qwen3:1.7b')
+            self.enable_voice_stream({} if remembered else request, role)
             return generate(request, self.memory_path, profiles, role, self.model_evidence,
-                            on_token=self.append_partial, on_stage=self.progress, cancel_event=self.cancel_event)
+                            on_token=self.append_partial, on_stage=self.progress, cancel_event=self.cancel_event,
+                            **({'source_evidence': remembered} if remembered else {}))
         except ModelMemoryPressure as error:
             self.progress('Memory pressure · switching to source evidence', reset=True)
             self.enable_voice_stream({}, role)
@@ -783,7 +907,15 @@ class Interface:
 
 class Server(ThreadingHTTPServer):
     daemon_threads = True
-    allow_reuse_address = True
+    # Windows SO_REUSEADDR permits simultaneous listeners and can route owner
+    # sessions to the wrong preview. POSIX keeps ordinary restart reuse.
+    allow_reuse_address = os.name != 'nt'
+
+    def server_bind(self):
+        if os.name == 'nt':
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
     def __init__(self, address, app):
         self.app = app
         super().__init__(address, Handler)
@@ -881,6 +1013,17 @@ class Handler(BaseHTTPRequestHandler):
                   '/grants.js': ('grants.js', 'text/javascript; charset=utf-8'),
                   '/self-improvement.js': ('self-improvement.js', 'text/javascript; charset=utf-8'),
                   '/integrations.js': ('integrations.js', 'text/javascript; charset=utf-8'),
+                  '/activity-panel.js': ('activity-panel.js', 'text/javascript; charset=utf-8'),
+                  '/decision-center.js': ('decision-center.js', 'text/javascript; charset=utf-8'),
+                  '/decision-history.js': ('decision-history.js', 'text/javascript; charset=utf-8'),
+                  '/evidence-resolution.js': ('evidence-resolution.js', 'text/javascript; charset=utf-8'),
+                  '/interpretation-lifecycle.js': ('interpretation-lifecycle.js', 'text/javascript; charset=utf-8'),
+                  '/evidence-followups.js': ('evidence-followups.js', 'text/javascript; charset=utf-8'),
+                  '/capability-revisions.js': ('capability-revisions.js', 'text/javascript; charset=utf-8'),
+                  '/project-agent.js': ('project-agent.js', 'text/javascript; charset=utf-8'),
+                  '/remote-jobs.js': ('remote-jobs.js', 'text/javascript; charset=utf-8'),
+                  '/scheduled-jobs.js': ('scheduled-jobs.js', 'text/javascript; charset=utf-8'),
+                  '/runtime-settings.js': ('runtime-settings.js', 'text/javascript; charset=utf-8'),
                   '/owner-access.js': ('owner-access.js', 'text/javascript; charset=utf-8'),
                   '/style.css': ('style.css', 'text/css; charset=utf-8')}
         try:
@@ -913,10 +1056,34 @@ class Handler(BaseHTTPRequestHandler):
                     data['providers'] = [integration_ui.provider(name).status(resource_root())
                                          for name in sorted(integration_ui.ADAPTERS)]
                 self.respond(200, data)
+            elif self.path == '/api/decision-center':
+                from .decision_center_ui import snapshot
+                cookie = self.owner_session()
+                self.respond(200, snapshot(app,
+                    grant_owner=lambda: access.grant_owner(cookie),
+                    binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
+            elif self.path == '/api/decisions/history':
+                with access.grant_owner(self.owner_session()) as owner:
+                    try:
+                        rows = app.action_approvals.history(owner=owner, limit=50)
+                    except (OSError, ValueError, RuntimeError):
+                        self.respond(503, {'error': 'Decision history is unavailable; existing approvals are unchanged.'})
+                    else:
+                        self.respond(200, {'schema_version': 1, 'read_only': True, 'items': rows})
             elif self.path == '/api/approvals/pending':
                 with access.grant_owner(self.owner_session()) as owner:
                     self.respond(200, {'approval': app.action_approvals.pending(owner=owner,
                         binding=hashlib.sha256((self.owner_session() or '').encode()).hexdigest())})
+            elif self.path == '/api/evidence/followups':
+                cookie=self.owner_session()
+                self.respond(200,evidence_followup_ui.status(app,
+                    grant_owner=lambda: access.grant_owner(cookie),
+                    binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
+            elif self.path == '/api/syntax-queue':
+                cookie=self.owner_session()
+                self.respond(200,remote_jobs_ui.scheduled_syntax_ui.status(app,
+                    grant_owner=lambda: access.grant_owner(cookie),
+                    binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/self-improvement/result' or self.path.startswith('/api/self-improvement/result/'):
                 job_id = None if self.path == '/api/self-improvement/result' else self.path.rsplit('/', 1)[-1]
                 with access.grant_owner(self.owner_session()) as owner:
@@ -934,8 +1101,17 @@ class Handler(BaseHTTPRequestHandler):
                 with MemoryStore(app.memory_path) as memory:
                     self.respond(200, memory.history(session, limit=40, include_metadata=True))
             elif self.path.startswith('/api/job/'):
+                binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
                 with app.lock:
                     job = app.jobs.get(self.path.rsplit('/', 1)[-1])
+                    if job:
+                        job = {**job, 'activity': app.activity_history.snapshot(job['id'])}
+                        if app._speech_owners.get(job['id'], {}).get('binding') != binding:
+                            result = job.get('result')
+                            if isinstance(result, dict) and isinstance(result.get('details'), dict):
+                                job = {**job, 'result': {**result, 'details': {
+                                    key: value for key, value in result['details'].items()
+                                    if key != 'capability_revision'}}}
                     self.respond(200 if job else 404, job or {'error': 'Request no longer available.'})
             else:
                 self.respond(404, {'error': 'Not found.'})
@@ -990,6 +1166,28 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {'locked': True})
                 else:
                     raise ValueError('Unknown verification action.')
+            elif self.path == '/api/evidence/followups/assess':
+                if (type(body) is not dict or set(body) != {'job_id', 'project'}
+                        or type(body['job_id']) is not str
+                        or not re.fullmatch('[a-f0-9]{32}', body['job_id'])
+                        or type(body['project']) is not str or not body['project'].strip()
+                        or len(body['project']) > 4096):
+                    raise ValueError('Choose the exact saved follow-up and open project.')
+                from .evidence_followup_assessment import assess
+                with self.server.owner_access.grant_owner(self.owner_session()) as owner:
+                    result = assess(evidence_followup_ui.store(self.server.app, owner),
+                        body['job_id'], lambda project: ui_workspace.workspace(
+                            self.server.app, {'project': project}), project=body['project'])
+                self.respond(200, result)
+            elif self.path == '/api/resources/preference':
+                if not isinstance(body, dict) or set(body) != {'mode'}:
+                    raise ValueError('Choose one project scheduling preference.')
+                with self.server.owner_access.grant_owner(self.owner_session()):
+                    try:
+                        result = self.server.app.project_resources.set_mode_preference(body['mode'])
+                    except OSError as error:
+                        raise RuntimeError('The scheduling preference could not be saved. Check that app storage is available.') from error
+                self.respond(200, {'mode_preference': result})
             elif self.path == '/api/permissions/preview':
                 from .permissions_inventory import preview_core
                 self.respond(200, preview_core(body))
@@ -1073,7 +1271,9 @@ class Handler(BaseHTTPRequestHandler):
             elif self.path == '/api/jobs':
                 cookie = self.owner_session()
                 self.respond(202, self.server.app.submit(body,
-                    grant_owner=lambda: self.server.owner_access.grant_owner(cookie),
+                    grant_owner=lambda: (nullcontext(None) if body.get('mode') == 'code_undo'
+                        and self.server.owner_access.required is False
+                        else self.server.owner_access.grant_owner(cookie)),
                     approval_binding=hashlib.sha256((cookie or '').encode()).hexdigest()))
             elif self.path == '/api/remote/action':
                 self.server.app.last_seen = time.monotonic()
@@ -1148,7 +1348,7 @@ def serve(memory_path, *, port=54555, open_browser=True, shutdown_request=None):
             app.idle_maintenance()
             if shutdown_request and Path(shutdown_request).exists():
                 app.closing = True
-            if time.monotonic() - app.last_seen > 300:
+            if time.monotonic() - app.last_seen > 300 and not app.idle_research_enabled():
                 app.closing = True
             if app.closing:
                 app.stop_dictation()

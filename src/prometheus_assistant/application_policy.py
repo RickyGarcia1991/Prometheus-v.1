@@ -13,7 +13,13 @@ from .guardrails import Decision, GuardrailResult, evaluate_tool_request
 
 UI_MODES = frozenset('chat coding ask vision reach capabilities library calculate research project dictate tools models home documents document_import document_list document_index code_open code_read code_preview code_apply code_undo code_tests maintenance watch_source check_sources backup restore_check model_benchmark health_check component_updates check_updates configure_updates core'.split())
 UI_MODES |= frozenset({'self_improve', 'approval_decision'})
+UI_MODES |= frozenset({'evidence_resolution_prepare'})
+UI_MODES |= frozenset({'interpretation_change_prepare'})
+UI_MODES |= frozenset({'evidence_followup_prepare','evidence_followup_tick','evidence_followup_cancel','evidence_followup_recover'})
 UI_MODES |= frozenset({'integration', 'integration_access', 'voice_prepare'})
+UI_MODES |= frozenset({'project_edit', 'idle_config', 'idle_status', 'idle_run'})
+UI_MODES |= frozenset({'runtime_status', 'runtime_config', 'remote_syntax_info', 'remote_syntax_prepare', 'remote_syntax_recover'})
+UI_MODES |= frozenset({'scheduled_syntax_prepare','scheduled_syntax_tick','scheduled_syntax_cancel','scheduled_syntax_recover'})
 CLI_COMMANDS = frozenset('permissions ui huggingface security-hardware research legal math library see voice-status transcribe coding-tools code media ask backup-memory restore-memory sources resources search sessions history doctor inspect-host chat voice-chat'.split())
 ADAPTERS = frozenset('evidence.retrieve reach.read public.fetch ollama.request ollama.stream coding.launch media.launch home.request voice.record voice.transcribe voice.speak maintenance.sources maintenance.updates backup.create backup.restore remote.action remote.dispatch'.split())
 ADAPTERS |= frozenset('workspace.apply workspace.undo workspace.tests documents.import documents.index documents.extract research.provider hf.metadata integrations.inspect archive.search remote.transport media.inspect ollama.start'.split())

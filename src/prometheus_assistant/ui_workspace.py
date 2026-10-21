@@ -31,6 +31,12 @@ def validate(body):
 def library(app, *, semantic=True):
     from .document_library import DocumentLibrary, OllamaEmbeddingClient
     def allowed():
+        from .specialist_resources import admit
+        try:
+            if admit(app)['decision'] != 'run_local':
+                return False
+        except Exception:
+            return False
         free = detect_hardware().available_ram_gib
         return free is not None and free >= 2.75
     client = OllamaEmbeddingClient() if semantic else None
@@ -115,7 +121,7 @@ def result_summary(mode, result):
     raise ValueError('No workbench summary for this action.')
 
 
-def execute(app, request):
+def execute(app, request, *, decision_owner=None):
     mode = request['mode']
     from .application_policy import require_dispatch
     if mode not in MODES:
@@ -136,9 +142,10 @@ def execute(app, request):
     elif mode == 'document_list':
         result = {'documents': library(app).list_documents(include_history=True)}
     elif mode == 'document_index':
-        if (detect_hardware().available_ram_gib or 0) >= 2.75:
+        documents = library(app)
+        if documents.embedding_allowed():
             app.ensure_runtime()
-        result = library(app).index_missing_embeddings(limit=32)
+        result = documents.index_missing_embeddings(limit=32)
     elif mode == 'model_benchmark':
         from .model_benchmarks import run_benchmarks
         from .ui_server import installed_models
@@ -151,13 +158,28 @@ def execute(app, request):
         project = workspace(app, request)
         if mode == 'code_open':
             result = project.describe()
+            from .project_change_set import latest_group
+            from .project_recovery import latest
+            result['latest_edit'] = latest(project) or latest_group(project, result.get('latest_edit')) or result.get('latest_edit')
+            from .project_resources import service
+            service(app).select_project(str(project.root))
         elif mode == 'code_read':
             result = project.read_file(request.get('file', ''))
         elif mode in {'code_preview', 'code_apply'}:
             action = project.preview_edit if mode == 'code_preview' else project.apply_edit
             result = action(request.get('file', ''), request.get('content', ''), request.get('expected_sha256', ''))
         elif mode == 'code_undo':
-            result = project.undo_edit(request.get('edit_id', ''))
+            edit_id = request.get('edit_id', '')
+            def restore_edit():
+                if edit_id.startswith('recovery-'):
+                    from .project_recovery import restore
+                    return restore(project, edit_id)
+                if edit_id.startswith('group-'):
+                    from .project_change_set import undo_group
+                    return undo_group(project, edit_id)
+                return project.undo_edit(edit_id)
+            from .project_decision_outcomes import undo
+            result = undo(app, project, decision_owner, edit_id, restore_edit)
         elif mode == 'code_tests':
             result = project.run_tests(request.get('preset', ''), request.get('target', ''),
                                        cancel_event=app.cancel_event, on_output=app.append_partial)

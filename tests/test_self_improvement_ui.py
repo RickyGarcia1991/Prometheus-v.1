@@ -222,3 +222,59 @@ def test_activation_status_is_owner_bound_and_never_claims_success_without_match
     app.action_approvals.record_dispatch(owner=OWNER,job_id='d'*32,state='failed',error='Helper failed before acceptance')
     result=adapter.activation_result(app,owner=OWNER)
     assert result['state']=='failed' and 'Helper failed' in result['error']
+
+
+def test_application_evidence_start_failure_prevents_promotion(setup,monkeypatch):
+    app,engine,_,_,run=setup;review=proposal(run)
+    monkeypatch.setattr(app.action_approvals,'start_application_outcome',
+        lambda **kw:(_ for _ in ()).throw(ValueError('Generated sidecar write failed')))
+    with pytest.raises(ValueError,match='sidecar'):
+        run({'mode':'chat','prompt':'yes','session':review['session']})
+    assert not engine.promotions
+    assert app.action_approvals.peek(owner=OWNER,binding=BINDING) is None
+
+
+def test_application_status_refresh_links_exact_result_across_reopen_without_replay(setup,monkeypatch):
+    from prometheus_assistant.action_approvals import ActionApprovals
+    app,engine,_,_,run=setup;review=proposal(run)
+    original=engine.promote
+    def queued(job_id,approved_fingerprint,**kw):
+        original(job_id,approved_fingerprint,**kw)
+        return dict(state='promotion_pending',job_id=job_id,approval_fingerprint=approved_fingerprint)
+    engine.promote=queued
+    run({'mode':'chat','prompt':'yes','session':review['session']})
+    old=app.action_approvals
+    app.action_approvals=ActionApprovals(receipt_root=old.receipt_root,history_root=old.decision_history.root)
+    engine.promote=lambda *a,**k:pytest.fail('Status refresh reactivated application')
+    engine.host_result={'job_id':'d'*32,'state':'failed','approval_fingerprint':'e'*64,'error':'PRIVATE ERROR'}
+    assert adapter.activation_result(app,owner=OWNER,job_id='d'*32)['state']=='failed'
+    engine.host_result={'job_id':'d'*32,'state':'rolled_back','approval_fingerprint':'e'*64}
+    assert adapter.activation_result(app,owner=OWNER,job_id='d'*32)['state']=='rolled_back'
+    assert adapter.activation_result(app,owner=OWNER,job_id='d'*32)['state']=='rolled_back'
+    monkeypatch.setattr(adapter,'_engine',lambda *_:pytest.fail('History accessed live engine'))
+    history=app.action_approvals.history(owner=OWNER)
+    assert [e['status'] for e in history[0]['application_outcomes']]==['started','promotion_pending','failed','rolled_back']
+    assert history[0]['evidence_lifecycle']['state']=='restored'
+    assert 'PRIVATE' not in str(history) and len(engine.promotions)==1
+
+
+def test_synchronous_ambiguous_failure_never_claims_native_failure(setup):
+    app,engine,_,_,run=setup;review=proposal(run)
+    def fail(*a,**kw):raise RuntimeError('generated ambiguous handoff')
+    engine.promote=fail
+    with pytest.raises(RuntimeError):run({'mode':'chat','prompt':'yes','session':review['session']})
+    history=app.action_approvals.history(owner=OWNER)
+    assert [e['status'] for e in history[0]['application_outcomes']]==['started','unconfirmed']
+    assert history[0]['evidence_lifecycle']['state']=='unconfirmed'
+
+
+def test_unknown_native_status_read_records_only_uncertainty_not_a_retry(setup):
+    app,engine,_,_,run=setup;review=proposal(run)
+    run({'mode':'chat','prompt':'yes','session':review['session']})
+    def unreadable(*a,**k):raise ValueError('Generated unsupported native phase')
+    engine.result=unreadable
+    with pytest.raises(ValueError,match='unsupported'):adapter.activation_result(app,owner=OWNER,job_id='d'*32)
+    saved=app.action_approvals.history(owner=OWNER)[0]
+    assert saved['evidence_lifecycle']['state']=='unconfirmed'
+    assert saved['application_outcomes'][-1]['status']=='unconfirmed'
+    assert len(engine.promotions)==1

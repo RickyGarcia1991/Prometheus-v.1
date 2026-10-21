@@ -113,6 +113,19 @@ def test_failed_dictation_keeps_error_state_and_closes_recording_status(app, mon
 def test_finish_without_speech_is_normal_idle_with_no_transcript(app, monkeypatch):
     from prometheus_assistant import continuous_capture
     closed = []
+    detector_closed = []
+    class QuietDetector:
+        # This test covers the job's empty-recording state transition. Native
+        # VAD initialization/inference is exercised by test_speech_endpoint and
+        # must not consume this isolated interface test's two-second deadline.
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            detector_closed.append(True)
+        def feed(self, data, *, final=False):
+            if data:
+                assert not any(data)
+                yield data, False
     class QuietDevice:
         def __enter__(self):
             return self
@@ -124,6 +137,7 @@ def test_finish_without_speech_is_normal_idle_with_no_transcript(app, monkeypatc
         def finish(self):
             return b''
     monkeypatch.setattr(continuous_capture, '_WaveInput', QuietDevice)
+    monkeypatch.setattr(continuous_capture, 'SpeechDetector', QuietDetector)
     monkeypatch.setattr(voice, '_transcriber', lambda model: None)
     monkeypatch.setattr(voice, 'transcribe', lambda *args, **kwargs: pytest.fail('Empty capture must not invoke Whisper'))
     row = wait(app, app.submit({'mode': 'dictate', 'prompt': ''}))
@@ -131,6 +145,7 @@ def test_finish_without_speech_is_normal_idle_with_no_transcript(app, monkeypatc
     assert row['error'] == 'No audible speech detected. Microphone off; nothing was submitted.'
     assert row['recording'] is False and 'result' not in row
     assert app.state == 'idle' and app.current is None and closed == [True]
+    assert detector_closed == [True]
 
 
 def test_controls_reject_wrong_job_and_non_dictation(app, monkeypatch):

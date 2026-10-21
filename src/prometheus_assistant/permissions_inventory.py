@@ -31,6 +31,7 @@ SOURCE_FILES = (
     'action_approvals.py', 'self_improvement.py', 'self_improvement_runtime.py', 'self_improvement_ui.py', 'autonomous_promotion.py',
     'integration_ui.py', 'integration_contracts.py', 'agent_memory.py', 'agent_memory_service.py',
     'browser_agent.py', 'voice_preparation.py',
+    'project_tasks_ui.py', 'project_editor.py', 'project_edit_runtime.py', 'idle_research.py',
 )
 
 
@@ -84,7 +85,7 @@ def preview_core(body):
 
 def snapshot(*, owner=None):
     from .ui_server import MODES, BROWSER_PERMISSIONS_POLICY
-    from . import ui_workspace
+    from . import ui_workspace, project_tasks_ui
     rows = []
     core, evidence = _registries()
     core_catalog = core.structured_catalog()
@@ -110,6 +111,8 @@ def snapshot(*, owner=None):
             basis='runtime_registry'))
     for mode in sorted(MODES):
         handler = 'ui_workspace.py:execute' if mode in ui_workspace.MODES else 'ui_server.py:Interface.execute'
+        if mode in project_tasks_ui.MODES:
+            handler = 'project_tasks_ui.py:execute / run_idle after approved configuration'
         rows.append(_row('browser.'+mode, 'Browser: '+mode, 'application', 'conditional',
             'Registered browser mode. Explicit requests use the HTTP owner gate and mode-specific checks; Core approval is not inferred.',
             'ui_server.py:MODES; ui_workspace.py:MODES', handler,

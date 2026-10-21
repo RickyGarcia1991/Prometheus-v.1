@@ -35,6 +35,21 @@ def test_status_reports_running_package_version(app, monkeypatch):
     assert app.status()['version'] == '0.9.0.runtime-fixture'
 
 
+def test_non_windows_interface_does_not_construct_native_disk_observer(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    from prometheus_assistant import disk_pressure_observations
+    import os
+    monkeypatch.setattr(ui, 'os', SimpleNamespace(name='posix', environ=os.environ))
+    def forbidden(*args, **kwargs):
+        raise AssertionError('A non-Windows interface must not construct the Windows observer')
+    monkeypatch.setattr(disk_pressure_observations, 'DiskPressureProbe', forbidden)
+    instance = ui.Interface(tmp_path/'portable-memory.sqlite3')
+    try:
+        assert instance.project_resources.disk_probe is None
+    finally:
+        instance.close()
+
+
 def test_real_arithmetic_saves_and_resumes(app):
     first = wait(app, app.submit({'mode':'calculate','prompt':'24 * 17'}))
     assert first['state']=='done'

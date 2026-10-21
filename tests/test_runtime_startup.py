@@ -47,6 +47,8 @@ class Helper:
 @pytest.fixture
 def app(tmp_path, monkeypatch):
     instance = ui_server.Interface(tmp_path / 'memory.sqlite3')
+    from prometheus_assistant.runtime_preferences import Preferences
+    instance._runtime_preferences = Preferences(tmp_path / 'host/runtime.sqlite3')
     monkeypatch.setattr(ui_server, 'resource_root', lambda: str(tmp_path / 'resources'))
     yield instance
     instance.close()
@@ -88,6 +90,55 @@ def test_already_ready_runtime_does_not_spawn_helper(app, monkeypatch):
     fake_inventory(monkeypatch, lambda: [])
     monkeypatch.setattr(ui_server.subprocess, 'Popen', lambda *a, **k: pytest.fail('Already ready API needs no helper.'))
     app.ensure_runtime()
+
+
+def test_reviewed_cpu_preference_applies_only_to_new_helper_environment(app, monkeypatch):
+    app._runtime_preferences.configure('cpu', 0)
+    helper = Helper()
+    started = []
+    fake_inventory(monkeypatch, lambda: [] if started else unavailable())
+    monkeypatch.setenv('OLLAMA_LLM_LIBRARY', 'parent-setting')
+    calls = helper_factory(monkeypatch, helper, on_spawn=lambda: started.append(True))
+    app.ensure_runtime()
+    assert calls[0][1]['env']['OLLAMA_LLM_LIBRARY'] == 'cpu'
+    assert calls[0][1]['env']['GGML_VK_VISIBLE_DEVICES'] == '-1'
+    import os
+    assert os.environ['OLLAMA_LLM_LIBRARY'] == 'parent-setting'
+
+
+def test_startup_derives_runtime_paths_from_selected_resource_root(app, monkeypatch):
+    from pathlib import Path
+    monkeypatch.setenv('OLLAMA_EXE', 'Z:/old-drive/ollama.exe')
+    monkeypatch.delenv('OLLAMA_MODELS', raising=False)
+    monkeypatch.setenv('OLLAMA_VULKAN', '0')
+    ready = [False]
+    fake_inventory(monkeypatch, lambda: [] if ready[0] else unavailable())
+    spawned = helper_factory(monkeypatch, Helper(), on_spawn=lambda: ready.__setitem__(0, True))
+    app.ensure_runtime()
+    env = spawned[0][1]['env']
+    root = Path(ui_server.resource_root())
+    assert Path(env['OLLAMA_EXE']) == root/'Ollama/runtime/ollama.exe'
+    assert Path(env['OLLAMA_MODELS']) == root/'Ollama/.ollama/models'
+    assert env['OLLAMA_VULKAN'] == '0'
+
+
+@pytest.mark.parametrize('packaged', [True, False])
+def test_startup_prefers_release_helper_with_resource_fallback(app, monkeypatch, tmp_path, packaged):
+    from pathlib import Path
+    release = tmp_path/'release'
+    module = release/'src/prometheus_assistant/ui_server.py'
+    helper = release/'tools/wait-ollama.ps1'
+    if packaged:
+        helper.parent.mkdir(parents=True)
+        helper.write_text('# reviewed release fixture', encoding='utf-8')
+    monkeypatch.setattr(ui_server, '__file__', str(module))
+    ready = [False]
+    fake_inventory(monkeypatch, lambda: [] if ready[0] else unavailable())
+    spawned = helper_factory(monkeypatch, Helper(), on_spawn=lambda: ready.__setitem__(0, True))
+    app.ensure_runtime()
+    selected = Path(spawned[0][0][-1])
+    expected = helper if packaged else Path(ui_server.resource_root())/'Tools/wait-ollama.ps1'
+    assert selected == expected
 
 
 @pytest.mark.parametrize('needs_kill', [False, True])

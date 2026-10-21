@@ -26,7 +26,7 @@
  };
  element('refreshApproval').onclick=async()=>{
   try{const result=await api('/api/approvals/pending');render(result.approval);
-   element('improvementStatus').textContent=pending?'Review the exact proposal below.':result.approval?'An integration proposal is awaiting approval in Integrations.':'No pending approval in this owner session.';
+   element('improvementStatus').textContent=pending?'Review the exact proposal below.':result.approval?(['project_edit','project_task'].includes(result.approval.kind)?'A project task is awaiting approval in Code.':result.approval.kind==='idle_config'?'An idle research proposal is awaiting approval in Research while idle.':'An integration proposal is awaiting approval in Integrations.'):'No pending approval in this owner session.';
   }catch(error){element('improvementStatus').textContent=error.message;}
  };
  async function decide(decision){

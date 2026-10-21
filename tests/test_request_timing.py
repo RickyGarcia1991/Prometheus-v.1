@@ -27,6 +27,11 @@ def bare_app(monkeypatch, clock):
     app = object.__new__(ui.Interface)
     app.lock = threading.Lock()
     app.jobs = {}
+    # Match Interface's per-job browser binding store for authenticated polling.
+    app._speech_owners = {}
+    from prometheus_assistant.ui_activity import ActivityHistory
+    app.activity_history = ActivityHistory()
+    app.activity_history.start('fixture', {'mode': 'chat'})
     app.current = 'fixture'
     app.cache_context = object()
     app.state = 'thinking'
@@ -292,7 +297,7 @@ def test_generation_cancellation_retains_timing_and_existing_cleanup(tmp_path, m
 def test_job_diagnostics_use_existing_owner_authentication(monkeypatch, unlocked, status):
     app = bare_app(monkeypatch, Clock())
     app.token = 'fixture-token'
-    app.jobs['fixture'] = {'state': 'done', 'diagnostics': {'worker_total_seconds': 1}}
+    app.jobs['fixture'] = {'id': 'fixture', 'state': 'done', 'diagnostics': {'worker_total_seconds': 1}}
     handler = object.__new__(ui.Handler)
     handler.path = '/api/job/fixture'
     handler.headers = {'Host': 'localhost:54555', 'X-Prometheus-Token': app.token}
