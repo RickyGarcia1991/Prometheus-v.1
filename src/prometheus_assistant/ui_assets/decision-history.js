@@ -23,6 +23,27 @@ function events(row){
  return rows;
 }
 function paragraph(parent,text){const p=document.createElement('p');p.textContent=text;parent.append(p);}
+function interpretationHistory(item,row){
+ const value=row.evidence_resolutions;if(value===undefined)return;
+ const hex=(x,n)=>typeof x==='string'&&new RegExp('^[a-f0-9]{'+n+'}$').test(x);
+ const fields=['approval_id','fingerprint','target_id','target_fingerprint','source','reference','snapshot_sha256','fact_sha256','reason','decision','recording_state','currency','interpretation_conflict'];
+ try{
+  if(!value||Object.keys(value).length!==6||value.schema_version!==1||value.read_only!==true||value.freshness!=='historical'||!Number.isInteger(value.total)||value.total<0||value.total>4096||typeof value.truncated!=='boolean'||!Array.isArray(value.items)||value.items.length>16||value.items.length>value.total||value.truncated!==(value.total>value.items.length))throw Error('Invalid interpretation history');
+  const seen=new Set();
+  for(const r of value.items){
+   if(!r||Object.keys(r).length!==fields.length||!fields.every(k=>Object.prototype.hasOwnProperty.call(r,k))||!['approval_id','target_id'].every(k=>hex(r[k],32))||!['fingerprint','target_fingerprint','reference','snapshot_sha256','fact_sha256'].every(k=>hex(r[k],64))||!['project','worker','application'].includes(r.source)||typeof r.reason!=='string'||!r.reason.trim()||[...r.reason].length>2000||!['approve','reject','unrecorded'].includes(r.decision)||!['recorded','unrecorded'].includes(r.recording_state)||r.decision==='unrecorded'&&r.recording_state!=='unrecorded'||!['matching_inputs','stale'].includes(r.currency)||typeof r.interpretation_conflict!=='boolean'||r.interpretation_conflict&&(r.decision!=='approve'||r.recording_state!=='recorded')||seen.has(r.approval_id)||!(r.target_id===row.id&&r.target_fingerprint===row.fingerprint||r.approval_id===row.id&&r.fingerprint===row.fingerprint))throw Error('Invalid interpretation record');
+   seen.add(r.approval_id);
+  }
+ }catch{paragraph(item,'Evidence interpretation history unavailable. Original evidence remains visible.');return;}
+ if(!value.items.length)return;
+ paragraph(item,'Historical evidence interpretations ('+value.items.length+' shown of '+value.total+'). Original conflicts and failed checks remain unchanged.');
+ for(const r of value.items){
+  paragraph(item,(r.recording_state==='unrecorded'?'Interpretation completion unconfirmed (owner decision: '+r.decision+')':r.decision==='approve'?'Approved interpretation':'Rejected interpretation')+' · '+(r.currency==='stale'?'Stale: collected evidence changed':'Matches the collected history inputs; not a current health check')+'.');
+  paragraph(item,'Reason: '+r.reason);paragraph(item,'Selected observation '+r.fact_sha256+' · snapshot '+r.snapshot_sha256+' · review '+r.approval_id+'.');
+  if(r.interpretation_conflict)paragraph(item,'Conflicting approved interpretations exist for this snapshot. No automatic winner is selected.');
+ }
+ paragraph(item,'Interpretations do not authorize execution, retry or restoration.');
+}
 const revisionKinds=['runtime_config','idle_config','integration','integration_access','remote_syntax','scheduled_syntax'];
 function revisions(row,capability=false){
  const source=capability?row.capability_revisions:row.revisions,links=source===undefined?[]:source;
@@ -134,6 +155,55 @@ function lifecycleSummary(item,lifecycle){
  }
  paragraph(item,'Historical observations only; not a current validity check or execution authority. These references cannot approve, resume or replay work.');
 }
+const investigationActions={project:['review_project_check','Review the original project results, then request a fresh check of the exact files if needed.'],worker:['review_worker_check','Inspect the original worker receipts before requesting a fresh check at a reviewed destination. An uncertain job must not be replayed.'],application:['inspect_application_recovery','Inspect the recorded activation and recovery evidence before preparing a separately reviewed recovery action.']};
+function conflictInvestigation(item,row,lifecycle){
+ const value=row.evidence_conflict,conflicting=lifecycle?.value?.state==='conflicting';
+ if(value===undefined||value===null){if(conflicting)paragraph(item,'Conflict investigation unavailable. The original observations remain below.');return;}
+ try{
+  const exact=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.prototype.hasOwnProperty.call(v,k));
+  const hex=(v,n)=>typeof v==='string'&&new RegExp('^[a-f0-9]{'+n+'}$').test(v);
+  const bounded=(v,min,max)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
+  const fields=['schema_version','state','source','reference','snapshot_sha256','snapshot_scope','freshness','read_only','requires_new_review','suggested_action','variant_count','observation_count','variants','variants_truncated'];
+  if(!exact(value,fields)||!conflicting||value.schema_version!==1||value.state!=='unresolved'||!Object.prototype.hasOwnProperty.call(investigationActions,value.source)||value.source!==lifecycle.value.source||value.reference!==lifecycle.value.reference||!hex(value.snapshot_sha256,64)||value.snapshot_scope!=='collected_history_inputs'||value.freshness!=='historical'||value.read_only!==true||value.requires_new_review!==true||value.suggested_action!==investigationActions[value.source][0]||!bounded(value.variant_count,2,131072)||!bounded(value.observation_count,value.variant_count,131072)||!Array.isArray(value.variants)||value.variants.length!==Math.min(value.variant_count,8)||value.variants_truncated!==(value.variant_count>8))throw Error('Invalid conflict investigation');
+  const kinds={project:['passed','failed','unchanged','applied_without_checks','cancelled'],worker:['checks_passed','checks_failed','tool_failed'],application:['active','failed','rolled_back','recovery_required']};
+  const facts=new Set(),witnesses=new Set();let observed=0;
+  for(const v of value.variants){
+   if(!exact(v,['fact_sha256','status','checks','rollback','evidence_sha256','witnesses','observation_count','witnesses_truncated'])||!hex(v.fact_sha256,64)||facts.has(v.fact_sha256)||!kinds[value.source].includes(v.status)||!bounded(v.observation_count,1,value.observation_count)||!Array.isArray(v.witnesses)||v.witnesses.length!==Math.min(v.observation_count,4)||v.witnesses_truncated!==(v.observation_count>4)||v.evidence_sha256!==null&&!hex(v.evidence_sha256,64))throw Error('Invalid conflict variant');
+   facts.add(v.fact_sha256);observed+=v.observation_count;
+   if(value.source==='project'?!Object.prototype.hasOwnProperty.call(rollbacks,v.rollback):v.rollback!==null)throw Error('Invalid conflict rollback');
+   if(v.evidence_sha256===null)throw Error('Missing observed evidence');
+   if(value.source==='project'&&v.status==='passed'&&v.rollback!=='not_attempted')throw Error('Successful result cannot claim rollback');
+   if(v.checks!==null){const c=v.checks;if(!exact(c,['planned','executed','passed','failed','cancelled','timed_out'])||!Object.values(c).every(n=>bounded(n,0,64))||c.executed>c.planned||c.passed+c.failed+c.cancelled+c.timed_out!==c.executed)throw Error('Invalid conflict counts');}
+   if(['passed','checks_passed'].includes(v.status)&&(!v.checks||v.checks.planned===0||v.checks.planned!==v.checks.executed||v.checks.executed!==v.checks.passed))throw Error('Contradictory successful variant');
+   if(v.status==='checks_failed'&&(!v.checks||v.checks.planned===0||v.checks.failed===0))throw Error('Missing failed check');
+   if((value.source==='application'||v.status==='tool_failed')&&v.checks!==null)throw Error('Unexpected check claim');
+   for(const w of v.witnesses){
+    if(!exact(w,['id','fingerprint','event_id'])||!hex(w.id,32)||!hex(w.fingerprint,64)||!hex(w.event_id,32))throw Error('Invalid witness');
+    const key=w.id+'/'+w.fingerprint+'/'+w.event_id;if(witnesses.has(key))throw Error('Repeated witness');witnesses.add(key);
+    if(value.source==='application'&&w.id!==row.id||w.id===row.id&&w.fingerprint!==row.fingerprint)throw Error('Witness decision mismatch');
+    if(w.id===row.id){
+     const originals=value.source==='project'?events(row):value.source==='worker'?capabilityEvents(row):applicationEvents(row);
+     const event=originals.find(e=>e.event_id===w.event_id);
+     if(!event||event.status!==v.status||event.evidence_sha256!==v.evidence_sha256||(event.rollback??null)!==v.rollback||v.checks===null&&event.checks!=null||v.checks!==null&&(!event.checks||Object.keys(v.checks).some(k=>v.checks[k]!==event.checks[k])))throw Error('Witness facts differ from original observation');
+    }
+   }
+  }
+  if(observed>value.observation_count||!value.variants_truncated&&observed!==value.observation_count)throw Error('Mismatched observation total');
+  if(value.source==='application'){const pair=new Set(value.variants.slice(0,2).map(v=>v.status));if(!(pair.has('active')&&['failed','rolled_back','recovery_required'].some(s=>pair.has(s))||pair.has('rolled_back')&&pair.has('recovery_required')))throw Error('Compatible application history');}
+  paragraph(item,'Conflict investigation · unresolved. Compare the recorded facts before taking another action.');
+  paragraph(item,value.variant_count+' distinct fact variants across '+value.observation_count+' recorded observations'+(value.variants_truncated?'; additional variants omitted.':'.'));
+  paragraph(item,'Collected historical input reference: '+value.snapshot_sha256+'. This identifies the inputs read together; it is not a live or atomic state check.');
+  const entries=document.createElement('ol');item.append(entries);
+  for(const v of value.variants){const li=document.createElement('li');entries.append(li);const label=value.source==='project'?statuses[v.status]:value.source==='worker'?capabilityLabels[v.status]:applicationLabels[v.status];paragraph(li,label+' · '+v.observation_count+' recorded observation'+(v.observation_count===1?'':'s')+'.');
+   if(v.checks){const c=v.checks;paragraph(li,`Native checks: planned ${c.planned}, executed ${c.executed}, passed ${c.passed}, failed ${c.failed}, cancelled ${c.cancelled}, timed out ${c.timed_out}.`);}
+   if(value.source==='project')paragraph(li,'Rollback: '+rollbacks[v.rollback]+'.');
+   paragraph(li,'Fact reference: '+v.fact_sha256+'. Evidence reference: '+(v.evidence_sha256||'unavailable')+'.');
+   paragraph(li,'Owner review observations: '+v.witnesses.map(w=>w.id+' / '+w.fingerprint+' / event '+w.event_id).join(', ')+(v.witnesses_truncated?' (additional observations omitted).':'.'));
+  }
+  paragraph(item,'Suggested next step: '+investigationActions[value.source][1]);
+  paragraph(item,'This investigation chooses no authoritative result, changes no saved evidence and grants no permission. New work requires a new review.');
+ }catch(error){paragraph(item,'Conflict investigation unavailable or inconsistent. The original observations remain below.');}
+}
 const capabilityLabels={started:'Capability execution started',settings_saved:'Settings saved; future behavior has not been verified',access_granted:'Access issued; this does not confirm a provider action',adapter_returned:'Integration adapter returned; result correctness is not independently verified',waiting:'Waiting at the approved destination; no execution confirmed',deferred:'Execution deferred',unconfirmed:'Execution unconfirmed; do not infer success or repeat execution',unknown:'Outcome unknown',cancelled:'Waiting job cancelled',expired:'Waiting permission expired',checks_passed:'Native worker checks passed',checks_failed:'Native worker checks found failures',tool_failed:'Verification tool failed; this is not a code-defect finding'};
 const capabilityTerminal=new Set(['settings_saved','access_granted','adapter_returned','cancelled','expired','checks_passed','checks_failed','tool_failed']);
 const applicationLabels={started:'Approved application attempt recorded; dispatch is unconfirmed',unconfirmed:'Application outcome unconfirmed; do not infer success or retry',promotion_pending:'Exact application change queued; activation is not confirmed',validating:'Application candidate validation recorded',retesting:'Application candidate tests recorded in progress',signing:'Application signing recorded in progress',waiting_for_shutdown:'Application activation recorded waiting for shutdown',starting:'Application startup recorded in progress',active:'Application activation was recorded; this does not confirm the currently selected release',failed:'Application activation failed',rolled_back:'Previous application release was restored',recovery_required:'Application recovery requires attention'};
@@ -227,7 +297,7 @@ async function load(){
   for(const row of data.items)if(!row||!['id','fingerprint','session','kind','feedback'].every(k=>typeof row[k]==='string')||!Object.prototype.hasOwnProperty.call(decisions,row.decision)||row.feedback.length>2000||!Number.isFinite(row.decided_at)||row.decided_at<0)throw Error('Invalid receipt');
   for(const row of data.items){events(row);capabilityEvents(row);applicationEvents(row);revisions(row);revisions(row,true);sharedEvidence(row);}
   let unknownLifecycles=0;
-  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);timeline(item,row);evidenceTimeline(item,row);list.append(item);}
+  list.replaceChildren();for(const row of data.items){const item=document.createElement('li'),title=document.createElement('p');title.textContent=(Object.prototype.hasOwnProperty.call(labels,row.kind)?labels[row.kind]:'Owner decision')+' · '+decisions[row.decision]+' · '+new Date(row.decided_at*1000).toLocaleString();item.append(title);if(row.feedback){const note=document.createElement('p');note.textContent=row.feedback;item.append(note);}revisionTimeline(item,row);revisionTimeline(item,row,true);const lifecycle=evidenceLifecycle(row);if(lifecycle?.invalid)unknownLifecycles++;lifecycleSummary(item,lifecycle);conflictInvestigation(item,row,lifecycle);interpretationHistory(item,row);if(row.interpretation_lifecycle!==undefined){if(window.PrometheusInterpretationLifecycle)window.PrometheusInterpretationLifecycle.renderHistory(item,row);else paragraph(item,"Interpretation lifecycle unavailable. Original evidence remains visible.");}if(row.evidence_followups!==undefined){if(window.PrometheusEvidenceFollowups)window.PrometheusEvidenceFollowups.renderHistory(item,row);else paragraph(item,"Follow-up history unavailable. Original evidence remains visible.");}timeline(item,row);evidenceTimeline(item,row);list.append(item);}
   status.textContent=data.items.length+' saved decisions. '+(unknownLifecycles?unknownLifecycles+' evidence lifecycle summaries are unknown. ':'')+'History does not authorize or resume work.';
  }catch(error){if(version===generation)clear('Decision history unavailable. No historical record authorizes work.');}
  finally{if(version===generation){reading=false;controls();}}
