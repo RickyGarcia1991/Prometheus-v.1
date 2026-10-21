@@ -10,7 +10,8 @@ import math
 
 MAX_JOBS = 100
 MAX_ACTIVITY = 50
-NAVIGATION = frozenset({'project', 'scheduled', 'remote', 'activity', 'self_improvement', 'integrations', 'research'})
+MAX_DECISIONS = 50
+NAVIGATION = frozenset({'project', 'scheduled', 'remote', 'activity', 'self_improvement', 'integrations', 'research', 'history'})
 _APPROVAL_ROUTES = {'project_edit': 'project', 'project_task': 'project',
     'scheduled_syntax': 'scheduled', 'remote_syntax': 'remote',
     'self_improve': 'self_improvement', 'integration': 'integrations',
@@ -42,7 +43,107 @@ def _freshness(resources, now):
     return 'current' if now < expires else 'stale'
 
 
-def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None):
+def _native_decision_state(row):
+    """Validate saved evidence without interpreting payloads or performing I/O."""
+    from .decision_outcomes import validate as project_validate, sequence
+    from .capability_outcomes import validate as capability_validate, _sequence, _kind
+    decision = row.get('decision')
+    kind = row.get('kind')
+    if decision not in {'approve', 'reject', 'request_changes'} or not isinstance(kind, str):
+        raise ValueError('Invalid decision')
+    project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
+    application = row.get('application_outcomes', [])
+    if (any(not isinstance(events, list) or len(events)>16 for events in (project, capability))
+            or not isinstance(application, list) or len(application)>32
+            or sum(bool(events) for events in (project,capability,application))>1):
+        raise ValueError('Invalid evidence')
+    if decision != 'approve':
+        if project or capability or application:raise ValueError('Unapproved evidence')
+        return 'no_execution'
+    if application:
+        from .application_outcomes import summary
+        if kind != 'self_improve':raise ValueError('Invalid application evidence kind')
+        state, reason = summary(application)
+        if len({event['event_id'] for event in application}) != len(application):raise ValueError('Repeated application event')
+        if state == 'conflicting':return 'application_conflicting'
+        if state == 'restored':return 'application_restored'
+        if reason == 'restoration_unconfirmed':return 'application_recovery_required'
+        if state == 'recorded':
+            return 'application_failed' if any(e['status']=='failed' for e in application) else 'application_active'
+        return 'activation_pending' if state == 'pending' else 'unknown'
+    prior=[];identities=set()
+    for event in project or capability:
+        if project:
+            if kind not in {'project_edit','project_task'}:raise ValueError('Invalid project kind')
+            project_validate(event);sequence(prior,event)
+        else:
+            capability_validate(event);_kind(kind,event);_sequence(prior,event)
+        if event['event_id'] in identities:raise ValueError('Repeated event')
+        identities.add(event['event_id']);prior.append(event)
+    if not prior:return 'unknown'
+    last=prior[-1];status=last['status']
+    if project:
+        if last['phase']=='undo_result' and status=='restored':return 'restored'
+        if last['phase']=='undo_started' or status=='restore_failed' or last['rollback']=='needs_attention':return 'restoration_unknown'
+        if status in {'started','unknown'}:return 'unknown'
+        if status=='failed':return 'historical_failure'
+        if status=='passed':return 'verified'
+        return 'unverified'
+    if status in {'started','unknown','unconfirmed'}:return 'unknown'
+    if status in {'checks_failed','tool_failed'}:return 'historical_failure'
+    if status=='checks_passed':return 'verified'
+    if status in {'cancelled','expired','deferred'}:return 'no_execution'
+    if status=='waiting':return 'waiting'
+    return 'recorded_effect'
+
+
+def _decision_state(row):
+    native = _native_decision_state(row)
+    if 'evidence_lifecycle' not in row:
+        return native
+    from .evidence_lifecycle import validate_projection
+    lifecycle = row['evidence_lifecycle']
+    validate_projection(lifecycle)
+    state, source = lifecycle['state'], lifecycle['source']
+    project, capability = row.get('outcomes', []), row.get('capability_outcomes', [])
+    application = row.get('application_outcomes', [])
+    if row['decision'] != 'approve':
+        if state != 'not_applicable':raise ValueError('Unapproved lifecycle')
+        return native
+    if application:
+        from .application_outcomes import summary
+        if (source != 'application' or (state,lifecycle['reason']) != summary(application)
+                or lifecycle['linked_decisions'] != 1 or lifecycle['reference'] is None):
+            raise ValueError('Application lifecycle differs from native observations')
+        return native
+    if not project and not capability:
+        if state != 'missing':raise ValueError('Lifecycle without observations')
+        return native
+    expected = 'project' if project else 'worker' if row['kind'] in {'remote_syntax','scheduled_syntax'} else 'capability'
+    if source != expected:raise ValueError('Lifecycle source mismatch')
+    if state == 'conflicting':
+        # Raw validation above remains mandatory. Conflict never selects a winner
+        # or turns an individually passing observation into verified consensus.
+        if project:
+            confirmed = any(e['phase']=='result' and e['status']!='unknown' and e['edit_id'] for e in project)
+        else:
+            # A still-waiting observer can reference a conflicting native family;
+            # this warning does not claim that observer completed execution.
+            confirmed = bool(capability and capability[0]['job_id'])
+        if not confirmed or source not in {'project','worker'}:
+            raise ValueError('Conflict without a native result')
+        return 'conflicting'
+    allowed = {
+        'pending': {'unknown','waiting','no_execution'},
+        'unconfirmed': {'unknown','restoration_unknown'},
+        'recorded': {'verified','historical_failure','unverified','no_execution','recorded_effect'},
+        'restored': {'restored'},
+    }
+    if native not in allowed.get(state, set()):raise ValueError('Lifecycle state mismatch')
+    return native
+
+
+def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=None, decisions=None, devices=None):
     """Return schema-v1 grouped fixed-text summaries with navigation only.
 
     Sources distinguish current saved records from live telemetry. Approval
@@ -53,13 +154,13 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
     """
     now = now if _number(now) else None
     groups = {}
-    def add(source, kind, label, severity, state, navigation, freshness='saved_records'):
+    def add(source, kind, label, severity, state, navigation, freshness='saved_records', count=1):
         key = (source, kind, state, navigation, severity, freshness)
         if key in groups:
-            groups[key]['count'] += 1
+            groups[key]['count'] += count
         else:
             groups[key] = dict(id='.'.join((source,kind,state,navigation)), kind=kind,
-                label=label,severity=severity,state=state,count=1,source=source,
+                label=label,severity=severity,state=state,count=count,source=source,
                 freshness=freshness,navigation=navigation)
     queue, queue_source = _source(jobs, MAX_JOBS)
     recent, activity_source = _source(activity, MAX_ACTIVITY)
@@ -67,6 +168,34 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
     sources = dict(approvals=dict(state='available' if approval_valid else 'unavailable',
         freshness='saved_records' if approval_valid else 'unavailable',truncated=False,omitted=0),
         queue=queue_source,activity=activity_source)
+    records, decision_source = _source(decisions, MAX_DECISIONS)
+    # A full bounded history page may omit older records; do not imply completeness.
+    if isinstance(decisions,list) and len(decisions)>=MAX_DECISIONS:
+        decision_source['truncated']=True
+    sources['decisions']=decision_source
+    labels={
+        'application_conflicting':('Conflicting historical application activation results require review; no result is selected.','critical'),
+        'application_restored':('The previous application release was restored after a recorded activation attempt; current health is not implied.','info'),
+        'application_recovery_required':('Recorded application activation requires recovery attention; history cannot retry it.','warning'),
+        'application_failed':('Recorded application activation failed; inspect the retained native observations.','warning'),
+        'application_active':('Application activation was recorded; this does not confirm the currently selected release or current health.','info'),
+        'activation_pending':('Application activation was recorded in progress; completion is unconfirmed and history cannot resume it.','info'),
+        'conflicting':('Conflicting historical results share the same native identity; inspect all recorded observations.','warning'),
+        'unknown':('Recorded decision has no confirmed outcome; history cannot resume work.','warning'),
+        'restoration_unknown':('Recorded restoration is unconfirmed or needs attention; inspect its history.','warning'),
+        'historical_failure':('Historical verification or execution reported failure; inspect recorded evidence.','warning'),
+        'restored':('Recorded manual restoration completed; original execution evidence remains in history.','info'),
+        'verified':('Recorded native checks passed their stated scope.','info'),
+        'unverified':('Recorded action has no behavioral pass evidence.','info'),
+        'no_execution':('Recorded decision or disposition does not confirm execution.','info'),
+        'waiting':('Recorded approval entered waiting; consult the current queue for its status.','info'),
+        'recorded_effect':('Recorded configuration, access or adapter observation; later behavior is not verified.','info')}
+    for row in records:
+        try:state=_decision_state(row)
+        except (ValueError,TypeError,KeyError,OverflowError):
+            state='unknown';decision_source['state']='partial'
+        label,severity=labels[state]
+        add('decisions','historical_evidence',label,severity,state,'history')
     if approval_valid and approval is not None:
         route = _APPROVAL_ROUTES.get(approval['kind'], 'activity')
         add('approvals','proposal','An exact proposal is waiting for your decision.','info','pending',route)
@@ -123,13 +252,17 @@ def build_snapshot(approval=None, jobs=None, activity=None, resources=None, now=
             add('resources','health','Resource observations are stale; refresh the existing health view.','warning','stale','activity',freshness)
         add('resources','mode','Reported resource mode: '+resource_mode+'.',severity,
             resource_mode.lower().replace(' ', '_'),'activity',freshness)
+    from .device_attention import project
+    sources['devices'], device_items = project(devices, now)
+    for item in device_items:
+        add('devices', navigation='remote', **item)
     for name, source in sources.items():
         if source['state'] in ('unavailable', 'partial'):
             add(name,'availability','This attention source is unavailable or incomplete.','warning',source['state'],
-                'scheduled' if name == 'queue' else 'activity',source['freshness'])
+                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'remote' if name == 'devices' else 'activity',source['freshness'])
         if source['truncated']:
             add(name,'limit','This summary is truncated; open the source view for its retained records.','info','truncated',
-                'scheduled' if name == 'queue' else 'activity')
+                'scheduled' if name == 'queue' else 'history' if name == 'decisions' else 'activity')
     items = sorted(groups.values(), key=lambda row: (_SEVERITY[row['severity']],row['source'],row['kind'],row['state'],row['navigation']))
     return dict(schema_version=1,generated_at=now,items=items,sources=sources,
         counts={level:sum(row['count'] for row in items if row['severity']==level) for level in _SEVERITY},read_only=True)

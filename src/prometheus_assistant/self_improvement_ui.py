@@ -24,9 +24,20 @@ def activation_result(app, *, owner, job_id=None):
            else app.action_approvals.latest_approved(owner=owner))
     if row is None:
         return {'state': 'none', 'summary': 'No approved application change is recorded for this owner.'}
-    result = _engine(app).promoter.result(row['job_id'])
+    try:
+        result = _engine(app).promoter.result(row['job_id'])
+    except Exception:
+        # Record only uncertainty for an already linked attempt. Reading a
+        # malformed/missing native status never creates a legacy decision link.
+        if app.action_approvals.decision_history is not None:
+            app.action_approvals.application_outcomes().unconfirmed(owner=owner, job_id=row['job_id'],
+                candidate_fingerprint=row['candidate_fingerprint'])
+        raise
     if result.get('state') == 'active' and result.get('approval_fingerprint') != row['candidate_fingerprint']:
         raise ValueError('The activation result does not match this owner-approved candidate.')
+    if app.action_approvals.decision_history is not None:
+        app.action_approvals.application_outcomes().observe_native(owner=owner, job_id=row['job_id'],
+            candidate_fingerprint=row['candidate_fingerprint'], result=result)
     if result.get('state') == 'promotion_pending':
         if row.get('dispatch_state') == 'failed':
             result = {'state': 'failed', 'error': row.get('dispatch_error', 'The activation helper was not confirmed.')}
@@ -116,13 +127,24 @@ def execute(app, request, *, grant_owner=None, binding=None):
         app.progress('Rechecking the approved candidate before signed activation')
         app.action_approvals.record_approved(owner=owner, job_id=row['payload']['job_id'],
             candidate_fingerprint=row['payload']['approval_fingerprint'])
+        app.action_approvals.start_application_outcome(owner=owner, row=row)
         try:
             result = _engine(app).promote(row['payload']['job_id'], row['payload']['approval_fingerprint'], cancel_event=app.cancel_event)
         except Exception as error:
             app.action_approvals.record_dispatch(owner=owner, job_id=row['payload']['job_id'], state='failed', error=error)
+            app.action_approvals.application_outcomes().unconfirmed(owner=owner, job_id=row['payload']['job_id'],
+                candidate_fingerprint=row['payload']['approval_fingerprint'])
             raise
         app.action_approvals.record_dispatch(owner=owner, job_id=row['payload']['job_id'],
             state='promotion_pending' if result.get('state') == 'promotion_pending' else 'failed', error=result.get('error', ''))
+        # The synchronous return only confirms queuing. A failed return or an
+        # exception cannot prove that the detached process did not start.
+        observation = (result if result.get('state') == 'promotion_pending'
+            and result.get('job_id') == row['payload']['job_id']
+            and result.get('approval_fingerprint') == row['payload']['approval_fingerprint']
+            else {'job_id':row['payload']['job_id'], 'state':'unconfirmed'})
+        app.action_approvals.application_outcomes().observe_native(owner=owner, job_id=row['payload']['job_id'],
+            candidate_fingerprint=row['payload']['approval_fingerprint'], result=observation)
     queued = result.get('state') == 'promotion_pending'
     reply = ('Approved. The signed activation helper has queued this exact tested change. Prometheus will restart when it is ready. '
              'Activation is not complete yet.' if queued else 'The approved change was not activated. ' + result.get('error', 'Review the activation result.'))

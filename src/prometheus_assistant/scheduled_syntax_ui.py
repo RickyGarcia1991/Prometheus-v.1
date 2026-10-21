@@ -14,6 +14,7 @@ from .remote_job_protocol import LINT_OPERATION
 from .remote_worker_client import RemoteWorkerClient, OwnerLedger
 from .scheduled_syntax import ScheduledSyntax, public_job, PLACEMENT_STRATEGIES
 from . import ui_workspace
+from . import capability_revision_ui as revisions
 
 MODES={'scheduled_syntax_prepare','scheduled_syntax_tick','scheduled_syntax_cancel','scheduled_syntax_recover'}
 FIELDS={'scheduled_job_id','scheduled_placement','scheduled_operation'}
@@ -141,6 +142,14 @@ def execute(app,request,*,grant_owner=None,binding=None):
     with grant_owner() as owner:
         pending=app.action_approvals.pending(owner=owner,binding=binding)
         if possible and (not pending or pending['kind']!='scheduled_syntax'):return None
+    revision_options = {}
+    if mode == 'scheduled_syntax_prepare':
+        from .project_decision_outcomes import project_hash
+        workspace = ui_workspace.workspace(app, request)
+        revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+            kind='scheduled_syntax', subject_hash=revisions.subject('scheduled_syntax', project_hash(workspace)))
+    if possible and choice not in {'approve', 'reject'}:
+        raise ValueError('Request changes must use the live capability feedback route.')
     @contextmanager
     def current_owner():
         with grant_owner() as current:
@@ -164,18 +173,17 @@ def execute(app,request,*,grant_owner=None,binding=None):
         if pending:raise ValueError('Approve or deny the existing review first.')
         require_dispatch('ui.scheduled_syntax_prepare')
         with current_owner():
-            workspace=ui_workspace.workspace(app,request)
             files=[]
             with workspace.lock:
                 for relative in request['remote_files'].splitlines():
                     path,raw,content=workspace._read(relative.strip())
                     files.append(dict(path=path.relative_to(workspace.root).as_posix(),content=content))
-            saved=app.save(request,dict(reply='Review the automatic destination, exact source and one-hour waiting permission.'),
+            saved=app.save(revisions.without_context(request),dict(reply='Review the automatic destination, exact source and one-hour waiting permission.'),
                 'Automatic verification placement',model='owner-reviewed-worker')
         app.progress('Checking eligible destinations for the selected verification')
         row=controller.prepare(files,secrets.token_hex(16),session=saved['session'],
             strategy=request.get('scheduled_placement','available-headroom-v1'),
-            operation=request.get('scheduled_operation','python-syntax-check'))
+            operation=request.get('scheduled_operation','python-syntax-check'), **revision_options)
         saved['details']['approval']=row
         return {**saved,'action':mode}
     elif mode=='scheduled_syntax_cancel':
