@@ -4,6 +4,8 @@ import re
 from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .ollama import GenerationCancelled
+from .capability_outcome_hooks import tracking, gap_notice
+from . import capability_revision_ui as revisions
 
 MODES = {'runtime_status', 'runtime_config'}
 FIELDS = {'runtime_backend'}
@@ -39,7 +41,7 @@ def status(app):
 
 
 def _result(app, request, data):
-    return {**app.save(request, data, 'Runtime startup settings', model='owner-reviewed-setting'),
+    return {**app.save(revisions.without_context(request), data, 'Runtime startup settings', model='owner-reviewed-setting'),
             'action': 'runtime_config'}
 
 
@@ -57,6 +59,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if possible and pending and pending['kind'] != KIND:
         return None
     if possible and pending:
+        if decision not in {'approve', 'reject'}:
+            raise ValueError('Request changes must use the live capability feedback route.')
         require_dispatch('ui.approval_decision')
         if app.cancel_event.is_set():
             raise GenerationCancelled('Runtime setting change cancelled.')
@@ -72,10 +76,14 @@ def execute(app, request, *, grant_owner=None, binding=None):
                     'approval_resolved': row['id'], 'runtime_settings': status(app)})
             require_dispatch('ui.runtime_config')
             payload = row['payload']
-            preferences(app).configure(payload['backend'], payload['expected_revision'])
+            with tracking(app.action_approvals, owner, row) as outcome:
+                saved = preferences(app).configure(payload['backend'], payload['expected_revision'])
+                observed = outcome.observe('settings_saved', evidence={'saved': True,
+                    'revision': saved['revision'], 'cpu': saved['backend']=='cpu'})
         return _result(app, request, {'reply': 'Runtime preference saved for future launches on this computer. '
-            'An existing server keeps its current backend. Automatic restores the launcher defaults after another review.',
-            'approval_resolved': row['id'], 'runtime_settings': status(app)})
+            'An existing server keeps its current backend. Automatic restores the launcher defaults after another review.' + gap_notice(observed),
+            'approval_resolved': row['id'], 'runtime_settings': status(app),
+            **({'decision_outcome': observed} if observed is not None else {})})
     if mode == 'approval_decision':
         return None
     if mode == 'runtime_status':
@@ -85,6 +93,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if pending:
         raise ValueError('Approve or deny the pending proposal before changing runtime settings.')
     require_dispatch('ui.runtime_config')
+    revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+        kind=KIND, subject_hash=revisions.subject(KIND, 'local'))
     backend = selected or request['runtime_backend']
     current = preferences(app).snapshot()
     cpu = backend == 'cpu'
@@ -105,5 +115,5 @@ def execute(app, request, *, grant_owner=None, binding=None):
     result['details']['approval'] = app.action_approvals.review(owner=owner, binding=binding,
         session=result['session'], kind=KIND,
         payload={'backend': backend, 'expected_revision': current['revision']},
-        review=review, policy_revision=revision())
+        review=review, policy_revision=revision(), **revision_options)
     return result

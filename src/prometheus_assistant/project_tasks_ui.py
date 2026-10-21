@@ -9,14 +9,21 @@ from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .ollama import GenerationCancelled
 from . import ui_workspace
+from . import capability_revision_ui as capability_revisions
 
 MODES = {'project_edit', 'idle_config', 'idle_status', 'idle_run'}
 NO_PROMPT = {'idle_config', 'idle_status', 'idle_run'}
-FIELDS = {'edit_policy', 'research_query', 'interval_minutes', 'project_files', 'auto_files', 'specialist_review'}
+FIELDS = {'edit_policy', 'research_query', 'interval_minutes', 'project_files', 'auto_files', 'specialist_review', 'revision_token'}
 KINDS = {'project_edit', 'project_task', 'idle_config'}
 
 
 def validate(body):
+    if 'revision_token' in body:
+        if (body.get('mode') != 'project_edit' or type(body['revision_token']) is not str
+                or not re.fullmatch(r'[0-9a-f]{32}', body['revision_token'])
+                or body.get('edit_policy', 'ask_first') != 'ask_first'
+                or body.get('research_query', '').strip()):
+            raise ValueError('A revision context requires an exact project review without additional research.')
     if 'specialist_review' in body:
         if type(body['specialist_review']) is not bool:
             raise ValueError('Specialist review must be true or false.')
@@ -101,7 +108,8 @@ def _verify(app, grant_owner, owner):
 def _result(app, request, details, label, action='project_edit'):
     # Persist rollback evidence even after Stop; a cancelled chat save normally
     # suppresses output, which would hide the actual recovery result here.
-    return {**app.save({**request, 'mode': action}, details, label,
+    saved_request = {key: value for key, value in request.items() if key not in {'revision_token', capability_revisions.FIELD}}
+    return {**app.save({**saved_request, 'mode': action}, details, label,
                        model='owner-reviewed-project-task'), 'action': action}
 
 
@@ -117,8 +125,19 @@ def _review(app, request, owner, binding, kind, payload, review, resolved=None, 
         details['approval_resolved'] = resolved
     result = _result(app, request, details, 'Task · needs your approval',
                      'idle_config' if kind == 'idle_config' else 'project_edit')
+    revision_options = {}
+    if kind == 'idle_config':
+        revision_options = capability_revisions.review_options(app, request, owner=owner, binding=binding,
+            kind=kind, subject_hash=capability_revisions.subject(kind, 'local'))
+        payload = {**payload, 'request': capability_revisions.without_context(payload['request'])}
+    if request.get('revision_token'):
+        from .project_decision_outcomes import project_hash
+        revision_options = dict(revision_token=request['revision_token'],
+            project_hash=project_hash(ui_workspace.workspace(app, request)))
+        payload = {**payload, 'request': {key: value for key, value in payload['request'].items()
+                                        if key != 'revision_token'}}
     pending = app.action_approvals.review(owner=owner, binding=binding, session=result['session'],
-        kind=kind, payload=payload, review=review, policy_revision=review_revision)
+        kind=kind, payload=payload, review=review, policy_revision=review_revision, **revision_options)
     result['details']['approval'] = pending
     return result
 
@@ -417,9 +436,15 @@ def execute(app, request, *, grant_owner=None, binding=None):
             fingerprint=pending['fingerprint'] if mode == 'chat' else request['approval_fingerprint'],
             policy_revision=revision(), decision=decision, feedback=request.get('approval_feedback', ''))
         if decision == 'request_changes':
-            return _result(app, request, {'reply': 'Changes requested. The old proposal is closed; no files were changed. '
+            from .project_decision_outcomes import project_hash
+            context = app.action_approvals.revision_context(owner=owner, binding=binding,
+                session=row['session'], parent_row=row,
+                project_hash=project_hash(ui_workspace.workspace(app, row['payload']['request'])))
+            result = _result(app, request, {'reply': 'Changes requested. The old proposal is closed; no files were changed. '
                 'Review the revised goal and prepare a fresh exact proposal.',
                 'approval_resolved': row['id'], 'revision_draft': draft}, 'Task · changes requested', 'approval_decision')
+            # The token is returned only to this live response, never saved as a draft grant.
+            return {**result, 'details': {**result['details'], 'revision_draft': {**draft, **context}}}
         if decision == 'reject':
             return _result(app, request, {'reply': 'Denied. No proposed change was applied.',
                             'approval_resolved': row['id']}, 'Task · denied')
@@ -436,16 +461,24 @@ def execute(app, request, *, grant_owner=None, binding=None):
                             delegated=original.get('edit_policy') == 'delegated', resolved=row['id'],
                             decision_link={'id': row['id'], 'fingerprint': row['fingerprint']})
         _verify(app, grant_owner, owner)
-        research_store(app).configure(original['prompt'], original['enabled'],
-                                      original.get('interval_minutes', 60), owner=owner)
-        return _result(app, original, {'reply': 'Idle public research is configured.',
-            'approval_resolved': row['id'], 'idle_research': research_store(app).status()},
+        from .capability_outcome_hooks import tracking, gap_notice
+        with tracking(app.action_approvals, owner, row) as outcome:
+            configured = research_store(app).configure(original['prompt'], original['enabled'],
+                                          original.get('interval_minutes', 60), owner=owner)
+            settings = configured['settings']
+            observed = outcome.observe('settings_saved', evidence={'saved': True,
+                'revision': settings['revision'], 'enabled': settings['enabled'],
+                'interval_minutes': settings['interval_minutes']})
+        return _result(app, original, {'reply': 'Idle public research is configured.' + gap_notice(observed),
+            'approval_resolved': row['id'], 'idle_research': configured,
+            **({'decision_outcome': observed} if observed is not None else {})},
             'Idle public research', 'idle_config')
     if mode == 'idle_status':
         return {'reply': 'Current idle public research settings and retained findings.',
                 'details': {'idle_research': research_store(app).status()},
                 'action': mode, 'label': 'Idle public research'}
     if mode == 'idle_config' and not request['enabled']:
+        capability_revisions.validate(request)
         settings = research_store(app).status()['settings']
         if settings.get('owner'):
             research_store(app).configure(settings['topic'], False, settings['interval_minutes'], owner=owner)
@@ -474,7 +507,12 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if not request.get('project', '').strip():
         raise ValueError('Open a development project before requesting an edit.')
     require_dispatch('ui.project_edit')
-    ui_workspace.workspace(app, request)  # Validate selected root before approval.
+    workspace = ui_workspace.workspace(app, request)  # Validate selected root before approval.
+    if request.get('revision_token'):
+        from .project_decision_outcomes import project_hash
+        app.action_approvals.validate_revision_context(owner=owner, binding=binding,
+            session=request.get('session'), project_hash=project_hash(workspace),
+            revision_token=request['revision_token'])
     if request.get('edit_policy') == 'delegated' or request.get('research_query', '').strip():
         return _review(app, request, owner, binding, 'project_task', {'request': request}, _task_review(request))
     return _prepare(app, request, owner=owner, binding=binding, grant_owner=grant_owner)

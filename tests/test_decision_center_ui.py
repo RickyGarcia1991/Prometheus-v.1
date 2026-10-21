@@ -94,3 +94,63 @@ def test_activity_failure_keeps_review_visible(endpoint, monkeypatch):
     assert code == 200 and data['sources']['activity']['state'] == 'unavailable'
     assert any(row['source'] == 'approvals' for row in data['items'])
     assert 'private' not in str(data)
+
+def test_history_projection_exact_owner_read_only_and_unavailable(endpoint, monkeypatch):
+    app, gate, effects, request, pending, calls = prepare(endpoint, monkeypatch)
+    with gate.grant_owner('fixture-cookie') as expected:pass
+    reads=[]
+    def history(*,owner,limit):
+        assert owner==expected and limit==50
+        reads.append(owner)
+        return [{'decision':'approve','kind':'runtime_config','feedback':'PRIVATE'}]
+    monkeypatch.setattr(app.action_approvals,'history',history)
+    before=copy.deepcopy(app.action_approvals._pending)
+    code,data=request(ROUTE)
+    assert code==200 and reads==[expected] and not effects
+    assert app.action_approvals._pending==before and 'PRIVATE' not in str(data)
+    assert any(r['source']=='decisions' and r['state']=='unknown' for r in data['items'])
+    def unavailable(**kw):raise ValueError('PRIVATE')
+    monkeypatch.setattr(app.action_approvals,'history',unavailable)
+    code,data=request(ROUTE)
+    assert code==200 and data['sources']['decisions']['state']=='unavailable' and not effects
+    gate.sessions.clear()
+    assert request(ROUTE)[0]==401
+
+
+def test_device_cache_read_is_owner_bound_and_cannot_probe_or_expire(endpoint, monkeypatch):
+    app,gate,effects,request,pending,calls=prepare(endpoint,monkeypatch)
+    observed=time.time()
+    def forbidden(*args,**kwargs):
+        raise AssertionError('Dashboard cannot probe a provider or expire pending work')
+    monkeypatch.setattr(app.remote,'state',forbidden)
+    monkeypatch.setattr(app.remote,'action',forbidden)
+    monkeypatch.setattr(app.remote,'_devices',forbidden)
+    health_reads=[]
+    def cached():
+        health_reads.append(1)
+        return dict(schema_version=1,phase='ready',generation=1,freshness='current',
+            observed_at=observed,expires_at=observed+30,ttl_seconds=30,
+            counts=dict(online=1,offline=0,unknown=0,total=1),selected_state='online')
+    monkeypatch.setattr(app.remote,'health_snapshot',cached)
+    before=copy.deepcopy(app.action_approvals._pending)
+    for kwargs in [{'owner':False},{'token':False},{'origin':'https://foreign.example'}]:
+        assert request(ROUTE,**kwargs)[0] in {401,403}
+    assert not health_reads
+    code,data=request(ROUTE)
+    assert code==200 and health_reads==[1]
+    assert data['sources']['devices']['freshness']=='current'
+    assert any(row['source']=='devices' and row['state']=='selected_online' for row in data['items'])
+    assert app.action_approvals._pending==before and not effects
+    assert not hasattr(app,'_scheduled_syntax_owner')
+    gate.sessions.clear()
+    assert request(ROUTE)[0]==401 and health_reads==[1]
+
+
+def test_device_cache_failure_is_explicit_and_keeps_other_evidence(endpoint, monkeypatch):
+    app,gate,effects,request,pending,calls=prepare(endpoint,monkeypatch)
+    def failed():raise ValueError('PRIVATE provider failure')
+    monkeypatch.setattr(app.remote,'health_snapshot',failed)
+    code,data=request(ROUTE)
+    assert code==200 and data['sources']['devices']['state']=='unavailable'
+    assert any(row['source']=='approvals' for row in data['items'])
+    assert 'PRIVATE' not in str(data) and not effects

@@ -163,7 +163,10 @@ function schedule() {
   if (['connecting', 'working'].includes(state.phase)) timer = setTimeout(load, 1500);
   else if (state.pending && expires(state.pending) > Date.now()) timer = setTimeout(() => { timer = null; renderReview(); controls(); }, Math.min(expires(state.pending) - Date.now() + 25, 2147483647));
 }
-function render(data) {
+function render(data, refreshHealth = false) {
+  const healthChanged = refreshHealth || state.phase !== data.phase
+    || state.selected_device_id !== data.selected_device_id
+    || JSON.stringify(state.devices) !== JSON.stringify(data.devices);
   state = data; loaded = true;
   message(String(data.message || data.phase || 'Connection state updated.'));
   const deviceSelect = element('remoteDevice');
@@ -188,6 +191,7 @@ function render(data) {
   }
   if (data.pending?.id !== reviewedId) reviewedId = null;
   renderReview(); renderResult(data.result); controls(); schedule();
+  if (healthChanged) window.dispatchEvent(new CustomEvent('prometheus-remote-state-updated'));
 }
 async function load() {
   if (requesting || !local.online || local.closed) return;
@@ -209,7 +213,7 @@ async function action(body) {
     const data = await api('/api/remote/action', body);
     if (current !== epoch) return;
     if (body.action === 'prepare') reviewedId = data.pending?.id || null;
-    render(data);
+    render(data, body.action === 'refresh');
   } catch (error) {
     if (current !== epoch) return;
     reviewedId = null;
