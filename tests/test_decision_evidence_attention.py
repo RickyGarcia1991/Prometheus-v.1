@@ -1,4 +1,6 @@
 from prometheus_assistant.decision_center import build_snapshot
+import copy
+import pytest
 
 def snap(rows):
     return build_snapshot(decisions=rows,jobs=[],activity=[],resources={'mode':'Balanced'},now=1000)
@@ -58,3 +60,81 @@ def test_configuration_and_access_observations_do_not_claim_behavior():
         result=snap([dict(decision='approve',kind=kind,capability_outcomes=events)])
         assert any(i['state']=='recorded_effect' and i['severity']=='info' for i in result['items'])
         assert not any(i['state']=='verified' for i in result['items'])
+
+
+def lifecycle(state='conflicting', source='worker', reason='native_identity_conflict'):
+    return dict(schema_version=1,state=state,source=source,freshness='historical',
+        reference='d'*64,reason=reason,linked_decisions=2,
+        related_decisions=[dict(id='e'*32,fingerprint='f'*64)],truncated=False,read_only=True)
+
+
+def passing_worker():
+    counts=dict(planned=1,executed=1,passed=1,failed=0,cancelled=0,timed_out=0)
+    return dict(decision='approve',kind='remote_syntax',capability_outcomes=[
+        capability('started'),capability('checks_passed',checks=counts)])
+
+
+def test_conflict_overrides_individual_pass_but_preserves_unrelated_pass_and_raw_data():
+    conflict=passing_worker();conflict['evidence_lifecycle']=lifecycle()
+    rows=[conflict,passing_worker()];before=copy.deepcopy(rows)
+    result=snap(rows)
+    items=[r for r in result['items'] if r['source']=='decisions']
+    assert {(r['state'],r['severity'],r['count']) for r in items}=={
+        ('conflicting','warning',1),('verified','info',1)}
+    assert result['sources']['decisions']['state']=='available' and rows==before
+    assert 'd'*64 not in str(result) and 'e'*32 not in str(result)
+
+
+@pytest.mark.parametrize('change',[
+    {'state':'made_up'}, {'read_only':False}, {'freshness':'current'},
+    {'linked_decisions':True}, {'source':'capability'}, {'reason':'private text'},
+    {'extra':'private source'}, {'reference':None},
+])
+def test_invalid_lifecycle_cannot_leave_a_green_summary(change):
+    row=passing_worker();row['evidence_lifecycle']={**lifecycle(),**change}
+    result=snap([row])
+    assert result['sources']['decisions']['state']=='partial'
+    assert not any(r['state']=='verified' for r in result['items'])
+    assert any(r['state']=='unknown' for r in result['items'])
+    assert 'private' not in str(result)
+
+
+def test_conflict_projection_does_not_bypass_native_validation():
+    row=passing_worker();row['evidence_lifecycle']=lifecycle()
+    row['capability_outcomes'][-1]['checks']['failed']=1
+    result=snap([row])
+    assert result['sources']['decisions']['state']=='partial'
+    assert not any(r['state'] in {'conflicting','verified'} for r in result['items'])
+
+
+def test_project_undo_cannot_resolve_conflicting_original_results():
+    events=[project_event('started','started'),project_event('result','failed',edit_id='b'*32,
+        rollback='restored',evidence_sha256='c'*64),project_event('undo_started','started',edit_id='b'*32),
+        project_event('undo_result','restored',edit_id='b'*32,rollback='restored',evidence_sha256='c'*64)]
+    row=dict(decision='approve',kind='project_edit',outcomes=events,evidence_lifecycle=lifecycle(source='project'))
+    result=snap([row])
+    assert any(r['state']=='conflicting' and r['severity']=='warning' for r in result['items'])
+    assert not any(r['state']=='restored' for r in result['items'])
+
+
+def test_approved_without_events_cannot_adopt_a_related_conflict():
+    row=dict(decision='approve',kind='remote_syntax',evidence_lifecycle=lifecycle())
+    result=snap([row]);assert result['sources']['decisions']['state']=='partial'
+    assert not any(r['state']=='conflicting' for r in result['items'])
+
+
+def test_waiting_observer_can_show_conflicting_family_without_claiming_completion():
+    row=dict(decision='approve',kind='remote_syntax',capability_outcomes=[capability('started'),capability('waiting')],
+        evidence_lifecycle=lifecycle())
+    result=snap([row])
+    assert result['sources']['decisions']['state']=='available'
+    assert any(r['state']=='conflicting' for r in result['items'])
+    assert not any(r['state']=='verified' for r in result['items'])
+
+
+def test_deferred_lifecycle_does_not_claim_execution():
+    row=dict(decision='approve',kind='remote_syntax',capability_outcomes=[capability('started'),capability('deferred')],
+        evidence_lifecycle=lifecycle(state='pending',reason='execution_pending'))
+    result=snap([row])
+    assert result['sources']['decisions']['state']=='available'
+    assert any(r['state']=='no_execution' for r in result['items'])

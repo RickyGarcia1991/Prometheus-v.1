@@ -275,6 +275,7 @@ def promote_snapshot(host, snapshot, baseline, receipt, job):
     """Serial coordinator. Real host owns signing, process identity and locking."""
     job = Path(job)
     state = {'job_id':receipt.get('job_id'), 'state':'validating', 'utc_started':now(),
+             'approval_fingerprint':receipt.get('approval_fingerprint'),
              'personal_data_overwritten':False, 'forced_application_stop':False}
     def record(phase, **details):
         state.update(state=phase, **details); _save(job / 'result.json', state)

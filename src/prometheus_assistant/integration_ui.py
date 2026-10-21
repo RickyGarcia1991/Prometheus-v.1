@@ -13,6 +13,7 @@ from .application_policy import require_dispatch, revision
 from .hardware import resource_root
 from .ollama import GenerationCancelled
 from .capability_outcome_hooks import tracking, gap_notice
+from . import capability_revision_ui as revisions
 
 MODES = {'integration', 'integration_access'}
 FIELDS = {'adapter', 'operation', 'arguments', 'task_grant', 'task'}
@@ -42,7 +43,7 @@ def validate(body):
         if FIELDS & body.keys():
             raise ValueError('Integration fields require an integration task.')
         return
-    allowed = {'mode', 'prompt', 'session'} | ({'task'} if mode == 'integration_access'
+    allowed = {'mode', 'prompt', 'session', revisions.FIELD} | ({'task'} if mode == 'integration_access'
                                              else {'adapter', 'operation', 'arguments', 'task_grant'})
     if set(body) - allowed:
         raise ValueError('Use only the selected integration task fields.')
@@ -114,7 +115,7 @@ def access_from_chat(prompt):
 
 
 def _result(app, request, data, label):
-    return {**app.save(request, data, label, model='owner-reviewed-integration'), 'action': request['mode']}
+    return {**app.save(revisions.without_context(request), data, label, model='owner-reviewed-integration'), 'action': request['mode']}
 
 
 def _check_cancel(app):
@@ -222,6 +223,9 @@ def _review_task(task):
 
 
 def _propose(app, request, owner, binding, kind, payload, review):
+    parts = (payload['task']['adapter'],) if kind == 'integration_access' else (payload['adapter'], payload['operation'])
+    revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+        kind=kind, subject_hash=revisions.subject(kind, *parts))
     from .ui_server import readable_result
     reply = (f"Action: {review['action']}\nWhy: {review['reason']}\nEffects: {review['effects']}\n"
              f"Resources: {readable_result(review['resources'])}\nAccess lasts: {review['duration']}\n\n"
@@ -229,7 +233,7 @@ def _propose(app, request, owner, binding, kind, payload, review):
              'This pending review expires in ten minutes; the approved access lasts for the duration shown above.')
     result = _result(app, request, {'reply': reply, 'integration_review': review}, 'Integration · needs your approval')
     pending = app.action_approvals.review(owner=owner, binding=binding, session=result['session'],
-        kind=kind, payload=payload, review=review, policy_revision=revision())
+        kind=kind, payload=payload, review=review, policy_revision=revision(), **revision_options)
     result['details']['approval'] = pending
     return result
 
@@ -251,6 +255,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if mode == 'approval_decision' and not pending:
         return None  # The existing change adapter reports the missing review.
     if possible_decision and pending:
+        if decision not in {'approve', 'reject'}:
+            raise ValueError('Request changes must use the live capability feedback route.')
         if request.get('session') != pending['session']:
             raise ValueError('Return to the conversation containing this proposal before deciding.')
         ident = pending['id'] if mode == 'chat' else request['approval_id']
@@ -295,6 +301,7 @@ def execute(app, request, *, grant_owner=None, binding=None):
             _check_cancel(app)
             return _propose(app, request, owner, binding, 'integration_access', {'task': task}, review)
     command = command or {key: request[key] for key in ('adapter', 'operation', 'arguments')}
+    revisions.validate(request)
     adapter, operation = command['adapter'], command['operation']
     arguments = provider(adapter).canonical_arguments(operation, command['arguments'])
     require_dispatch('integrations.' + adapter)

@@ -19,6 +19,7 @@ function fixture(){
  vm.runInNewContext(script,context);
  return {elements,calls,timers,jumps,set:value=>response=value,advance:n=>now+=n,
  emit:(detail={})=>events['prometheus-busy']({detail:{online:true,busy:false,closed:false,...detail}}),
+ remote:()=>events['prometheus-remote-state-updated']?.(),
  auth:()=>events['prometheus-auth-lost'](),hidden:value=>{document.hidden=value;documentEvents.visibilitychange();},
  async tick(){const [id,t]=[...timers].sort((a,b)=>a[1].delay-b[1].delay)[0];timers.delete(id);now+=t.delay;t.fn();await settle();}};
 }
@@ -27,6 +28,55 @@ test('GET only, summary and explicit unavailable source; no HTML rendering',asyn
  assert.deepEqual(h.calls,[['/api/decision-center']]);assert.match(h.elements.decisionCenterStatus.textContent,/Sources unavailable: queue/);
  assert.match(h.elements.decisionCenterList.children[0].children[0].textContent,/<img onerror=bad>/);
  assert.equal(h.elements.decisionCenterList.children[0].children[0].children.length,0);
+});
+
+test('explicit refresh reads a newly refreshed device observation inside the polling interval',async()=>{
+ const h=fixture();h.set(snapshot({items:[item({source:'devices',state:'stale',freshness:'stale'})]}));h.emit();await settle();
+ h.advance(2000);h.set(snapshot({generated_at:1002,items:[item({source:'devices',state:'selected_online'})],sources:{...snapshot().sources,devices:{state:'available',freshness:'current',observed_at:1002,expires_at:1032}}}));
+ await h.elements.decisionCenterRefresh.click();await settle();
+ assert.equal(h.calls.length,2,'manual Refresh must not silently wait for the 30-second automatic poll');
+ assert.match(h.elements.decisionCenterList.children[0].children[0].textContent,/selected_online/);
+});
+
+test('remote state update refreshes only the passive dashboard, without a second provider call',async()=>{
+ const h=fixture();h.emit();await settle();h.advance(2000);
+ h.set(snapshot({generated_at:1002,items:[item({source:'devices',state:'selected_online'})]}));h.remote();await settle();
+ assert.deepEqual(h.calls,[['/api/decision-center'],['/api/decision-center']]);
+ assert.match(h.elements.decisionCenterList.children[0].children[0].textContent,/selected_online/);
+});
+
+test('remote updates during a pending read discard its older result and coalesce one follow-up',async()=>{
+ const h=fixture();let resolve;h.set(()=>new Promise(r=>resolve=r));h.emit();await settle();
+ for(let i=0;i<20;i++)h.remote();assert.equal(h.calls.length,1);
+ h.set(snapshot({items:[item({source:'devices',state:'selected_online'})]}));
+ resolve(snapshot({items:[item({source:'devices',state:'stale'})]}));await settle();
+ assert.equal(h.calls.length,2);assert.match(h.elements.decisionCenterList.children[0].children[0].textContent,/selected_online/);
+});
+
+test('auth loss cancels a queued refresh and cannot revive old device rows',async()=>{
+ const h=fixture();let resolve;h.set(()=>new Promise(r=>resolve=r));h.emit();await settle();h.remote();h.auth();
+ resolve(snapshot({items:[item({source:'devices',state:'online'})]}));await settle();
+ assert.equal(h.calls.length,1);assert.equal(h.elements.decisionCenterList.children.length,0);assert.equal(h.timers.size,0);
+});
+
+test('queued refresh after a failed older read performs one fresh passive read',async()=>{
+ const h=fixture();let reject;h.set(()=>new Promise((_,r)=>reject=r));h.emit();await settle();h.remote();
+ h.set(snapshot({items:[item({source:'devices',state:'selected_online'})]}));reject(Error('older read failed'));await settle();
+ assert.deepEqual(h.calls,[['/api/decision-center'],['/api/decision-center']]);
+ assert.match(h.elements.decisionCenterList.children[0].children[0].textContent,/selected_online/);
+});
+
+for(const transition of ['busy','hidden'])test('queued refresh is discarded across '+transition,async()=>{
+ const h=fixture();let resolve;h.set(()=>new Promise(r=>resolve=r));h.emit();await settle();h.remote();
+ if(transition==='busy')h.emit({busy:true});else h.hidden(true);
+ resolve(snapshot({items:[item({source:'devices',state:'selected_online'})]}));await settle();
+ assert.equal(h.calls.length,1);assert.equal(h.elements.decisionCenterList.children.length,0);assert.equal(h.timers.size,0);
+});
+
+test('remote updates do not poll while hidden, busy or disconnected',async()=>{
+ const h=fixture();h.emit();await settle();h.hidden(true);h.remote();await settle();assert.equal(h.calls.length,1);
+ h.emit({busy:true});h.hidden(false);h.remote();await settle();assert.equal(h.calls.length,1);
+ h.emit({online:false,busy:false});h.remote();await settle();assert.equal(h.calls.length,1);
 });
 for(const value of [new Error('401'),{},snapshot({read_only:false}),snapshot({generated_at:900}),snapshot({items:Array(101).fill(item())}),snapshot({counts:{critical:NaN,warning:0,info:0}})])test('failed malformed or stale snapshot never reports empty success',async()=>{
  const h=fixture();h.set(value);h.emit();await settle();assert(h.elements.decisionCenterList.hidden);assert.match(h.elements.decisionCenterStatus.textContent,/unavailable|stale/);assert.doesNotMatch(h.elements.decisionCenterStatus.textContent,/No items need attention/);
