@@ -106,6 +106,56 @@ function details(){
  controls();
 }
 function button(parent,label,mode,id){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{if(!b.disabled)return send({mode,followup_job_id:id});};parent.append(b);buttons.push(b);}
+const assessmentStates=['matching_inputs','stale','unavailable'];
+const assessmentReasons={interpretation:{matching_inputs:['matching_inputs'],stale:['interpretation_changed','interpretation_withdrawn'],unavailable:['interpretation_unavailable','inputs_changed_during_assessment']},evidence:{matching_inputs:['matching_inputs'],stale:['evidence_changed'],unavailable:['evidence_unavailable','inputs_changed_during_assessment']},source:{matching_inputs:['matching_inputs'],stale:['source_changed'],unavailable:['source_unavailable','inputs_changed_during_assessment']}};
+function canonicalAssessment(value){
+ if(Array.isArray(value))return '['+value.map(canonicalAssessment).join(',')+']';
+ if(object(value))return '{'+Object.keys(value).sort().map(k=>canonicalAssessment(k)+':'+canonicalAssessment(value[k])).join(',')+'}';
+ return JSON.stringify(value).replace(/[\u007f-\uffff]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'));
+}
+async function resultDigest(result){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonicalAssessment(result)))),b=>b.toString(16).padStart(2,'0')).join('');}
+function assessmentValid(a,j){
+ if(!fields(a,['schema_version','read_only','scope','job_id','approval_id','fingerprint','request_digest','result_sha256','observed_at','historical','applicability','checks','authorizes_execution','resolves_conflicts','verifies_runtime_correctness'])||a.schema_version!==1||a.read_only!==true||a.scope!=='point_in_time_inputs_only'||a.job_id!==j.job_id||a.approval_id!==j.approval_id||a.fingerprint!==j.fingerprint||a.request_digest!==j.provenance.request_digest||!hex(a.result_sha256)||!finite(a.observed_at)||a.authorizes_execution!==false||a.resolves_conflicts!==false||a.verifies_runtime_correctness!==false||!assessmentStates.includes(a.applicability))return false;
+ const h=a.historical;
+ if(!fields(h,['state','result_state','check_status','terminal'])||h.state!==j.state||h.result_state!==j.result?.state||h.check_status!==j.result?.evidence?.status||h.terminal!==true||!fields(a.checks,['interpretation','evidence','source']))return false;
+ if(!Object.entries(a.checks).every(([name,c])=>fields(c,['status','reason'])&&assessmentReasons[name]?.[c.status]?.includes(c.reason)))return false;
+ const states=Object.values(a.checks).map(c=>c.status),expected=states.includes('unavailable')?'unavailable':states.includes('stale')?'stale':'matching_inputs';
+ return a.applicability===expected;
+}
+function assessmentButton(parent,j){
+ const b=document.createElement('button'),view=document.createElement('div');b.textContent='Check whether inputs still match';
+ b.onclick=async()=>{
+  if(b.disabled||!ready()||reading||sending)return;
+  const project=workspace();view.replaceChildren();
+  if(!project?.project||project.dirty||project.stale){paragraph(view,'Open the original saved project before assessing this result.');return;}
+  const mark=epoch,conversation=current(),path=project.project;reading=true;controls();
+  const valid=()=>mark===epoch&&ready()&&current()===conversation&&workspace()?.project===path&&!workspace()?.dirty&&!workspace()?.stale;
+  try{
+   const a=await api('/api/evidence/followups/assess',{job_id:j.job_id,project:path});
+   if(!valid())return;
+   if(!assessmentValid(a,j)||a.result_sha256!==await resultDigest(j.result))throw Error('Invalid assessment');
+   if(!valid())return;
+   paragraph(view,'Historical check: '+a.historical.check_status+'.');
+   paragraph(view,'Observed at '+new Date(a.observed_at*1000).toLocaleString()+'. This is not a live guarantee.');
+   paragraph(view,a.applicability==='matching_inputs'?'Inputs match at this observation.':a.applicability==='stale'?'Inputs have changed since this check.':'Current applicability is unavailable.');
+   for(const [name,c] of Object.entries(a.checks))paragraph(view,name+': '+c.status.replaceAll('_',' ')+'.');
+   paragraph(view,'This assessment does not resolve the conflict or establish runtime correctness. A new check needs a fresh review.');
+   const fresh=document.createElement('button');fresh.textContent='Start a fresh follow-up review';
+   fresh.onclick=async()=>{
+    if(fresh.disabled||!valid()||reading||sending)return;
+    const expected=epoch+1,loaded=await load();
+    if(loaded!==true||epoch!==expected||!ready()||current()!==conversation||workspace()?.project!==path||workspace()?.dirty||workspace()?.stale||pending||other)return;
+    el('followupInterpretation').value=items.some(x=>x.interpretation_id===j.provenance.interpretation_id)?j.provenance.interpretation_id:'';
+    el('followupFiles').value=j.files.join('\n');el('followupOperation').value=j.operation;
+    el('followupPlacement').value=j.placement.strategy;el('followupReason').value='';details();
+    say('Current history refreshed. Enter a new reason and prepare a new exact review. Nothing has been approved or run.');
+   };
+   view.append(fresh);buttons.push(fresh);
+  }catch(error){if(valid())paragraph(view,'Assessment unavailable. The saved check and original failures are unchanged.');}
+  finally{if(mark===epoch){reading=false;controls();}}
+ };
+ parent.append(b);parent.append(view);buttons.push(b);
+}
 function renderJobs(){
  const parent=el('followupJobs');parent.replaceChildren();buttons=[];
  if(!jobs.length)paragraph(parent,'No saved follow-up attempts.');
@@ -117,6 +167,7 @@ function renderJobs(){
   if(j.state==='waiting')button(card,'Cancel waiting follow-up','evidence_followup_cancel',j.job_id);
   if(j.state==='unconfirmed'){paragraph(card,j.queued?'A claim has no confirmed result. Recovery queries only that original job and never runs it again.':'This attempt was not durably queued. Its decision grants no restart authority.');if(j.queued)button(card,'Recover original follow-up result','evidence_followup_recover',j.job_id);}
   if(j.result){const pre=document.createElement('pre');pre.textContent=JSON.stringify(j.result,null,2);card.append(pre);}
+  if(['completed','failed'].includes(j.state))assessmentButton(card,j);
   paragraph(card,'Supplemental check only. Original evidence and failed results are unchanged.');parent.append(card);
  }
  controls();
@@ -135,6 +186,7 @@ async function load(){
   for(const x of items)select.add(new Option(x.source+' · '+x.state+' · '+x.interpretation_id.slice(0,12),x.interpretation_id));
   details();renderJobs();review(live.approval);
   if(!pending&&!other)say(items.length+' interpretation histories and '+jobs.length+' follow-up attempts. Open a project and choose its saved files for a new review.');
+  return true;
  }catch(error){if(mark===epoch)clear('Follow-up history unavailable. Original evidence remains saved. Refresh before acting.');}
  finally{if(mark===epoch){reading=false;controls();}}
 }

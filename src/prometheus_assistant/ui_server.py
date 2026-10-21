@@ -1166,6 +1166,19 @@ class Handler(BaseHTTPRequestHandler):
                     self.respond(200, {'locked': True})
                 else:
                     raise ValueError('Unknown verification action.')
+            elif self.path == '/api/evidence/followups/assess':
+                if (type(body) is not dict or set(body) != {'job_id', 'project'}
+                        or type(body['job_id']) is not str
+                        or not re.fullmatch('[a-f0-9]{32}', body['job_id'])
+                        or type(body['project']) is not str or not body['project'].strip()
+                        or len(body['project']) > 4096):
+                    raise ValueError('Choose the exact saved follow-up and open project.')
+                from .evidence_followup_assessment import assess
+                with self.server.owner_access.grant_owner(self.owner_session()) as owner:
+                    result = assess(evidence_followup_ui.store(self.server.app, owner),
+                        body['job_id'], lambda project: ui_workspace.workspace(
+                            self.server.app, {'project': project}), project=body['project'])
+                self.respond(200, result)
             elif self.path == '/api/resources/preference':
                 if not isinstance(body, dict) or set(body) != {'mode'}:
                     raise ValueError('Choose one project scheduling preference.')

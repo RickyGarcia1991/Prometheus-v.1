@@ -86,6 +86,18 @@ def test_http_followup_exact_review_result_and_saved_history(endpoint, monkeypat
     assert original_row['evidence_conflict']==conflict
     assert original_row['evidence_followups']['items'][0]['job_id']==job['job_id']
     assert next(r for r in history['items'] if r['id']==pending['id'])['kind']=='other'
+    # Explicit inspection reads the saved result without arming or dispatching it.
+    before_history = copy.deepcopy(history)
+    code, assessment = request('/api/evidence/followups/assess',
+        dict(job_id=job['job_id'], project=str(project)))
+    assert code == 200, assessment
+    assert assessment['read_only'] and not assessment['authorizes_execution']
+    assert assessment['applicability'] == ('matching_inputs' if choice=='approve' else 'unavailable')
+    assert assessment['historical']['check_status'] == ('passed' if choice=='approve' else 'unavailable')
+    assert request('/api/decisions/history')[1] == before_history
+    assert len(calls) == (1 if choice=='approve' else 0)
+    assert request('/api/evidence/followups/assess',
+        dict(job_id=job['job_id'], project=str(project.parent)))[0] == 400
     # A locked owner cannot read this queue or resume its jobs.
     assert request('/api/owner/lock', {})[0]==200
     assert request('/api/evidence/followups')[0]==401
