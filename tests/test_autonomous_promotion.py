@@ -160,6 +160,23 @@ def test_candidate_that_wont_drain_blocks_pointer_rollback(case):
     assert 'launch:rollback' not in host.calls
 
 
+@pytest.mark.parametrize('failure',[None,'test','health','candidate_stop'])
+def test_every_native_result_phase_keeps_exact_candidate_identity(case,monkeypatch,failure):
+    recorded=[];original=promotion._save
+    def capture(path,value):
+        if Path(path).name=='result.json':recorded.append(dict(value))
+        return original(path,value)
+    monkeypatch.setattr(promotion,'_save',capture)
+    host=FilesystemHost(case,failure)
+    if failure:
+        with pytest.raises(ValueError):promote(case,host)
+    else:promote(case,host)
+    assert recorded
+    assert all(row['job_id']==case['receipt']['job_id'] and
+               row['approval_fingerprint']==case['receipt']['approval_fingerprint'] for row in recorded)
+    assert recorded[-1]['state']=={None:'active','test':'failed','health':'rolled_back','candidate_stop':'recovery_required'}[failure]
+
+
 def test_changed_candidate_or_extra_file_rejected_before_tests(case):
     (case['snapshot']/'unreviewed.py').write_text('raise SystemExit')
     host=FilesystemHost(case)

@@ -56,6 +56,54 @@ function fixture() {
   return f;
 }
 (async () => {
+  const revision = fixture(); revision.busy(); await revision.open();
+  revision.result('project_edit',{approval:approval()},{origin:'local'});
+  revision.elements.projectRevisionFeedback.value='  Fix the edge case  ';
+  await revision.elements.requestProjectChanges.click();
+  assert.equal(revision.last().approval_decision,'request_changes');
+  assert.equal(revision.last().approval_feedback,'Fix the edge case');
+  const draft={project:PROJECT,prompt:'Original goal\nFix the edge case',origin_approval:'review-1',revision_token:'e'.repeat(32),edit_policy:'ask_first',research_query:'',file:'greeting.py'};
+  const submitted=revision.submitted.length;
+  revision.result('approval_decision',{approval_resolved:'review-1',revision_draft:draft},{origin:'observed'});
+  assert.notEqual(revision.elements.projectAgentGoal.value,draft.prompt);
+  revision.context.session='original-conversation';
+  revision.result('approval_decision',{approval_resolved:'review-1',revision_draft:draft},{origin:'local'});
+  assert.equal(revision.elements.projectAgentGoal.value,draft.prompt);
+  assert.equal(revision.elements.projectAgentPolicy.value,'ask_first');
+  assert.equal(revision.elements.projectAgentResearch.value,'');
+  assert.equal(revision.submitted.length,submitted);
+  revision.context.session='original-conversation';
+  assert.equal(revision.contextFor('project_edit').revision_token,draft.revision_token);
+  assert.equal(revision.contextFor('chat').revision_token,undefined);
+  await revision.elements.prepareProjectTask.click();
+  assert.equal(revision.last().revision_token,draft.revision_token);
+  revision.emit('prometheus-auth-lost');
+  assert.equal(revision.contextFor('project_edit').revision_token,undefined);
+  revision.elements.projectAgentGoal.value='New owner draft';
+  revision.result('approval_decision',{approval_resolved:'review-1',revision_draft:draft},{origin:'local'});
+  assert.equal(revision.elements.projectAgentGoal.value,'New owner draft');
+  for(const fault of ['project','expired','wrongid','conversation']){
+    const f=fixture();f.busy();await f.open();f.result('project_edit',{approval:approval()},{origin:'local'});
+    f.context.session='original-conversation';
+    f.elements.projectRevisionFeedback.value='Change it';await f.elements.requestProjectChanges.click();
+    if(fault==='project')await f.open('C:\\Projects\\other');
+    if(fault==='expired')f.result('approval_decision',{}, {origin:'local',error:'Expired'});
+    if(fault==='conversation')f.context.session='another-conversation';
+    f.elements.projectAgentGoal.value='Keep this draft';
+    f.result('approval_decision',{approval_resolved:'review-1',revision_draft:{...draft,origin_approval:fault==='wrongid'?'other':'review-1'}},{origin:'local'});
+    assert.equal(f.elements.projectAgentGoal.value,'Keep this draft');
+  }
+  const scope=fixture();scope.busy();await scope.open();scope.result('project_edit',{approval:approval('project_task')},{origin:'local'});
+  assert(scope.elements.projectRevisionControls.hidden);assert(scope.elements.requestProjectChanges.disabled);
+
+  const calibration = fixture(); calibration.busy(); await calibration.open();
+  for (const applied of [false, true]) {
+    const proposed = approval();
+    proposed.review.resource_assessment.prediction_calibration = {applied};
+    calibration.result('project_edit', {approval: proposed}, {origin: 'local'});
+    assert.match(text(calibration.elements.projectAgentReview), applied
+      ? /correction passed separate held-out checks/ : /using the conservative baseline/);
+  }
   const team = fixture(); team.busy(); await team.open();
   const checkbox = team.elements.projectAgentSpecialists;
   assert(checkbox, 'optional specialist control exists');

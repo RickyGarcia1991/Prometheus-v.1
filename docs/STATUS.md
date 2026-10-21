@@ -1,3 +1,15 @@
+# Dev40 candidate: model lifecycle and scheduling
+
+See MODEL-LIFECYCLE.md for exact coverage and cancellation semantics. Installed dev39 remains active until qualification.
+
+## Historical baseline notes
+
+# Dev39 candidate: measured review mode admission
+
+Post-check review refreshes mode admission before inventory and inference. Restrictive preferences defer optional model calls while deterministic checks remain visible. No cancellation of running inference or OS tuning. Installed dev38 remains active; Surface worker unchanged.
+
+## Historical baseline notes
+
 # Dev38 candidate: specialist mode admission
 
 Optional specialist stages refresh mode admission before inference. Restrictive preferences defer new stages while hardware guards remain mandatory. No cancellation of running inference or OS tuning. Installed dev37 remains active; Surface worker unchanged.

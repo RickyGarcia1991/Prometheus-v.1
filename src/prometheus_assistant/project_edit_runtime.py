@@ -61,6 +61,9 @@ def editor(app, workspace, goal):
                                             num_predict=budget, cancel_event=signal)
             after = author_observation()
         except LocalModelError as error:
+            from .ollama import ModelDeferred, GenerationCancelled
+            if isinstance(error, (ModelDeferred, GenerationCancelled)):
+                raise
             app.model_evidence.record_failure(profile.model, error)
             raise
         app.model_evidence.record_success(profile.model)

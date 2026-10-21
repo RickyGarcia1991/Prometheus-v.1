@@ -123,6 +123,10 @@ def test_empty_load_terminal_is_only_valid_for_preparation(monkeypatch, reply, t
     else:
         with pytest.raises(LocalModelError): client.prepare()
     if not reply:
+        # Check a distinct ordinary request, not the prior failed preparation's
+        # intentional backend cooldown (covered by lifecycle tests).
+        from prometheus_assistant import model_lifecycle
+        monkeypatch.setattr(model_lifecycle, 'governor', model_lifecycle.ModelLifecycleGovernor())
         stream_events(monkeypatch, [event])
         with pytest.raises(LocalModelError, match='complete answer'): client.chat_stream([])
 

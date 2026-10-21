@@ -236,13 +236,17 @@ def generate(request, memory_path, profiles, role, evidence, *, base_url='http:/
             except GenerationCancelled:
                 try:
                     client.timeout = 2
-                    timed('model_unload', client._request, '/api/generate', {'model': client.model, 'keep_alive': 0})
+                    if not getattr(client, 'last_lifecycle', {}).get('state'):
+                        timed('model_unload', client._request, '/api/generate', {'model': client.model, 'keep_alive': 0})
                 except LocalModelError:
                     pass
                 if memory_signal.pressure and not (cancel_event is not None and cancel_event.is_set()):
                     raise ModelMemoryPressure('Available memory fell during generation. The incomplete answer was not saved.')
                 raise
             except LocalModelError as error:
+                from .ollama import ModelDeferred
+                if isinstance(error, ModelDeferred):
+                    raise
                 timed('quality_recording', evidence.record_failure, profile.model, error)
                 errors.append(str(error))
                 attempts.append({'model':profile.model, 'seconds':round(time.monotonic()-attempt_started,3),

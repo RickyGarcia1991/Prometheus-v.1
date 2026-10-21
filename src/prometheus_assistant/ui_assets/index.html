@@ -46,6 +46,7 @@
 <div class="workspace-actions"><button id="prepareProjectTask" disabled>Prepare project change</button><button id="refreshProjectApproval" class="quiet" disabled>Show pending review</button><button id="undoProjectTask" class="quiet" disabled>Undo last saved edit</button></div>
 <p id="projectAgentStatus" class="workspace-status" role="status" aria-live="polite">Describe a change after opening a project. Progress appears in Activity.</p>
 <section id="projectAgentReview" class="workspace-results" aria-label="Project task approval" hidden></section><div id="projectAgentDecisions" class="workspace-actions" hidden><button id="approveProjectTask" disabled>Approve this review</button><button id="rejectProjectTask" class="quiet" disabled>Deny this review</button></div>
+<div id="projectRevisionControls" hidden><label for="projectRevisionFeedback">Changes to request</label><textarea id="projectRevisionFeedback" maxlength="2000" rows="3" disabled></textarea><button id="requestProjectChanges" disabled>Request changes</button><p class="fine">Ends this approval and loads a draft. Prepare a new proposal when ready.</p></div>
 <div id="projectAgentResult" class="workspace-results" aria-live="polite"></div>
 </section>
 <div class="workspace-row"><label class="grow" for="codeFile">Source file<select id="codeFile"><option value="">Open a project first…</option></select></label><button id="readCode" data-work-action>Open file</button></div>
@@ -151,6 +152,54 @@
 </div></section>
 <section id="conversationPanel" class="conversation-panel" aria-label="Conversation panel" hidden><div class="conversation-heading"><span>Conversation</span><button id="latestReply" class="quiet" type="button" hidden>Latest reply ↓</button></div><section id="messages" class="messages" tabindex="0" aria-label="Current conversation" aria-live="polite"><div id="welcome"><p>Your conversation lives here.</p><small>Type below or start a voice chat.</small></div></section></section>
 <div id="conversationDock" class="conversation-dock">
+<details id="decisionCenter" class="task-activity">
+<summary>Decisions &amp; health</summary>
+<p id="decisionCenterStatus" class="task-activity-note" role="status">Waiting for current information.</p>
+<button id="decisionCenterRefresh" type="button" class="quiet">Refresh decisions</button>
+<ol id="decisionCenterList" aria-label="Decisions and health"></ol>
+<p class="task-activity-note">Grouped attention items link to their existing review screens. Saved results do not establish that a remote computer is currently connected.</p>
+</details>
+<details id="capabilityRevision" class="task-activity"><summary>Request changes to a pending capability</summary><p id="capabilityRevisionStatus" role="status">Open to review the current settings, integration or worker proposal.</p><button id="capabilityRevisionRefresh" type="button">Refresh pending proposal</button><div id="capabilityRevisionProposal" hidden></div><label for="capabilityRevisionFeedback">Changes needed</label><textarea id="capabilityRevisionFeedback" maxlength="2000" rows="3" disabled></textarea><button id="capabilityRevisionSubmit" type="button" disabled>Request changes to this exact proposal</button><p class="task-activity-note">Requesting changes does not run the proposal. Update its original controls, then explicitly prepare a replacement for a fresh decision.</p></details>
+<details id="decisionHistory" class="task-activity"><summary>Owner decision history</summary><p id="decisionHistoryStatus" role="status">Open to read saved decisions. History does not authorize work.</p><button id="decisionHistoryRefresh" type="button">Refresh history</button><ol id="decisionHistoryList"></ol></details>
+<details id="evidenceResolution" class="task-activity"><summary>Review an evidence interpretation</summary>
+<p>Choose a conflicting observation to explain. This records your interpretation without changing original evidence, hiding failed checks or running work.</p>
+<p id="resolutionStatus" role="status">Open to read conflicts from the latest 50 decisions.</p>
+<button id="resolutionRefresh" type="button">Refresh conflicts and pending review</button>
+<label for="resolutionTarget">Conflicting evidence</label><select id="resolutionTarget" disabled></select>
+<label for="resolutionFact">Observation to support</label><select id="resolutionFact" disabled></select>
+<div id="resolutionFacts"></div>
+<label for="resolutionReason">Why this interpretation is supported</label><textarea id="resolutionReason" maxlength="2000" rows="3" disabled></textarea>
+<button id="resolutionPrepare" type="button" disabled>Prepare exact interpretation review</button>
+<div id="resolutionReview" hidden></div><div id="resolutionDecisions" hidden><button id="resolutionApprove" type="button" disabled>Approve interpretation</button><button id="resolutionReject" type="button" disabled>Deny interpretation</button></div>
+</details>
+<details id="interpretationLifecycle" class="task-activity"><summary>Revise or withdraw an interpretation</summary>
+<p>Update a recorded interpretation with a fresh review, or withdraw it. Its original explanation, changes and native evidence stay in history.</p>
+<p id="interpretationStatus" role="status">Open to read interpretation history.</p>
+<button id="interpretationRefresh" type="button">Refresh interpretations and pending review</button>
+<label for="interpretationTarget">Recorded interpretation</label><select id="interpretationTarget" disabled></select>
+<div id="interpretationDetails"></div>
+<label for="interpretationOperation">Change</label><select id="interpretationOperation" disabled><option value="revise">Revise interpretation</option><option value="withdraw">Withdraw interpretation</option></select>
+<label for="interpretationFact">Current observation for revision</label><select id="interpretationFact" disabled></select>
+<label for="interpretationReason">Reason for this change</label><textarea id="interpretationReason" maxlength="4000" rows="3" disabled></textarea>
+<button id="interpretationPrepare" type="button" disabled>Prepare exact change review</button>
+<div id="interpretationReview" hidden></div><div id="interpretationDecisions" hidden><button id="interpretationApprove" type="button" disabled>Approve interpretation change</button><button id="interpretationReject" type="button" disabled>Deny interpretation change</button></div>
+<p class="task-activity-note">A change to an interpretation does not run a job, repair files or remove a failed result. Further work uses its own action review.</p>
+</details>
+<details id="evidenceFollowups" class="task-activity"><summary>Check evidence with a follow-up</summary>
+<p>Choose a recorded interpretation and saved Python files, then review a syntax or lint check. Original evidence, failed results and competing interpretations stay visible.</p>
+<p id="followupStatus" role="status">Open to read interpretations and saved follow-up checks.</p>
+<button id="followupRefresh" type="button">Refresh follow-up checks</button>
+<label for="followupInterpretation">Interpretation for this check</label><select id="followupInterpretation" disabled></select>
+<div id="followupInterpretationDetails"></div>
+<label for="followupFiles">Saved Python files in the open project, one relative path per line</label><textarea id="followupFiles" rows="3" maxlength="4000" disabled></textarea>
+<label for="followupOperation">Check</label><select id="followupOperation" disabled><option value="python-syntax-check">Python syntax without executing source</option><option value="python-ruff-check-v1">Pinned Ruff lint without fixes</option></select>
+<label for="followupPlacement">Destination preference</label><select id="followupPlacement" disabled><option value="remote-lightweight-v1">Use the Surface and reserve this computer</option><option value="available-headroom-v1">Choose eligible available memory</option></select>
+<label for="followupReason">What this check should clarify</label><textarea id="followupReason" rows="3" maxlength="4000" disabled></textarea>
+<button id="followupPrepare" type="button" disabled>Prepare exact follow-up review</button>
+<div id="followupReview" hidden></div><div id="followupDecisions" hidden><button id="followupApprove" type="button" disabled>Approve this follow-up check</button><button id="followupReject" type="button" disabled>Deny this follow-up check</button></div>
+<div id="followupJobs"></div>
+<p class="task-activity-note">Waiting work uses only its approved files and destination. Changed evidence, interpretations or saved files require a fresh review. Recovery reads the original result without rerunning an uncertain job. Syntax and lint results do not establish runtime correctness or resolve a conflict automatically.</p>
+</details>
 <details id="taskActivity" class="task-activity" open>
 <summary><span class="task-activity-heading">Activity</span><span id="taskActivitySummary" role="status" aria-live="polite">Checking current work…</span></summary>
 <ol id="taskActivityList" aria-label="Recent Prometheus activity"></ol>
@@ -164,4 +213,4 @@
 <div class="composerTools"><button id="textMode" aria-pressed="true">Text only</button><button id="spokenMode" aria-pressed="false">Spoken + text</button><button id="dictate">◉ Record</button><button id="stopSpeech" hidden>Stop voice</button><button id="cancelRequest" hidden>Cancel current request</button><span id="requestTime"></span></div>
 <footer><div class="footer-info"><span>Answers and code can need checking. Source excerpts retain their citations.</span><span id="saveStatus">Ready · nothing sent</span></div><div class="release-branding"><span>New Prometheus version <span id="runtimeVersion">Checking…</span></span><span>Created by Ricky Garcia</span></div></footer>
 </div>
-</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/activity-panel.js"></script><script src="/app.js"></script><script src="/workspace.js"></script><script src="/project-agent.js"></script><script src="/runtime-settings.js"></script><script src="/remote-jobs.js"></script><script src="/scheduled-jobs.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script><script src="/self-improvement.js"></script><script src="/integrations.js"></script></body></html>
+</main></div><script src="/adaptive.js"></script><script src="/transport.js"></script><script src="/folded-core.js"></script><script src="/voice-player.js"></script><script src="/activity-panel.js"></script><script src="/app.js"></script><script src="/capability-revisions.js"></script><script src="/workspace.js"></script><script src="/project-agent.js"></script><script src="/runtime-settings.js"></script><script src="/remote-jobs.js"></script><script src="/scheduled-jobs.js"></script><script src="/remote.js"></script><script src="/permissions.js"></script><script src="/grants.js"></script><script src="/self-improvement.js"></script><script src="/integrations.js"></script><script src="/decision-center.js"></script><script src="/decision-history.js"></script><script src="/evidence-resolution.js"></script><script src="/interpretation-lifecycle.js"></script><script src="/evidence-followups.js"></script></body></html>

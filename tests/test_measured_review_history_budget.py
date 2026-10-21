@@ -38,3 +38,18 @@ def test_other_oversized_metadata_still_rejected(rig):
         dict(excerpt='x'*16384,summary='y'*16384,description='z'*16384) for _ in range(5)])
     with pytest.raises(ValueError,match='storage bound'):
         memory._response_metadata(details)
+
+
+def test_deferred_failure_and_admission_survive_bounded_history(rig):
+    rig.app.project_resources.set_mode_preference('Idle')
+    measured=runtime.run_review(rig.app,rig.candidate,rig.packet)
+    first=measured['report']['measured_checks'][0];checks=[]
+    for index in range(64):
+        row=deepcopy(first);row['evidence_id']=format(index,'016x');row['input']['target']='x'*500;checks.append(row)
+    measured['report'].update(measured_checks=checks,failed_checks=deepcopy(checks),reviewer_omissions=[c['evidence_id'] for c in checks])
+    saved=runtime.validate_saved_review(measured)
+    assert saved['status']=='resource_deferred' and saved['attempted'] is False
+    assert saved['history_summary']['status']=='checks_failed'
+    assert saved['history_summary']['may_present_as_checks_passed'] is False
+    assert saved['resource_admission']['mode']['requested']=='Idle'
+    assert runtime.validate_saved_review(json.loads(json.dumps(saved)))==saved

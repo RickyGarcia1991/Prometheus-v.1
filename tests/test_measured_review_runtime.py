@@ -14,7 +14,7 @@ from prometheus_assistant.ollama import LocalModelError
 
 
 @pytest.fixture
-def rig(monkeypatch):
+def rig(monkeypatch,tmp_path):
     source = b'value = 1\n'
     candidate = dict(version=1, path='example.py', content=source.decode(),
                      after_sha256=hashlib.sha256(source).hexdigest(), checks=[])
@@ -30,6 +30,11 @@ def rig(monkeypatch):
     state = SimpleNamespace(candidate=candidate, packet=packet, response='{"findings":[]}',
         calls=0, inventory_calls=0, identity_change=False, after=None, error=None, messages=None,
         app=SimpleNamespace(cancel_event=threading.Event()), policy=True, fit=True)
+    from prometheus_assistant.project_resources import ProjectResources
+    state.app.lock=threading.RLock()
+    state.app.project_resources=ProjectResources(tmp_path,probe=SimpleNamespace(snapshot=lambda **_:dict(
+        total_ram_gib=16,available_ram_gib=8,free_disk_gib=20,cpu_percent=10,
+        battery_percent=100,plugged_in=True)))
     class Client:
         def __init__(self, **kwargs):
             self.options=kwargs
@@ -281,3 +286,72 @@ def test_dynamic_enum_cost_is_included_in_context_admission(rig,monkeypatch):
         model='local',context=old_size+256+768,cpu_threads=2)])
     assert run(rig)['status']=='context_unavailable'
     assert rig.calls==0
+
+
+@pytest.mark.parametrize('mode',['Idle','Battery Saver','Critical Recovery'])
+def test_restrictive_mode_preserves_failed_checks_without_inventory_or_inference(rig,mode):
+    rig.app.project_resources.set_mode_preference(mode)
+    result=run(rig)
+    assert result['status']=='resource_deferred' and result['attempted'] is False
+    assert rig.calls==rig.inventory_calls==0
+    assert result['report']['status']=='checks_failed'
+    assert result['report']['may_present_as_checks_passed'] is False
+    assert runtime.validate_saved_review(result)==result
+
+
+def test_mode_change_during_preparation_prevents_chat(rig,monkeypatch):
+    original=runtime.guards._profiles
+    calls=[]
+    def profiles(*args):
+        calls.append(True)
+        result=original(*args)
+        if len(calls)==2:rig.app.project_resources.set_mode_preference('Idle')
+        return result
+    monkeypatch.setattr(runtime.guards,'_profiles',profiles)
+    result=run(rig)
+    assert result['status']=='resource_deferred' and not result['attempted']
+    assert rig.inventory_calls==2 and rig.calls==0
+    assert result['resource_admission']['mode']['requested']=='Idle'
+    assert runtime.validate_saved_review(result)==result
+
+
+def test_automatic_idle_dwell_remains_foreground_eligible(rig):
+    assert rig.app.project_resources.status()['mode']=='Idle'
+    result=run(rig)
+    assert result['status']=='completed' and rig.calls==1
+    assert result['resource_admission']['mode']['requested'] is None
+
+
+def test_unknown_admission_is_safe_and_legacy_history_remains_valid(rig,monkeypatch):
+    legacy=run(rig);legacy.pop('resource_admission')
+    assert runtime.validate_saved_review(legacy)==legacy
+    def fail(*args,**kwargs):raise OSError('private path')
+    monkeypatch.setattr(runtime.specialist_resources,'admit',fail)
+    before=rig.calls;result=run(rig)
+    assert result['status']=='resource_deferred' and result['resource_admission'] is None
+    assert rig.calls==before and 'private path' not in str(result)
+    assert runtime.validate_saved_review(result)==result
+
+
+@pytest.mark.parametrize('mutate',[
+    lambda r:r.update(attempted=True),
+    lambda r:r.update(status='completed'),
+    lambda r:r.pop('resource_admission'),
+    lambda r:r['resource_admission'].update(decision='run_local'),
+    lambda r:r['resource_admission']['mode'].update(dwell_pending=1),
+])
+def test_deferred_receipt_rejects_forged_contradictions(rig,mutate):
+    rig.app.project_resources.set_mode_preference('Idle');result=run(rig)
+    mutate(result)
+    with pytest.raises(ValueError):runtime.validate_saved_review(result)
+
+
+def test_clean_native_checks_remain_available_when_model_deferred(rig):
+    for group in rig.packet['evidence'].values():
+        for check in group['checks']:
+            check['actual']['exit_code']=0;check['passed']=True
+    rig.app.project_resources.set_mode_preference('Battery Saver')
+    result=run(rig)
+    assert result['status']=='resource_deferred' and result['attempted'] is False
+    assert result['report']['measured_checks'][0]['passed'] is True
+    assert result['report']['reviewer_report'] is None

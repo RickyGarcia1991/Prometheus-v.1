@@ -12,6 +12,7 @@ import re
 from time import monotonic
 
 from . import advisory_review_runtime as guards
+from . import specialist_resources
 from .advisory_review import _json_bytes, _snapshot
 from .project_task_evidence import candidate_digest
 from .reviewer_check_evidence import assess, MAX_REPORT_BYTES
@@ -47,7 +48,7 @@ def response_schema(deterministic):
     return schema
 
 
-_STATUSES = {'invalid_input', 'evidence_unavailable', 'cancelled', 'policy_denied',
+_STATUSES = {'invalid_input', 'evidence_unavailable', 'cancelled', 'policy_denied', 'resource_deferred',
              'identity_unavailable', 'context_unavailable', 'resource_unavailable',
              'identity_changed', 'invalid_response', 'completed', 'timed_out', 'runtime_unavailable'}
 
@@ -74,8 +75,21 @@ def _validate_saved_review(value):
             raise ValueError('Invalid saved measured review')
     def digest(v, length=64):
         return type(v) is str and re.fullmatch('[0-9a-f]{'+str(length)+'}',v) is not None
-    need(type(row) is dict and required <= set(row) <= required | {'duration_seconds','history_summary'})
+    need(type(row) is dict and required <= set(row) <= required | {'duration_seconds','history_summary','resource_admission'})
     need(row['status'] in _STATUSES and type(row['attempted']) is bool)
+    if 'resource_admission' in row:
+        admission = row['resource_admission']
+        if admission is not None:
+            specialist_resources.validate(admission)
+            need(admission['schema_version'] == 2)
+        if admission is None or admission['decision'] == 'defer':
+            need(row['status'] == 'resource_deferred' and row['attempted'] is False)
+        else:
+            need(row['status'] != 'resource_deferred')
+    if row['status'] == 'resource_deferred':
+        need('resource_admission' in row and row['attempted'] is False
+             and row['reviewer'] is None and row['measurement_identity'] is not None
+             and (row['report'] is not None or row.get('history_summary') is not None))
     need(row['prompt_version'] in {'measured-evidence-reference-v1', PROMPT_VERSION} and row['measurement_kind']=='native_process_outcomes')
     need(all(row[k] is False for k in ('semantic_evidence_available','authorized','production_accepted')))
     need(row['prompt_sha256'] is None or digest(row['prompt_sha256']))
@@ -194,6 +208,14 @@ def _prepare(candidate, packet):
 
 
 def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
+    from .model_lifecycle import task_scope
+    from .project_resources import inference_mode
+    with task_scope(mode_provider=lambda: inference_mode(app),
+                    optional=True, cancel_event=app.cancel_event):
+        return _run_review(app, candidate, measurement_packet, timeout_seconds=timeout_seconds)
+
+
+def _run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
     """One guarded model call, with deterministic assessment on every outcome.
 
     A completed response is only structurally validated advice. It is not model
@@ -228,10 +250,23 @@ def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
         result['status'] = status
         return result
 
+    def admitted():
+        try:
+            admission = specialist_resources.admit(app)
+            specialist_resources.validate(admission)
+            if admission['schema_version'] != 2:
+                raise ValueError('Current mode admission evidence required')
+        except Exception:
+            admission = None
+        result['resource_admission'] = admission
+        return admission is not None and admission['decision'] == 'run_local'
+
     if guards._cancelled(app):
         return finish('cancelled')
     if not guards._allowed():
         return finish('policy_denied')
+    if not admitted():
+        return finish('resource_deferred')
     signal = None
     try:
         inventory_client = guards.OllamaClient(base_url=guards._URL, timeout=guards._READ_TIMEOUT)
@@ -253,6 +288,8 @@ def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
             return finish('cancelled')
         if not guards._allowed():
             return finish('policy_denied')
+        if not admitted():
+            return finish('resource_deferred')
         runtime = guards.OllamaClient(base_url=guards._URL, model=profile.model,
             timeout=timeout_seconds, num_ctx=profile.context, num_thread=profile.cpu_threads)
         size = 0
@@ -294,8 +331,12 @@ def run_review(app, candidate, measurement_packet, *, timeout_seconds=120):
                 return finish('timed_out')
             if signal.memory.pressure:
                 return finish('resource_unavailable')
+        from .ollama import ModelDeferred
+        if isinstance(error, ModelDeferred):
+            return finish('resource_unavailable')
         if isinstance(error, TimeoutError):
             return finish('timed_out')
         return finish('runtime_unavailable')
     except (ValueError, TypeError, KeyError, UnicodeError, RecursionError):
         return finish('invalid_response' if result['attempted'] else 'invalid_input')
+
