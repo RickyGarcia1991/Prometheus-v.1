@@ -8,4 +8,27 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <!-- Shared lifecycle behavior is maintained in HostAgent, not the older
+       same-named controller-directory snapshots. Keep this dependency closure
+       explicit so builds and publishes contain the same reviewed bytes. -->
+  <ItemGroup>
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\Prometheus-Controller-Common.ps1" />
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\Prometheus-Drive-Engine.ps1" />
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\Prometheus-Eject-Orchestrator.ps1" />
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\Prometheus-Lifecycle.ps1" />
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\Prometheus-Safe-Eject.ps1" />
+    <ControllerLifecycleInput Include="..\Prometheus.HostAgent\verify-portable-memory.py" />
+    <None Remove="Prometheus-Controller-Common.ps1;Prometheus-Drive-Engine.ps1;Prometheus-Eject-Orchestrator.ps1;Prometheus-Lifecycle.ps1;Prometheus-Safe-Eject.ps1;verify-portable-memory.py" />
+    <None Include="@(ControllerLifecycleInput)">
+      <Link>%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="ValidateControllerLifecycleInputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('%(ControllerLifecycleInput.Identity)')"
+           Text="Required canonical controller lifecycle input is missing: %(ControllerLifecycleInput.Identity)" />
+  </Target>
+
 </Project>
