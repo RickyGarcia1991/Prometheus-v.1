@@ -6,7 +6,7 @@ let token='',session=null,job=null,localJob=null,busy=false,closed=false,online=
 let historyEpoch=0,historyPending=false;
 const transport=new PrometheusTransport.LocalClient();
 const taskActivity=window.PrometheusActivity?new window.PrometheusActivity.ActivityPanel(document):null;
-transport.onRestart=()=>{taskActivity?.reset();stopVoiceChat(false);stopSpeaking();invalidateHistory();$('homeKey').value='';$('questionImage').value='';job=null;localJob=null;cancelling=false;if(partialBox)partialBox.querySelector('.label').textContent='Interrupted by restart · not saved';partialBox=null;if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('Prometheus restarted. Saved conversations are retained; an unfinished request was not resubmitted.');refreshHistory();};
+transport.onRestart=()=>{window.dispatchEvent(new CustomEvent('prometheus-restart'));taskActivity?.reset();stopVoiceChat(false);stopSpeaking();invalidateHistory();$('homeKey').value='';$('questionImage').value='';job=null;localJob=null;cancelling=false;if(partialBox)partialBox.querySelector('.label').textContent='Interrupted by restart · not saved';partialBox=null;if(!$('prompt').value)$('prompt').value=lastSubmitted;notice('Prometheus restarted. Saved conversations are retained; an unfinished request was not resubmitted.');refreshHistory();};
 let hardware={},display={level:1,name:'Simple',fps:15,size:0},raf=null,lastPaint=0,paintCost=0,lag=0,frames=0,slowFrames=0,drawTotal=0,lastFrame=0;
 let conversationView=false,inputLevel=0,inputLevelAt=-Infinity,paintTimer=null;
 let preference='auto';try{preference=localStorage.getItem('prometheus.display')||'auto';session=null;}catch{}
@@ -128,7 +128,7 @@ function playbackWave(now){
 function growPrompt(){const prompt=$('prompt');prompt.style.height='auto';prompt.style.height=Math.min(160,Math.max(48,prompt.scrollHeight||48))+'px';}
 
 function notice(text){$('notice').textContent=text;$('notice').hidden=!text;}
-function rememberSession(value){session=value;try{if(value)localStorage.setItem('prometheus.session',value);else localStorage.removeItem('prometheus.session');}catch{}}
+function rememberSession(value){const changed=session!==value;session=value;if(changed)window.dispatchEvent(new CustomEvent('prometheus-session-changed',{detail:{session:value}}));try{if(value)localStorage.setItem('prometheus.session',value);else localStorage.removeItem('prometheus.session');}catch{}}
 function invalidateHistory(){historyEpoch++;historyPending=false;$('history').value=session||'';}
 function activity(state){voiceWaveform?.setState(state);$('orb').dataset.state=['opening','finishing','transcribing','preparing'].includes(state)?'thinking':state;const labels={idle:['I’m here.','What shall we work on?'],thinking:['Thinking…','Working on your request'],opening:['Opening microphone…','Starting local recording'],finishing:['Finishing recording…','Closing the microphone'],transcribing:['Transcribing…','Microphone off · reading your words locally'],preparing:['Preparing voice…','Microphone off · preparing the spoken reply'],listening:['Listening…','Pause to finish, or press Stop'],speaking:['Speaking…','Reading your answer'],error:['Let’s adjust.','See the message below'],offline:['Disconnected','Your text stays here']};const pair=labels[state]||labels.idle;$('activity').textContent=pair[0];$('activityNote').textContent=pair[1];motion();}
 async function api(path,data){try{return await transport.request(path,data);}catch(error){if(error.status===401){stopVoiceChat(false);window.dispatchEvent(new CustomEvent('prometheus-auth-lost'));invalidateHistory();stopSpeaking();$('messages').replaceChildren();location.replace('/');}throw error;}}
@@ -180,7 +180,7 @@ function fillMessage(box,role,text,label='',details=null){
   const team=window.PrometheusProjectAgent?.renderSpecialistReview?.(box,specialist);
   if(!team)window.PrometheusProjectAgent?.renderAdvisoryReview?.(box,details.project_edit?.advisory_review||details.task_review?.advisory_review||details.approval?.review?.advisory_review);
  }
- if(details){const panel=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='Sources and result details';pre.textContent=JSON.stringify(details,null,2);panel.append(summary,pre);box.append(panel);}
+ if(details){const panel=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre'),visible={...details};if(visible.capability_revision&&typeof visible.capability_revision==='object'){visible.capability_revision={...visible.capability_revision};delete visible.capability_revision.capability_revision_token;}summary.textContent='Sources and result details';pre.textContent=JSON.stringify(visible,null,2);panel.append(summary,pre);box.append(panel);}
 }
 function followingConversation(){const messages=$('messages');return messages.scrollHeight-messages.clientHeight-(messages.scrollTop||0)<80;}
 function append(role,text,label='',details=null){
@@ -262,7 +262,8 @@ async function pollJob(id){
 }
 async function submitAction(body){
  if(busy||closed||!online||voiceChat||dictationPending||dictationJob)return false;invalidateHistory();stopSpeaking();notice('');submitting=true;setBusy(true);activity('thinking');partialBox=null;cancelling=false;
- try{const r=await api('/api/jobs',{prompt:'',...body});job=r.id;localJob=job;pollJob(job);return true;}catch(error){setBusy(false);activity('error');notice(error.message);return false;}finally{submitting=false;}
+ let request;
+ try{request=window.PrometheusCapabilityRevisions?.withContext(body)||body;const r=await api('/api/jobs',{prompt:'',...request});job=r.id;localJob=job;window.PrometheusCapabilityRevisions?.accepted(request,r.id);pollJob(job);return true;}catch(error){if(request)window.PrometheusCapabilityRevisions?.failed(request,error);setBusy(false);activity('error');notice(error.message);return false;}finally{submitting=false;}
 }
 async function imageUpload(){
  const file=$('questionImage').files?.[0];

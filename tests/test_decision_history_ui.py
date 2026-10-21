@@ -10,7 +10,7 @@ def test_history_auth_and_restart_without_restoring_approval(endpoint):
     binding=hashlib.sha256(b'fixture-cookie').hexdigest()
     with gate.grant_owner('fixture-cookie') as owner:
         row=app.action_approvals.review(owner=owner,binding=binding,session='a'*32,
-            kind='project_edit',payload={'secret':'source'},review={},policy_revision='fixture')
+            kind='project_edit',payload={'secret':'PRIVATE_PROPOSED_SOURCE'},review={},policy_revision='fixture')
         app.action_approvals.consume(owner=owner,binding=binding,session=row['session'],
             approval_id=row['id'],fingerprint=row['fingerprint'],policy_revision='fixture',decision='request_changes',feedback='Revise the tests.')
     for kwargs,expected in [({'owner':False},401),({'token':False},403),({'origin':'https://foreign.example'},403)]:
@@ -18,7 +18,7 @@ def test_history_auth_and_restart_without_restoring_approval(endpoint):
     code,data=request(ROUTE)
     assert code==200 and data['read_only'] and len(data['items'])==1
     assert data['items'][0]['feedback']=='Revise the tests.'
-    assert owner not in str(data) and 'source' not in str(data) and not effects
+    assert owner not in str(data) and 'PRIVATE_PROPOSED_SOURCE' not in str(data) and not effects
     from prometheus_assistant.action_approvals import ActionApprovals
     app.action_approvals=ActionApprovals(history_root=app.data_root/'Maintenance/DecisionHistory')
     assert request(ROUTE)[1]==data

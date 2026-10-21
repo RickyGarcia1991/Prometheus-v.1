@@ -59,3 +59,57 @@ def test_public_query_is_not_carried_to_revision_draft(setup):
     s.app.action_approvals._pending[key]['payload']['request']['research_query']='old public query'
     draft=s.run(decision(result))['details']['revision_draft']
     assert draft['research_query']==''
+
+
+def test_replacement_decision_and_outcome_survive_reopen_without_authority(setup):
+    from prometheus_assistant.action_approvals import ActionApprovals
+    from test_project_tasks_ui import decide
+    s=setup;first=s.run(s.req);returned=s.run(decision(first))
+    draft=returned['details']['revision_draft']
+    revised=s.run({k:v for k,v in draft.items() if k!='origin_approval'}|
+                  {'mode':'project_edit','session':first['session']})
+    approval=revised['details']['approval']
+    assert 'revision_token' not in approval['payload']['request']
+    assert not s.app.action_approvals.history(owner=OWNER)[0]['revisions'][0]['child_state']=='recorded'
+    decide(s,revised)
+    history=s.app.action_approvals.history(owner=OWNER)
+    child=next(row for row in history if row['id']==approval['id'])
+    assert child['revisions'][0]['parent_id']==first['details']['approval']['id']
+    assert child['revisions'][0]['child_state']=='recorded'
+    assert child['outcomes'][-1]['status']=='passed'
+    reopened=ActionApprovals(history_root=s.app.action_approvals.decision_history.root)
+    assert reopened.history(owner=OWNER)==history
+    assert reopened.pending(owner=OWNER,binding=BINDING) is None
+    with pytest.raises(ValueError):
+        reopened.validate_revision_context(owner=OWNER,binding=BINDING,session=first['session'],
+            project_hash='a'*64,revision_token=draft['revision_token'])
+
+
+def test_revision_context_is_not_saved_in_requests_or_details(setup,monkeypatch):
+    import json
+    s=setup;saved=[];original=s.app.save
+    def save(request,details,*args,**kwargs):
+        saved.append((request,details))
+        return original(request,details,*args,**kwargs)
+    monkeypatch.setattr(s.app,'save',save)
+    first=s.run(s.req);draft=s.run(decision(first))['details']['revision_draft']
+    s.run({k:v for k,v in draft.items() if k!='origin_approval'}|
+          {'mode':'project_edit','session':first['session']})
+    assert 'revision_token' not in json.dumps(saved)
+    assert draft['revision_token'] not in json.dumps(saved)
+
+
+@pytest.mark.parametrize('fault',['project','session','token','delegation','research'])
+def test_invalid_revision_does_not_call_model_or_apply(setup,fault,tmp_path):
+    s=setup;first=s.run(s.req);draft=s.run(decision(first))['details']['revision_draft']
+    req={k:v for k,v in draft.items() if k!='origin_approval'}|{'mode':'project_edit','session':first['session']}
+    if fault=='project':
+        other=tmp_path/'other';other.mkdir();(other/'main.py').write_text('return 1\n')
+        req['project']=str(other)
+    elif fault=='session':req['session']='f'*32
+    elif fault=='token':req['revision_token']='f'*32
+    elif fault=='delegation':req['edit_policy']='delegated'
+    else:req['research_query']='new public query'
+    with pytest.raises(ValueError):s.run(req)
+    assert len(s.calls)==1 and s.file.read_text()=='def value():\n    return 1\n'
+    assert s.app.action_approvals.pending(owner=OWNER,binding=BINDING) is None

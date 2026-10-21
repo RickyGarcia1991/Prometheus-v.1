@@ -7,12 +7,14 @@ import time
 from types import SimpleNamespace
 
 from .action_approvals import decision_text
+from .capability_outcome_hooks import gap_notice
 from .application_policy import require_dispatch
 from .remote_job_envelope import seal_request
 from .remote_job_protocol import LINT_OPERATION
 from .remote_worker_client import RemoteWorkerClient, OwnerLedger
 from .scheduled_syntax import ScheduledSyntax, public_job, PLACEMENT_STRATEGIES
 from . import ui_workspace
+from . import capability_revision_ui as revisions
 
 MODES={'scheduled_syntax_prepare','scheduled_syntax_tick','scheduled_syntax_cancel','scheduled_syntax_recover'}
 FIELDS={'scheduled_job_id','scheduled_placement','scheduled_operation'}
@@ -94,10 +96,15 @@ def status(app, *, grant_owner, binding):
     with grant_owner() as owner:
         store=queue(app,owner)
         store.expire(now=getattr(app,'_scheduled_syntax_clock',time.time)())
-        rows=[public_job(row) for row in store.list()]
+        rows=[observed_job(app, owner, row) for row in store.list()]
     arm(app,grant_owner,binding)
     return dict(jobs=rows,auto_resume='Approved waiting work resumes while this owner is unlocked and the app is idle.',
         interval_seconds=30)
+
+
+def observed_job(app, owner, row):
+    from .capability_outcome_hooks import observe_queued, attach
+    return attach(public_job(row), observe_queued(app.action_approvals, owner, row))
 
 
 def idle(app):
@@ -135,6 +142,14 @@ def execute(app,request,*,grant_owner=None,binding=None):
     with grant_owner() as owner:
         pending=app.action_approvals.pending(owner=owner,binding=binding)
         if possible and (not pending or pending['kind']!='scheduled_syntax'):return None
+    revision_options = {}
+    if mode == 'scheduled_syntax_prepare':
+        from .project_decision_outcomes import project_hash
+        workspace = ui_workspace.workspace(app, request)
+        revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+            kind='scheduled_syntax', subject_hash=revisions.subject('scheduled_syntax', project_hash(workspace)))
+    if possible and choice not in {'approve', 'reject'}:
+        raise ValueError('Request changes must use the live capability feedback route.')
     @contextmanager
     def current_owner():
         with grant_owner() as current:
@@ -153,34 +168,33 @@ def execute(app,request,*,grant_owner=None,binding=None):
         if result['state']=='waiting':
             app.progress('Checking resources for the exact approved destination')
             result=controller.run_one(result['job_id']) or result
-        details=dict(reply='Scheduled verification: '+result['state']+'.',scheduled_syntax=result,approval_resolved=resolved)
+        details=dict(reply='Scheduled verification: '+result['state']+'.'+gap_notice(result.get('decision_outcome')),scheduled_syntax=result,approval_resolved=resolved)
     elif mode=='scheduled_syntax_prepare':
         if pending:raise ValueError('Approve or deny the existing review first.')
         require_dispatch('ui.scheduled_syntax_prepare')
         with current_owner():
-            workspace=ui_workspace.workspace(app,request)
             files=[]
             with workspace.lock:
                 for relative in request['remote_files'].splitlines():
                     path,raw,content=workspace._read(relative.strip())
                     files.append(dict(path=path.relative_to(workspace.root).as_posix(),content=content))
-            saved=app.save(request,dict(reply='Review the automatic destination, exact source and one-hour waiting permission.'),
+            saved=app.save(revisions.without_context(request),dict(reply='Review the automatic destination, exact source and one-hour waiting permission.'),
                 'Automatic verification placement',model='owner-reviewed-worker')
         app.progress('Checking eligible destinations for the selected verification')
         row=controller.prepare(files,secrets.token_hex(16),session=saved['session'],
             strategy=request.get('scheduled_placement','available-headroom-v1'),
-            operation=request.get('scheduled_operation','python-syntax-check'))
+            operation=request.get('scheduled_operation','python-syntax-check'), **revision_options)
         saved['details']['approval']=row
         return {**saved,'action':mode}
     elif mode=='scheduled_syntax_cancel':
         require_dispatch('ui.scheduled_syntax_cancel')
-        with current_owner():result=public_job(store.cancel(request['scheduled_job_id'],now=clock()))
-        details=dict(reply='Waiting job: '+result['state']+'.',scheduled_syntax=result)
+        with current_owner():result=observed_job(app,owner,store.cancel(request['scheduled_job_id'],now=clock()))
+        details=dict(reply='Waiting job: '+result['state']+'.'+gap_notice(result.get('decision_outcome')),scheduled_syntax=result)
     else:
         app.progress('Recovering the original result without replay' if mode=='scheduled_syntax_recover' else 'Checking one approved waiting job')
         result=controller.run_one(request.get('scheduled_job_id'),recover=mode=='scheduled_syntax_recover')
-        details=dict(reply='Approved queue checked.',scheduled_syntax=result,
-            scheduled_queue=[public_job(row) for row in store.list()])
+        details=dict(reply='Approved queue checked.'+gap_notice(result.get('decision_outcome') if result else None),scheduled_syntax=result,
+            scheduled_queue=[observed_job(app,owner,row) for row in store.list()])
         if mode=='scheduled_syntax_tick':
             return dict(action=mode,label='Approved waiting work',reply='',details=details)
     with current_owner():
