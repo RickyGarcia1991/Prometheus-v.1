@@ -84,10 +84,18 @@ def test_settings_common_digest_is_not_a_shared_worker_execution(tmp_path):
     assert all(row['shared_evidence']==[] for row in app.history(owner=O))
 
 
-def test_contradictory_exact_native_result_is_visible_failure(tmp_path):
+def test_contradictory_exact_native_result_is_unshared_without_losing_unrelated(tmp_path):
     app=ActionApprovals(history_root=tmp_path)
-    complete(app);complete(app,status='checks_failed')
-    with pytest.raises(ValueError,match='contradictory'):app.history(owner=O)
+    a=complete(app);b=complete(app,status='checks_failed')
+    c=complete(app,job='4'*32);d=complete(app,job='4'*32)
+    events=app.capability_outcomes().read()
+    before=copy.deepcopy(events)
+    groups=for_owner(O,events)
+    assert (a['id'],a['fingerprint']) not in groups
+    assert (b['id'],b['fingerprint']) not in groups
+    assert set(groups)=={(r['id'],r['fingerprint']) for r in (c,d)}
+    assert all(v[0]['status']=='checks_passed' for v in groups.values())
+    assert events==before
 
 
 def test_related_refs_bounded_without_hiding_total(tmp_path):

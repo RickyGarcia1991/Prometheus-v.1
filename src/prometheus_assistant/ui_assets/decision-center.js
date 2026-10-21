@@ -4,7 +4,7 @@ const el=id=>document.getElementById(id), box=el('decisionCenter'), status=el('d
 if(!box || !status || !list || !refresh)return;
 const interval=30000, sourceNames=['approvals','queue','activity','resources','devices'];
 const destinations={project:'Code',scheduled:'Code',remote:'Remote',self_improvement:'Maintenance',research:'Maintenance',integrations:'Integrations'};
-let state={online:false,busy:false,closed:false},generation=0,reading=false,timer=null,expiry=null,lastAttempt=-Infinity,generated=null;
+let state={online:false,busy:false,closed:false},generation=0,reading=false,refreshPending=false,timer=null,expiry=null,lastAttempt=-Infinity,generated=null;
 const ready=()=>state.online && !state.busy && !state.closed && !document.hidden;
 const text=value=>typeof value==='string'?value.slice(0,240):'';
 function clear(message){if(expiry!==null)clearTimeout(expiry);expiry=null;list.replaceChildren();list.hidden=true;generated=null;status.textContent=message;}
@@ -46,17 +46,21 @@ function render(data){
   list.append(li);
  }
 }
-async function load(){
- if(!ready() || reading){schedule();return;}
- if(Date.now()-lastAttempt<interval){schedule();return;}
+async function load(explicit=false){
+ if(!ready()){schedule();return;}
+ if(reading){if(explicit)refreshPending=true;return;}
+ if(!explicit && Date.now()-lastAttempt<interval){schedule();return;}
  const current=generation;reading=true;lastAttempt=Date.now();controls();
  if(age()!==null && age()>60)clear('Earlier decision snapshot is stale. Refreshing…');
- try{const data=await api('/api/decision-center');if(current!==generation || !ready())return;render(validate(data));}
+ try{const data=await api('/api/decision-center');if(current!==generation || !ready() || refreshPending)return;render(validate(data));}
  catch(error){if(current===generation)clear('Decision information unavailable. Refresh when the local connection is ready.');}
- finally{if(current===generation){reading=false;schedule();}}
+ finally{if(current===generation){reading=false;if(refreshPending){refreshPending=false;void load(true);}else schedule();}}
 }
-function invalidate(message){generation++;reading=false;stop();clear(message);controls();}
-refresh.onclick=()=>load();
+function invalidate(message){generation++;reading=false;refreshPending=false;stop();clear(message);controls();}
+refresh.onclick=()=>load(true);
+// A completed connection update only re-reads the passive dashboard endpoint.
+// It cannot refresh the provider, resume waiting work or authorize an action.
+window.addEventListener('prometheus-remote-state-updated',()=>{void load(true);});
 window.addEventListener('prometheus-busy',event=>{
  state={...state,...event.detail};
  if(!state.online || state.closed){invalidate('Decision information unavailable while disconnected or closed.');return;}
