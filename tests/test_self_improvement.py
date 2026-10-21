@@ -100,6 +100,11 @@ def test_proposal_is_exact_tested_review_and_only_explicit_approval_promotes(app
     assert (engine.baseline / TARGET).read_bytes() == SOURCE
     result = engine.promote(receipt['job_id'], receipt['approval_fingerprint'])
     assert result['state'] == 'promotion_pending'
+    # The engine returns the validated durable receipt, not the host's narrower
+    # queue response; the UI can bind queuing to this exact approved candidate.
+    assert result['job_id'] == receipt['job_id']
+    assert result['approval_fingerprint'] == receipt['approval_fingerprint']
+    assert 'approval_fingerprint' not in result['promotion']
     assert len(calls['promote']) == 1
     with pytest.raises(ValueError, match='not awaiting approval'):
         engine.promote(receipt['job_id'], receipt['approval_fingerprint'])

@@ -12,6 +12,8 @@ from .action_approvals import decision_text
 from .application_policy import require_dispatch, revision
 from .hardware import resource_root
 from .ollama import GenerationCancelled
+from .capability_outcome_hooks import tracking, gap_notice
+from . import capability_revision_ui as revisions
 
 MODES = {'integration', 'integration_access'}
 FIELDS = {'adapter', 'operation', 'arguments', 'task_grant', 'task'}
@@ -41,7 +43,7 @@ def validate(body):
         if FIELDS & body.keys():
             raise ValueError('Integration fields require an integration task.')
         return
-    allowed = {'mode', 'prompt', 'session'} | ({'task'} if mode == 'integration_access'
+    allowed = {'mode', 'prompt', 'session', revisions.FIELD} | ({'task'} if mode == 'integration_access'
                                              else {'adapter', 'operation', 'arguments', 'task_grant'})
     if set(body) - allowed:
         raise ValueError('Use only the selected integration task fields.')
@@ -113,7 +115,7 @@ def access_from_chat(prompt):
 
 
 def _result(app, request, data, label):
-    return {**app.save(request, data, label, model='owner-reviewed-integration'), 'action': request['mode']}
+    return {**app.save(revisions.without_context(request), data, label, model='owner-reviewed-integration'), 'action': request['mode']}
 
 
 def _check_cancel(app):
@@ -147,12 +149,14 @@ def _prepare_dispatch(app, grant_owner, owner):
                 app.jobs[app.current]['integration_active'] = True
 
 
-def _response(app, request, adapter, operation, data, *, grant_id=None, resolved=None):
+def _response(app, request, adapter, operation, data, *, grant_id=None, resolved=None, outcome=None):
     _check_cancel(app)
     details = {'integration': {'adapter': adapter, 'operation': operation, 'result': data},
                'task_grant': grant_id}
     if resolved:
         details['approval_resolved'] = resolved
+    if outcome is not None:
+        details['decision_outcome'] = outcome
     # Bounded provider output is evidence, not further instructions or approval.
     from .ui_server import readable_result
     details['reply'] = readable_result(data)
@@ -165,6 +169,7 @@ def _response(app, request, adapter, operation, data, *, grant_id=None, resolved
         elif operation == 'recall' and isinstance(result.get('results'), list):
             details['reply'] = '\n\n'.join(str(row.get('content', '')) + '\nMemory ID: ' + str(row.get('id', ''))
                                           for row in result['results']) or 'No matching memories in this project.'
+    details['reply'] += gap_notice(outcome)
     return _result(app, request, details, LABELS[adapter])
 
 
@@ -218,6 +223,9 @@ def _review_task(task):
 
 
 def _propose(app, request, owner, binding, kind, payload, review):
+    parts = (payload['task']['adapter'],) if kind == 'integration_access' else (payload['adapter'], payload['operation'])
+    revision_options = revisions.review_options(app, request, owner=owner, binding=binding,
+        kind=kind, subject_hash=revisions.subject(kind, *parts))
     from .ui_server import readable_result
     reply = (f"Action: {review['action']}\nWhy: {review['reason']}\nEffects: {review['effects']}\n"
              f"Resources: {readable_result(review['resources'])}\nAccess lasts: {review['duration']}\n\n"
@@ -225,7 +233,7 @@ def _propose(app, request, owner, binding, kind, payload, review):
              'This pending review expires in ten minutes; the approved access lasts for the duration shown above.')
     result = _result(app, request, {'reply': reply, 'integration_review': review}, 'Integration · needs your approval')
     pending = app.action_approvals.review(owner=owner, binding=binding, session=result['session'],
-        kind=kind, payload=payload, review=review, policy_revision=revision())
+        kind=kind, payload=payload, review=review, policy_revision=revision(), **revision_options)
     result['details']['approval'] = pending
     return result
 
@@ -247,6 +255,8 @@ def execute(app, request, *, grant_owner=None, binding=None):
     if mode == 'approval_decision' and not pending:
         return None  # The existing change adapter reports the missing review.
     if possible_decision and pending:
+        if decision not in {'approve', 'reject'}:
+            raise ValueError('Request changes must use the live capability feedback route.')
         if request.get('session') != pending['session']:
             raise ValueError('Return to the conversation containing this proposal before deciding.')
         ident = pending['id'] if mode == 'chat' else request['approval_id']
@@ -262,16 +272,22 @@ def execute(app, request, *, grant_owner=None, binding=None):
                 return _result(app, request, {'reply': 'The integration proposal was rejected. No action ran.',
                     'approval_resolved': row['id']}, 'Proposal rejected')
             if row['kind'] == 'integration_access':
-                grant = app.grants.issue_task(row['payload']['task'], owner=owner)
+                with tracking(app.action_approvals, owner, row) as outcome:
+                    grant = app.grants.issue_task(row['payload']['task'], owner=owner)
+                    observed = outcome.observe('access_granted', evidence={'granted': True})
                 with app.lock:
                     app.integration_tasks[(owner, binding, request['session'])] = grant['id']
                 return _result(app, request, {'reply': 'Approved. Continuing access is active for this task. '
-                    'You can revoke it in Integrations.', 'task_grant': grant, 'approval_resolved': row['id']},
+                    'You can revoke it in Integrations.' + gap_notice(observed), 'task_grant': grant, 'approval_resolved': row['id'],
+                    **({'decision_outcome': observed} if observed is not None else {})},
                     'Task access approved')
         payload = row['payload']
-        _prepare_dispatch(app, grant_owner, owner)
-        data = _call(app, payload['adapter'], payload['operation'], payload['arguments'])
-        return _response(app, request, payload['adapter'], payload['operation'], data, resolved=row['id'])
+        with tracking(app.action_approvals, owner, row) as outcome:
+            _prepare_dispatch(app, grant_owner, owner)
+            data = _call(app, payload['adapter'], payload['operation'], payload['arguments'])
+            observed = outcome.observe('adapter_returned', evidence={'returned': True})
+        return _response(app, request, payload['adapter'], payload['operation'], data,
+                         resolved=row['id'], outcome=observed)
     if pending:
         raise ValueError('Approve or reject your existing proposal before preparing another.')
     if mode == 'integration_access' or task_command:
@@ -285,6 +301,7 @@ def execute(app, request, *, grant_owner=None, binding=None):
             _check_cancel(app)
             return _propose(app, request, owner, binding, 'integration_access', {'task': task}, review)
     command = command or {key: request[key] for key in ('adapter', 'operation', 'arguments')}
+    revisions.validate(request)
     adapter, operation = command['adapter'], command['operation']
     arguments = provider(adapter).canonical_arguments(operation, command['arguments'])
     require_dispatch('integrations.' + adapter)

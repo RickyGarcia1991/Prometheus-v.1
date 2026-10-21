@@ -3,6 +3,8 @@
 const el = id => document.getElementById(id);
 const kinds = new Set(['project_edit', 'project_task', 'idle_config']);
 let state = {busy: false, online: false, closed: false}, pending = null, sending = false;
+let revisionDecision = null;
+let revisionContext = null;
 let decisionId = null, lastEdit = null, undoRequest = null, idleEnabled = false, activeMode = null;
 let projectSeen = '', projectOptionsSeen = '';
 const workspace = () => window.PrometheusWorkspace?.context() || {project: '', dirty: false};
@@ -37,6 +39,9 @@ function controls() {
   el('runIdleResearch').disabled = locked || !idleEnabled || !!pending;
   for (const id of ['approveProjectTask', 'rejectProjectTask']) el(id).disabled = locked || !pending || pending.kind === 'idle_config';
   for (const id of ['approveIdleResearch', 'rejectIdleResearch']) el(id).disabled = locked || pending?.kind !== 'idle_config';
+  el('projectRevisionControls').hidden = pending?.kind !== 'project_edit';
+  el('projectRevisionFeedback').disabled = locked || pending?.kind !== 'project_edit';
+  el('requestProjectChanges').disabled = locked || pending?.kind !== 'project_edit';
   const description = context.project
     ? 'Selected project: ' + context.project + (context.dirty ? ' · unapplied editor draft; finish or discard it before starting a task.' : '')
     : 'Open the intended project in Code. A typed folder path is not selected until Open project succeeds.';
@@ -61,6 +66,7 @@ function syncProject() {
       if (files.some(option => option.value === file)) el('projectAgentFile').value = file;
       if (presets.some(option => option.value === preset && !option.disabled)) el('projectAgentPreset').value = preset;
       if (changed) {
+        revisionContext = null;
         el('projectAgentAutoFiles').checked = false;
         el('projectAgentSpecialists').checked = false;
         el('projectAgentFiles').value = '';
@@ -94,7 +100,11 @@ function composerContext(mode) {
     if (context.dirty) throw new Error('Your editor has unapplied changes. Apply or discard that draft before starting a project task.');
   }
   // Plain conversation may route editing intent server-side; never attach an unconfirmed folder or dirty draft.
-  return {project: context.dirty ? '' : context.project, ...taskOptions()};
+  const options = taskOptions();
+  if (revisionContext && (revisionContext.project !== context.project ||
+      revisionContext.session !== currentSession().session || options.edit_policy !== 'ask_first' || options.research_query)) revisionContext = null;
+  return {project: context.dirty ? '' : context.project, ...options,
+    ...(mode === 'project_edit' && revisionContext ? {revision_token: revisionContext.token} : {})};
 }
 async function request(body, idle = false) {
   if (state.busy || !state.online || state.closed || sending) return false;
@@ -243,7 +253,15 @@ function renderSpecialistReview(box, result) {
   detail.append(identity);
   return true;
 }
+function renderCalibration(box, assessment) {
+  const report = assessment?.prediction_calibration;
+  if (!report) return;
+  box.append(node('p', report.applied === true
+    ? 'Prediction calibration: a correction passed separate held-out checks and increased this estimate. Safety reserves and CPU thresholds are unchanged.'
+    : 'Prediction calibration: using the conservative baseline. A correction needs complete measurements and separate held-out checks for this device and workload.', 'fine'));
+}
 function review(approval, show = false) {
+  if (!approval || approval.id !== pending?.id) { el('projectRevisionFeedback').value = ''; if (approval && approval.id !== decisionId) revisionDecision = null; }
   pending = kinds.has(approval?.kind) ? approval : null;
   for (const [box, buttons] of [['projectAgentReview', 'projectAgentDecisions'], ['idleResearchReview', 'idleResearchDecisions']]) {
     el(box).replaceChildren(); el(box).hidden = true; el(buttons).hidden = true;
@@ -264,6 +282,7 @@ function review(approval, show = false) {
         detail.append(node('summary', label), node('pre', typeof data[key] === 'string' ? data[key] : JSON.stringify(data[key], null, 2), 'code-output')); box.append(detail);
       }
     }
+    renderCalibration(box, data.resource_assessment);
     renderMeasuredChecks(box, data.verification);
     if (!renderSpecialistReview(box, data.specialist_review)) renderAdvisoryReview(box, data.advisory_review);
     box.append(node('p', 'Approve or deny this review below, or say “yes, approve” or “deny” in its conversation. Approval applies to this exact review; changes to these form fields require a new proposal.', 'fine'));
@@ -286,10 +305,18 @@ async function refreshApproval() {
 }
 async function decide(decision) {
   if (!pending) return;
-  const selected = pending; decisionId = selected.id;
+  const selected = pending;
+  let feedback;
+  if (decision === 'request_changes') {
+    if (selected.kind !== 'project_edit') return;
+    feedback = el('projectRevisionFeedback').value.trim();
+    if (!feedback || feedback.length > 2000 || feedback.includes('\0')) { say('Describe requested changes in 1–2000 characters.'); return; }
+    revisionDecision = {id:selected.id, project:workspace().project, session:selected.session};
+  } else revisionDecision = null;
+  decisionId = selected.id;
   const accepted = await request({mode: 'approval_decision', approval_decision: decision,
-    approval_id: selected.id, approval_fingerprint: selected.fingerprint, session: selected.session}, selected.kind === 'idle_config');
-  if (!accepted) decisionId = null;
+    approval_id: selected.id, approval_fingerprint: selected.fingerprint, session: selected.session, ...(feedback === undefined ? {} : {approval_feedback:feedback})}, selected.kind === 'idle_config');
+  if (!accepted) { decisionId = null; revisionDecision = null; }
 }
 function renderProject(data, reply) {
   const rolledBack = !!(data.rolled_back || data.rollback?.undone);
@@ -311,6 +338,7 @@ function renderProject(data, reply) {
   }
   if (!renderSpecialistReview(box, data.specialist_review)) renderAdvisoryReview(box, data.advisory_review);
   if (data.resource_assessment) field(box, 'Resource admission at execution', data.resource_assessment);
+  renderCalibration(box, data.resource_assessment);
   if (data.resource_measurements) field(box, 'Measured check resources and history', data.resource_measurements);
   if (data.checks !== undefined) {
     const detail = node('details', '', 'workspace-detail'); detail.open = true;
@@ -400,6 +428,7 @@ el('prepareProjectTask').onclick = async () => {
   catch (error) { say(error.message); }
 };
 el('refreshProjectApproval').onclick = refreshApproval;
+el('requestProjectChanges').onclick = () => decide('request_changes');
 el('approveProjectTask').onclick = () => decide('approve'); el('rejectProjectTask').onclick = () => decide('reject');
 el('approveIdleResearch').onclick = () => decide('approve'); el('rejectIdleResearch').onclick = () => decide('reject');
 el('undoProjectTask').onclick = async () => {
@@ -417,7 +446,7 @@ el('prepareIdleResearch').onclick = () => {
 el('stopIdleResearch').onclick = () => request({mode: 'idle_config', enabled: false}, true);
 el('refreshIdleResearch').onclick = () => request({mode: 'idle_status'}, true);
 el('runIdleResearch').onclick = () => { if (idleEnabled) return request({mode: 'idle_run'}, true); };
-window.addEventListener('prometheus-busy', event => { state = {...state, ...event.detail}; controls(); });
+window.addEventListener('prometheus-busy', event => { state = {...state, ...event.detail}; if (!state.online || state.closed) { revisionDecision = null; revisionContext = null; } controls(); });
 window.addEventListener('prometheus-partial', event => {
   if (activeMode === 'project_edit' || activeMode === 'approval_decision' && pending?.kind !== 'idle_config') say(String(event.detail?.text || 'Working…').slice(-1200));
 });
@@ -430,10 +459,24 @@ window.addEventListener('prometheus-result', event => {
     return;
   }
   const resolved = data.approval_resolved;
+  const draft = data.revision_draft, revision = revisionDecision;
+  if (draft && revision && currentSession().session === revision.session && result.origin === 'local' && result.action === 'approval_decision' && !result.error && resolved === decisionId && resolved === revision.id && draft.origin_approval === revision.id && draft.project === revision.project && draft.project === workspace().project && !workspace().dirty && draft.edit_policy === 'ask_first' && draft.research_query === '' && typeof draft.prompt === 'string' && draft.prompt.length <= 4000) {
+    el('projectAgentGoal').value = draft.prompt;
+    el('projectAgentFile').value = typeof draft.file === 'string' ? draft.file : '';
+    el('projectAgentFiles').value = typeof draft.project_files === 'string' ? draft.project_files : '';
+    el('projectAgentAutoFiles').checked = draft.auto_files === true;
+    el('projectAgentSpecialists').checked = draft.specialist_review === true;
+    el('projectAgentPreset').value = typeof draft.preset === 'string' ? draft.preset : 'auto';
+    el('projectAgentTarget').value = typeof draft.target === 'string' ? draft.target : '';
+    el('projectAgentPolicy').value = 'ask_first'; el('projectAgentResearch').value = '';
+    revisionContext = typeof draft.revision_token === 'string' && /^[a-f0-9]{32}$/.test(draft.revision_token)
+      ? {token:draft.revision_token, project:draft.project, session:revision.session} : null;
+  }
+  if (resolved === revisionDecision?.id || result.error && result.action === 'approval_decision') revisionDecision = null;
   if (resolved && (pending?.id === resolved || decisionId === resolved)) {
     const idle = pending?.kind === 'idle_config'; review(null); decisionId = null; say(result.reply || 'Review resolved.', idle);
   }
-  if (data.approval) { review(data.approval, kinds.has(data.approval.kind)); activeMode = null; }
+  if (data.approval) { revisionContext = null; review(data.approval, kinds.has(data.approval.kind)); activeMode = null; }
   if (result.action === 'code_open' && !result.error) restoreUndo(data);
   if (data.project_edit) renderProject(data.project_edit, result.reply);
   if (data.idle_research) renderIdle(data.idle_research);
@@ -446,6 +489,7 @@ window.addEventListener('prometheus-result', event => {
     }
     undoRequest = null;
   } else if (result.error && (['project_edit', 'idle_config', 'idle_status', 'idle_run'].includes(result.action) || result.action === 'approval_decision' && decisionId)) {
+    if (result.action === 'project_edit') revisionContext = null;
     const idle = result.action.startsWith('idle_') || pending?.kind === 'idle_config';
     say(result.error + (decisionId ? ' Refresh pending review before trying again.' : ''), idle);
     if (decisionId) { decisionId = null; review(null); }
@@ -454,6 +498,7 @@ window.addEventListener('prometheus-result', event => {
   syncProject();
 });
 window.addEventListener('prometheus-auth-lost', () => {
+  revisionDecision = null; revisionContext = null; decisionId = null;
   state = {busy: false, online: false, closed: true}; review(null); lastEdit = null; idleEnabled = false;
   el('projectAgentResult').replaceChildren(); el('idleResearchFindings').replaceChildren(); controls();
 });

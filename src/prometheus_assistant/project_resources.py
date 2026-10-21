@@ -1,6 +1,6 @@
 """Resource admission for reviewed project checks; no OS process manipulation."""
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 import threading
 import time
 import shutil
@@ -13,6 +13,8 @@ import tempfile
 import uuid
 from pathlib import Path
 from .prediction_accuracy import AccuracyHistory
+from . import project_calibration
+from .prediction_calibration import CalibrationHistory
 
 from .resource_observations import ResourceProbe
 from .resource_scheduler import Cost, Policy, Scheduler, Signals, WorkloadHistory
@@ -176,6 +178,40 @@ class ProjectResources:
     def _accuracy_history(self):
         return AccuracyHistory(Path(self.root) / 'Maintenance/ResourceHistory/prediction-accuracy.sqlite3')
 
+    def _calibration_history(self):
+        return CalibrationHistory(Path(self.root) / 'Maintenance/ResourceHistory/prediction-calibration.sqlite3')
+
+    def _calibration(self, candidate, forecasts):
+        report = dict(status='unavailable', applied=False, baseline_forecasts=dict(forecasts),
+                      calibrated_forecasts=dict(forecasts), scope=None,
+                      policy_thresholds_changed=False)
+        try:
+            scope = project_calibration.scope(candidate, asdict(self.scheduler.policy))
+            if scope is None:return {**report, 'status':'unsupported'}
+            evaluation = self._calibration_history().evaluate(scope)
+            adjusted = dict(forecasts)
+            for metric, value in forecasts.items():
+                row = evaluation['metrics'][metric]
+                if row['status']=='eligible' and value is not None:
+                    corrected = value + row['correction']
+                    if math.isfinite(corrected) and value <= corrected <= 1e300:
+                        adjusted[metric] = corrected
+            return {**report, 'status':'evaluated', 'scope':scope, 'evaluation':evaluation,
+                    'calibrated_forecasts':adjusted, 'applied':adjusted!=forecasts}
+        except Exception:
+            return report
+
+    def _record_calibration(self, bound, actuals, outcome):
+        if not bound.get('calibration_started'):
+            return {'recorded':False, 'reason':'Durable calibration reservation unavailable.'}
+        if bound.get('calibration_scope') is None:
+            return {'recorded':False, 'reason':'No supported calibration identity.'}
+        try:
+            return self._calibration_history().record(bound['run'],bound['calibration_scope'],
+                bound['baseline_forecasts'],actuals,outcome=outcome)
+        except Exception:
+            return {'recorded':False, 'reason':'Calibration store unavailable; baseline retained.'}
+
     @staticmethod
     def _accuracy_identity(candidate):
         return hashlib.sha256(json.dumps(candidate, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
@@ -184,19 +220,26 @@ class ProjectResources:
         direct = self._observe_direct(candidate, result)
         job = self._observe_job_cpu(candidate, result)
         accuracy = {'recorded': False, 'reason': 'Trusted active reservation unavailable.'}
+        calibration = {'recorded': False, 'reason': 'Trusted active reservation unavailable.'}
         try:
             with self.lock:
-                bound = self._accuracy_reservations.pop(id(reservation), None)
+                bound = self._accuracy_reservations.get(id(reservation))
                 if bound is not None and bound['object'] is reservation and bound['candidate'] == self._accuracy_identity(candidate):
                     actuals = {}
                     if direct.get('recorded'):
                         actuals.update(direct_ram_gib=direct.get('ram_gib'), direct_cpu_seconds=direct.get('cpu_seconds'))
                     if job.get('recorded'):
                         actuals['job_cpu_seconds'] = job.get('cpu_seconds')
+                    calibration = self._record_calibration(bound,actuals,project_calibration.outcome(result,direct,job))
+                    # A failed terminal write leaves the durable pending row as
+                    # censoring evidence. A mismatched observation never consumes
+                    # this reservation and is censored when its context exits.
+                    self._accuracy_reservations.pop(id(reservation), None)
                     accuracy = self._accuracy_history().record(bound['run'],bound['category'],bound['forecasts'],actuals)
         except Exception:
             accuracy = {'recorded': False, 'reason': 'Optional accuracy diagnostics unavailable.'}
-        return {**direct, 'job_cpu_observation': job, 'prediction_accuracy': accuracy}
+        return {**direct, 'job_cpu_observation': job, 'prediction_accuracy': accuracy,
+                'prediction_calibration':calibration}
 
     def _observe_direct(self, candidate, result):
         """Record trusted complete runner counters, never inferred resource usage."""
@@ -284,6 +327,11 @@ class ProjectResources:
             baseline = Cost(ram_gib=.25, disk_gib=max(.001, size * 4 / 1024**3))
             prediction = self._history().predict(self._category(candidate), baseline)
             job_prediction = self._job_prediction(candidate)
+            calibration = self._calibration(candidate,dict(direct_ram_gib=prediction['cost'].ram_gib,
+                direct_cpu_seconds=prediction['cost'].cpu_seconds,job_cpu_seconds=job_prediction['cpu_seconds']))
+            adjusted = calibration['calibrated_forecasts']
+            prediction['cost'] = replace(prediction['cost'],ram_gib=adjusted['direct_ram_gib'],cpu_seconds=adjusted['direct_cpu_seconds'])
+            job_prediction['cpu_seconds'] = adjusted['job_cpu_seconds']
             cpu_sources = []
             for source, cpu, samples in [('direct_process', prediction['cost'].cpu_seconds, prediction['cpu_samples']),
                     ('job_associated_processes', job_prediction['cpu_seconds'], job_prediction['samples'])]:
@@ -313,6 +361,7 @@ class ProjectResources:
                     'confidence': prediction['confidence'], 'history_samples': prediction['samples'],
                     'job_cpu_prediction': job_prediction, 'cpu_admission': cpu_evidence,
                     'prediction_accuracy': self._accuracy_summary(candidate),
+                    'prediction_calibration': calibration,
                     'estimate_basis': 'Conservative baseline plus retained direct-process peak working sets and margin; descendants unmeasured.',
                     'enforcement': 'Admission only; this is not an OS quota or a guarantee of peak usage.',
                     'unmeasured': list(UNMEASURED)}
@@ -339,19 +388,30 @@ class ProjectResources:
             # cannot replace it. No request-supplied run identity is accepted.
             try:
                 with self.lock:
-                    self._accuracy_reservations[id(reservation)] = dict(object=reservation,
+                    bound = dict(object=reservation,
                         run=uuid.uuid4().hex, candidate=self._accuracy_identity(candidate),
+                        calibration_scope=assessment['prediction_calibration']['scope'],
+                        baseline_forecasts=dict(assessment['prediction_calibration']['baseline_forecasts']),
                         category=self._category(candidate), forecasts=dict(
                             direct_ram_gib=assessment['estimated_cost']['ram_gib'],
                             direct_cpu_seconds=assessment['estimated_cost']['cpu_seconds'],
                             job_cpu_seconds=assessment['job_cpu_prediction']['cpu_seconds']))
+                    bound['calibration_started'] = False
+                    self._accuracy_reservations[id(reservation)] = bound
+                    if bound['calibration_scope'] is not None:
+                        started = self._calibration_history().begin(bound['run'],
+                            bound['calibration_scope'],bound['baseline_forecasts'])
+                        bound['calibration_started'] = started.get('recorded') is True
+                    reservation['prediction_calibration']['recording_available'] = bound['calibration_started']
             except Exception:
                 # Optional diagnostics must not prevent approved execution.
-                pass
+                reservation['prediction_calibration']['recording_available'] = False
             yield reservation
         finally:
             with self.lock:
-                self._accuracy_reservations.pop(id(reservation), None)
+                unfinished = self._accuracy_reservations.pop(id(reservation), None)
+                if unfinished is not None:
+                    self._record_calibration(unfinished,{},'interrupted')
             self.scheduler.release(task_id)
 
 

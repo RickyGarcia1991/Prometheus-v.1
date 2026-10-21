@@ -298,6 +298,7 @@ def workspace_server(tmp_path, monkeypatch):
             return response.status, json.loads(response.read())
         finally:
             client.close()
+    request.server = server
     def job(body):
         status, value = request('POST', '/api/jobs', body)
         assert status == 202, value
@@ -344,8 +345,12 @@ def test_document_and_edit_actions_require_current_session_token(workspace_serve
     assert applied['state'] == 'done' and file.read_text(encoding='utf-8') == 'answer = 2\n'
     stale = job({**edit, 'content': 'answer = 3\n'})
     assert stale['state'] == 'error' and file.read_text(encoding='utf-8') == 'answer = 2\n'
-    undone = job({'mode': 'code_undo', 'project': str(project), 'edit_id': applied['result']['details']['edit_id']})
-    assert undone['state'] == 'done' and file.read_text(encoding='utf-8') == 'answer = 1\n'
+    undo_request = {'mode': 'code_undo', 'project': str(project), 'edit_id': applied['result']['details']['edit_id']}
+    assert request('POST', '/api/jobs', undo_request, token='foreign-session')[0] == 403
+    assert request('POST', '/api/jobs', dict(undo_request, required=False))[0] == 400
+    assert file.read_text(encoding='utf-8') == 'answer = 2\n'
+    undone = job(undo_request)
+    assert undone['state'] == 'done' and file.read_text(encoding='utf-8') == 'answer = 1\n', undone
 
 
 def test_watched_source_api_and_idle_scheduler_use_only_selected_query(workspace_server, monkeypatch):
@@ -375,3 +380,14 @@ def test_watched_source_api_and_idle_scheduler_use_only_selected_query(workspace
     app.next_maintenance = 0
     app.idle_maintenance()
     assert submitted == [{'mode': 'check_sources', 'prompt': '', 'background': True}]
+
+
+def test_configured_owner_undo_cannot_opt_out(workspace_server):
+    app, request, job = workspace_server
+    gate = request.server.owner_access
+    gate.required = True
+    gate.ready = False
+    for extra in ({}, {'required': False}, {'decision_owner': None}):
+        status, result = request('POST', '/api/jobs', dict(mode='code_undo', project='.', edit_id='a'*32, **extra))
+        assert status == 401
+    assert app.current is None

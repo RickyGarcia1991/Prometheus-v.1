@@ -121,7 +121,7 @@ def result_summary(mode, result):
     raise ValueError('No workbench summary for this action.')
 
 
-def execute(app, request):
+def execute(app, request, *, decision_owner=None):
     mode = request['mode']
     from .application_policy import require_dispatch
     if mode not in MODES:
@@ -170,14 +170,16 @@ def execute(app, request):
             result = action(request.get('file', ''), request.get('content', ''), request.get('expected_sha256', ''))
         elif mode == 'code_undo':
             edit_id = request.get('edit_id', '')
-            if edit_id.startswith('recovery-'):
-                from .project_recovery import restore
-                result = restore(project, edit_id)
-            elif edit_id.startswith('group-'):
-                from .project_change_set import undo_group
-                result = undo_group(project, edit_id)
-            else:
-                result = project.undo_edit(edit_id)
+            def restore_edit():
+                if edit_id.startswith('recovery-'):
+                    from .project_recovery import restore
+                    return restore(project, edit_id)
+                if edit_id.startswith('group-'):
+                    from .project_change_set import undo_group
+                    return undo_group(project, edit_id)
+                return project.undo_edit(edit_id)
+            from .project_decision_outcomes import undo
+            result = undo(app, project, decision_owner, edit_id, restore_edit)
         elif mode == 'code_tests':
             result = project.run_tests(request.get('preset', ''), request.get('target', ''),
                                        cancel_event=app.cancel_event, on_output=app.append_partial)
