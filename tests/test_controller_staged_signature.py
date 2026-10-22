@@ -13,7 +13,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Source,[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Parse failure'}
-foreach($name in @('Convert-Version','Assert-ControllerProvenance','Get-Package','Sync-Controller')){
+foreach($name in @('Convert-Version','Assert-ControllerProvenance','Get-VerifiedControllerPackage','Get-Package','Sync-Controller')){
  $f=@($ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst]},$false)|Where-Object Name -eq $name)
  if($f.Count -ne 1){throw 'Missing function'}
  . ([scriptblock]::Create($f[0].Extent.Text))

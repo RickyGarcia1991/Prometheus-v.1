@@ -1,0 +1,11 @@
+{
+ "status":"no_remaining_actionable_findings_for_temp_proof",
+ "source_sha256":"aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d",
+ "fixture_sha256":"ba077ae92914d7139f6696cc34491a44a8c892f466ea5be0e38cf82f55773689",
+ "refusal_tests_sha256":"cd793b03a898a489e79215c967653a32547f289c488ed55fe2d962361d850ac3",
+ "bridge_sha256":"09b2f1a7bf9a18505fdab3e58db70f47ed21ef150c090de553dd7cf0d745a360",
+ "review":"Required signed source is now unconditional and staged target must be a directory. Read both missing-source tests and matching two-pass log: cache present/absent both refuse with exact unchanged pointer/floor and no intent. Corrected four-process proof records exit77 after candidate pointer then successful candidate resume, explicit recovery and normal recovery resume. Actual floor reaches .12; pure .11 verification succeeds while normal .11 admission refuses. Initial report/results retained.",
+ "limits":"Development temp-only full-core integration with actual signed verifier, protected-floor functions and DPAPI fixture. No production adapter qualification, R7 activation, protected UI, physical USB cycle or reboot acceptance claimed.",
+ "baseline_erratum":"The initial integration report's wording 'Live installed R6' is incorrect. Installed baseline is R5. R6 and R7 are unactivated candidates. Original report retained as historical evidence; this review corrects that wording.",
+ "live_actions":false
+}

@@ -65,12 +65,18 @@ function Set-SecurityState([version]$Version){
  & $publish $SecurityState $bytes
 }
 
-function Get-Package($root){
+function Get-VerifiedControllerPackage($root){
  $metaPath=Join-Path $root 'PROMETHEUS-SSD-STATUS.json';if(!(Test-Path $metaPath)){throw 'SSD metadata missing'};$meta=Get-Content $metaPath -Raw|ConvertFrom-Json;$name=Split-Path ([string]$meta.controller_release) -Leaf;$version=Convert-Version $name
- $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version);if($version -lt $highest){throw ('Anti-rollback blocked controller '+$version+'; highest trusted is '+$highest)}
+ # Identity verification only: this helper does not authorize admission or launch.
  $src=Join-Path $root $name;$manifest=Join-Path $src 'SHA256-MANIFEST.json';if(!(Test-Path $manifest)){throw 'Controller manifest missing'};$sigPath=Join-Path $src 'SHA256-MANIFEST.sig';$certPath=Join-Path $src 'MANIFEST-PUBLIC.cer';if(!(Test-Path $sigPath) -or !(Test-Path $certPath)){throw 'Signed controller manifest required'}
  $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2($certPath);if($TrustedThumbprint -notcontains $cert.Thumbprint){throw 'Controller signing certificate is not trusted'};$rsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert);try{$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes($sigPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)}finally{$rsa.Dispose();$cert.Dispose()};if(!$ok){throw 'Controller manifest signature invalid'}
  $entries=Get-Content $manifest -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f)){throw ('Integrity failure: '+$e.path)};if((Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Integrity failure: '+$e.path)}};Assert-ControllerProvenance $src $entries $name;[pscustomobject]@{Meta=$meta;Name=$name;Version=$version;Source=$src}
+}
+function Get-Package($root){
+ $pkg=Get-VerifiedControllerPackage $root
+ $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version)
+ if($pkg.Version -lt $highest){throw ('Anti-rollback blocked controller '+$pkg.Version+'; highest trusted is '+$highest)}
+ return $pkg
 }
 function Sync-Controller($pkg){$resolvedRoot=[IO.Path]::GetFullPath($ControllerRoot).TrimEnd('\');$resolvedTarget=[IO.Path]::GetFullPath((Join-Path $ControllerRoot $pkg.Name));if(!$resolvedTarget.StartsWith($resolvedRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Unsafe controller cache path'};New-Item -ItemType Directory -Force $ControllerRoot|Out-Null;$dst=Join-Path $ControllerRoot $pkg.Name;$stage=$dst+'.staging-'+[guid]::NewGuid().ToString('N');$backup=$dst+'.previous';$r1=$dst+'.recovery-1';$r2=$dst+'.recovery-2';$r3=$dst+'.recovery-3';Copy-Item $pkg.Source $stage -Recurse -Force
  try{

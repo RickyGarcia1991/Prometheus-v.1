@@ -1,0 +1,12 @@
+{
+  "operation": "Verify",
+  "package_kind": "ReconnectEnrollment",
+  "payload_verified": true,
+  "signature_verified": true,
+  "manifest_sha256": "6e26224389829b4f9cfb3288b8f9495d0e285e9fc96a322f3db25e82ecddc01e",
+  "files": 7,
+  "payload_bytes": 68962,
+  "thumbprint": "1E0F99439DD072E014D81C5574B325C97EA4AC98",
+  "activated": false,
+  "private_key_exported": false
+}

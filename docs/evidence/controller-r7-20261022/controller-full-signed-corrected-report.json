@@ -1,0 +1,16 @@
+{
+  "status": "missing-source-correction-qualified",
+  "fixture_sha256": "ba077ae92914d7139f6696cc34491a44a8c892f466ea5be0e38cf82f55773689",
+  "results": "controller-full-signed-integration-results.json",
+  "production_ready": false,
+  "test_sha256": "cd793b03a898a489e79215c967653a32547f289c488ed55fe2d962361d850ac3",
+  "replay_log": "controller-full-signed-corrected.log",
+  "floor": "0.5.12",
+  "refusal_tests": 2,
+  "source_changed": false,
+  "fresh_transaction_processes": 4,
+  "refusal_log": "controller-real-missing-source-tests.log",
+  "initial_results": "controller-full-signed-integration-initial-results.json",
+  "installed_baseline": "R5",
+  "report_erratum": "Initial integration report called the installed baseline R6; this was a wording error. R5 remains installed. R6 and R7 are unactivated candidates."
+}

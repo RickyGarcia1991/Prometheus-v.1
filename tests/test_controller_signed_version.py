@@ -15,7 +15,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null;$errors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Source,[ref]$tokens,[ref]$errors)
 if($errors.Count){throw 'Source parse error'}
-foreach($name in @('Convert-Version','Assert-ControllerProvenance','Get-Package')){
+foreach($name in @('Convert-Version','Assert-ControllerProvenance','Get-VerifiedControllerPackage','Get-Package')){
  $function=$ast.FindAll({param($n)$n -is [Management.Automation.Language.FunctionDefinitionAst]},$false)|Where-Object Name -eq $name
  if(@($function).Count -ne 1){throw 'Function missing'}
  . ([scriptblock]::Create($function.Extent.Text))
@@ -78,6 +78,11 @@ try {
   try{$result=Get-Package $root;$accepted=$true}catch{$reason=$_.Exception.Message}
   if($accepted -and $result.Name -cne $name){throw 'Wrong returned identity'}
   if($accepted -ne $case.ok){throw ('Unexpected outcome '+$case.id+': '+$reason)}
+  $pureAccepted=$false
+  try{$pure=Get-VerifiedControllerPackage $root;$pureAccepted=$true}catch{}
+  $pureExpected=$case.ok -or $case.id -in @('lower-rejected','after-recovery-old-rejected')
+  if($pureAccepted -ne $pureExpected){throw ('Pure identity validation mismatch '+$case.id)}
+  if($script:floor -ne $(if($case.floor){$case.floor}else{'0.0.0'})){throw 'Pure validation changed floor'}
   $after=@(Get-ChildItem $root -Recurse -File|ForEach-Object {(Get-FileHash $_.FullName).Hash}) -join ','
   if($before -cne $after){throw 'Package read mutated fixture'}
   $results+=@{id=$case.id;accepted=$accepted;passed=$true}

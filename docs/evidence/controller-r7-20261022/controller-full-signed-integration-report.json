@@ -1,0 +1,40 @@
+{
+  "production_ready": false,
+  "fresh_transaction_processes": 4,
+  "status": "development-isolated-integration-passed",
+  "actual_crypto": "CurrentUser DPAPI plus real trusted signed controller closures",
+  "actual_floor": "Extracted Get-SecurityState and Set-SecurityState, no reset",
+  "source_tests": 32,
+  "limitations": [
+    "No production physical SSD or lifecycle lock adapter",
+    "Temp generated roots and synthetic host/volume identities",
+    "Live installed R6 and protected state untouched",
+    "New signed companion release required for changed HostAgent source"
+  ],
+  "files": [
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-Host-Agent.ps1",
+      "sha256": "aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tests\\test_controller_signed_version.py",
+      "sha256": "d5421563cdb114b464451d336fb943e235cf10202393908814548b228ea2bdbb"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tests\\test_controller_staged_signature.py",
+      "sha256": "676858bbc69d6139098a9dd576a1f942b04b04dacfc119de6d37b96e0fa5f740"
+    },
+    {
+      "path": "work/companion-release/controller-real-provider-bridge.ps1",
+      "sha256": "09b2f1a7bf9a18505fdab3e58db70f47ed21ef150c090de553dd7cf0d745a360"
+    },
+    {
+      "path": "work/companion-release/controller_pointer_real_signed_fixture.py",
+      "sha256": "bc4bb1c1300e9d55f44464a0ba3ab2c912beeb881daa50acbdaa0c4ddb5703dc"
+    },
+    {
+      "path": "work/companion-release/run-controller-full-signed-integration.py",
+      "sha256": "9f1b16b7d20d71a9330022cd0467679b7032c1759fac765909f0fbf304a0327d"
+    }
+  ]
+}

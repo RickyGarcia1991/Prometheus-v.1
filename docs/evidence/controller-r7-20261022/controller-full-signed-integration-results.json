@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "runs": [
+    {
+      "fault": "after-pointer",
+      "forward": false,
+      "exit": 77,
+      "receipt": null
+    },
+    {
+      "fault": "none",
+      "forward": false,
+      "exit": 0,
+      "receipt": {
+        "floor": "0.5.11",
+        "launched": false,
+        "manifest": "e5e542c98dd55d8ea08e46d3fb5b73d329f28ca1d70fb7cc1b758d5fcb23fd54",
+        "pointer_sha256": "f75d12f78d23ebf4b8203d299331906c5e818b5b2c074a39b42446adfac22ece",
+        "transaction": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "fault": "none",
+      "forward": true,
+      "exit": 0,
+      "receipt": {
+        "floor": "0.5.12",
+        "launched": false,
+        "manifest": "3f7f9e72e7aaca412b130b03fca6180039aa3f3fa2d38d0efe609cb2c1ff03b2",
+        "pointer_sha256": "854c794d3195603831c55bb55d4388100a13d48c747bbe82c92859a4e4fff769",
+        "transaction": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "fault": "none",
+      "forward": false,
+      "exit": 0,
+      "receipt": {
+        "floor": "0.5.12",
+        "launched": false,
+        "manifest": "3f7f9e72e7aaca412b130b03fca6180039aa3f3fa2d38d0efe609cb2c1ff03b2",
+        "pointer_sha256": "854c794d3195603831c55bb55d4388100a13d48c747bbe82c92859a4e4fff769",
+        "transaction": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ],
+  "floor": "0.5.12",
+  "pure_candidate_verified": true,
+  "normal_candidate_admission_refused": true,
+  "live_changes": false,
+  "files": {
+    "controller_pointer_real_signed_fixture.py": "ba077ae92914d7139f6696cc34491a44a8c892f466ea5be0e38cf82f55773689",
+    "controller-real-provider-bridge.ps1": "09b2f1a7bf9a18505fdab3e58db70f47ed21ef150c090de553dd7cf0d745a360",
+    "Prometheus-Host-Agent.ps1": "aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d"
+  }
+}
