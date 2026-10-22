@@ -1,0 +1,16 @@
+{
+  "status": "bounded_committed_floor_redundancy_checks_passed",
+  "source_sha256": "d24565384cb3d3a29a023684986782f8d7eb0834b44913fa5f43ea2484c736ba",
+  "test_sha256": "541bc4ad678a02d68dd2ca11d2909b4b0f04e75c3f12f2b19809631c851591b5",
+  "actionable_findings": [],
+  "review": "Set-SecurityState refuses lowering the highest valid floor, publishes and verifies a flushed new backup pair before replacing primary, and preserves a valid committed recovery copy when the primary pair is incomplete.",
+  "fresh_tests": {"result": "3 passed in 2.48s; exit 0", "log": "protected-state-publication-faults.log", "hosts": ["bundled PowerShell 7", "Windows PowerShell 5 system executable"]},
+  "faults_exercised": [
+    "Exception injected immediately after actual new bak2 pair verification, before primary publication; Get-SecurityState recovers the new floor.",
+    "Real file-sharing lock prevents primary checksum File.Replace after primary data replacement; incomplete primary pair is observed, then new bak2 restores exact bytes and valid checksum.",
+    "Subsequent lower-version write refuses without changing protected files; temporary pending artifacts are cleaned."
+  ],
+  "compatibility": "Actual Windows PowerShell 5 execution covers File.Replace with NullString and flush/readback behavior. Inline AST-extracted functions avoid file execution-policy changes and never execute HostAgent top-level code.",
+  "scope": "Only tests edited by this reviewer; source reviewed read-only. All operations use temporary directories and generated state.",
+  "limits": ["No real power-cut or filesystem-wide durability guarantee was tested.", "Simultaneous corruption of all valid copies is fail-closed rather than recoverable.", "These checks do not establish installed activation, enrollment recovery or physical eject/reinsert acceptance."]
+}
