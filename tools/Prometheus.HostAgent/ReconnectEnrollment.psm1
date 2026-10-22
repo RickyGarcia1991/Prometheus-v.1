@@ -185,6 +185,3 @@ function Start-ReconnectEnrollment {
  Invoke-ReconnectEnrollmentTransaction (Get-ReconnectEnrollmentProvider) $context
 }
 Export-ModuleMember -Function Start-ReconnectEnrollment
-
-
-

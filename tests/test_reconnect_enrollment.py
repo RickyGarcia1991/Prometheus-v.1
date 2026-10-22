@@ -155,4 +155,3 @@ def test_production_provider_boundaries_without_live_apis(tmp_path,case):
     result=subprocess.run([shell,'-NoProfile','-File',str(script),str(MODULE),str(tmp_path),case],capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stderr
     assert result.stdout.strip()=='pass'
-
