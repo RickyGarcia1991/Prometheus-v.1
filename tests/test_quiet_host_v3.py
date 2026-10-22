@@ -7,6 +7,8 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+import time
+import ctypes
 
 import pytest
 
@@ -64,6 +66,7 @@ class Harness {
     p.FileName.EndsWith(@"WindowsPowerShell\v1.0\powershell.exe") &&
     p.Arguments.Contains("-NoProfile -NonInteractive") && p.Arguments.Contains("-File \""+args[1]+"\"")) ? 0 : 99;
   }
+  if(args[0] == "badcontained") return PrometheusQuietHostV3.RunContainedChild(new System.Diagnostics.ProcessStartInfo(args[1]) { UseShellExecute=false });
   if(args[0] == "badchild") return PrometheusQuietHostV3.RunChild(new System.Diagnostics.ProcessStartInfo(args[1]) { UseShellExecute=false });
   if(args[0] == "zeroargs") return PrometheusQuietHostV3.Run(new string[0],args[1]);
   if(args[0] == "extraargs") return PrometheusQuietHostV3.Run(new[]{"backup","extra"},args[1]);
@@ -117,6 +120,7 @@ def test_pause_suppresses_only_work_modes(compiled, tmp_path, marker, mode):
 def test_hidden_process_flags_and_launch_failure(compiled, tmp_path):
     assert run(compiled, 'flags', tmp_path / 'space path.ps1') == 0
     assert run(compiled, 'badchild', tmp_path / 'absent.exe') == 70
+    assert run(compiled, 'badcontained', tmp_path / 'absent.exe') == 70
 
 
 @pytest.mark.parametrize('mode', sorted(MODES))
@@ -193,3 +197,65 @@ def test_existing_signin_launcher_fallback(compiled, tmp_path):
     legacy.write_text('exit 38')
     assert run(compiled, 'desktop-commander', tmp_path) == 38
     assert run(compiled, 'resolvererror', tmp_path) == 0
+
+
+def _alive(pid):
+    kernel=ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenProcess.restype=ctypes.c_void_p
+    kernel.WaitForSingleObject.argtypes=[ctypes.c_void_p,ctypes.c_ulong]
+    kernel.CloseHandle.argtypes=[ctypes.c_void_p]
+    handle=kernel.OpenProcess(0x100000,False,pid)
+    if not handle:
+        return False
+    try:
+        return kernel.WaitForSingleObject(handle,0)==258
+    finally:
+        kernel.CloseHandle(handle)
+
+@pytest.mark.parametrize('normal_exit',[False,True])
+def test_reconnect_job_terminates_supervisor_preserving_independent_child(compiled,tmp_path,normal_exit):
+    script=tmp_path/MODES['reconnect'];script.parent.mkdir(parents=True)
+    descendant=script.parent/'generated-descendant.ps1'
+    descendant.write_text("[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'descendant.pid'),[string]$PID); Start-Sleep -Seconds 60")
+    script.write_text(r"""
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'child.pid'),[string]$PID)
+$exe=Join-Path $PSHOME 'powershell.exe'
+Start-Process $exe -WindowStyle Hidden -ArgumentList ('-NoProfile -File "'+(Join-Path $PSScriptRoot 'generated-descendant.ps1')+'"')
+while (!(Test-Path (Join-Path $PSScriptRoot 'descendant.pid'))) { Start-Sleep -Milliseconds 20 }
+""" + ("exit 23" if normal_exit else "Start-Sleep -Seconds 60"))
+    parent=subprocess.Popen([str(compiled[-1]),'reconnect',str(tmp_path)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    pids=[]
+    descendant_handle=None
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    kernel.OpenProcess.restype=ctypes.c_void_p
+    kernel.TerminateProcess.argtypes=[ctypes.c_void_p,ctypes.c_uint]
+    kernel.WaitForSingleObject.argtypes=[ctypes.c_void_p,ctypes.c_ulong]
+    kernel.CloseHandle.argtypes=[ctypes.c_void_p]
+    try:
+        deadline=time.monotonic()+15
+        while time.monotonic()<deadline:
+            if all((script.parent/name).exists() for name in ('child.pid','descendant.pid')):
+                pids=[int((script.parent/name).read_text()) for name in ('child.pid','descendant.pid')]
+                break
+            assert parent.poll() is None, f'Parent exited before child evidence: {parent.returncode}'
+            time.sleep(.05)
+        assert len(pids)==2,'Child startup evidence missing'
+        descendant_handle=kernel.OpenProcess(0x100001,False,pids[1])
+        assert descendant_handle,'Generated descendant handle unavailable'
+        if normal_exit:
+            assert parent.wait(timeout=10)==23
+        else:
+            parent.kill();parent.wait(timeout=10)
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline and _alive(pids[0]):
+            time.sleep(.05)
+        assert not _alive(pids[0]),'Owned supervisor survived parent exit'
+        assert kernel.WaitForSingleObject(descendant_handle,0)==258,'Independent application lifetime was terminated'
+    finally:
+        if parent.poll() is None:
+            parent.kill();parent.wait(timeout=10)
+        if descendant_handle:
+            kernel.TerminateProcess(descendant_handle,0)
+            kernel.WaitForSingleObject(descendant_handle,5000)
+            kernel.CloseHandle(descendant_handle)
+        # A generated descendant also self-expires after 60 seconds if startup fails before handle capture.
