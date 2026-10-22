@@ -1,0 +1,27 @@
+{
+  "status": "task-account-canonicalization-qualified",
+  "production_changes": false,
+  "tests": {
+    "sha256": "a841bb499ba16974bffd18de9c48e05539b46b8ced0fd411dfd4e4b7e421fd41",
+    "focused": 62,
+    "failed": 0,
+    "log": "account-canonicalization-tests.log"
+  },
+  "files": [
+    {
+      "path": "tools/Prometheus.HostAgent/ReconnectEnrollment.psm1",
+      "sha256": "3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509",
+      "bytes": 32873
+    },
+    {
+      "path": "tools/Prometheus.HostAgent/RECONNECT-ENROLLMENT.md",
+      "sha256": "f531eea353a8de87995b728581b74686d4e5176d072640554b732368acfd10c8",
+      "bytes": 8904
+    },
+    {
+      "path": "tests/test_reconnect_enrollment.py",
+      "sha256": "bd1be0fcffb752620464ad9c19021af3f389f5f3a08eb3fc83a1d2b743b43e61",
+      "bytes": 25307
+    }
+  ]
+}

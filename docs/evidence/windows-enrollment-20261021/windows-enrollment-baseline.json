@@ -1,0 +1,27 @@
+{
+  "captured": "2026-10-22T00:40:18.4760399Z",
+  "files": [
+    {
+      "name": "controller-intentional-close.flag",
+      "sha256": "889e3776847eec19b6234593744dfe7dcfec1355a50e72ebe002e71d094cbc37",
+      "bytes": 28
+    },
+    {
+      "name": "memory.sqlite3",
+      "sha256": "9c72c7448bb4330581fd89256431b2d3a9b5a492a830ef7e99c22b5dce5d795f",
+      "bytes": 28672
+    },
+    {
+      "name": "Prometheus-User-Watcher.ps1",
+      "sha256": "17d6215226483bfe778ca4453a79bb3277e031062987c8142ced5c53792e5921",
+      "bytes": 1515
+    },
+    {
+      "name": "user-watcher.log",
+      "sha256": "00cf2a4f9d7c34738385b1bb7d1d27ecd62be756aab262637f8954b9c08c418c",
+      "bytes": 44
+    }
+  ],
+  "authorization_exists": false,
+  "enrollment_exists": false
+}
