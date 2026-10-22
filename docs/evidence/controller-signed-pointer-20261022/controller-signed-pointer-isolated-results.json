@@ -1,0 +1,435 @@
+{
+  "passed": true,
+  "source_sha256": "26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5",
+  "script_sha256": "801be248679f2aa7b94690410da9f745b359a4e5f8c2dfdc8126ca70194732d9",
+  "runs": [
+    {
+      "runtime": "C:\\Users\\rolon\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.EXE",
+      "bindings": [
+        {
+          "package": "candidate",
+          "path": "PROMETHEUS-SSD-STATUS.json",
+          "sha256": "def08673dfb64819b47d31ebae7fdd8f6f37ec5d7cc7cfc73c01d51d102c877e"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\MANIFEST-PUBLIC.cer",
+          "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Controller-Common.ps1",
+          "sha256": "739be505bf32c87410c6e29058599046e906b4bf37acc45f2c3d8bf32af25c75"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Drive-Engine.ps1",
+          "sha256": "0cd57506beda5c6b289a45392bbc3104fde568a222e3b43fab91a775cdfc4a3e"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Eject-Orchestrator.ps1",
+          "sha256": "a7eb2b92485f9ad991040e076a934ff3d4cb291c7a08ac449469946592dad19a"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Lifecycle.ps1",
+          "sha256": "d63139db4ea6dbcb302aa73d98884fbbaf45a566d035df0d46b369e6fbee2661"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Safe-Eject.ps1",
+          "sha256": "9f474006846157b1ded5548395373e6f345725003feb7e67c9e54fba79cfcad6"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.deps.json",
+          "sha256": "88d3288255c74e5cb2f84470af8909f127222440669c5e2eb30f7593e8adb0e4"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.dll",
+          "sha256": "ec62f5ae293793ba4bd8cd6469f4a1af90d23239a5fc23e5c839dcbf736bf563"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.exe",
+          "sha256": "73c504d1719a81a2c43d17df828ec5ef728bc288a34b297f8ca14a1d48b31233"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.runtimeconfig.json",
+          "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\RELEASE-PROVENANCE.json",
+          "sha256": "9ff75ac033e9bc820cf1f79931f444341a7edf968b6edc8464da3bbc07346e87"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\SHA256-MANIFEST.json",
+          "sha256": "e5e542c98dd55d8ea08e46d3fb5b73d329f28ca1d70fb7cc1b758d5fcb23fd54"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\SHA256-MANIFEST.sig",
+          "sha256": "62cb5872c6f6d355eb6ceaf6e664d1806aeddcf4361f9fa1c862723473f70e61"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\verify-portable-memory.py",
+          "sha256": "820f0f3ecea7497ea07b24289126668306203c69abcb5f305ef745588396c608"
+        },
+        {
+          "package": "recovery",
+          "path": "PROMETHEUS-SSD-STATUS.json",
+          "sha256": "84e945de0473b63317fa3b421248a91fb2bf68477f66c5ab0e98e41e5b691ba8"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\MANIFEST-PUBLIC.cer",
+          "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\ORIGINAL-RELEASE-PROVENANCE.json",
+          "sha256": "50b7db5a67657e3c412abea581b0f4e230146ab4387db1fd0504457addd48cb6"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Arrival.ps1",
+          "sha256": "3862d0be9b5462be157acb04bbd9b3eae72025bb57792ff6acd69ccb249db32a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Controller-Common.ps1",
+          "sha256": "739be505bf32c87410c6e29058599046e906b4bf37acc45f2c3d8bf32af25c75"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Drive-Engine.ps1",
+          "sha256": "0cd57506beda5c6b289a45392bbc3104fde568a222e3b43fab91a775cdfc4a3e"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Eject-Handoff.ps1",
+          "sha256": "dde7fd8adcfe56281367adaf0d602a934776ab715ce7d24006b274ebac94d917"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Eject-Orchestrator.ps1",
+          "sha256": "a7eb2b92485f9ad991040e076a934ff3d4cb291c7a08ac449469946592dad19a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Lifecycle.ps1",
+          "sha256": "eabb090363668d758f9409d7abc12cc0f365bb9077d1b306519ff4b425b739a0"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Safe-Eject.ps1",
+          "sha256": "9f474006846157b1ded5548395373e6f345725003feb7e67c9e54fba79cfcad6"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-USB-Reconnect-Supervisor.ps1",
+          "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-USB-Supervisor.ps1",
+          "sha256": "e5c3652e13578c79eed8d2a72952fb5432b9a30e6f3728865826a35de4e8a76a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.deps.json",
+          "sha256": "88d3288255c74e5cb2f84470af8909f127222440669c5e2eb30f7593e8adb0e4"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.dll",
+          "sha256": "fb751403ed0f42043ec84fe8c195e316e28a32465de992ac78a447ad3b56fddb"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.exe",
+          "sha256": "13f1b3f8ea55d4d80fb6d8f72745fcb464f494b1f09a48be38e4c354b6d2294b"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.runtimeconfig.json",
+          "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\RELEASE-PROVENANCE.json",
+          "sha256": "277f8606fe0fab15ebd33711ad489b7588a82e7d0b987a33c60da89e319ac9b3"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\SHA256-MANIFEST.json",
+          "sha256": "3f7f9e72e7aaca412b130b03fca6180039aa3f3fa2d38d0efe609cb2c1ff03b2"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\SHA256-MANIFEST.sig",
+          "sha256": "98f23aa79c87a58863068f140d6de704c58169266dad24cfd59e9347762daa2b"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\verify-portable-memory.py",
+          "sha256": "d6d46f14fd220e43055b68e38cae0d1a41d455e8800695315062461aeccde4ab"
+        }
+      ],
+      "outcomes": [
+        {
+          "mode": "verify",
+          "exit": 0,
+          "result": {
+            "launch": false,
+            "checks": [
+              "signed-source-and-stage-0.5.11",
+              "signed-source-and-stage-0.5.12",
+              "tamper-refused-SHA256-MANIFEST.json",
+              "tamper-refused-SHA256-MANIFEST.sig",
+              "tamper-refused-RELEASE-PROVENANCE.json"
+            ],
+            "runtime": "7.6.5",
+            "floor": "0.5.10"
+          }
+        },
+        {
+          "mode": "interrupt",
+          "exit": 77,
+          "recovery_slot_flushed_before_primary": true
+        },
+        {
+          "mode": "resume",
+          "exit": 0,
+          "result": {
+            "runtime": "7.6.5",
+            "floor": "0.5.12",
+            "launch": false,
+            "candidate_blocked": true
+          }
+        }
+      ]
+    },
+    {
+      "runtime": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "bindings": [
+        {
+          "package": "candidate",
+          "path": "PROMETHEUS-SSD-STATUS.json",
+          "sha256": "def08673dfb64819b47d31ebae7fdd8f6f37ec5d7cc7cfc73c01d51d102c877e"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\MANIFEST-PUBLIC.cer",
+          "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Controller-Common.ps1",
+          "sha256": "739be505bf32c87410c6e29058599046e906b4bf37acc45f2c3d8bf32af25c75"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Drive-Engine.ps1",
+          "sha256": "0cd57506beda5c6b289a45392bbc3104fde568a222e3b43fab91a775cdfc4a3e"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Eject-Orchestrator.ps1",
+          "sha256": "a7eb2b92485f9ad991040e076a934ff3d4cb291c7a08ac449469946592dad19a"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Lifecycle.ps1",
+          "sha256": "d63139db4ea6dbcb302aa73d98884fbbaf45a566d035df0d46b369e6fbee2661"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus-Safe-Eject.ps1",
+          "sha256": "9f474006846157b1ded5548395373e6f345725003feb7e67c9e54fba79cfcad6"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.deps.json",
+          "sha256": "88d3288255c74e5cb2f84470af8909f127222440669c5e2eb30f7593e8adb0e4"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.dll",
+          "sha256": "ec62f5ae293793ba4bd8cd6469f4a1af90d23239a5fc23e5c839dcbf736bf563"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.exe",
+          "sha256": "73c504d1719a81a2c43d17df828ec5ef728bc288a34b297f8ca14a1d48b31233"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\Prometheus.DriveController.runtimeconfig.json",
+          "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\RELEASE-PROVENANCE.json",
+          "sha256": "9ff75ac033e9bc820cf1f79931f444341a7edf968b6edc8464da3bbc07346e87"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\SHA256-MANIFEST.json",
+          "sha256": "e5e542c98dd55d8ea08e46d3fb5b73d329f28ca1d70fb7cc1b758d5fcb23fd54"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\SHA256-MANIFEST.sig",
+          "sha256": "62cb5872c6f6d355eb6ceaf6e664d1806aeddcf4361f9fa1c862723473f70e61"
+        },
+        {
+          "package": "candidate",
+          "path": "Prometheus-Controller-v0.5.11\\verify-portable-memory.py",
+          "sha256": "820f0f3ecea7497ea07b24289126668306203c69abcb5f305ef745588396c608"
+        },
+        {
+          "package": "recovery",
+          "path": "PROMETHEUS-SSD-STATUS.json",
+          "sha256": "84e945de0473b63317fa3b421248a91fb2bf68477f66c5ab0e98e41e5b691ba8"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\MANIFEST-PUBLIC.cer",
+          "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\ORIGINAL-RELEASE-PROVENANCE.json",
+          "sha256": "50b7db5a67657e3c412abea581b0f4e230146ab4387db1fd0504457addd48cb6"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Arrival.ps1",
+          "sha256": "3862d0be9b5462be157acb04bbd9b3eae72025bb57792ff6acd69ccb249db32a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Controller-Common.ps1",
+          "sha256": "739be505bf32c87410c6e29058599046e906b4bf37acc45f2c3d8bf32af25c75"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Drive-Engine.ps1",
+          "sha256": "0cd57506beda5c6b289a45392bbc3104fde568a222e3b43fab91a775cdfc4a3e"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Eject-Handoff.ps1",
+          "sha256": "dde7fd8adcfe56281367adaf0d602a934776ab715ce7d24006b274ebac94d917"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Eject-Orchestrator.ps1",
+          "sha256": "a7eb2b92485f9ad991040e076a934ff3d4cb291c7a08ac449469946592dad19a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Lifecycle.ps1",
+          "sha256": "eabb090363668d758f9409d7abc12cc0f365bb9077d1b306519ff4b425b739a0"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-Safe-Eject.ps1",
+          "sha256": "9f474006846157b1ded5548395373e6f345725003feb7e67c9e54fba79cfcad6"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-USB-Reconnect-Supervisor.ps1",
+          "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus-USB-Supervisor.ps1",
+          "sha256": "e5c3652e13578c79eed8d2a72952fb5432b9a30e6f3728865826a35de4e8a76a"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.deps.json",
+          "sha256": "88d3288255c74e5cb2f84470af8909f127222440669c5e2eb30f7593e8adb0e4"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.dll",
+          "sha256": "fb751403ed0f42043ec84fe8c195e316e28a32465de992ac78a447ad3b56fddb"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.exe",
+          "sha256": "13f1b3f8ea55d4d80fb6d8f72745fcb464f494b1f09a48be38e4c354b6d2294b"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\Prometheus.DriveController.runtimeconfig.json",
+          "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\RELEASE-PROVENANCE.json",
+          "sha256": "277f8606fe0fab15ebd33711ad489b7588a82e7d0b987a33c60da89e319ac9b3"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\SHA256-MANIFEST.json",
+          "sha256": "3f7f9e72e7aaca412b130b03fca6180039aa3f3fa2d38d0efe609cb2c1ff03b2"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\SHA256-MANIFEST.sig",
+          "sha256": "98f23aa79c87a58863068f140d6de704c58169266dad24cfd59e9347762daa2b"
+        },
+        {
+          "package": "recovery",
+          "path": "Prometheus-Controller-v0.5.12\\verify-portable-memory.py",
+          "sha256": "d6d46f14fd220e43055b68e38cae0d1a41d455e8800695315062461aeccde4ab"
+        }
+      ],
+      "outcomes": [
+        {
+          "mode": "verify",
+          "exit": 0,
+          "result": {
+            "runtime": "5.1.26100.9711",
+            "launch": false,
+            "floor": "0.5.10",
+            "checks": [
+              "signed-source-and-stage-0.5.11",
+              "signed-source-and-stage-0.5.12",
+              "tamper-refused-SHA256-MANIFEST.json",
+              "tamper-refused-SHA256-MANIFEST.sig",
+              "tamper-refused-RELEASE-PROVENANCE.json"
+            ]
+          }
+        },
+        {
+          "mode": "interrupt",
+          "exit": 77,
+          "recovery_slot_flushed_before_primary": true
+        },
+        {
+          "mode": "resume",
+          "exit": 0,
+          "result": {
+            "runtime": "5.1.26100.9711",
+            "launch": false,
+            "floor": "0.5.12",
+            "candidate_blocked": true
+          }
+        }
+      ]
+    }
+  ],
+  "production_ready": false,
+  "scope": "Real signed temp source/stage verification and extracted actual floor recovery; test wrapper exits after verified recovery slot, no Sync-Controller or top-level startup"
+}

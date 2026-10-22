@@ -1,0 +1,16 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "size": 1950372327424,
+    "path": "E:\\Prometheus-Repository-Checkpoints\\controller-signed-pointer-20261022T023315Z",
+    "verified_files": 8,
+    "mismatches": 0
+  },
+  {
+    "label": "PROMETHEUS",
+    "size": 32076988416,
+    "path": "D:\\Prometheus-Repository-Checkpoints\\controller-signed-pointer-20261022T023315Z",
+    "verified_files": 8,
+    "mismatches": 0
+  }
+]

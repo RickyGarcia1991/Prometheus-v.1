@@ -1,0 +1,10 @@
+{
+ "status":"no_actionable_findings_for_isolated_proof",
+ "helper_sha256":"801be248679f2aa7b94690410da9f745b359a4e5f8c2dfdc8126ca70194732d9",
+ "runner_sha256":"098b941083c1f9a7b896c275148a96cae24c63419e81abee6556982420ea0d00",
+ "source_sha256":"26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5",
+ "validation":"Read final helper, runner and result; helper hash matches recorded executed result. Six subprocesses on pwsh 7.6.5 and Windows PowerShell 5.1 verify pinned signed source/staging, reject tampering without floor advancement, exit 77 after real verified recovery-slot publication, and resume in a fresh process preserving 0.5.12 floor while refusing 0.5.11. Runner uses fresh TemporaryDirectory; helper independently refuses non-normalized/outside-temp/reparse roots before state writes.",
+ "limits":"Extracted actual signature/floor functions in generated temp directories; not an end-to-end production pointer transaction. No Sync-Controller, top-level agent invocation, launch, execution-policy change, live state write, physical USB or reboot test. Cooperative controlled fixture inputs; not a production hostile-directory adapter.",
+ "production_ready":false,
+ "reviewer_live_actions":false
+}
