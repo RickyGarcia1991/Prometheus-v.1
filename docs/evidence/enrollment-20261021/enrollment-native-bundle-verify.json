@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "manifest_sha256": "99d435febea8292ab3fbb7d54761a05dcfbe9fe1a9775ac3f01a5b9b98a2c83b",
+  "runtime_files": 5,
+  "module_and_external_runner_verified": true,
+  "authorization_created": false,
+  "task_changes": false
+}

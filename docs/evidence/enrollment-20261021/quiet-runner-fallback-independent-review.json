@@ -1,0 +1,7 @@
+{
+  "status": "narrow_resolver_change_passed",
+  "actionable_findings": [],
+  "confirmed": ["Only desktop-commander mode gains a fallback, to the fixed LocalAppData/DesktopCommander/Start-AtSignIn.ps1 path.", "Legacy fixed path takes priority when present; only FileNotFoundException and DirectoryNotFoundException permit fallback.", "Permission/security/other lookup failures do not select another runner; Run returns failure 70.", "No CLI root/script override is introduced; hidden child setup and pause handling remain unchanged.", "Generated fallback and legacy scripts exercise exit 37 and 38, and injected denial remains an exception at the resolver boundary."],
+  "verification": "Source and added fixture assertions reviewed; root's 66 passing quiet/Lifecycle checks acknowledged without repeating the suite.",
+  "limits": ["Production sign-in launcher was not started or modified by this review.", "Enrollment must bind the same selected fixed runner hash; actual enrolled resume remains a separate check."]
+}

@@ -1,0 +1,10 @@
+{
+  "status": "changes_or_explicit_recovery_gate_required",
+  "scope": "ReconnectEnrollment.psm1 fresh authorization and crash recovery; reviewed during owner freeze preparation",
+  "findings": [
+    {"priority": 1, "location": "Invoke-ReconnectRecovery completed_files/created_files validation and RemoveFile loop", "issue": "An unsigned journal can claim a pre-existing identical signed dependency was newly created. Matching bundle hash proves content but not original absence or completion ownership, so recovery can delete a file this transaction did not create.", "required": "Authenticate durable transaction/absence evidence, or conservatively preserve existing files rather than delete based on unsigned completed_files. In-memory rollback ownership is a distinct case."},
+    {"priority": 2, "location": "Initialize-ReconnectAuthorization / Repair-ReconnectEnrollment", "issue": "Authorization-intent or half authorization/checksum pair survives a crash but no exported recovery path accepts that journal schema. Retrying Initialize refuses retained history or missing checksum; Repair accepts only enrollment journal fields.", "required": "Add bounded authenticated authorization recovery or explicitly retain an incomplete manual-recovery gate. Do not call authorization crash recovery complete."}
+  ],
+  "positive_boundaries": ["Signed payload/module/external runner verification precedes new identity writes.", "Fresh identity creation refuses existing root history and uses exclusive flushed file creation.", "Task recovery checks exact disabled task definition, fixed user/mode/path and signed bundle identity; foreign tasks are preserved."],
+  "activity": "Read-only review; no live operations, source edits or full-suite reruns. Findings sent to root and enrollment owner."
+}
