@@ -73,7 +73,18 @@ function Get-Package($root){
  $entries=Get-Content $manifest -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f)){throw ('Integrity failure: '+$e.path)};if((Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Integrity failure: '+$e.path)}};Assert-ControllerProvenance $src $entries $name;[pscustomobject]@{Meta=$meta;Name=$name;Version=$version;Source=$src}
 }
 function Sync-Controller($pkg){$resolvedRoot=[IO.Path]::GetFullPath($ControllerRoot).TrimEnd('\');$resolvedTarget=[IO.Path]::GetFullPath((Join-Path $ControllerRoot $pkg.Name));if(!$resolvedTarget.StartsWith($resolvedRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Unsafe controller cache path'};New-Item -ItemType Directory -Force $ControllerRoot|Out-Null;$dst=Join-Path $ControllerRoot $pkg.Name;$stage=$dst+'.staging-'+[guid]::NewGuid().ToString('N');$backup=$dst+'.previous';$r1=$dst+'.recovery-1';$r2=$dst+'.recovery-2';$r3=$dst+'.recovery-3';Copy-Item $pkg.Source $stage -Recurse -Force
- try{$entries=Get-Content (Join-Path $stage 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Staged integrity failure: '+$e.path)}};if(Test-Path $r3){Remove-Item $r3 -Recurse -Force};if(Test-Path $r2){Move-Item $r2 $r3};if(Test-Path $r1){Move-Item $r1 $r2};if(Test-Path $dst){Copy-Item $dst $r1 -Recurse -Force};if(Test-Path $backup){Remove-Item $backup -Recurse -Force};if(Test-Path $dst){Move-Item $dst $backup};Move-Item $stage $dst;Set-SecurityState $pkg.Version;Write-Audit 'controller-activation' 'pass' $pkg.Name;return $dst}catch{Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;if(!(Test-Path $dst) -and (Test-Path $backup)){Move-Item $backup $dst;Write-Audit 'controller-rollback' 'pass' $pkg.Name};throw}
+ try{
+ # Verify the staged signed bytes before trusting their payload hashes.
+ $stagedManifest=[IO.File]::ReadAllBytes((Join-Path $stage 'SHA256-MANIFEST.json'))
+ $stagedCert=[Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $stage 'MANIFEST-PUBLIC.cer'))
+ try {
+  if($TrustedThumbprint -notcontains $stagedCert.Thumbprint){throw 'Staged signing certificate is not trusted'}
+  $stagedRsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($stagedCert)
+  try {if(!$stagedRsa.VerifyData($stagedManifest,[IO.File]::ReadAllBytes((Join-Path $stage 'SHA256-MANIFEST.sig')),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)){throw 'Staged manifest signature invalid'}}finally{$stagedRsa.Dispose()}
+ }finally{$stagedCert.Dispose()}
+ $entries=([Text.UTF8Encoding]::new($false,$true)).GetString($stagedManifest).TrimStart([char]0xFEFF)|ConvertFrom-Json
+ Assert-ControllerProvenance $stage $entries $pkg.Name
+ foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Staged integrity failure: '+$e.path)}};if(Test-Path $r3){Remove-Item $r3 -Recurse -Force};if(Test-Path $r2){Move-Item $r2 $r3};if(Test-Path $r1){Move-Item $r1 $r2};if(Test-Path $dst){Copy-Item $dst $r1 -Recurse -Force};if(Test-Path $backup){Remove-Item $backup -Recurse -Force};if(Test-Path $dst){Move-Item $dst $backup};Move-Item $stage $dst;Set-SecurityState $pkg.Version;Write-Audit 'controller-activation' 'pass' $pkg.Name;return $dst}catch{Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;if(!(Test-Path $dst) -and (Test-Path $backup)){Move-Item $backup $dst;Write-Audit 'controller-rollback' 'pass' $pkg.Name};throw}
 }
 function Test-CachedController($pkg,[string]$dst){
  $entries=Get-Content (Join-Path $pkg.Source 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json
