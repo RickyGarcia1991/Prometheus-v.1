@@ -1,0 +1,11 @@
+{
+ "status":"root_cause_identified_read_only",
+ "task":"Prometheus USB Reconnect Supervisor",
+ "transaction":"e19a9907484349648ee21f6bc39f8d53",
+ "reported_launch_result":"0x80070002",
+ "finding":"Codex process file operations at intended LocalAppData/Prometheus paths resolve to MSIX LocalCache/Local/Prometheus. Task Scheduler references the unvirtualized path. Direct Codex child probe therefore does not establish scheduler visibility.",
+ "evidence":"task-launch-physical-paths.json records actual GetFinalPathNameByHandle results for executable, supervisor, authorization and completed journal, all under OpenAI.Codex_2p2nqsd0c76g0/LocalCache.",
+ "other_checks":"Task action and cwd strings match intended root, principal SID matches current user, executable has no alternate data stream, file ACL grants current user/SYSTEM. Operational task log is disabled; it was not enabled by this review.",
+ "next_boundary":"Inventory and qualify intended real profile from outside packaged virtualization before authorizing/enrolling there; preserve all real history and virtualized evidence. Do not redirect fixed task to package cache or claim physical deployment complete.",
+ "production_mutations":false
+}

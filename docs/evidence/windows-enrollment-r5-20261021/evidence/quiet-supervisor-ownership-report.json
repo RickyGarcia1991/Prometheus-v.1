@@ -1,0 +1,21 @@
+{
+  "status": "reconnect-immediate-supervisor-lifetime-qualified",
+  "production_changes": false,
+  "tests": {
+    "failed": 0,
+    "log": "quiet-supervisor-ownership-tests.log",
+    "passed": 67,
+    "sha256": "e53f47028800766552e616b068eac690f34bcecb8930eba89066c791632ed5f3"
+  },
+  "scope": "Atomic JOB_LIST attaches immediate supervisor before execution. KILL_ON_JOB_CLOSE plus SILENT_BREAKAWAY_OK terminates owned supervisor on normal or forced wrapper exit, preserves independently launched descendant. Other modes unchanged.",
+  "files": [
+    {
+      "path": "tools/Prometheus.HostAgent/Prometheus-QuietHost-v3.cs",
+      "sha256": "38e71ea9792661bf0abdd5c0e523c199323da0f079baa94beadaa90df999e81f"
+    },
+    {
+      "path": "tests/test_quiet_host_v3.py",
+      "sha256": "9e5c004d6d3c650e3c9c39b9cac6c4ee664c2fb7bae2c3f84ed75b8fcebe7ce6"
+    }
+  ]
+}

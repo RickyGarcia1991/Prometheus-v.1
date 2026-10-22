@@ -1,0 +1,14 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "path": "E:\\Prometheus-Repository-Checkpoints\\windows-enrollment-r5-20261022T013313Z\\closeout",
+    "verified_files": 8,
+    "mismatches": 0
+  },
+  {
+    "label": "PROMETHEUS",
+    "path": "D:\\Prometheus-Repository-Checkpoints\\windows-enrollment-r5-20261022T013313Z\\closeout",
+    "verified_files": 8,
+    "mismatches": 0
+  }
+]
