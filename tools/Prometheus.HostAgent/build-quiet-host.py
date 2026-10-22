@@ -30,13 +30,24 @@ def build(dotnet, compiler, framework, output):
     args = [str(dotnet), str(compiler), '/nologo', '/noconfig', '/nostdlib+', '/deterministic+',
             '/target:winexe', '/optimize+', '/debug-', '/platform:anycpu', '/out:' + str(target),
             *['/reference:' + str(p) for p in references], str(SOURCE)]
+    def snapshot():
+        dependencies = sorted(p for p in compiler.parent.iterdir()
+                              if p.is_file() and p.suffix in ('.dll', '.json'))
+        paths = {SOURCE.resolve(), Path(__file__).resolve(), dotnet, compiler, *references, *dependencies}
+        return {str(p): digest(p) for p in sorted(paths)}
+
+    before = snapshot()
     subprocess.run(args, check=True, timeout=90)
+    after = snapshot()
+    if before != after:
+        raise ValueError('Build inputs changed during compilation; artifacts retained without a successful receipt.')
     receipt = {'identity': NAME, 'version': '3.0.0.0', 'signed': False, 'installed': False,
-               'source': {'path': str(SOURCE), 'sha256': digest(SOURCE)},
-               'inputs': {str(p): digest(p) for p in [dotnet, compiler, *references]},
+               'source': {'path': str(SOURCE), 'sha256': before[str(SOURCE.resolve())]},
+               'inputs': {str(p): before[str(p)] for p in [dotnet, compiler, *references]},
+               'verified_input_snapshot': before, 'pre_post_inputs_match': True,
                'command': args, 'output_sha256': digest(target),
-               'builder_sha256': digest(__file__),
-               'compiler_dependencies': {str(p): digest(p) for p in sorted(compiler.parent.iterdir())
+               'builder_sha256': before[str(Path(__file__).resolve())],
+               'compiler_dependencies': {str(p): before[str(p)] for p in sorted(compiler.parent.iterdir())
                                          if p.is_file() and p.suffix in ('.dll', '.json')},
                'provenance': 'New v3 source build; no claim that historical source reproduced v2.'}
     (output / 'quiet-host-build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
@@ -49,4 +60,3 @@ if __name__ == '__main__':
         parser.add_argument('--' + key, required=True, type=Path)
     options = parser.parse_args()
     print(json.dumps(build(options.dotnet, options.compiler, options.framework, options.output), indent=2))
-

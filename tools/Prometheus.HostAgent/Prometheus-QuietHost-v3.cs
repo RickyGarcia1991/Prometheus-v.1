@@ -18,10 +18,18 @@ internal static class PrometheusQuietHostV3 {
             default: return null;
         }
     }
-    internal static bool ShouldSuppress(string local, string mode) {
+    internal static bool PauseMarkerPresent(string path, Func<string,FileAttributes> attributes = null) {
+        try { (attributes ?? File.GetAttributes)(path); return true; }
+        catch (FileNotFoundException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
+        catch (IOException) { return true; }
+        catch (UnauthorizedAccessException) { return true; }
+        catch (System.Security.SecurityException) { return true; }
+    }
+    internal static bool ShouldSuppress(string local, string mode, Func<string,FileAttributes> attributes = null) {
         return mode != "reconnect" && mode != "recorder" &&
-            (File.Exists(Path.Combine(local, @"Prometheus\eject-mode.json")) ||
-             File.Exists(Path.Combine(local, @"DesktopCommanderStartup\runner-paused.request")));
+            (PauseMarkerPresent(Path.Combine(local, @"Prometheus\eject-mode.json"), attributes) ||
+             PauseMarkerPresent(Path.Combine(local, @"DesktopCommanderStartup\runner-paused.request"), attributes));
     }
     internal static ProcessStartInfo ChildStart(string script) {
         var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe"));

@@ -44,6 +44,15 @@ def compiled(tmp_path_factory):
 using System;
 class Harness {
  static int Main(string[] args) {
+  if(args[0].StartsWith("pauseerror:")) {
+   var parts=args[0].Split(':');
+   Func<string,System.IO.FileAttributes> read = path => {
+    if(parts[2]=="io")throw new System.IO.IOException();
+    if(parts[2]=="security")throw new System.Security.SecurityException();
+    throw new UnauthorizedAccessException();
+   };
+   return PrometheusQuietHostV3.ShouldSuppress(args[1],parts[1],read) ? 1 : 0;
+  }
   if(args[0] == "flags") {
    var p=PrometheusQuietHostV3.ChildStart(args[1]);
    return (!p.UseShellExecute && p.CreateNoWindow && p.WindowStyle==System.Diagnostics.ProcessWindowStyle.Hidden &&
@@ -127,3 +136,44 @@ def test_build_preserves_existing_artifact_and_rejects_missing_input(compiled, t
     with pytest.raises(ValueError, match='Missing build input'):
         builder.build(command[0], tmp_path / 'missing-csc.dll', framework, tmp_path / 'missing-output')
     assert not (tmp_path / 'missing-output').exists()
+
+
+@pytest.mark.parametrize('error', ['io', 'denied', 'security'])
+@pytest.mark.parametrize('mode', sorted(MODES))
+def test_unreadable_pause_suppresses_work_only(compiled, tmp_path, mode, error):
+    assert run(compiled, f'pauseerror:{mode}:{error}', tmp_path) == (0 if mode in ('reconnect','recorder') else 1)
+
+
+@pytest.mark.parametrize('changed', ['source', 'builder', 'dotnet', 'compiler', 'reference', 'dependency', 'added', 'removed'])
+def test_input_mutation_rejects_receipt_preserving_artifact(tmp_path, monkeypatch, changed):
+    folder = tmp_path / 'builder'
+    folder.mkdir()
+    shutil.copyfile(HOST / 'build-quiet-host.py', folder / 'build-quiet-host.py')
+    (folder / 'Prometheus-QuietHost-v3.cs').write_text('generated source')
+    spec = importlib.util.spec_from_file_location('isolated_builder', folder / 'build-quiet-host.py')
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    compiler_dir = tmp_path / 'compiler'
+    compiler_dir.mkdir()
+    compiler = compiler_dir / 'csc.dll'
+    dependency = compiler_dir / 'support.dll'
+    dotnet = tmp_path / 'dotnet.exe'
+    framework = tmp_path / 'framework'
+    framework.mkdir()
+    refs = [framework / name for name in ('mscorlib.dll', 'System.dll', 'System.Core.dll')]
+    for path in [compiler, dependency, dotnet, *refs]:
+        path.write_bytes(b'generated input')
+    output = tmp_path / 'output'
+    targets = {'source': builder.SOURCE, 'builder': Path(builder.__file__), 'compiler': compiler,
+               'dotnet': dotnet, 'reference': refs[0], 'dependency': dependency, 'added': compiler_dir / 'new.dll'}
+    def compile_and_change(*args, **kwargs):
+        (output / builder.NAME).write_bytes(b'generated failed build artifact')
+        if changed == 'removed':
+            dependency.unlink()
+        else:
+            targets[changed].write_bytes(b'changed during compilation')
+    monkeypatch.setattr(builder.subprocess, 'run', compile_and_change)
+    with pytest.raises(ValueError, match='inputs changed'):
+        builder.build(dotnet, compiler, framework, output)
+    assert (output / builder.NAME).read_bytes() == b'generated failed build artifact'
+    assert not (output / 'quiet-host-build-receipt.json').exists()
