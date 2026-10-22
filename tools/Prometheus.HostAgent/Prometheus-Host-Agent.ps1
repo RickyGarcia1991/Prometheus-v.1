@@ -36,8 +36,35 @@ function Assert-ControllerProvenance([string]$Source,$Entries,[string]$Name){
   if($modern.Value -isnot [string] -or $modern.Value -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$' -or ('Prometheus-Controller-v'+$modern.Value) -cne $Name){throw 'Signed controller version does not match package name'}
  }
 }
-function Get-SecurityState {$candidates=@($SecurityState,$SecurityState+'.bak1',$SecurityState+'.bak2');$valid=@();foreach($p in $candidates){if(Test-ProtectedFile $p){try{$x=Get-Content $p -Raw|ConvertFrom-Json;$valid+=[pscustomobject]@{path=$p;version=[version]([string]$x.highest_controller_version);data=$x}}catch{}}};if(!$valid.Count){if(!(Test-Path $SecurityState)){return [pscustomobject]@{highest_controller_version='0.0.0'}};throw 'Security state is malformed or failed integrity verification'};$best=$valid|Sort-Object version -Descending|Select-Object -First 1;if($best.path -ne $SecurityState){Copy-Item $best.path $SecurityState -Force;Copy-Item ($best.path+'.sha256') ($SecurityState+'.sha256') -Force;Write-Audit 'security-state-recovery' 'pass' $best.version.ToString()};return $best.data}
-function Set-SecurityState([version]$Version){if(Test-ProtectedFile $SecurityState){if(Test-ProtectedFile ($SecurityState+'.bak1')){Copy-Item ($SecurityState+'.bak1') ($SecurityState+'.bak2') -Force;Copy-Item ($SecurityState+'.bak1.sha256') ($SecurityState+'.bak2.sha256') -Force};Copy-Item $SecurityState ($SecurityState+'.bak1') -Force;Copy-Item ($SecurityState+'.sha256') ($SecurityState+'.bak1.sha256') -Force};[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json|Set-Content $SecurityState -Encoding UTF8;Protect-File $SecurityState}
+function Get-SecurityState {$candidates=@($SecurityState,($SecurityState+'.bak1'),($SecurityState+'.bak2'));$valid=@();foreach($p in $candidates){if(Test-ProtectedFile $p){try{$x=Get-Content $p -Raw|ConvertFrom-Json;$valid+=[pscustomobject]@{path=$p;version=[version]([string]$x.highest_controller_version);data=$x}}catch{}}};if(!$valid.Count){$historyExists=$false;foreach($p in $candidates){if((Test-Path -LiteralPath $p -ErrorAction Stop) -or (Test-Path -LiteralPath ($p+'.sha256') -ErrorAction Stop)){$historyExists=$true}};if(!$historyExists){return [pscustomobject]@{highest_controller_version='0.0.0'}};throw 'Security state is malformed or failed integrity verification'};$best=$valid|Sort-Object version -Descending|Select-Object -First 1;if($best.path -ne $SecurityState){Copy-Item $best.path $SecurityState -Force;Copy-Item ($best.path+'.sha256') ($SecurityState+'.sha256') -Force;Write-Audit 'security-state-recovery' 'pass' $best.version.ToString()};return $best.data}
+function Set-SecurityState([version]$Version){
+ # Run is serialized by the HostAgent mutex. Never discard the highest valid floor.
+ $current=Get-SecurityState
+ if($Version -lt [version]$current.highest_controller_version){throw 'Refusing to lower protected controller version'}
+ $body=[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json
+ $bytes=[Text.UTF8Encoding]::new($false).GetBytes($body)
+ $publish={param([string]$Path,[byte[]]$Bytes)
+  $temp=$Path+'.pending-'+[guid]::NewGuid().ToString('N');$side=$temp+'.sha256'
+  try{
+   $stream=[IO.File]::Open($temp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+   try{$stream.Write($Bytes,0,$Bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+   Protect-File $temp
+   $stream=[IO.File]::Open($side,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+   try{$stream.Flush($true)}finally{$stream.Dispose()}
+   if([IO.File]::Exists($Path)){[IO.File]::Replace($temp,$Path,[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move($temp,$Path)}
+   if([IO.File]::Exists($Path+'.sha256')){[IO.File]::Replace($side,$Path+'.sha256',[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move($side,$Path+'.sha256')}
+   if(!(Test-ProtectedFile $Path)){throw 'Protected state readback failed'}
+  }finally{foreach($pending in @($temp,$side)){if([IO.File]::Exists($pending)){[IO.File]::Delete($pending)}}}
+ }
+ if(Test-ProtectedFile $SecurityState){
+  & $publish ($SecurityState+'.bak1') ([IO.File]::ReadAllBytes($SecurityState))
+ }
+ # Publish the new floor to a recovery slot first. The primary stays valid until
+ # this pair verifies, and the verified recovery slot survives a primary fault.
+ & $publish ($SecurityState+'.bak2') $bytes
+ & $publish $SecurityState $bytes
+}
+
 function Get-Package($root){
  $metaPath=Join-Path $root 'PROMETHEUS-SSD-STATUS.json';if(!(Test-Path $metaPath)){throw 'SSD metadata missing'};$meta=Get-Content $metaPath -Raw|ConvertFrom-Json;$name=Split-Path ([string]$meta.controller_release) -Leaf;$version=Convert-Version $name
  $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version);if($version -lt $highest){throw ('Anti-rollback blocked controller '+$version+'; highest trusted is '+$highest)}
