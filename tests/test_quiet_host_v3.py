@@ -53,6 +53,10 @@ class Harness {
    };
    return PrometheusQuietHostV3.ShouldSuppress(args[1],parts[1],read) ? 1 : 0;
   }
+  if(args[0] == "resolvererror") {
+   try { PrometheusQuietHostV3.ResolveScript(args[1],"desktop-commander", path => {throw new UnauthorizedAccessException();}); return 99; }
+   catch(UnauthorizedAccessException) {return 0;}
+  }
   if(args[0] == "flags") {
    var p=PrometheusQuietHostV3.ChildStart(args[1]);
    return (!p.UseShellExecute && p.CreateNoWindow && p.WindowStyle==System.Diagnostics.ProcessWindowStyle.Hidden &&
@@ -177,3 +181,15 @@ def test_input_mutation_rejects_receipt_preserving_artifact(tmp_path, monkeypatc
         builder.build(dotnet, compiler, framework, output)
     assert (output / builder.NAME).read_bytes() == b'generated failed build artifact'
     assert not (output / 'quiet-host-build-receipt.json').exists()
+
+
+def test_existing_signin_launcher_fallback(compiled, tmp_path):
+    runner = tmp_path / 'DesktopCommander/Start-AtSignIn.ps1'
+    runner.parent.mkdir()
+    runner.write_text('exit 37')
+    assert run(compiled, 'desktop-commander', tmp_path) == 37
+    legacy = tmp_path / 'DesktopCommanderStartup/Run-DesktopCommander.ps1'
+    legacy.parent.mkdir()
+    legacy.write_text('exit 38')
+    assert run(compiled, 'desktop-commander', tmp_path) == 38
+    assert run(compiled, 'resolvererror', tmp_path) == 0

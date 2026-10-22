@@ -18,6 +18,15 @@ internal static class PrometheusQuietHostV3 {
             default: return null;
         }
     }
+    internal static string ResolveScript(string local, string mode, Func<string,FileAttributes> attributes = null) {
+        var relative = RelativeScript(mode);
+        if (relative == null) return null;
+        var path = Path.Combine(local, relative);
+        if (mode != "desktop-commander") return path;
+        try { (attributes ?? File.GetAttributes)(path); return path; }
+        catch (FileNotFoundException) { return Path.Combine(local, @"DesktopCommander\Start-AtSignIn.ps1"); }
+        catch (DirectoryNotFoundException) { return Path.Combine(local, @"DesktopCommander\Start-AtSignIn.ps1"); }
+    }
     internal static bool PauseMarkerPresent(string path, Func<string,FileAttributes> attributes = null) {
         try { (attributes ?? File.GetAttributes)(path); return true; }
         catch (FileNotFoundException) { return false; }
@@ -65,7 +74,8 @@ internal static class PrometheusQuietHostV3 {
         var relative = RelativeScript(args[0]);
         if (relative == null) return 64;
         if (ShouldSuppress(local, args[0])) return 0;
-        var script = Path.Combine(local, relative);
+        string script;
+        try { script = ResolveScript(local, args[0]); } catch { return 70; }
         if (!File.Exists(script)) return 66;
         return RunChild(ChildStart(script));
     }

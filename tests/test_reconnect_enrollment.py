@@ -92,7 +92,7 @@ def test_no_provider_bypass_is_exported(tmp_path):
     script.write_text("Import-Module '"+str(MODULE).replace("'","''")+"'; (Get-Module ReconnectEnrollment).ExportedFunctions.Keys | ConvertTo-Json")
     result=subprocess.run([shell,'-NoProfile','-File',str(script)],capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stderr
-    assert json.loads(result.stdout)=='Start-ReconnectEnrollment'
+    assert set(json.loads(result.stdout))=={'Start-ReconnectEnrollment','Initialize-ReconnectAuthorization','Repair-ReconnectEnrollment'}
 
 PROVIDER_SCRIPT = r'''
 param($Module,$Root,$Case)
@@ -107,11 +107,20 @@ $ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module Reconne
   if($state.Active -or !$state.Complete){throw 'Unchanged external communication incorrectly blocked'}
   'pass';return
  }
+ if($case -eq 'runner'){
+  $legacy=Join-Path $root 'DesktopCommanderStartup\Run-DesktopCommander.ps1';$current=Join-Path $root 'DesktopCommander\Start-AtSignIn.ps1'
+  if((Get-EnrollmentRunnerPath $root) -ne $current){throw 'Missing legacy did not choose fixed current route'}
+  [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($legacy))|Out-Null;[IO.File]::WriteAllText($legacy,'generated')
+  if((Get-EnrollmentRunnerPath $root) -ne $legacy){throw 'Existing legacy not preferred'}
+  function Get-EnrollmentAttributes($path){throw [UnauthorizedAccessException]::new('generated unreadable path')}
+  $bad=$false;try{Get-EnrollmentRunnerPath $root|Out-Null}catch{$bad=$true};if(!$bad){throw 'Unreadable path allowed fallback'}
+  'pass';return
+ }
  if($case -eq 'journal'){
   $provider=Get-ReconnectEnrollmentProvider;$c=@{Root=$root}
   foreach($phase in @('prepared','copying','enrolled-disabled')){
-   & $provider.Journal $c @{id='generated';phase=$phase}
-   $saved=Get-Content (Join-Path $root 'Enrollment\generated\journal.json') -Raw|ConvertFrom-Json
+   & $provider.Journal $c @{id=('1'*32);phase=$phase;package_identity=('a'*64)}
+   $saved=Read-EnrollmentJournal $c ('1'*32) ('a'*64)
    if($saved.phase -ne $phase){throw 'Journal replacement lost phase'}
   }
   'pass';return
@@ -148,10 +157,155 @@ $ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module Reconne
 '''
 
 
-@pytest.mark.parametrize('case',['communication','bounds','schema','task','journal'])
+@pytest.mark.parametrize('case',['communication','bounds','schema','task','journal','runner'])
 def test_production_provider_boundaries_without_live_apis(tmp_path,case):
     shell=shutil.which('pwsh') or shutil.which('powershell')
     script=tmp_path/'provider.ps1';script.write_text(PROVIDER_SCRIPT)
     result=subprocess.run([shell,'-NoProfile','-File',str(script),str(MODULE),str(tmp_path),case],capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stderr
+    assert result.stdout.strip()=='pass'
+
+RECOVERY_SCRIPT = r"""
+param($Module,$Root,$Case)
+$ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module ReconnectEnrollment
+& $m {
+ param($root,$case)
+ $c=@{Root=$root;Local=$root;Package=$root;Sid='generated';Fingerprint=('b'*64)}
+ $p=Get-ReconnectEnrollmentProvider
+ $script:hash=Get-EnrollmentHash ([byte[]](1,2,3));$script:checks=0
+ $p.Verify={param($c)$script:checks++;if($case -like 'auth-*' -and $c.ContainsKey('PackageOnly') -and !$c.PackageOnly){$a=Read-EnrollmentBytes (Join-Path $c.Root 'authorized-host.json') 65536;$h=[IO.File]::ReadAllText((Join-Path $c.Root 'authorized-host.json.sha256'));if((Get-EnrollmentHash $a) -ne $h){throw 'authorization integrity'}};if($case -eq 'bad-signature'){throw 'signature refused'};[pscustomobject]@{Identity=('a'*64);Files=@([pscustomobject]@{Name='Prometheus-QuietHost-v3.exe';Hash=$script:hash;Bytes=[byte[]](1,2,3)})}}
+ $p.State={param($c)[pscustomobject]@{Complete=$true;Paused=$false;Active=$false;Tasks=@()}}
+ $p.Lock={param($c)'generated-lock'};$p.Unlock={param($c,$locks)}
+ if($case -like 'auth-*' -or $case -eq 'bad-signature'){
+  if($case -eq 'auth-half'){
+   $script:originalWrite=${function:Write-EnrollmentExclusive}
+   function Write-EnrollmentExclusive($path,$bytes){if($path.EndsWith('.sha256')){throw 'generated fault after primary flush'};& $script:originalWrite $path $bytes}
+  }
+  if($case -eq 'auth-history'){[IO.Directory]::CreateDirectory((Join-Path $root 'Enrollment\prior'))|Out-Null}
+  if($case -eq 'auth-state'){[IO.File]::WriteAllText((Join-Path $root 'security-state.json.bak'),'retained')}
+  $bad=$false;try{$result=Invoke-FreshReconnectAuthorization $p $c ('b'*64)}catch{$bad=$true}
+  if($case -eq 'auth-half'){
+   if(!$bad -or ![IO.File]::Exists((Join-Path $root 'authorized-host.json'))){throw 'Expected retained half-pair'}
+   $before=[IO.File]::ReadAllText((Join-Path $root 'authorized-host.json'));$refused=$false;try{Invoke-FreshReconnectAuthorization $p $c ('b'*64)|Out-Null}catch{$refused=$true}
+   if(!$refused -or [IO.File]::ReadAllText((Join-Path $root 'authorized-host.json')) -ne $before){throw 'Half pair overwritten'}
+  }elseif($case -in @('auth-state','auth-history','bad-signature')){if(!$bad -or [IO.File]::Exists((Join-Path $root 'authorized-host.json'))){throw 'Unsafe authorization write'}}
+  else{
+   if($bad -or $result.status -ne 'authorized'){throw 'Authorization failed'}
+   $auth=Read-EnrollmentBytes (Join-Path $root 'authorized-host.json') 65536
+   $check=[IO.File]::ReadAllText((Join-Path $root 'authorized-host.json.sha256'))
+   if((Get-EnrollmentHash $auth) -ne $check){throw 'Pair mismatch'}
+   $before=$check;$again=Invoke-FreshReconnectAuthorization $p $c ('b'*64)
+   if($again.status -ne 'existing-authorization-preserved' -or [IO.File]::ReadAllText((Join-Path $root 'authorized-host.json.sha256')) -ne $before){throw 'Identity overwritten'}
+  }
+  'pass';return
+ }
+ if($case -in @('foreign-task','remove-fault','owned-task')){
+  $p.State={param($c)[pscustomobject]@{Complete=$true;Paused=$false;Active=$false;Tasks=@([pscustomobject]@{TaskName='Prometheus USB Reconnect Supervisor';TaskPath='\'})}}
+  $p.OwnedTask={param($c,$id)$case -ne 'foreign-task'}
+  $p.RemoveTask={param($c,$id)if($case -eq 'remove-fault'){throw 'generated unregister failure'};[IO.File]::WriteAllText((Join-Path $root 'removed-task'),'removed')}
+ }
+ $id='1'*32;$name='Prometheus-QuietHost-v3.exe'
+ [IO.File]::WriteAllBytes((Join-Path $root $name),[byte[]](1,2,3))
+ $j=[ordered]@{id=$id;phase='copying';task_was_absent=$true;created_files=@(@{name=$name;hash=$script:hash});completed_files=@(@{name=$name;hash=$script:hash});package_identity=('a'*64);task_enabled=$false;rollback_errors=@()}
+ if($case -eq 'intent-only'){$j.completed_files=@()}
+ if($case -eq 'changed-file'){[IO.File]::WriteAllBytes((Join-Path $root $name),[byte[]](4))}
+ if($case -eq 'wrong-package'){$j.package_identity='c'*64}
+ if($case -eq 'path-injection'){$j.created_files[0].name='../outside'}
+ if($case -eq 'completed'){$j.phase='enrolled-disabled'}
+ & $p.Journal $c $j
+ if($case -eq 'plaintext'){
+  [IO.File]::WriteAllText((Join-Path $root ('Enrollment\'+$id+'\journal.json')),($j|ConvertTo-Json -Depth 8))
+ }
+ if($case -eq 'tamper'){
+  $path=Join-Path $root ('Enrollment\'+$id+'\journal.json');$envelope=Get-Content $path -Raw|ConvertFrom-Json
+  $blob=[Convert]::FromBase64String($envelope.sealed);$blob[20]=$blob[20] -bxor 1;$envelope.sealed=[Convert]::ToBase64String($blob)
+  [IO.File]::WriteAllText($path,($envelope|ConvertTo-Json))
+ }
+ if($case -eq 'swapped'){
+  $newid='2'*32;$dir=Join-Path $root ('Enrollment\'+$newid);[IO.Directory]::CreateDirectory($dir)|Out-Null
+  [IO.File]::Copy((Join-Path $root ('Enrollment\'+$id+'\journal.json')),(Join-Path $dir 'journal.json'));$id=$newid
+ }
+ $bad=$false;try{$result=Invoke-ReconnectRecovery $p $c $id}catch{$bad=$true}
+ if($case -notin @('recovery','owned-task')){
+  if(!$bad -or ![IO.File]::Exists((Join-Path $root $name))){throw 'Uncertain file was removed'}
+ }else{
+  if($bad -or $result.status -ne 'rolled-back' -or [IO.File]::Exists((Join-Path $root $name))){throw 'Exact recovery failed'}
+  $p.State={param($c)[pscustomobject]@{Complete=$true;Paused=$false;Active=$false;Tasks=@()}}
+  if($case -eq 'owned-task' -and ![IO.File]::Exists((Join-Path $root 'removed-task'))){throw 'Task not removed'}
+  $again=Invoke-ReconnectRecovery $p $c $id;if($again.status -ne 'rolled-back'){throw 'Recovery not idempotent'}
+ }
+ 'pass'
+} $Root $Case
+"""
+
+@pytest.mark.parametrize('case',['auth-success','auth-state','bad-signature','recovery','intent-only','changed-file','wrong-package','path-injection','completed','auth-half','auth-history','foreign-task','remove-fault','owned-task','plaintext','tamper','swapped'])
+def test_authorization_recovery_native_files(tmp_path,case):
+    shell=shutil.which('pwsh') or shutil.which('powershell')
+    script=tmp_path/'recovery.ps1';script.write_text(RECOVERY_SCRIPT)
+    root=tmp_path/'host';root.mkdir()
+    result=subprocess.run([shell,'-NoProfile','-File',str(script),str(MODULE),str(root),case],capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stderr
+    assert result.stdout.strip()=='pass'
+
+AUTH_RECOVERY_SCRIPT = r"""
+param($Module,$Root,$Case)
+$ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module ReconnectEnrollment
+& $m {
+ param($root,$case)
+ $c=@{Root=$root;Local=$root;Package=$root;Sid='generated';Fingerprint=('b'*64)}
+ $p=Get-ReconnectEnrollmentProvider
+ $p.Verify={param($c)[pscustomobject]@{Identity=('a'*64);Files=@()}}
+ $p.State={param($c)[pscustomobject]@{Complete=$true;Paused=$false;Active=$false;Tasks=@()}}
+ $p.Lock={param($c)'generated'};$p.Unlock={param($c,$l)}
+ $result=Invoke-FreshReconnectAuthorization $p $c $c.Fingerprint;$id=$result.id
+ $j=Read-EnrollmentJournal $c $id ('a'*64)
+ if($case -eq 'already-complete'){$p.Journal={param($c,$j)throw 'Completed journal must not be rewritten'}}else{$j.phase='authorization-intent';& $p.Journal $c $j}
+ $auth=Join-Path $root 'authorized-host.json';$sha=$auth+'.sha256'
+ if($case -in @('primary-only','changed','protected','wrong-machine')){[IO.File]::Delete($sha)}
+ if($case -eq 'checksum-only'){[IO.File]::Delete($auth)}
+ if($case -eq 'neither'){[IO.File]::Delete($auth);[IO.File]::Delete($sha)}
+ if($case -eq 'changed'){[IO.File]::WriteAllText($auth,'changed')}
+ if($case -eq 'protected'){[IO.File]::WriteAllText((Join-Path $root 'security-state.json.bak'),'retained')}
+ if($case -eq 'wrong-machine'){$c.Fingerprint='c'*64}
+ $before=if([IO.File]::Exists($auth)){[IO.File]::ReadAllText($auth)}else{$null}
+ $bad=$false;try{$result=Invoke-ReconnectRecovery $p $c $id}catch{$bad=$true}
+ if($case -in @('changed','protected','wrong-machine')){
+  if(!$bad -or [IO.File]::Exists($sha) -or [IO.File]::ReadAllText($auth) -ne $before){throw 'Unsafe recovery mutation'}
+ }else{
+  if($bad -or $result.status -ne $(if($case -eq 'already-complete'){'authorized-preserved'}else{'authorized'}) -or (Get-EnrollmentHash (Read-EnrollmentBytes $auth 65536)) -ne [IO.File]::ReadAllText($sha)){throw 'Pair recovery failed'}
+ }
+ 'pass'
+} $Root $Case
+"""
+
+@pytest.mark.parametrize('case',['primary-only','checksum-only','neither','changed','protected','wrong-machine','already-complete'])
+def test_authenticated_authorization_recovery(tmp_path,case):
+    shell=shutil.which('pwsh') or shutil.which('powershell')
+    script=tmp_path/'auth-recovery.ps1';script.write_text(AUTH_RECOVERY_SCRIPT)
+    root=tmp_path/'host';root.mkdir()
+    result=subprocess.run([shell,'-NoProfile','-File',str(script),str(MODULE),str(root),case],capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stderr
+    assert result.stdout.strip()=='pass'
+
+
+def test_loaded_module_identity_cannot_follow_disk_mutation(tmp_path):
+    shell=shutil.which('pwsh') or shutil.which('powershell')
+    copy=tmp_path/'ReconnectEnrollment.psm1';copy.write_bytes(MODULE.read_bytes())
+    script=tmp_path/'identity.ps1'
+    script.write_text(r"""
+param($Module)
+$ErrorActionPreference='Stop';Import-Module $Module -Force
+& (Get-Module ReconnectEnrollment) {
+ $hash=$script:EnrollmentLoadedHash;Assert-LoadedEnrollmentModule $hash
+ $original=[IO.File]::ReadAllBytes($script:EnrollmentModulePath)
+ [IO.File]::AppendAllText($script:EnrollmentModulePath,"`n# generated mutation")
+ $bad=$false;try{Assert-LoadedEnrollmentModule $hash}catch{$bad=$true};if(!$bad){throw 'Disk mutation accepted'}
+ [IO.File]::WriteAllBytes($script:EnrollmentModulePath,$original)
+ $script:EnrollmentLoadedHash='0'*64
+ $bad=$false;try{Assert-LoadedEnrollmentModule $hash}catch{$bad=$true};if(!$bad){throw 'Loaded identity mismatch accepted'}
+ 'pass'
+}
+""")
+    result=subprocess.run([shell,'-NoProfile','-File',str(script),str(copy)],capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stderr
     assert result.stdout.strip()=='pass'
