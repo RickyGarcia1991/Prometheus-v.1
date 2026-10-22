@@ -1,0 +1,82 @@
+[
+  {
+    "path": "prepare-enrollment-bundle-r6.py",
+    "sha256": "3c25fb22e3d088a6742f402eb8fa08c07f3497ddbcf358c22784de8c3820d525",
+    "bytes": 1996
+  },
+  {
+    "path": "enrollment-candidate-r6-index.json",
+    "sha256": "132fb06db7114cddf988f12b8232d1275e50be774f8e80bd0ea7db753f861aee",
+    "bytes": 328
+  },
+  {
+    "path": "enrollment-r6-signing.json",
+    "sha256": "82083bf9d8c23189b6f0e92b75ba1ceb2d8c698e17aafdac09a338330bf43a25",
+    "bytes": 381
+  },
+  {
+    "path": "enrollment-r6-verification.json",
+    "sha256": "7881f6f93486627138a4876f7c8908d481588c3f7bf315f18542e9cd1490dbf1",
+    "bytes": 383
+  },
+  {
+    "path": "enrollment-r6-candidate-checkpoint.md",
+    "sha256": "42193e446fd7ea48defdb138537afd8891ba28831a3688092796354bdadaf16b",
+    "bytes": 731
+  },
+  {
+    "path": "staged-signature-integrated-tests.xml",
+    "sha256": "bc095a003bb36e145423f1b65bc24c230770aea56f50726aec5e245b2c6badca",
+    "bytes": 26524
+  },
+  {
+    "path": "bundle/MANIFEST-PUBLIC.cer",
+    "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c",
+    "bytes": 1095
+  },
+  {
+    "path": "bundle/Prometheus-Arrival.ps1",
+    "sha256": "686b6925ff9cc47ac2bbc6faccbe9d2e63ad8c4f3482ae04b324a80238fd938f",
+    "bytes": 3621
+  },
+  {
+    "path": "bundle/Prometheus-Host-Agent.ps1",
+    "sha256": "26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5",
+    "bytes": 14654
+  },
+  {
+    "path": "bundle/Prometheus-Lifecycle.ps1",
+    "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad",
+    "bytes": 3693
+  },
+  {
+    "path": "bundle/Prometheus-QuietHost-v3.exe",
+    "sha256": "ac3765079a3b0e1e54428b30d2a1b75415661f7dc6a016ab2c6d9bd46e042e7c",
+    "bytes": 11264
+  },
+  {
+    "path": "bundle/Prometheus-USB-Reconnect-Supervisor.ps1",
+    "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412",
+    "bytes": 2472
+  },
+  {
+    "path": "bundle/RECONNECT-ENROLLMENT.json",
+    "sha256": "2cfe0e19e6ebf8630fad9460a4849f9bcf5bc9c0e70e787c832d433d9cfc72df",
+    "bytes": 188
+  },
+  {
+    "path": "bundle/ReconnectEnrollment.psm1",
+    "sha256": "3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509",
+    "bytes": 32873
+  },
+  {
+    "path": "bundle/SHA256-MANIFEST.json",
+    "sha256": "bfa2a35832c79650e651bfde0e2f0c39b076658d5532dca45bb8a9e40e1cab21",
+    "bytes": 1136
+  },
+  {
+    "path": "bundle/SHA256-MANIFEST.sig",
+    "sha256": "4aaeb609ca9674de131d105661e5a9603db07772dbb4927e58d48b253edd9a11",
+    "bytes": 384
+  }
+]
