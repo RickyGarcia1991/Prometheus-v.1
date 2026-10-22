@@ -8,3 +8,4 @@ tools/self-improvement-tests/** -text
 tools/self-improvement-test-runner.py -text
 docs/evidence/native-chain-20261022/** -text
 docs/evidence/flash-cleanup-20261022/** -text
+docs/evidence/migration-ubuntu-preparation-20261022T234421Z/** -text

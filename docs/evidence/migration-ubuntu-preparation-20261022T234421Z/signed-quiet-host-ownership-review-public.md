@@ -1,0 +1,9 @@
+# Signed QuietHost primitive: ownership review
+
+Verdict: no actionable ownership-safety defect found for this bounded generated-fixture harness. This is a second review by the helper author, not an independent reviewer attestation.
+
+Termination authority is held as retained native handles after matching recorded creation FILETIME, native image path, native process-token owner, the generated script path and a random fixture command token. Rejected handles close without termination. The driver is a directly owned subprocess. Cleanup attempts remain independent and do not select installed processes by name. Stand-ins have a bounded self-exit fallback when capture cannot establish authority. Native runs already proved normal containment and capture-failure/readiness-timeout cleanup; they were not repeated for this review.
+
+Limitations: command checks are generated-path/token membership checks, not a general Windows command-line parser or defense against a malicious same-user process copying fixture arguments. Files in the generated temporary root are trusted test inputs; this helper is not a production PID authorization API. Bounded self-exit is a fallback, not proof that every hypothetical unrecorded process was captured. Final tested scenarios captured all four roles and observed their exits. Frozen source must run without Python optimization because qualification assertions are meaningful test gates. Neither this receipt nor the helper grants production activation/migration authority.
+
+Original four-check results and initial policy failure evidence remain separate. New failures remain retained with exact raw hashes in the public receipt. Raw local records include process/owner metadata and must not be published. The public receipt omits local user paths, SIDs, PIDs, creation timestamps, unique command tokens and fixture roots, retaining only exact source/evidence hashes and acceptance summaries.

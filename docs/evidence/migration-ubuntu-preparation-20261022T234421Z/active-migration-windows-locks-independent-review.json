@@ -1,0 +1,33 @@
+{
+  "reviewed_utc": "2026-10-22T23:43:30.121011+00:00",
+  "status": "no_remaining_actionable_code_findings_in_generated_primitive",
+  "independent_tests_passed": 49,
+  "duration_seconds": "5.036",
+  "production_activation_available": false,
+  "production_names_used": false,
+  "live_migration_performed": false,
+  "cleanup": {
+    "captured_utc": "2026-10-22T23:43:29.9852411Z",
+    "generated_lock_holders_remaining": 0
+  },
+  "resolved_findings": [
+    "ReleaseMutex and CloseHandle attempted independently for every acquired role.",
+    "Any release/close uncertainty records unresolved state, poisons owner and refuses restart/reuse.",
+    "Wait exceptions and non-acquisition statuses close the opened handle; close failure poisons owner.",
+    "Holder subprocess uses base Python executable, avoiding venv shim; readiness failure cleans direct owned subprocess."
+  ],
+  "verification_limits": [
+    "Failure-return tests perform real native cleanup before returning injected failure; they prove fail-closed bookkeeping, not guaranteed repair of genuinely denied cleanup.",
+    "Independent callback probes create no native mutex and verify release/close attempts plus restart refusal.",
+    "Native tests use random generated fixture names only; no production mutex, task, application or file operation.",
+    "Supported qualification is cooperative same-session behavior. Observations do not prove future/adversarial cross-session exclusion."
+  ],
+  "source_and_evidence_sha256": {
+    "active_migration_windows_locks.py": "50f178ce72f162b7760470209fc27bb3fc3748184574b30e81abc92ef8bcba45",
+    "test_active_migration_windows_locks.py": "6bf165c022ef2fd8aaced3f8d990024c45ed64e9a9b8aa2dece773215a3a8822",
+    "active-migration-windows-locks-independent-tests.xml": "a0d82f167e3cf9485c8b92219d55f44b4390a38e781024587fc3c2fca68e21f2",
+    "active-migration-windows-locks-independent-tests.log": "bc7d318a8417e0a8d684e07110bb2a795e63e725ce22df162b187e239fc4d5a8",
+    "active-migration-windows-locks-independent-cleanup.json": "64fb08de83f72f1053510678e1ce67f9a36128add7ac5d65438c05497740e973",
+    "active-migration-locks-initial-review-probes.json": "df7f087397bf98140487039dfc1e96b36612e97cfcce6c239a09f6e188480161"
+  }
+}

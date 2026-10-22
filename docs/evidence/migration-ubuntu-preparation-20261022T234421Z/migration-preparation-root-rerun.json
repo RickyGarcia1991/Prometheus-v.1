@@ -1,0 +1,12 @@
+{
+  "duration_seconds": 10.58,
+  "installed_changed": false,
+  "failures": 0,
+  "tests": [
+    "test_active_migration_windows_locks.py",
+    "test_active_migration_preflight.py"
+  ],
+  "observed_utc": "2026-10-22T23:43:42.3042148Z",
+  "passed": 110,
+  "production_activation_qualified": false
+}
