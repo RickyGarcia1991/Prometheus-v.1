@@ -6,3 +6,5 @@ src/pypdf-6.20.1.dist-info/** -text
 src/prometheus_assistant/vendor/markitdown/LOCK.json -text
 tools/self-improvement-tests/** -text
 tools/self-improvement-test-runner.py -text
+docs/evidence/native-chain-20261022/** -text
+docs/evidence/flash-cleanup-20261022/** -text
