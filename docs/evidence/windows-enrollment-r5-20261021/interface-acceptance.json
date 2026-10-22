@@ -1,0 +1,16 @@
+{
+  "routine_display_updates": "off",
+  "passed": true,
+  "owner_unlocked": true,
+  "remote_account_connected": true,
+  "visible_saved_decisions": 0,
+  "remote_job_executed": false,
+  "decision_history_loaded": true,
+  "installed_version": "0.8.0.dev55",
+  "selected_surface": "fd320a6a-349e-4ffe-a8c4-aef81cfb6b0f",
+  "checked_utc": "2026-10-22T01:43:00.1051134Z",
+  "physical_usb_cycle_tested": false,
+  "full_windows_reboot_tested": false,
+  "dashboard_loaded": true,
+  "provider_online_devices": 2
+}
