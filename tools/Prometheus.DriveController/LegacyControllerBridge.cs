@@ -8,6 +8,7 @@ public sealed class LegacyControllerBridge
     public string ControllerPath=>_script;
     private static string FindController()
     {
+        if(StartupProbe.VerificationMode)return "";
         var home=Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var candidates=new[]{
             Path.Combine(AppContext.BaseDirectory,"Prometheus-Drive-Engine.ps1"),
@@ -18,6 +19,7 @@ public sealed class LegacyControllerBridge
     }
     public async Task<BridgeResult> RunAsync(string action,string drive="D:")
     {
+        if(StartupProbe.VerificationMode)throw new InvalidOperationException("Controller execution is disabled during fixture verification.");
         if(!File.Exists(_script)) return new(2,null,"",$"Controller not found: {_script}");
         var psi=new ProcessStartInfo("powershell.exe") { UseShellExecute=false, RedirectStandardOutput=true, RedirectStandardError=true, CreateNoWindow=true, WorkingDirectory=AppContext.BaseDirectory };
         foreach(var a in new[]{"-NoProfile","-ExecutionPolicy","Bypass","-File",_script,"-Drive",drive,"-Action",action}) psi.ArgumentList.Add(a);
