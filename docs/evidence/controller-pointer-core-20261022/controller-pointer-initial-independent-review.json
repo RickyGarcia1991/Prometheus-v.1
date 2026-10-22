@@ -1,0 +1,12 @@
+{
+ "status":"corrections_requested",
+ "core_sha256":"d97d946fe52b0f1cde3e9362e9be3d42d199cc4f503b9ef983dfd9d62f001445",
+ "findings":[
+  "Recovery must have strictly higher version and distinct manifest; current equality permits ambiguous identical pointers and fails designated forward recovery requirement.",
+  "Metadata accepts nonfinite JSON values, including exponent overflow; reject constants and recursively nonfinite parsed values before provider writes, serialize allow_nan=False.",
+  "Fixture setup and Provider lexical Path.absolute containment permit parent traversal; setup writes before checking reparse paths. Require normalized strict temporary descendant and original-component reparse refusal before writes."
+ ],
+ "contracts_to_clarify":["stage must not advance floor or invoke existing Sync-Controller", "completed replay repeats provider operations which must be idempotent", "immutable receipts must distinguish candidate and forward recovery identities under the same transaction"],
+ "scope":"Development core and isolated Windows fixture only; no native production adapter qualification",
+ "live_actions":false
+}

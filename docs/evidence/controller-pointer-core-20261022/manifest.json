@@ -1,0 +1,74 @@
+[
+  {
+    "path": "source/tools/Prometheus.HostAgent/controller_pointer_transaction.py",
+    "sha256": "bd714a4d3f3a8b81944ee2b90ad895c29ab4a939d0a0b2147c3aa41fc189a2c1"
+  },
+  {
+    "path": "source/tests/test_controller_pointer_transaction.py",
+    "sha256": "21f759c14cfa287cf009eeaa7c3bce7572b7f736cb0339181a2781db677ddb05"
+  },
+  {
+    "path": "controller_pointer_windows_fixture.py",
+    "sha256": "661b0606757ef6080ef4e3b564ee0f835b248272b76225ed3d818079d307d03a"
+  },
+  {
+    "path": "test_controller_pointer_windows_fixture.py",
+    "sha256": "3f0079a89d50797740e517acfd4b30ee0f3f8d569e6c117080307da3bf23aaf5"
+  },
+  {
+    "path": "controller-pointer-corrected-report.json",
+    "sha256": "1bb27e330de9e0f764a348ab57987705405c48670048f076524e9e3c3f94755f"
+  },
+  {
+    "path": "controller-pointer-corrected-isolation-tests.log",
+    "sha256": "19b896304aa84632ed2e5f1bb03095f73aa20081b5dd6735f3eb1d16ad3677de"
+  },
+  {
+    "path": "controller-pointer-core-report.md",
+    "sha256": "dc90e499b28769aa5ab67c61d2bb66cd950fb7814eb92aa2aaf7417b0f6bc055"
+  },
+  {
+    "path": "controller-pointer-core-tests.log",
+    "sha256": "550d7b8a586aa267a180fb412107e8f4abffc6bc9d7c890e7fbad956e0014f51"
+  },
+  {
+    "path": "controller-pointer-windows-fixture-report.md",
+    "sha256": "c5d58fc77e581dad4bf932c9c8a07445ba407f7785475cddb767201d118eb6e2"
+  },
+  {
+    "path": "controller-pointer-windows-fixture-tests.log",
+    "sha256": "9a7cb7a345a76255e1694bfae49958f6c71e8b75ce44133f651064af32de93fe"
+  },
+  {
+    "path": "controller-pointer-initial-independent-review.json",
+    "sha256": "955d9f81966aa2b552f77e76c5fdba4f9f04592f56de1b2e5f87cafc00ccea49"
+  },
+  {
+    "path": "controller-pointer-final-independent-review.json",
+    "sha256": "6416f25e1105fcf09c4a9fce992225f7390a529bf134e95b5a79883f9812b181"
+  },
+  {
+    "path": "controller-pointer-filesystem-provider-contract.md",
+    "sha256": "5ccd82a1a16f482dbf1575c71efa85dea3b61858c62f69c310ec82316a44609c"
+  },
+  {
+    "path": "controller-pointer-transaction-review.md",
+    "sha256": "f1686b99663c4e09eaf86c3bdce3bddc097c4d5b80a646e22d7f6661e00267de"
+  },
+  {
+    "path": "controller-transaction-acceptance-checklist.md",
+    "sha256": "c429908d107bb3e98101db19ed9edecc820fa8b890db6f71a66822d95fcabbe7"
+  },
+  {
+    "path": "controller-pointer-signed-integration-next.md",
+    "sha256": "18162108571c9bec1bc996da7ab8bc2379633344484ebf8a944c569747597ca2"
+  },
+  {
+    "path": "enrollment-r6-payload-diff.json",
+    "sha256": "bfac368366feb86f9896c9aa53326bfc5b478031b6347f9472f8c17db484fa60"
+  },
+  {
+    "path": "README.md",
+    "sha256": "209bd3597c4a1d82833e62521b7d1566e98d3e7b8d9f6c3aebf853845298649f"
+  }
+]
