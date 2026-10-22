@@ -181,7 +181,7 @@ function Get-ReconnectEnrollmentProvider {
 function Test-ReconnectOwnedTask($c,[string]$id){
  $tasks=@(Get-ScheduledTask -ErrorAction Stop|Where-Object {$_.TaskName -eq 'Prometheus USB Reconnect Supervisor' -and $_.TaskPath -eq '\'})
  if($tasks.Count -ne 1){return $false};$t=$tasks[0];$a=@($t.Actions);$triggers=@($t.Triggers)
- return $t.Description -ceq ('Prometheus reconnect enrollment '+$id) -and $a.Count -eq 1 -and $a[0].Execute -ieq (Join-Path $c.Root 'Prometheus-QuietHost-v3.exe') -and $a[0].Arguments -ceq 'reconnect' -and $a[0].WorkingDirectory -ieq $c.Root -and !$t.Settings.Enabled -and $t.Principal.UserId -ieq $c.Sid -and $t.Principal.RunLevel -eq 0 -and $t.Principal.LogonType -eq 3 -and $triggers.Count -eq 1 -and $triggers[0].CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' -and $triggers[0].UserId -ieq $c.Sid -and $t.Settings.MultipleInstances -eq 2 -and !$t.Settings.DisallowStartIfOnBatteries -and !$t.Settings.StopIfGoingOnBatteries -and $t.Settings.StartWhenAvailable -and $t.Settings.ExecutionTimeLimit -eq 'PT0S'
+ return $t.Description -ceq ('Prometheus reconnect enrollment '+$id) -and $a.Count -eq 1 -and $a[0].Execute -ieq (Join-Path $c.Root 'Prometheus-QuietHost-v3.exe') -and $a[0].Arguments -ceq 'reconnect' -and $a[0].WorkingDirectory -ieq $c.Root -and !$t.Settings.Enabled -and (Test-EnrollmentAccountSid $t.Principal.UserId $c.Sid) -and $t.Principal.RunLevel -eq 0 -and $t.Principal.LogonType -eq 3 -and $triggers.Count -eq 1 -and $triggers[0].CimClass.CimClassName -eq 'MSFT_TaskLogonTrigger' -and (Test-EnrollmentAccountSid $triggers[0].UserId $c.Sid) -and $t.Settings.MultipleInstances -eq 2 -and !$t.Settings.DisallowStartIfOnBatteries -and !$t.Settings.StopIfGoingOnBatteries -and $t.Settings.StartWhenAvailable -and $t.Settings.ExecutionTimeLimit -eq 'PT0S'
 }
 function Start-ReconnectEnrollment {
  [CmdletBinding()]param([Parameter(Mandatory=$true)][string]$Package)
@@ -381,4 +381,17 @@ function Test-PreservedLegacyEntry($Item){
   }
  }
  return $true
+}
+
+function Resolve-EnrollmentAccountSid($Account){
+ if($Account -isnot [string] -or [string]::IsNullOrWhiteSpace($Account) -or $Account.Length -gt 256){return $null}
+ try{
+  if($Account.StartsWith('S-',[StringComparison]::OrdinalIgnoreCase)){return ([Security.Principal.SecurityIdentifier]::new($Account)).Value}
+  return ([Security.Principal.NTAccount]::new($Account).Translate([Security.Principal.SecurityIdentifier])).Value
+ }catch{return $null}
+}
+function Test-EnrollmentAccountSid($Account,$ExpectedSid){
+ $expected=Resolve-EnrollmentAccountSid $ExpectedSid
+ $actual=Resolve-EnrollmentAccountSid $Account
+ return $null -ne $expected -and $null -ne $actual -and $actual -ceq $expected
 }

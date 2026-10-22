@@ -142,10 +142,18 @@ $ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module Reconne
   foreach($size in @('1',1.5,$true,-1,16777217)){$e=[pscustomobject]@{path='f.ps1';sha256=('a'*64);size_bytes=$size};$bad=$false;try{Assert-EnrollmentManifestEntry $e}catch{$bad=$true};if(!$bad){throw 'Size coercion accepted'}}
   'pass';return
  }
- if($case -eq 'task'){
-  $script:task=[pscustomobject]@{TaskName='Prometheus USB Reconnect Supervisor';TaskPath='\';Description='Prometheus reconnect enrollment tx';Actions=@([pscustomobject]@{Execute=(Join-Path $root 'Prometheus-QuietHost-v3.exe');Arguments='reconnect';WorkingDirectory=$root});Principal=[pscustomobject]@{UserId='S-1-generated';RunLevel=0;LogonType=3};Settings=[pscustomobject]@{Enabled=$false;MultipleInstances=2;DisallowStartIfOnBatteries=$false;StopIfGoingOnBatteries=$false;StartWhenAvailable=$true;ExecutionTimeLimit='PT0S'};Triggers=@([pscustomobject]@{UserId='S-1-generated';CimClass=[pscustomobject]@{CimClassName='MSFT_TaskLogonTrigger'}})}
+ if($case -in @('task','canonical-task','foreign-task-account','unresolvable-task-account')){
+  $script:task=[pscustomobject]@{TaskName='Prometheus USB Reconnect Supervisor';TaskPath='\';Description='Prometheus reconnect enrollment tx';Actions=@([pscustomobject]@{Execute=(Join-Path $root 'Prometheus-QuietHost-v3.exe');Arguments='reconnect';WorkingDirectory=$root});Principal=[pscustomobject]@{UserId='S-1-5-21-111-222-333-1001';RunLevel=0;LogonType=3};Settings=[pscustomobject]@{Enabled=$false;MultipleInstances=2;DisallowStartIfOnBatteries=$false;StopIfGoingOnBatteries=$false;StartWhenAvailable=$true;ExecutionTimeLimit='PT0S'};Triggers=@([pscustomobject]@{UserId='S-1-5-21-111-222-333-1001';CimClass=[pscustomobject]@{CimClassName='MSFT_TaskLogonTrigger'}})}
   function Get-ScheduledTask {$script:task}
-  $c=@{Root=$root;Sid='S-1-generated'}
+  $c=@{Root=$root;Sid='S-1-5-21-111-222-333-1001'}
+  if($case -ne 'task'){
+   $identity=[Security.Principal.WindowsIdentity]::GetCurrent();$c.Sid=$identity.User.Value
+   $script:task.Principal.UserId=$identity.Name.Split('\')[-1];$script:task.Triggers[0].UserId=$identity.Name
+   if(!(Test-ReconnectOwnedTask $c tx)){throw 'Canonical names rejected'}
+   if($case -eq 'foreign-task-account'){$script:task.Principal.UserId='S-1-5-18';if(Test-ReconnectOwnedTask $c tx){throw 'Foreign principal accepted'};$script:task.Principal.UserId=$identity.Name;$script:task.Triggers[0].UserId='S-1-5-18';if(Test-ReconnectOwnedTask $c tx){throw 'Foreign trigger accepted'}}
+   if($case -eq 'unresolvable-task-account'){$script:task.Principal.UserId='unresolvable-'+[guid]::NewGuid().ToString('N');if(Test-ReconnectOwnedTask $c tx){throw 'Unresolved principal accepted'};$script:task.Principal.UserId=$identity.Name;$script:task.Triggers[0].UserId='S-1-not-a-sid';if(Test-ReconnectOwnedTask $c tx){throw 'Malformed SID accepted'}}
+   'pass';return
+  }
   if(!(Test-ReconnectOwnedTask $c tx)){throw 'Exact disabled task rejected'}
   $script:task.Settings.Enabled=$true;if(Test-ReconnectOwnedTask $c tx){throw 'Enabled task accepted'};$script:task.Settings.Enabled=$false
   $script:task.Actions+= $script:task.Actions[0];if(Test-ReconnectOwnedTask $c tx){throw 'Multiple actions accepted'};$script:task.Actions=@($script:task.Actions[0])
@@ -157,7 +165,7 @@ $ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module Reconne
 '''
 
 
-@pytest.mark.parametrize('case',['communication','bounds','schema','task','journal','runner'])
+@pytest.mark.parametrize('case',['communication','bounds','schema','task','journal','runner','canonical-task','foreign-task-account','unresolvable-task-account'])
 def test_production_provider_boundaries_without_live_apis(tmp_path,case):
     shell=shutil.which('pwsh') or shutil.which('powershell')
     script=tmp_path/'provider.ps1';script.write_text(PROVIDER_SCRIPT)
