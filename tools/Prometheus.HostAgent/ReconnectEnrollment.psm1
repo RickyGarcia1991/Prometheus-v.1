@@ -204,6 +204,7 @@ function Assert-FreshEnrollmentRoot($c,[string]$AllowedId=""){
  Assert-EnrollmentPath $c.Root
  if($null -ne (Get-EnrollmentAttributes $c.Root)){
   foreach($item in @(Get-ChildItem -LiteralPath $c.Root -Force -ErrorAction Stop)){
+   if(Test-PreservedLegacyEntry $item){continue}
    if($item.Name -cne 'Enrollment' -or !$item.PSIsContainer){throw 'Fresh authorization refuses existing state, identity or history'}
    Assert-EnrollmentPath $item.FullName
    foreach($prior in @(Get-ChildItem -LiteralPath $item.FullName -Force -ErrorAction Stop)){if(!$AllowedId -or $prior.Name -cne $AllowedId){throw 'Prior authorization or enrollment history requires recovery'}}
@@ -333,6 +334,7 @@ function Complete-ReconnectAuthorization($provider,$c,$j,$package){
  # No protected state, other histories, runtime files or arbitrary paths are allowed.
  foreach($item in @(Get-ChildItem -LiteralPath $c.Root -Force -ErrorAction Stop)){
   Assert-EnrollmentPath $item.FullName
+  if(Test-PreservedLegacyEntry $item){continue}
   if($item.Name -ceq 'Enrollment' -and $item.PSIsContainer){
    foreach($prior in @(Get-ChildItem -LiteralPath $item.FullName -Force -ErrorAction Stop)){if($prior.Name -cne $j.id){throw 'Other authorization history is preserved'}}
   }elseif($item.PSIsContainer -or $item.Name -cnotin @('authorized-host.json','authorized-host.json.sha256')){throw 'Existing protected state is preserved'}
@@ -355,4 +357,28 @@ $script:EnrollmentLoadedHash=Get-EnrollmentHash (Read-EnrollmentBytes $script:En
 
 function Assert-LoadedEnrollmentModule([string]$ExpectedHash){
  if($script:EnrollmentLoadedHash -cne $ExpectedHash -or (Get-EnrollmentHash (Read-EnrollmentBytes $script:EnrollmentModulePath 16777216)) -cne $ExpectedHash){throw 'Loaded enrollment module differs from signed bundle'}
+}
+
+function Test-PreservedLegacyEntry($Item){
+ $directories=@('Controllers','logs')
+ $files=@('controller-intentional-close.flag','memory.sqlite3','Prometheus-User-Watcher.ps1','user-watcher.log')
+ if($Item.Name -cnotin ($directories+$files)){return $false}
+ Assert-EnrollmentPath $Item.FullName
+ $attributes=Get-EnrollmentAttributes $Item.FullName
+ if($null -eq $attributes){throw 'Legacy entry changed during inspection'}
+ $isDirectory=($attributes -band [IO.FileAttributes]::Directory) -ne 0
+ if($isDirectory -ne ($Item.Name -cin $directories)){throw 'Legacy entry has unexpected type'}
+ if($isDirectory){
+  $pending=[Collections.Generic.Stack[object]]::new();$pending.Push(@{Path=$Item.FullName;Depth=0});$count=0
+  while($pending.Count){
+   $next=$pending.Pop()
+   foreach($path in [IO.Directory]::EnumerateFileSystemEntries($next.Path)){
+    $count++;if($count -gt 4096){throw 'Legacy directory exceeds bounded inspection'}
+    $a=Get-EnrollmentAttributes $path
+    if($null -eq $a -or ($a -band [IO.FileAttributes]::ReparsePoint)){throw 'Legacy directory contains unreadable or reparse entries'}
+    if($a -band [IO.FileAttributes]::Directory){if($next.Depth -ge 16){throw 'Legacy directory exceeds depth bound'};$pending.Push(@{Path=$path;Depth=($next.Depth+1)})}
+   }
+  }
+ }
+ return $true
 }

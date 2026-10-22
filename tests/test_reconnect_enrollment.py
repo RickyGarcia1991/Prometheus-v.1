@@ -309,3 +309,45 @@ $ErrorActionPreference='Stop';Import-Module $Module -Force
     result=subprocess.run([shell,'-NoProfile','-File',str(script),str(copy)],capture_output=True,text=True,timeout=30)
     assert result.returncode==0,result.stderr
     assert result.stdout.strip()=='pass'
+
+LEGACY_SCRIPT = r"""
+param($Module,$Root,$Case)
+$ErrorActionPreference='Stop';Import-Module $Module -Force;$m=Get-Module ReconnectEnrollment
+& $m {
+ param($root,$case)
+ $c=@{Root=$root;Local=$root;Package=$root;Sid='generated';Fingerprint=('b'*64)}
+ foreach($dir in @('Controllers','logs')){[IO.Directory]::CreateDirectory((Join-Path $root $dir))|Out-Null;[IO.File]::WriteAllText((Join-Path $root ($dir+'\retained.dat')),'retain directory content')}
+ foreach($file in @('controller-intentional-close.flag','memory.sqlite3','Prometheus-User-Watcher.ps1','user-watcher.log')){[IO.File]::WriteAllText((Join-Path $root $file),('retained '+$file))}
+ if($case -eq 'unknown'){[IO.File]::WriteAllText((Join-Path $root 'unknown.json'),'retain')}
+ if($case -eq 'security'){[IO.File]::WriteAllText((Join-Path $root 'security-state.json.sha256'),'retain')}
+ if($case -eq 'wrong-type'){[IO.File]::Delete((Join-Path $root 'memory.sqlite3'));[IO.Directory]::CreateDirectory((Join-Path $root 'memory.sqlite3'))|Out-Null}
+ if($case -eq 'reparse'){
+  $outside=Join-Path ([IO.Path]::GetDirectoryName($root)) 'outside';[IO.Directory]::CreateDirectory($outside)|Out-Null
+  New-Item -ItemType Junction -Path (Join-Path $root 'Controllers\link') -Target $outside|Out-Null
+ }
+ $baseline=@{};foreach($file in @(Get-ChildItem $root -Recurse -File)){$baseline[$file.FullName]=(Get-FileHash $file.FullName).Hash}
+ $p=Get-ReconnectEnrollmentProvider;$p.Verify={param($c)[pscustomobject]@{Identity=('a'*64);Files=@()}}
+ $p.State={param($c)[pscustomobject]@{Complete=$true;Paused=$false;Active=$false;Tasks=@()}}
+ $p.Lock={param($c)'generated'};$p.Unlock={param($c,$locks)}
+ $bad=$false;try{$result=Invoke-FreshReconnectAuthorization $p $c $c.Fingerprint}catch{$bad=$true}
+ if($case -ne 'preserve'){
+  if(!$bad -or [IO.Directory]::Exists((Join-Path $root 'Enrollment')) -or [IO.File]::Exists((Join-Path $root 'authorized-host.json'))){throw 'Refused baseline was mutated'}
+ }else{
+  if($bad){throw 'Known baseline refused'}
+  $j=Read-EnrollmentJournal $c $result.id ('a'*64);$j.phase='authorization-intent';& $p.Journal $c $j
+  [IO.File]::Delete((Join-Path $root 'authorized-host.json.sha256'))
+  $recovered=Invoke-ReconnectRecovery $p $c $result.id;if($recovered.status -ne 'authorized'){throw 'Known baseline recovery failed'}
+ }
+ foreach($path in $baseline.Keys){if((Get-FileHash $path).Hash -ne $baseline[$path]){throw 'Legacy bytes changed'}}
+ 'pass'
+} $Root $Case
+"""
+
+@pytest.mark.parametrize('case',['preserve','unknown','security','wrong-type','reparse'])
+def test_known_legacy_data_preserved_without_broad_allowance(tmp_path,case):
+    shell=shutil.which('pwsh') or shutil.which('powershell')
+    script=tmp_path/'legacy.ps1';script.write_text(LEGACY_SCRIPT)
+    root=tmp_path/'host';root.mkdir()
+    result=subprocess.run([shell,'-NoProfile','-File',str(script),str(MODULE),str(root),case],capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stderr
+    assert result.stdout.strip()=='pass'
