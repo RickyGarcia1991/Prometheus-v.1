@@ -1,0 +1,11 @@
+{
+  "behavior": "Accept exact canonical leaf or ASCII drive-root prefix plus leaf only; never follow stored drive; use independently pinned SSD; report legacy_drive_prefix_ignored and retain original byte hash",
+  "prior_evidence": "Earlier reports and root live failure retained",
+  "tests_passed": 24,
+  "status": "legacy-drive-prefix-readonly-compatibility",
+  "log": "controller-production-preflight-legacy-tests.log",
+  "live_run": false,
+  "metadata_modified": false,
+  "tests_sha256": "17425a09a92b94fb33637d9ac93e65df45cc1e9b9b16d61295a92a16e9a3c67c",
+  "helper_sha256": "5b3635405d35fbfe0b57281e2210752df4cc561e30e409688b7dd974755e2226"
+}

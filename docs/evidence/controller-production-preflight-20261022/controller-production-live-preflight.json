@@ -1,0 +1,23 @@
+{
+  "result": {
+    "read_only": true,
+    "activation_ready": false,
+    "host_binding": "a74bc07e768d380da5da71e03075b07855970583cc556605cbf782c397b9c3c0",
+    "volume_binding": "efe8df8365bb2c8aec210afe209db29359f2a59ced83b55b645655bac9c43d44",
+    "metadata_sha256": "1e799011970182068da7916c517b56b9fb324f067e16da1de20271a42572a2be",
+    "metadata_bytes": 89542,
+    "controller_release": "Prometheus-Controller-v0.5.10",
+    "owned_controller_count": 1,
+    "owned_supervisor_count": 2,
+    "remaining_gates": [
+      "Exclusive lifecycle/eject locks and fresh state recheck",
+      "Active R5 supervisor migration with owned process preservation; not R3 disabled-task upgrade",
+      "Signed adapter/package binding and durable pointer transaction",
+      "Explicit launch/readiness acceptance"
+    ],
+    "legacy_drive_prefix_ignored": true
+  },
+  "helper_sha256": "1a4d7171fd05bb4bb4e33fb48d5d66a5a99c0877d2ed908dc4d099206ff55d57",
+  "captured": "2026-10-22T02:47:37.2079366Z",
+  "passed": true
+}
