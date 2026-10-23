@@ -1,0 +1,10 @@
+{
+  "storage_native_tests": 10,
+  "storage_authority": "synthetic",
+  "production_locks_exercised": false,
+  "backup_tests": 17,
+  "production_migration_complete": false,
+  "full_backup_complete": false,
+  "ubuntu_installed": false,
+  "routine_displays": false
+}
