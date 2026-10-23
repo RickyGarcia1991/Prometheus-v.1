@@ -1,0 +1,33 @@
+{
+  "scope": "Production implementation qualification; no live migration claim",
+  "tests": 84,
+  "seconds": 19.88,
+  "source_pins": {
+    "ActiveHostMigration.Native.psm1": "92f12b8d60ece5116b5f53481b091bfdeca908b57d6ec8f24aa8c2d1e29b187e",
+    "active_host_migration_windows_native.py": "c03da73df9e5b99d153d7c864b0f820e978229a2d8e28364c11fe2e3e2a5b7f2",
+    "active_host_migration_windows.py": "b224eccebac2a61d19e0634030fffab2885255231b7ed3c96fecd70f05bde468",
+    "active_host_migration_windows_preservation.py": "46665856b17487951168871a0b528f4b46f84519f11cd63b8bac26301cdc8624",
+    "active_host_migration_windows_locks.py": "d3f9f03d65e23d6a0ce025def70cd1d94d1f674d1d2eba911a6aeeaac553ae1e",
+    "active_host_migration_windows_provider.py": "29e246b45efc7429e0858bfb4a227b070a63c47fbcfe9ec49789f4413e170aa7",
+    "active_host_migration_windows_io.py": "ac65282e7c138637c7dd65863b26d23d076af17f14886074caa9bd68f9c7b1b0",
+    "active_host_migration_windows_store.py": "785b95783831f6da6298b177d8416f9cf7981b404dcba39214b3a48dfff0dcf0",
+    "prepare_active_host_migration_plan.py": "b2def2d0b3409ad7c9b39ac517c4fe5c149f4188887bb462adb49329df500987",
+    "active_host_migration_windows_images.py": "17fbb71b51adb05c559efad11e68f9cd780de7e52944b9bed5c5284c23868f7c",
+    "active_host_migration_windows_processes.py": "59b85fae87a93611ae133ca9dafd9d41b5ea71f60e661b666bb7510178f0fa6f"
+  },
+  "test_pins": {
+    "test_active_host_migration_store_integration.py": "eb6ffefff1e50f39cb52868238a0b41e5a76836426fa06ef4bd978414eea6333",
+    "test_active_host_migration_provider_controls.py": "98a20cbf7b530c57b93c37d1d5d85d5bb6d05e69497b696e958beeb80bb598e4",
+    "test_active_host_migration_rollback_evidence.py": "c2fa217e031b95f4b4d30f613158e98a7a704160e16c818947df9de48ce42c8c",
+    "test_active_host_migration_windows_locks.py": "b298efdcd354b7b4b5ab0f24a13a8eccf9607db5a17416be2a994ce0e9119bcf",
+    "test_active_host_migration_windows_io.py": "783839fc69bc10ce412c62a9ad83fabd4b2b9a8c636abd33dbdc2ad01fe307ce",
+    "test_production_independent_preservation.py": "5762d257a8ee128e13d6ec3bfbc3b9bdaa60e4311a45e7c5106e8320ca9686b1",
+    "test_production_start_recovery.py": "3ee1cc0205287ed48d79c795d2d4dd3797b638dab087f0cfdb1a6f027142f301",
+    "test_active_host_migration_windows.py": "b5020b20bfa6a108192e94a3cba6316b6b3890ff94325a0a7bad0c84b6cd0315",
+    "test_production_running_rollback.py": "09d7a2dbac62f7cc53a5784da9fe4eb42ed6b8be9a2b64ea3761458289158333"
+  },
+  "private_xml_sha256": "23e7c143d880eacd1c717752385bd32006cc85f101657e2520c77c2f915f9ddc",
+  "report_sha256": "3696a60304a3363ea680b3b5cf6e7752d47fb2e480d7f5a341e2aa3ecb99ec6b",
+  "pins_recorded": "end of run; sources unchanged during run",
+  "production_mutation_performed": false
+}
