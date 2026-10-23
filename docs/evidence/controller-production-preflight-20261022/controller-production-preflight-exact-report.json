@@ -1,0 +1,16 @@
+{
+  "tests_passed": 26,
+  "log": "controller-production-preflight-exact-tests.log",
+  "fix": "Absolute regex anchors refuse final LF/CRLF",
+  "live_run": false,
+  "files": [
+    {
+      "path": "work/companion-release/read-controller-production-preflight.ps1",
+      "sha256": "1a4d7171fd05bb4bb4e33fb48d5d66a5a99c0877d2ed908dc4d099206ff55d57"
+    },
+    {
+      "path": "work/companion-release/test_controller_production_preflight.py",
+      "sha256": "18513c367c98cf9ef75adadbe1dde39efc8e0cfa13e068f681fa0f74ea44f80f"
+    }
+  ]
+}

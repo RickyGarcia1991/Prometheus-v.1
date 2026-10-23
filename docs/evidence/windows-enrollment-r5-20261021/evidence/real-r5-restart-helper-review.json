@@ -1,0 +1,9 @@
+{
+ "status":"no_remaining_actionable_findings",
+ "helper_sha256":"c61d02a369786577aac21f531e27111aff828388be4ad1dab7dc30b4bc34372d",
+ "transaction":"7b06d1cde83a4b8ebb5a8ac1fa086887",
+ "scope":"Bounded existing-task duplicate start, stop and restart acceptance",
+ "reviewed":["Every task operation selects exact root task path", "Full canonical principal/trigger/action/settings checks and unchanged XML before stop/restart", "Single launcher/child identity and parent linkage before mutation", "Duplicate-start PID/creation checks and saved snapshots", "Bounded stop/restart waits with exact pair disappearance/restoration", "Original application ports and controller PID/creation survive both stop and restart", "Authorization bytes unchanged"],
+ "limits":"Run by parent in verified normal profile. This reviews test helper, not test outcome. Failure preserves stage/error and may require explicit restart recovery. No physical USB cycle or Windows reboot claim.",
+ "reviewer_live_actions":false
+}

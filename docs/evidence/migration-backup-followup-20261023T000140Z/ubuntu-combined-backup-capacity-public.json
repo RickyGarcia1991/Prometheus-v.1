@@ -1,0 +1,14 @@
+{
+  "ssd_file_count": 409545,
+  "ssd_logical_bytes": 197759035853,
+  "flash_file_count": 17389,
+  "flash_logical_bytes": 12406726379,
+  "combined_logical_bytes": 210165762232,
+  "internal_free_bytes_at_flash_scan": 233947492352,
+  "working_reserve_bytes": 34359738368,
+  "separate_copy_shortfall_before_overhead": 10578008248,
+  "backup_created": false,
+  "content_deduplication_proven": false,
+  "capacity_qualified": false,
+  "read_errors": 0
+}

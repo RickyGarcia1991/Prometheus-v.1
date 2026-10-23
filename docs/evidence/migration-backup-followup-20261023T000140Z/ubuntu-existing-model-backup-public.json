@@ -1,0 +1,59 @@
+{
+  "observed_utc": "2026-10-23T00:01:01.482724+00:00",
+  "files": [
+    {
+      "sha256": "cd16db7156ed565454ebd05c77012323f4df73ab8d80d28519cc3afe57426b89",
+      "bytes": 242,
+      "chunks": 1,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "7e78b02d928be76d0db72d23ba011aeae7fcdd9488358fd83741a8fd10b8556d",
+      "bytes": 1194828128,
+      "chunks": 2,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "a8bdd07a49b895083bb1420bb895ad9ab3e3b8f7d5cc42c7582ca0fa765eede2",
+      "bytes": 17074419072,
+      "chunks": 16,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "491f38afe0eb215a819c085110255fcebd6c68b4cc8e0f29168324ef3f913e32",
+      "bytes": 461766752,
+      "chunks": 1,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "b507b9c2f6ca642bffcd06665ea7c91f235fd32daeefdf875a0f938db05fb315",
+      "bytes": 13,
+      "chunks": 1,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "a66d4e37329585c918619de71e426057186cb725fbe572e7f28e498077798d52",
+      "bytes": 11358,
+      "chunks": 1,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    },
+    {
+      "sha256": "2365fbb6d97bf654fdda0353b7505baa2254c662122cff0f153e4b47e6220ded",
+      "bytes": 64,
+      "chunks": 1,
+      "archive_reconstruction_verified": true,
+      "ssd_bytes_verified": true
+    }
+  ],
+  "reusable_bytes": 18731025629,
+  "read_only": true,
+  "full_backup_complete": false,
+  "restore_to_disk_tested": false,
+  "qualification": "Exact reconstruction stream and current source byte equality; future backup must bind and retain this existing off-SSD archive."
+}

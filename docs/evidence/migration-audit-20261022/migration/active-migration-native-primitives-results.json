@@ -1,0 +1,18 @@
+{
+  "run_id": "f0b1d2b5b0ed4580a52fb74ae94ea1da",
+  "started": "2026-10-22T22:09:43.403283+00:00",
+  "scratch": "C:\\Users\\rolon\\AppData\\Local\\Temp\\prometheus-active-fixture-hu_5q0wl",
+  "live_prometheus_mutation": false,
+  "exit": 0,
+  "fault": "none",
+  "timeout_seconds": 120,
+  "stdout": "{\n  \"passed\": true,\n  \"cleanup\": {\n    \"task\": \"Codex-Prometheus-Fixture-08c35803173147ceaf672a76b2692bc2\",\n    \"task_removed\": true,\n    \"remaining_processes\": [],\n    \"passed\": true,\n    \"errors\": []\n  },\n  \"checks\": [\n    \"exact-task-enable-disable-config-preserved\",\n    \"creation-time-and-path-refusal\",\n    \"ignore-new-suppresses-repeat-start\",\n    \"bounded-exact-process-stop\",\n    \"same-registered-task-restarts-after-stop\",\n    \"lost-completion-start-retry-retains-single-process\",\n    \"unrelated-fixture-process-preserved\"\n  ],\n  \"scope\": \"Unique generated temporary task and generated processes only\",\n  \"failure\": null\n}\n",
+  "stderr": "",
+  "timed_out": false,
+  "recovery": {
+    "exit": 0,
+    "stdout": "{\n  \"task_removed\": true,\n  \"passed\": true,\n  \"remaining_processes\": [],\n  \"task\": \"Codex-Prometheus-Fixture-08c35803173147ceaf672a76b2692bc2\",\n  \"errors\": []\n}\n",
+    "stderr": ""
+  },
+  "finished": "2026-10-22T22:10:04.014116+00:00"
+}

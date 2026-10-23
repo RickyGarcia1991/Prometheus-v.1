@@ -1,0 +1,8 @@
+{
+ "status":"fixture_correction_requested_source_split_accepted",
+ "source_sha256":"aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d",
+ "finding":"RealProvider.verify skips absent paths, accepting missing source when cache remains or returning success with both absent. Require source identity verification unconditionally and test missing-source refusal before any floor/pointer changes.",
+ "source_review":"Get-VerifiedControllerPackage is explicitly identity-only; existing Get-Package wraps verification with actual protected-floor admission. Normal Invoke-Agent callsite remains Get-Package. No production bypass introduced by the extraction.",
+ "scope":"Temp integration only; four recorded subprocesses show candidate interruption/resume and explicit forward recovery/resume but final fixture qualification awaits correction.",
+ "live_actions":false
+}

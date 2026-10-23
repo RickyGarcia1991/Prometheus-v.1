@@ -1,0 +1,9 @@
+activate-enrolled-reconnect.ps1: C:\Users\rolon\Documents\Codex\2026-10-13\i\work\companion-release\upgrade-quiet-host-create-only.ps1:98
+Line |
+  98 |   & $activation -Package $new -ManifestHash $newManifest -TransactionI …
+     |   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | The term 'ReconnectEnrollment ReconnectEnrollment' is not recognized as a name of a cmdlet, function, script
+     | file, or executable program. Check the spelling of the name, or if a path was included, verify that the path is
+     | correct and try again.
+
+

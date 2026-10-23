@@ -1,0 +1,9 @@
+{
+  "routine_displays": "off",
+  "removed": [
+    "Prometheus-Enrollment-Inspection-20261021",
+    "Prometheus-Enrollment-Authorization-20261021",
+    "Prometheus-Enrollment-Execution-20261021"
+  ],
+  "production_task": "Running"
+}

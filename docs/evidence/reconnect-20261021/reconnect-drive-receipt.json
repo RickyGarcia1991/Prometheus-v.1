@@ -1,0 +1,14 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "path": "E:\\Prometheus-Repository-Checkpoints\\reconnect-20261022T002027Z",
+    "verified_files": 40,
+    "mismatches": 0
+  },
+  {
+    "label": "PROMETHEUS",
+    "path": "D:\\Prometheus-Repository-Checkpoints\\reconnect-20261022T002027Z",
+    "verified_files": 40,
+    "mismatches": 0
+  }
+]

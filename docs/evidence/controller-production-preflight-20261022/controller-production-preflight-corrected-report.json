@@ -1,0 +1,10 @@
+{
+  "fix": "FileInfo uses Directory; DirectoryInfo uses Parent; actual StrictMode temp file and junction ancestor test",
+  "initial_report": "controller-production-preflight-report.json",
+  "live_execution": false,
+  "status": "native-file-guard-corrected",
+  "tests_passed": 15,
+  "log": "controller-production-preflight-corrected-tests.log",
+  "test_sha256": "790763adc5ec6535166e1689bae4f87bf9a784f09d366e02ede81b888206211e",
+  "helper_sha256": "1f97db2f81af3bbb935a47adfc30463a8a258c6502448339999e6d73d2773106"
+}

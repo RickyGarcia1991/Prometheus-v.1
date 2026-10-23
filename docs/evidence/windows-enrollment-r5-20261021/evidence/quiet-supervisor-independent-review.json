@@ -1,0 +1,11 @@
+{
+ "status":"no_actionable_findings",
+ "source_sha256":"38e71ea9792661bf0abdd5c0e523c199323da0f079baa94beadaa90df999e81f",
+ "test_sha256":"9e5c004d6d3c650e3c9c39b9cac6c4ee664c2fb7bae2c3f84ed75b8fcebe7ce6",
+ "ownership_policy":"Only the immediate reconnect supervisor belongs to the wrapper lifetime. Independently launched Arrival/controller/application/Desktop Commander descendants retain their lifetimes through SILENT_BREAKAWAY_OK.",
+ "reviewed":["Atomic CreateProcess JOB_LIST association eliminates post-start assignment window", "Kill-on-close job handle is non-inheritable and no child handles are inherited", "Native failure paths refuse with code 70, no uncontained fallback", "Finally closes job/process/thread handles and native attribute allocations", "Other QuietHost modes retain previous behavior"],
+ "validation":"Read frozen source and actual native tests. Owner log reports 67 passing checks. Native tests cover forced wrapper termination and normal exit, immediate supervisor absence, descendant survival, and exact captured descendant-handle cleanup. No redundant suite run.",
+ "upgrade_boundary":"New binary needs new signed bundle and fresh enrollment receipt; retain old signed binary, authorization and sealed history. Verify intended real physical path, not Codex MSIX cache, before controlled replacement. No old journal identity rewriting.",
+ "limits":"Source/native fixture qualification only; Task Scheduler live restart and physical removal/reinsertion remain separate acceptance checks.",
+ "production_changes":false
+}

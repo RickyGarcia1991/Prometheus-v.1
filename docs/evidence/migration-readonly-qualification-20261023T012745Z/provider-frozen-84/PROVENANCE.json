@@ -1,0 +1,5 @@
+{
+  "suite": "84 passed",
+  "native_module": "Recovered prior normalization function after edit; resulting entire-file bytes exactly match recorded historical SHA256",
+  "other_files": "Copied unchanged exact recorded hashes"
+}

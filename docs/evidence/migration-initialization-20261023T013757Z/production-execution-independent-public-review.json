@@ -1,0 +1,31 @@
+{
+  "status": "execution_boundary_and_wrapper_reviewed",
+  "hashes": {
+    "execute_active_host_migration.py": "404f3ece9c2f5060ba1208f685f920ce799e4b5b59917b231c6c1171c2417a78",
+    "run-active-migration-execution.ps1": "7e7522c7233753a0d7b953f3d4e9e54c0f6678dd8cfe83333b917e206b6d7a84",
+    "invoke-active-migration-execution.ps1": "f58b94e0647638a16f6661b137d43b2cec53e6319f03e1445d22fa10ff92ce77",
+    "active_host_migration_windows_io.py": "501a819683cc7bc8f9fa600620db1930d664f3884ebc8479818fa8c84ba48a47",
+    "active_host_migration_windows_provider.py": "f5ab4214363a03ed68b93eeff5af0bd86dc14a8b9aa0f7e94ebdd71afe2b88c0",
+    "active_host_migration_windows_store.py": "f6bb21f08378b8be6dd5662771ecf7d369cef56dd92b02b69058de0985efec5d",
+    "test_production_execution_wrapper.py": "23f17ff58d70ff42be293fa01f7bf0ec0c6b5cca433ab9d4599202dadb7aa04b",
+    "production-execution-wrapper-independent.private.xml": "ec29f2c72b9a72d1e9f464e4361dad353adf03ac921e0861bcf96856763accf2",
+    "production-initialize-race-independent.private.xml": "fe5c26a5a7208ac5fd8462c643141aa7bd61a7cde1b8b216dffd9c9fb574d4f5",
+    "production-execution-boundary-independent.private.xml": "30b45c07710e33c638c9bb66b73bf2bb27dd06358e5aa9ca9804360f60c15dfc"
+  },
+  "independent_tests": {
+    "boundary_io": 15,
+    "initialize_race": 1,
+    "synthetic_scheduler": 7
+  },
+  "production_mutation_performed": false,
+  "findings_resolved": [
+    "Exact immutable authorization adminowner exception only; mutation paths strict",
+    "Initialize existing transaction refused under outer lock",
+    "Completed failed worker returns failure exit status"
+  ],
+  "limits": [
+    "Scheduler wrapper tests stub every Scheduler cmdlet",
+    "No final execution contract or live operation reviewed by this receipt",
+    "Actual live outcome and postrestart evidence remain required"
+  ]
+}

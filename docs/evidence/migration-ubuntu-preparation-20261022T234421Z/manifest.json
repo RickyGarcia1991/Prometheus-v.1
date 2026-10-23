@@ -1,0 +1,152 @@
+[
+  {
+    "path": "active_migration_preflight.py",
+    "bytes": 11198,
+    "sha256": "29b1450e8e83316d59c60783ec8f0669cb8b0e0a1dbbed88f4fa278ded6fd1ad"
+  },
+  {
+    "path": "inspect_active_host_migration.py",
+    "bytes": 5983,
+    "sha256": "cec966b5dc36666e9272d8fd37c1ec5f7594cc6d86b9b3ce6040dde5eb35fff4"
+  },
+  {
+    "path": "collect-active-host-migration-preflight.ps1",
+    "bytes": 13837,
+    "sha256": "399606ea06f58a85c65c8d6c53a831c58bcfc893e35cbbb9ddeceafbff8fefcd"
+  },
+  {
+    "path": "test_active_migration_preflight.py",
+    "bytes": 13504,
+    "sha256": "77a917b7bce9d34002ac0f3bd889218b0b1e09a63cb115ad6e540b7fb547dc3a"
+  },
+  {
+    "path": "active-migration-preflight-results.json",
+    "bytes": 7266,
+    "sha256": "685368874aafef21340c53f4c76d40eddba1dea44e7c86a33fffa6fd7199d061"
+  },
+  {
+    "path": "run-active-migration-readonly.ps1",
+    "bytes": 2634,
+    "sha256": "5eff42f3f490d1d9a13bfa1c9778a40f633a05cb2a8e0785cf13543e17680711"
+  },
+  {
+    "path": "invoke-active-migration-normal-profile-inspection.ps1",
+    "bytes": 5813,
+    "sha256": "f9ea48a162f548c0081632025ca24e38bd78b157fc6bdd38de94a7e735d01c5c"
+  },
+  {
+    "path": "check-signed-quiet-host-containment.owned-cleanup-frozen.py",
+    "bytes": 10746,
+    "sha256": "d6cca2a4b4cb7b12e0f100ca0c36abd0ab0160fed3216e3273e0cc860dc8bbde"
+  },
+  {
+    "path": "signed-quiet-host-containment-public-receipt.json",
+    "bytes": 5316,
+    "sha256": "ef61e476c9956fb5197a3a1a09260e7476294a1e488d44bb034f8695da7291d6"
+  },
+  {
+    "path": "signed-quiet-host-ownership-review-public.md",
+    "bytes": 1937,
+    "sha256": "c0dd0861a72e097df48864e404c811bdc2f8ed003aba4ccf89117b081dc56d53"
+  },
+  {
+    "path": "inventory-ubuntu-backup.py",
+    "bytes": 2876,
+    "sha256": "ec46d9e8f949434467363c245db0cce4249aa56c0f271aa49fdfbd0f52264454"
+  },
+  {
+    "path": "ubuntu-observed-layout.json",
+    "bytes": 576,
+    "sha256": "61a206eaea549e6f3d05c70901bf9b82d2545c731822983b7eb9e99e00d8aab8"
+  },
+  {
+    "path": "ubuntu-preparation-storage-events.json",
+    "bytes": 97,
+    "sha256": "9099984fabf928e752f0abf4ad9bc015bd69a5f864df49d5d62489f29b5fd8f0"
+  },
+  {
+    "path": "ubuntu-inventory-initial-attempt.txt",
+    "bytes": 303,
+    "sha256": "6592a0777a93c13c0dd7a5eba0d40c4906496890d9d0e46f462693b6041a37e1"
+  },
+  {
+    "path": "active_migration_windows_locks.py",
+    "bytes": 9111,
+    "sha256": "50f178ce72f162b7760470209fc27bb3fc3748184574b30e81abc92ef8bcba45"
+  },
+  {
+    "path": "test_active_migration_windows_locks.py",
+    "bytes": 7930,
+    "sha256": "6bf165c022ef2fd8aaced3f8d990024c45ed64e9a9b8aa2dece773215a3a8822"
+  },
+  {
+    "path": "active-migration-windows-locks-receipt.json",
+    "bytes": 1075,
+    "sha256": "4a0881edb7a8d5b065198d81c3aead6646191d921497cbcf03f7e819312dd046"
+  },
+  {
+    "path": "active-migration-windows-locks-qualification.md",
+    "bytes": 2530,
+    "sha256": "acd2697af4301b845303652f8e133dec1c4a83a7f98cbcb9963d7a324d988428"
+  },
+  {
+    "path": "active-migration-windows-locks-tests.xml",
+    "bytes": 8072,
+    "sha256": "6410d4e07be3abcb90dd37da853b577c2e3a6705ef73cb1f46ccfbb23098bd32"
+  },
+  {
+    "path": "active-migration-windows-locks-tests.initial44.xml",
+    "bytes": 7238,
+    "sha256": "6eff30cadab46e9c8eaf4db6b30739b5a23455d6dcfe34a77fbfecede508aa85"
+  },
+  {
+    "path": "Prometheus-grouped-completion-map.md",
+    "bytes": 3003,
+    "sha256": "93f2d6000daf9408c1c19c85710c13ead6597a78fbe9a2b8273bf58544806e97"
+  },
+  {
+    "path": "Prometheus-Linux-rehearsal-inventory-20261022.md",
+    "bytes": 9909,
+    "sha256": "07f53ececbffe8625945c7e19b0d01cae7e5c8b7cab3fb4e0accdef54a82df1a"
+  },
+  {
+    "path": "Prometheus-Ubuntu-backup-boot-draft-20261022.md",
+    "bytes": 7408,
+    "sha256": "b23613235edcaf9c2bf896a1ece6a011f56295de7cc2b7afcfbf693b2e0b7976"
+  },
+  {
+    "path": "Prometheus-current-workqueue.md",
+    "bytes": 22383,
+    "sha256": "e28ba5275e5e8843c52f33d77221dd8902e43ff599ba4f7799c43a07ffcef14a"
+  },
+  {
+    "path": "active-migration-normal-profile-05ebce75c2ea4265adbd77cb613af5dd.public.json",
+    "bytes": 603,
+    "sha256": "ac3ee378610059052bc66115756d967bba78da8dca3957f479d116eb4a1d93ab"
+  },
+  {
+    "path": "active-migration-normal-profile-93544dacd5ff46b595bdcfc82f82deff.public.json",
+    "bytes": 614,
+    "sha256": "88f38b7bb951a29b363351fe1416bef1b2095b8edc8e1cd7feb46438a0e29319"
+  },
+  {
+    "path": "ubuntu-backup-capacity-public.json",
+    "bytes": 714,
+    "sha256": "2e710fb1aa7f13d78f58cccd5d5aaacb834b4152405bc29105f00ea05063a2e4"
+  },
+  {
+    "path": "active-migration-preflight-public-review.md",
+    "bytes": 4032,
+    "sha256": "9b6c8f8bb702a888737a26dbd94b637af8a7b760bf3eab40f8c6c4e9ec94e739"
+  },
+  {
+    "path": "active-migration-windows-locks-independent-review.json",
+    "bytes": 2260,
+    "sha256": "f162acb2f1bb96c45e3c5a4af2394f85e1e64c3700de5cbb4cc3285f7ed66ccc"
+  },
+  {
+    "path": "migration-preparation-root-rerun.json",
+    "bytes": 307,
+    "sha256": "70293453196654d228989bb0212ee81256bc3272afab0c325f181a1b7dc0abd3"
+  }
+]

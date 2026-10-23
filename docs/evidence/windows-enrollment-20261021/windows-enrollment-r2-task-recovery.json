@@ -1,0 +1,12 @@
+{
+  "transaction": "1b06096c52914b72afdb4663c468ff0b",
+  "manifest_sha256": "64c19a686fc34b148a6bcec8a24098d5768510ffdcb701c67d7dbd436e5ebefb",
+  "task_removed": true,
+  "principal_sid": "S-1-5-21-1440428643-293193859-247797283-1002",
+  "trigger_sid": "S-1-5-21-1440428643-293193859-247797283-1002",
+  "payloads_verified": 5,
+  "evidence": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\manual-task-1b06096c52914b72afdb4663c468ff0b.xml",
+  "files_removed": false,
+  "repair_invoked": false,
+  "activated": false
+}

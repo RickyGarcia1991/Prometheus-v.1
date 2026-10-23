@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "physical_usb_cycle_tested": false,
+  "full_windows_reboot_tested": false,
+  "stage": "complete",
+  "before": {
+    "controllers": [
+      {
+        "ProcessId": 26360,
+        "CreationDate": "2026-10-21T21:25:56.993115-04:00"
+      }
+    ],
+    "hosts": [
+      {
+        "ProcessId": 5168,
+        "CreationDate": "2026-10-21T21:25:54.74975-04:00"
+      }
+    ],
+    "arrival": "awaiting-owner-unlock",
+    "authorization": "164A2EEE0034C6AF8FBDA2FDB7B9DD0C4AFA49BB3A52C9467CDFC610B91CC3A0",
+    "ports": [
+      {
+        "LocalPort": 54559,
+        "OwningProcess": 2752
+      },
+      {
+        "LocalPort": 54555,
+        "OwningProcess": 8736
+      }
+    ],
+    "children": [
+      {
+        "ProcessId": 24580,
+        "ParentProcessId": 5168,
+        "CreationDate": "2026-10-21T21:25:54.78331-04:00"
+      }
+    ]
+  },
+  "duplicate": {
+    "controllers": [
+      {
+        "ProcessId": 26360,
+        "CreationDate": "2026-10-21T21:25:56.993115-04:00"
+      }
+    ],
+    "hosts": [
+      {
+        "ProcessId": 5168,
+        "CreationDate": "2026-10-21T21:25:54.74975-04:00"
+      }
+    ],
+    "arrival": "awaiting-owner-unlock",
+    "authorization": "164A2EEE0034C6AF8FBDA2FDB7B9DD0C4AFA49BB3A52C9467CDFC610B91CC3A0",
+    "ports": [
+      {
+        "LocalPort": 54559,
+        "OwningProcess": 2752
+      },
+      {
+        "LocalPort": 54555,
+        "OwningProcess": 8736
+      }
+    ],
+    "children": [
+      {
+        "ProcessId": 24580,
+        "ParentProcessId": 5168,
+        "CreationDate": "2026-10-21T21:25:54.78331-04:00"
+      }
+    ]
+  },
+  "duplicate_start_passed": true,
+  "stopped": {
+    "controllers": [
+      {
+        "ProcessId": 26360,
+        "CreationDate": "2026-10-21T21:25:56.993115-04:00"
+      }
+    ],
+    "hosts": [],
+    "arrival": "awaiting-owner-unlock",
+    "authorization": "164A2EEE0034C6AF8FBDA2FDB7B9DD0C4AFA49BB3A52C9467CDFC610B91CC3A0",
+    "ports": [
+      {
+        "LocalPort": 54559,
+        "OwningProcess": 2752
+      },
+      {
+        "LocalPort": 54555,
+        "OwningProcess": 8736
+      }
+    ],
+    "children": []
+  },
+  "stop_removed_launcher_and_supervisor": true,
+  "independent_application_ports_preserved": true,
+  "after": {
+    "controllers": [
+      {
+        "ProcessId": 26360,
+        "CreationDate": "2026-10-21T21:25:56.993115-04:00"
+      }
+    ],
+    "hosts": [
+      {
+        "ProcessId": 22400,
+        "CreationDate": "2026-10-21T21:29:08.643527-04:00"
+      }
+    ],
+    "arrival": "awaiting-owner-unlock",
+    "authorization": "164A2EEE0034C6AF8FBDA2FDB7B9DD0C4AFA49BB3A52C9467CDFC610B91CC3A0",
+    "ports": [
+      {
+        "LocalPort": 54559,
+        "OwningProcess": 2752
+      },
+      {
+        "LocalPort": 54555,
+        "OwningProcess": 8736
+      }
+    ],
+    "children": [
+      {
+        "ProcessId": 14440,
+        "ParentProcessId": 22400,
+        "CreationDate": "2026-10-21T21:29:08.676881-04:00"
+      }
+    ]
+  },
+  "test_scope": "scheduled supervisor duplicate-start, stop and restart; independent app survival"
+}

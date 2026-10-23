@@ -1,0 +1,56 @@
+[
+  {
+    "host_version": "7.6.5",
+    "source_sha256": "26F47DA1F529F7D7B2B469CBC30B4376EE8B82BE3F624BF2A3247E69BFC896A5",
+    "scope": "Isolated signed cache synchronization and persisted-floor recovery; no live pointer, process launch, activation or physical lifecycle",
+    "passed": true,
+    "checks": [
+      "candidate-cache-installed-and-verified",
+      "interrupted-after-cache-and-floor-publication",
+      "prior-cache-preserved",
+      "recovery-retry-verifies-cache-and-floor",
+      "older-candidate-refused",
+      "no-incomplete-staging-directory"
+    ],
+    "reload_only": false
+  },
+  {
+    "source_sha256": "26F47DA1F529F7D7B2B469CBC30B4376EE8B82BE3F624BF2A3247E69BFC896A5",
+    "reload_only": true,
+    "passed": true,
+    "host_version": "7.6.5",
+    "checks": [
+      "recovery-retry-verifies-cache-and-floor",
+      "older-candidate-refused",
+      "no-incomplete-staging-directory"
+    ],
+    "scope": "Isolated signed cache synchronization and persisted-floor recovery; no live pointer, process launch, activation or physical lifecycle"
+  },
+  {
+    "passed": true,
+    "scope": "Isolated signed cache synchronization and persisted-floor recovery; no live pointer, process launch, activation or physical lifecycle",
+    "host_version": "5.1.26100.9711",
+    "reload_only": false,
+    "checks": [
+      "candidate-cache-installed-and-verified",
+      "interrupted-after-cache-and-floor-publication",
+      "prior-cache-preserved",
+      "recovery-retry-verifies-cache-and-floor",
+      "older-candidate-refused",
+      "no-incomplete-staging-directory"
+    ],
+    "source_sha256": "26F47DA1F529F7D7B2B469CBC30B4376EE8B82BE3F624BF2A3247E69BFC896A5"
+  },
+  {
+    "passed": true,
+    "scope": "Isolated signed cache synchronization and persisted-floor recovery; no live pointer, process launch, activation or physical lifecycle",
+    "host_version": "5.1.26100.9711",
+    "reload_only": true,
+    "checks": [
+      "recovery-retry-verifies-cache-and-floor",
+      "older-candidate-refused",
+      "no-incomplete-staging-directory"
+    ],
+    "source_sha256": "26F47DA1F529F7D7B2B469CBC30B4376EE8B82BE3F624BF2A3247E69BFC896A5"
+  }
+]

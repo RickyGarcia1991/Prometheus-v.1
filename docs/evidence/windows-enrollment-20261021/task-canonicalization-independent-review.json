@@ -1,0 +1,12 @@
+{
+ "status":"no_actionable_findings_in_canonicalization",
+ "module_sha256":"3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509",
+ "test_sha256":"bd1be0fcffb752620464ad9c19021af3f389f5f3a08eb3fc83a1d2b743b43e61",
+ "review":"Both principal and trigger normalize SID/account names using Windows identity translation; malformed/unresolved identities refuse. All other ownership fields retained.",
+ "owner_evidence":"work/companion-enrollment/account-canonicalization-report.json reports 62 focused tests passed",
+ "manual_cleanup_helper":"remove-exact-disabled-enrollment-task.ps1",
+ "manual_cleanup_helper_sha256":"bdea0fa571acd4a1f5b5f4a6598527a9116cbd11d5d2308891f20500cc310239",
+ "helper_validation":"Syntax and 10 pure AST-extracted guard cases passed; no live task APIs invoked. Parent must review helper before explicit Remove invocation.",
+ "activation_helper_status":"Initial review requested authenticated completed-journal check, unpaused/idle state gate, and payload locks. Activation not approved by this report.",
+ "production_actions":false
+}

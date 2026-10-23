@@ -1,0 +1,172 @@
+{
+  "schema": 1,
+  "prepared_utc": "2026-10-22T23:38:34.785376+00:00",
+  "test_utc": "2026-10-22T23:34:09.040863+00:00",
+  "passed": true,
+  "scope": "Signed internal Run primitive; generated fixtures only, not production migration acceptance",
+  "installed_processes_touched": false,
+  "bundle_signature_verified": true,
+  "bundle_manifest_sha256": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+  "quiet_host_sha256": "ac3765079a3b0e1e54428b30d2a1b75415661f7dc6a016ab2c6d9bd46e042e7c",
+  "helper_sha256": "d6cca2a4b4cb7b12e0f100ca0c36abd0ab0160fed3216e3273e0cc860dc8bbde",
+  "scenarios": [
+    {
+      "mode": "normal",
+      "passed": true,
+      "checks": [
+        "creation image owner token mismatches refused without terminating fixture",
+        "signed owner termination kills immediate supervisor",
+        "application/controller/communication stand-ins survive"
+      ],
+      "verified_roles": [
+        "immediate-supervisor",
+        "application",
+        "controller",
+        "communication"
+      ],
+      "verified_handle_count": 4,
+      "cleanup": [
+        {
+          "role": "immediate-supervisor",
+          "exited": true
+        },
+        {
+          "role": "application",
+          "exited": true
+        },
+        {
+          "role": "controller",
+          "exited": true
+        },
+        {
+          "role": "communication",
+          "exited": true
+        }
+      ]
+    },
+    {
+      "mode": "capture-failure",
+      "passed": true,
+      "checks": [
+        "Injected capture failure after first retained handle"
+      ],
+      "verified_roles": [
+        "immediate-supervisor",
+        "application",
+        "controller",
+        "communication"
+      ],
+      "verified_handle_count": 4,
+      "cleanup": [
+        {
+          "role": "immediate-supervisor",
+          "exited": true
+        },
+        {
+          "role": "application",
+          "exited": true
+        },
+        {
+          "role": "controller",
+          "exited": true
+        },
+        {
+          "role": "communication",
+          "exited": true
+        }
+      ]
+    },
+    {
+      "mode": "readiness-timeout",
+      "passed": true,
+      "checks": [
+        "Fixture readiness timeout"
+      ],
+      "verified_roles": [
+        "immediate-supervisor",
+        "application",
+        "controller",
+        "communication"
+      ],
+      "verified_handle_count": 4,
+      "cleanup": [
+        {
+          "role": "immediate-supervisor",
+          "exited": true
+        },
+        {
+          "role": "application",
+          "exited": true
+        },
+        {
+          "role": "controller",
+          "exited": true
+        },
+        {
+          "role": "communication",
+          "exited": true
+        }
+      ]
+    }
+  ],
+  "raw_evidence": [
+    {
+      "file": "signed-quiet-host-owned-cleanup-20261022T233317002520Z.json",
+      "sha256": "4baa5a63832526ce3e5320bc418ae38a064d50bb0fb719f7ede54120d791be06",
+      "bytes": 2137,
+      "passed": false,
+      "public_copy": false
+    },
+    {
+      "file": "signed-quiet-host-owned-cleanup-20261022T233336364265Z.json",
+      "sha256": "b22bce54b0688c882922a8305090927928bc0d0a2b95799667b00a3692fb4a23",
+      "bytes": 6884,
+      "passed": false,
+      "public_copy": false
+    },
+    {
+      "file": "signed-quiet-host-owned-cleanup-20261022T233409041010Z.json",
+      "sha256": "a85c2d755025b4376791c57a1e9986b0b02f98bf0b00e1051a9c3b2da5e8433c",
+      "bytes": 6875,
+      "passed": true,
+      "public_copy": false
+    },
+    {
+      "file": "signed-quiet-host-containment-results.before-owned-cleanup.json",
+      "sha256": "685242b2c9462815f4e0da2c77475cb0b140cd2462dfad05d34f41af5620b88b",
+      "bytes": 953,
+      "public_copy": false
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "check-signed-quiet-host-containment.owned-cleanup-frozen.py",
+      "sha256": "d6cca2a4b4cb7b12e0f100ca0c36abd0ab0160fed3216e3273e0cc860dc8bbde",
+      "bytes": 10746
+    },
+    {
+      "file": "check-signed-quiet-host-containment.py",
+      "sha256": "d6cca2a4b4cb7b12e0f100ca0c36abd0ab0160fed3216e3273e0cc860dc8bbde",
+      "bytes": 10746
+    },
+    {
+      "file": "check-signed-quiet-host-containment.before-owned-cleanup.py",
+      "sha256": "583005c1716aa80544b1d1bb6eabd78ca1684c1e5cf9d111661618662ff6bc5f",
+      "bytes": 5854
+    },
+    {
+      "file": "signed-quiet-host-owned-cleanup-review.md",
+      "sha256": "af2c669355ea8f88a5618549f439e9c1ef7b447a07394aba1b66b2ff93ca96cb",
+      "bytes": 2818
+    },
+    {
+      "file": "signed-quiet-host-ownership-review-public.md",
+      "sha256": "c0dd0861a72e097df48864e404c811bdc2f8ed003aba4ccf89117b081dc56d53",
+      "bytes": 1937
+    }
+  ],
+  "redaction": "allowlisted summary only: no owner SID, PID, process creation time, fixture token/root, or local user path",
+  "review_verdict": "No actionable ownership-safety defect found for generated-fixture scope; author second review, not independent review",
+  "native_tests_repeated_for_publication": false,
+  "test_implementation": "Native scenarios and identity-negative controls are embedded in the frozen helper; no separate test file."
+}

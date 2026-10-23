@@ -1,0 +1,101 @@
+{
+  "scope": "Generated roots, unique Scheduler tasks and stand-ins only; production activation unavailable",
+  "sources": {
+    "active_migration_fixture_provider.py": "154b236489514535108fdb471b3ade2b28f7ee992a476f2c3a1e9d4bf6ac38f6",
+    "active-migration-fixture-task.ps1": "8b5d8397f5d07ae040b5c8795fc1824615fd6827424f6cd33ab2dbdd23815eab",
+    "test_active_migration_fixture_provider.py": "08ffa33868b7947132e289bac0c622a55ac6ae556dc69775b2e3c1f7ce8e6a0d",
+    "test_active_migration_cleanup_accounting.py": "f8bde68359b3e1d8698c83e5a5e94691a26a84fec4cf2ce1f8d012569b719be5",
+    "active_host_migration_core.py": "7ed7bd60794864ed406c05720f170c0e80d4327daf12167e00bdc3e7eb8d24e6",
+    "active_migration_windows_store.py": "49d5d91163f3d8bb7108043cbbf8b2dbdca4276399ab82eede63939ce7198899",
+    "active_migration_windows_locks.py": "50f178ce72f162b7760470209fc27bb3fc3748184574b30e81abc92ef8bcba45",
+    "active-migration-composition-qualification.md": "e470ce7b10204ea42c80db30e9201bcacc941984d01466cffd2713b726883dcd",
+    "active-migration-production-implementation-map.md": "2d76a7faed7e491bc64f8bda36b81646a3282adaf78c0babf5254ba059c22368"
+  },
+  "revisions": {
+    "initial": "e0d4601177522e5dd61ad0428a615e034543270a8af481f8b9361a1a95ed04af",
+    "corrected_native": "cc3a38256d046d9ddccc4af5763ef7b6cb6105b40fa296df1e896e5be4a4a551",
+    "final_accounting": "154b236489514535108fdb471b3ade2b28f7ee992a476f2c3a1e9d4bf6ac38f6"
+  },
+  "groups": [
+    {
+      "evidence": "active-migration-composition-group-a-tests.xml",
+      "sha256": "da3c0bad569fd45f0c2c3fba81cdc61278ce8402453b402dd81d253eafea95c1",
+      "source_revision": "initial",
+      "tests": 7,
+      "failures": 1,
+      "errors": 0,
+      "seconds": 542.479
+    },
+    {
+      "evidence": "active-migration-composition-group-b-tests.xml",
+      "sha256": "716f076da21938a29c7a5ae3dbb3fc50e557f86f8f5b4ec09fbed13b9bd97944",
+      "source_revision": "initial",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 994.431
+    },
+    {
+      "evidence": "active-migration-composition-independent.private.xml",
+      "sha256": "ddc4896996cf0a4f54a11e62998f817a9104e87fa024aa0f8670e9b532d48675",
+      "source_revision": "initial-independent",
+      "tests": 4,
+      "failures": 1,
+      "errors": 0,
+      "seconds": 441.545
+    },
+    {
+      "evidence": "active-migration-composition-corrected-controls.private.xml",
+      "sha256": "7827ffb957d6999b6e90f9b890741bbecf00f584ffa7adbe89c07fcae1a23174",
+      "source_revision": "corrected-native",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 416.971
+    },
+    {
+      "evidence": "active-migration-composition-corrected-late.private.xml",
+      "sha256": "c21f2cefa393ce1532287ad6a983e93e61a330227e91d06385d1ddba6957ac01",
+      "source_revision": "corrected-native",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 786.932
+    },
+    {
+      "evidence": "active-migration-composition-independent-revised.private.xml",
+      "sha256": "ac6148cdc91e572caea787e350340b3a3624f9c78626c00fbef998790cf152ba",
+      "source_revision": "corrected-native-independent",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 72.882
+    },
+    {
+      "evidence": "active-migration-composition-final-accounting.private.xml",
+      "sha256": "0033e700548ce492e9f01d8c7dc766004ec4beef4be0ba01e958ede9d2c7103e",
+      "source_revision": "final-accounting",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 0.23
+    },
+    {
+      "evidence": "active-migration-composition-independent-accounting.xml",
+      "sha256": "c7e8036651b90f9600f329ed99c96db5cd223b398d287ed722528a4a0f7515a7",
+      "source_revision": "final-accounting-independent",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 0.396
+    }
+  ],
+  "private_catalog_sha256": "c4bae2657e9986ae764e2c8c2b42165aafccc79320d8e20c3ce7c74125203faf",
+  "cleanup": {
+    "scoped_roots": 26,
+    "processes": 0,
+    "tasks": 0,
+    "private_receipt_sha256": "cebf4a15f85d8aa2ae00290bed50dcdca2c16cf9c70bd9cd229e1158864acba5"
+  },
+  "qualification": "Do not aggregate different source revisions into a single full-suite pass. Final accounting diff changes only false CloseHandle reporting; native success behavior unchanged."
+}

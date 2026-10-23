@@ -1,0 +1,32 @@
+{
+  "status": "corrected-development-only",
+  "files": [
+    {
+      "sha256": "bd714a4d3f3a8b81944ee2b90ad895c29ab4a939d0a0b2147c3aa41fc189a2c1",
+      "path": "C:/Users/rolon/Documents/Codex/Workstation/Local/AgentReach-20261012/source/tools/Prometheus.HostAgent/controller_pointer_transaction.py"
+    },
+    {
+      "sha256": "21f759c14cfa287cf009eeaa7c3bce7572b7f736cb0339181a2781db677ddb05",
+      "path": "C:/Users/rolon/Documents/Codex/Workstation/Local/AgentReach-20261012/source/tests/test_controller_pointer_transaction.py"
+    },
+    {
+      "sha256": "661b0606757ef6080ef4e3b564ee0f835b248272b76225ed3d818079d307d03a",
+      "path": "work/companion-release/controller_pointer_windows_fixture.py"
+    },
+    {
+      "sha256": "3f0079a89d50797740e517acfd4b30ee0f3f8d569e6c117080307da3bf23aaf5",
+      "path": "work/companion-release/test_controller_pointer_windows_fixture.py"
+    }
+  ],
+  "production_ready": false,
+  "core_tests": 27,
+  "fixes": [
+    "Strictly forward recovery version and distinct manifest",
+    "Recursive finite JSON and strict Unicode validation before provider events",
+    "Explicit stage-no-floor and replay-idempotence/immutable receipt contract",
+    "Strict temporary descendant; traversal and reparse rejected before writes"
+  ],
+  "fixture_tests": 26,
+  "log": "controller-pointer-corrected-isolation-tests.log",
+  "tests_passed": 53
+}

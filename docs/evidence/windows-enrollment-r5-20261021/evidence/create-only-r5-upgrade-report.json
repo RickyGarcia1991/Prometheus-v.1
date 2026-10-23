@@ -1,0 +1,24 @@
+{
+  "status": "r5-create-only-upgrade-prepared",
+  "production_changes": false,
+  "old_transaction": "76285c9134d2434790cb84b4680350b4",
+  "old_manifest": "a0461287d0984894d3549c22d4e16a5bff5db55f4a1925729479eed7f48ea3b8",
+  "new_manifest": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+  "changed_payloads": [
+    "Prometheus-QuietHost-v3.exe",
+    "Prometheus-Arrival.ps1"
+  ],
+  "tests": {
+    "failed": 0,
+    "passed": 20,
+    "log": "create-only-r5-frozen-tests.log",
+    "sha256": "6ad1c8d263260ac26952cb39e2a13f45e64b79801f1cdebccdace0ba320c40c3"
+  },
+  "helper_sha256": "a3915d6335debdc67abc0db8504264e7bf2e998ee628397b4f81e4c1981e0c35",
+  "tests_sha256": "abf537f4ce2fd02bf6c53ced5e480f9e8f842a03a36c3d071ff430fccace03cf",
+  "limits": [
+    "No live upgrade executed by preparer",
+    "Partial failure retains verified backups, old task XML, phase records and all existing journals; no automatic old-task reuse",
+    "Activation is requested only after a fresh completed disabled enrollment; live activation acceptance remains separate"
+  ]
+}

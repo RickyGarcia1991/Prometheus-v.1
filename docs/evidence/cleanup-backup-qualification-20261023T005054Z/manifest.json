@@ -1,0 +1,72 @@
+[
+  {
+    "path": "active_migration_fixture_provider.py",
+    "bytes": 21371,
+    "sha256": "154b236489514535108fdb471b3ade2b28f7ee992a476f2c3a1e9d4bf6ac38f6"
+  },
+  {
+    "path": "active-migration-fixture-task.ps1",
+    "bytes": 5226,
+    "sha256": "8b5d8397f5d07ae040b5c8795fc1824615fd6827424f6cd33ab2dbdd23815eab"
+  },
+  {
+    "path": "test_active_migration_fixture_provider.py",
+    "bytes": 8052,
+    "sha256": "08ffa33868b7947132e289bac0c622a55ac6ae556dc69775b2e3c1f7ce8e6a0d"
+  },
+  {
+    "path": "test_active_migration_cleanup_accounting.py",
+    "bytes": 1162,
+    "sha256": "f8bde68359b3e1d8698c83e5a5e94691a26a84fec4cf2ce1f8d012569b719be5"
+  },
+  {
+    "path": "active-migration-composition-qualification.md",
+    "bytes": 8063,
+    "sha256": "e470ce7b10204ea42c80db30e9201bcacc941984d01466cffd2713b726883dcd"
+  },
+  {
+    "path": "active-migration-composition-public-receipt.json",
+    "bytes": 4441,
+    "sha256": "248a6ff13d433decd3ee534bba2d8ee109f7d4f6e1411d5f95415e812d2dd1df"
+  },
+  {
+    "path": "active-migration-production-implementation-map.md",
+    "bytes": 9836,
+    "sha256": "2d76a7faed7e491bc64f8bda36b81646a3282adaf78c0babf5254ba059c22368"
+  },
+  {
+    "path": "active-migration-composition-independent-public-review.json",
+    "bytes": 3508,
+    "sha256": "090ad594f377c663a588adebf5e17ddcdf6c0b249fc56ccc406240108a6b83fd"
+  },
+  {
+    "path": "active-migration-composition-final-inventory-public.json",
+    "bytes": 171,
+    "sha256": "f43340ee5af6543a831c5bee96e6a911bb32b3586ddfed01ecddaeb3ac8145f4"
+  },
+  {
+    "path": "active-migration-normal-profile-1ac2c567f50e42a1b191f649bbc7a38c.public.json",
+    "bytes": 614,
+    "sha256": "764d9180cbd3dcbe3db52bb594273a54b8c7abbd855367b5f5ad6a89a44a7d70"
+  },
+  {
+    "path": "backup_executor.py",
+    "bytes": 18873,
+    "sha256": "71dba8c835173c43b1103c8cd035eb7c66e114a0a86d7c2b10a7fb9616bd0a81"
+  },
+  {
+    "path": "test_backup_executor.py",
+    "bytes": 8009,
+    "sha256": "b274562f5fa1285d6146105053f99d2892e225a3499bc8de1ecf56958f38d613"
+  },
+  {
+    "path": "backup-executor-public-receipt.json",
+    "bytes": 2445,
+    "sha256": "839e2f386d9af0f9e80aaf552f5bac4db660d9cf1a2c4e11f87a58b43c3a0971"
+  },
+  {
+    "path": "full-backup-plan.md",
+    "bytes": 11303,
+    "sha256": "4322749af1c41b65c92bcceb0be5e48a96ccd3bb78d97e5a9d97f28b4adf0417"
+  }
+]

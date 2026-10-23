@@ -1,0 +1,10 @@
+[
+  {
+    "case": "payload",
+    "rejected": true
+  },
+  {
+    "case": "extra",
+    "rejected": true
+  }
+]

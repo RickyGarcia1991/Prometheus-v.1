@@ -1,0 +1,7 @@
+Exception: C:\Users\rolon\Documents\Codex\2026-10-13\i\work\companion-release\upgrade-quiet-host-create-only.ps1:82
+Line |
+  82 |  … used -or $state.Active){throw 'Host is active, paused or unreadable'}
+     |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Host is active, paused or unreadable
+
+

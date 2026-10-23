@@ -1,0 +1,16 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "size": 1950372327424,
+    "path": "E:\\Prometheus-Repository-Checkpoints\\windows-enrollment-r5-20261022T013313Z",
+    "verified_files": 67,
+    "mismatches": 0
+  },
+  {
+    "label": "PROMETHEUS",
+    "size": 32076988416,
+    "path": "D:\\Prometheus-Repository-Checkpoints\\windows-enrollment-r5-20261022T013313Z",
+    "verified_files": 67,
+    "mismatches": 0
+  }
+]

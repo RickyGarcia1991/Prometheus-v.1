@@ -1,5 +1,15 @@
 param([ValidatePattern('^[A-Za-z]:$')][string]$Drive='D:')
 $ErrorActionPreference='Stop'
+function Get-ArrivalReadiness([string]$Url){
+ $bootstrap=Invoke-RestMethod ($Url+'/api/bootstrap') -TimeoutSec 5
+ $access=$bootstrap.owner_access
+ if($null -eq $access -or $access.required -isnot [bool] -or $access.unlocked -isnot [bool] -or $access.ready -isnot [bool] -or !$access.ready){throw 'Owner access readiness was not confirmed'}
+ if($access.required -and !$access.unlocked){return @{Phase='awaiting-owner-unlock';Status=$null}}
+ $status=Invoke-RestMethod ($Url+'/api/status') -Headers @{'X-Prometheus-Token'=$bootstrap.token} -TimeoutSec 5
+ if($status.closing -or !$status.saved_locally -or $null -eq $status.hardware){throw 'Interface readiness was not confirmed'}
+ return @{Phase='ready';Status=$status}
+}
+
 . (Join-Path $PSScriptRoot 'Prometheus-Lifecycle.ps1')
 $local=Join-Path $env:LOCALAPPDATA 'Prometheus'
 $result=Join-Path $local 'arrival-status.json'
@@ -23,9 +33,14 @@ try {
  $launch.Dispose()
  if(Get-EjectState){exit 0}
  $url='http://127.0.0.1:54555'
- $bootstrap=Invoke-RestMethod ($url+'/api/bootstrap') -TimeoutSec 5
- $status=Invoke-RestMethod ($url+'/api/status') -Headers @{'X-Prometheus-Token'=$bootstrap.token} -TimeoutSec 5
- if($status.closing -or !$status.saved_locally -or $null -eq $status.hardware){throw 'Interface readiness was not confirmed'}
+ $readiness=Get-ArrivalReadiness $url
+ if(Get-EjectState){exit 0}
+ if($readiness.Phase -eq 'awaiting-owner-unlock'){
+  Write-LifecycleJson $result @{phase='awaiting-owner-unlock';drive=$Drive;message='Prometheus is open; unlock with your normal passkey to continue.';updated=(Get-Date).ToString('o');audio='not-requested'}
+  Start-Process ($url+'/')
+  exit 0
+ }
+ $status=$readiness.Status
  if(Get-EjectState){exit 0}
  $greeting=if($status.hardware.chat_ready){'Welcome back. Prometheus is open, and your saved memory is ready.'}else{'Welcome back. Prometheus is open in reference mode, and your saved memory is ready.'}
  Start-Process ($url+'/')

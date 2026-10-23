@@ -1,0 +1,56 @@
+{
+  "status": "bounded_generated_composition_review_complete",
+  "production_ready": false,
+  "hashes": {
+    "active_migration_fixture_provider.accounting-candidate.py": "154b236489514535108fdb471b3ade2b28f7ee992a476f2c3a1e9d4bf6ac38f6",
+    "active-migration-fixture-task.ps1": "8b5d8397f5d07ae040b5c8795fc1824615fd6827424f6cd33ab2dbdd23815eab",
+    "test_active_migration_fixture_provider.py": "08ffa33868b7947132e289bac0c622a55ac6ae556dc69775b2e3c1f7ce8e6a0d",
+    "test_active_migration_cleanup_accounting.py": "f8bde68359b3e1d8698c83e5a5e94691a26a84fec4cf2ce1f8d012569b719be5",
+    "active-migration-composition-independent.private.xml": "ddc4896996cf0a4f54a11e62998f817a9104e87fa024aa0f8670e9b532d48675",
+    "active-migration-composition-independent.private.log": "0beea312da3a050935b3c3e20389c59da939402728994aaa50005e99b082b0cc",
+    "active-migration-composition-independent-revised.private.xml": "ac6148cdc91e572caea787e350340b3a3624f9c78626c00fbef998790cf152ba",
+    "active-migration-composition-independent-revised.private.log": "e6ddff2590e4659aef0378aea9b65068a7a1c83d7d2180d2e9cbc1b531d300d7",
+    "active-migration-composition-independent-accounting.xml": "c7e8036651b90f9600f329ed99c96db5cd223b398d287ed722528a4a0f7515a7",
+    "active-migration-composition-independent-revised-cleanup.private.json": "c7513f8e9a95068e3a95613cca18a68996da06816eeaef10b08e6a04b515822b"
+  },
+  "initial_run": {
+    "passed": 3,
+    "failure": "Early MainModule observation produced null image; cleanup refused. Original evidence preserved and exact native recovery recorded privately.",
+    "failed": 1,
+    "seconds": 441.59,
+    "provider_sha256": "e0d4601177522e5dd61ad0428a615e034543270a8af481f8b9361a1a95ed04af"
+  },
+  "revised_native_run": {
+    "seconds": 72.96,
+    "passed": 2,
+    "provider_sha256": "cc3a38256d046d9ddccc4af5763ef7b6cb6105b40fa296df1e896e5be4a4a551",
+    "checks": [
+      "Task-observation API injection and native command/role/parent/token negatives",
+      "Actual forced readiness timeout; provisional native identity cleanup and exit proof"
+    ],
+    "remaining_scoped_processes": 0,
+    "remaining_scoped_tasks": 0
+  },
+  "final_accounting": {
+    "seconds": 0.5,
+    "isolated_tests_passed": 1,
+    "method": "Imported separate candidate without replacing active source; fake API failure verifies independent cleanup attempts and observable CloseHandle uncertainty",
+    "provider_sha256": "154b236489514535108fdb471b3ade2b28f7ee992a476f2c3a1e9d4bf6ac38f6",
+    "change": "Only cleanup probe close failure reporting; normal behavior unchanged"
+  },
+  "passed_initial_checks": [
+    "Fresh-process lost-start completion recovery without duplicate driver",
+    "Malformed completed receipt/generation and missing completed pair refuse",
+    "Retained-handle close failure attempts remaining handles and retains uncertainty"
+  ],
+  "remaining_actionable_findings": [],
+  "limits": [
+    "Generated task and supervisor; real signed QuietHost internal containment and signed payload replacement",
+    "Does not execute the signed production supervisor or migrated HostAgent task behavior",
+    "Synthetic original receipt and authorization, not installed enrollment authority",
+    "Cooperative supported-session contract; no arbitrary concurrent adversary CAS guarantee",
+    "Process-interruption evidence, not power-loss durability",
+    "No production mutation or live migration"
+  ],
+  "raw_evidence_private": true
+}

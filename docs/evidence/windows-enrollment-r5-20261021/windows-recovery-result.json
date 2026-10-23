@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "recovery": {
+    "status": "rolled-back",
+    "activated": false,
+    "id": "1b06096c52914b72afdb4663c468ff0b"
+  },
+  "manifest_sha256": "64c19a686fc34b148a6bcec8a24098d5768510ffdcb701c67d7dbd436e5ebefb",
+  "enrollment_started": false,
+  "activated": false,
+  "completed_utc": "2026-10-22T01:02:13.4910883Z"
+}

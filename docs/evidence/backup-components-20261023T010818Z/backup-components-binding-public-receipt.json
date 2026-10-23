@@ -1,0 +1,33 @@
+{
+  "status": "reusable_components_qualified_not_fullcopy",
+  "tests_passed": 12,
+  "seconds": 0.74,
+  "hashes": {
+    "backup_transaction.py": "90901febbb1eaa27ae1805c00d1aa398872faa05adbeb517fa6cda9eacbddd95",
+    "backup_windows_batch_io.py": "7b647c9157f48e45318a46ac680725150ef283f5d527980a5f106eb34840c049",
+    "backup_chunk_archive.py": "4a8cf1cebc1700fc793ff4f1d77d37c704934ef6c721637a2111a9b3124f254e",
+    "test_backup_transaction.py": "b8004fc036204d7ee0aff44ebf24e1c36e6b45d4dc2cceedb261aa18bb2425f5",
+    "test_backup_windows_batch_io.py": "c700c781c2f0160c80252d8e1071988b34f052583658cd53eac7b53da3b13f15",
+    "test_backup_chunk_archive.py": "3bd5499ed59fb5b944dd6d2f7f72bdf85d997bf86cdc92dfbded7c0ecb42bd52",
+    "backup-components-frozen-tests.private.xml": "3aa236dc5ccd9e9f402de9b0d5de992a478d8b87f7fff4cbdcce662767552279",
+    "backup-components-binding-tests.private.xml": "9381d25590d83c92313359abd279d5a49ba659c65f19aa588a5301595c23aca8"
+  },
+  "production_entry_available": false,
+  "production_backup_complete": false,
+  "production_mutations": false,
+  "qualified": [
+    "Exact disk/partition/layout identity comparison on each bounded batch",
+    "Maintenance identity revalidation; no built-in authority factory",
+    "Durable intent and corrupt-resume readback",
+    "32 GiB reserve with cluster rounding and physical allocation credit",
+    "Native generated file and ADS copy/readback/source drift",
+    "Pinned archive plan and full file digest reconstructed from chunks; same-size chunk corruption refuses",
+    "Exact item schema binds archive/capacity stream list to source metadata streams and relative path; inconsistent omission refuses before manifest creation"
+  ],
+  "remaining": [
+    "Connect reviewed retained maintenance owner that proves all source writers quiescent; migration mutexes alone are insufficient",
+    "Wire whole-tree directory metadata/reconciliation and actual isolated restore-sample callbacks",
+    "Bind actual seven SSD paths to retained archive references and final private restore manifest",
+    "Wire fresh native disk identity collector and normal-profile physical destination gate; no production CLI exists"
+  ]
+}

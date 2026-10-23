@@ -1,0 +1,22 @@
+{
+  "tests_passed": 14,
+  "files": [
+    {
+      "path": "work/companion-release/read-controller-production-preflight.ps1",
+      "sha256": "15fb51b3e54c7579112df37eb8138767cb032030734703d03ff4eacda66812ae"
+    },
+    {
+      "path": "work/companion-release/test_controller_production_preflight.py",
+      "sha256": "7cfaa35b786a09f2381b1fd1af29dc34265142ce91af4e32e7fe3a503397ae6f"
+    }
+  ],
+  "limitations": [
+    "Snapshot only; no lifecycle/eject exclusion or activation",
+    "Active R5 migration not implemented; never reuse old R3 disabled task assumption",
+    "Process path and SID identity is observation, not signed executable acceptance",
+    "No live execution yet"
+  ],
+  "status": "read-only-helper-prepared-not-live-executed",
+  "inputs": "ExpectedProfile, ExpectedHostBinding SHA256(MachineGuid|SID), exact SSD volume bytes, volume unique ID, physical disk unique ID",
+  "output": "Only binding hashes, metadata hash/length, release name, aggregate owned process counts and missing gates"
+}

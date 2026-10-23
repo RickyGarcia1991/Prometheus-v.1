@@ -1,0 +1,27 @@
+[
+  {
+    "accepted": true,
+    "id": "recovery-at-new-floor",
+    "passed": true
+  },
+  {
+    "accepted": false,
+    "id": "candidate-after-recovery",
+    "passed": true
+  },
+  {
+    "accepted": false,
+    "id": "old-at-new-floor",
+    "passed": true
+  },
+  {
+    "accepted": false,
+    "id": "changed-recovery",
+    "passed": true
+  },
+  {
+    "accepted": false,
+    "id": "bad-signature",
+    "passed": true
+  }
+]

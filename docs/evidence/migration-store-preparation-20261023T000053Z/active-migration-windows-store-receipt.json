@@ -1,0 +1,49 @@
+{
+  "schema": "generated-active-migration-store-qualification-v1",
+  "production_activation_available": false,
+  "scope": "Generated roots only; actual signed R5/R7 verification and Windows DPAPI with synthetic authority",
+  "final_frozen_tests": {
+    "skipped": 0,
+    "seconds": 199.06,
+    "passed": 47,
+    "failures": 0
+  },
+  "independent_regressions": {
+    "seconds": 30.88,
+    "passed": 8
+  },
+  "independent_selected_interruption_reruns": {
+    "seconds": 37.93,
+    "overlap_main_suite": true,
+    "passed": 6
+  },
+  "preliminary": {
+    "mutable_45": "45 passed in 191.29 s; separately preserved XML; not final qualification",
+    "console_only_36": "36 passed in 122.63 s; XML overwritten, not preserved"
+  },
+  "source_and_evidence_sha256": {
+    "active_migration_windows_store.py": "49d5d91163f3d8bb7108043cbbf8b2dbdca4276399ab82eede63939ce7198899",
+    "test_active_migration_windows_store.py": "d135a4438edbd59592edc598692ba597a7ef097d9a1c4d5374ae02039e96dff3",
+    "active-migration-windows-store-qualification.md": "fff6ee0cfb454c03364f8473c253222e47e947e8dcc24e186402578371a99ba7",
+    "active-migration-windows-store-frozen-tests.xml": "3a47cad1e08169feafecc835c42d46d3852c0df6886576da5d5791003d9fa76b",
+    "active-migration-windows-store-preliminary45-tests.xml": "54d5ee2472b33f89c8d713810c48de7930cb34921277779290539f26d2ac0c81",
+    "active_host_migration_core.py": "7ed7bd60794864ed406c05720f170c0e80d4327daf12167e00bdc3e7eb8d24e6",
+    "active_migration_native_chain.py": "0fad1fd733cfae489966e6637fcd236ed2c0ba2e8cf9d69cd58b154477bbd3d1",
+    "active-migration-native-chain.ps1": "df0ac6c102024e1e8a6f0dd13dc3ec3b84329cdcc6b8b46bc83eb06562cc0288",
+    "active_migration_windows_locks.py": "50f178ce72f162b7760470209fc27bb3fc3748184574b30e81abc92ef8bcba45",
+    "test_active_migration_store_independent.py": "fc3c3dfc868fceff0d71724026f4d2f6db77b88584334fa906eb956687853096",
+    "active-migration-store-independent-probes.xml": "59400d413a8754c9c2ed3c2eda291a58bda90a109ad8be4857840e6825a59d5e",
+    "active-migration-store-independent-interruption.xml": "dccf4beff2626cdef1577926ee3d141dae94f4f919cf30e4b7bd6dafc6376378",
+    "active-migration-store-independent-review.json": "4174a03397ca2ddc98a0dd48b4c2f786ba0281b3882aa367cfc7926d9df7e9b8",
+    "active-migration-store-independent-cleanup.json": "c7d24deb686a449f81850e429b46c4882bd1b72d632f71286f1879111e09b773"
+  },
+  "limitations": [
+    "No production provider or activation",
+    "Journal phase alone does not prove task lifecycle operations",
+    "Verification copy is view-only; actual runtime checked separately",
+    "Cooperative same-session generated-root ownership only",
+    "Process interruption tested; no power-loss guarantee",
+    "Original synthetic R5 receipt and authority preserved"
+  ],
+  "independent_final_matching_fixture_children": 0
+}

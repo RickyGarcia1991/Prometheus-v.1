@@ -1,0 +1,5 @@
+Exception: 
+Line |
+  40 |  … (!$refused){throw 'DEFECT: coherent unsigned staged mutation accepted …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | DEFECT: coherent unsigned staged mutation accepted

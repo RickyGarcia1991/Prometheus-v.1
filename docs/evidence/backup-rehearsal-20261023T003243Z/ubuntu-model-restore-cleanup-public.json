@@ -1,0 +1,9 @@
+{
+  "isolated_copy_removed": false,
+  "restore_verification_passed": true,
+  "retained_logical_bytes": 18731025629,
+  "cleanup_executed": false,
+  "reason": "Automatic approval review rejected the cleanup command: blocked by policy. No further reason supplied.",
+  "production_changed": false,
+  "capacity_must_include_retained_restore": true
+}

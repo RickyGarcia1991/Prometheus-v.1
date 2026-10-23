@@ -1,0 +1,77 @@
+[
+  {
+    "path": "active_migration_windows_store.py",
+    "bytes": 17712,
+    "sha256": "49d5d91163f3d8bb7108043cbbf8b2dbdca4276399ab82eede63939ce7198899"
+  },
+  {
+    "path": "test_active_migration_windows_store.py",
+    "bytes": 8445,
+    "sha256": "d135a4438edbd59592edc598692ba597a7ef097d9a1c4d5374ae02039e96dff3"
+  },
+  {
+    "path": "test_active_migration_store_independent.py",
+    "bytes": 2987,
+    "sha256": "fc3c3dfc868fceff0d71724026f4d2f6db77b88584334fa906eb956687853096"
+  },
+  {
+    "path": "active-migration-windows-store-receipt.json",
+    "bytes": 2897,
+    "sha256": "a74618b48f210922775959f4812915ad5050a2b94a83d1e1fd9decd887fbff46"
+  },
+  {
+    "path": "active-migration-windows-store-qualification.md",
+    "bytes": 4564,
+    "sha256": "fff6ee0cfb454c03364f8473c253222e47e947e8dcc24e186402578371a99ba7"
+  },
+  {
+    "path": "active-migration-windows-store-frozen-tests.xml",
+    "bytes": 7962,
+    "sha256": "3a47cad1e08169feafecc835c42d46d3852c0df6886576da5d5791003d9fa76b"
+  },
+  {
+    "path": "active-migration-windows-store-preliminary45-tests.xml",
+    "bytes": 7621,
+    "sha256": "54d5ee2472b33f89c8d713810c48de7930cb34921277779290539f26d2ac0c81"
+  },
+  {
+    "path": "active-migration-store-independent-review.json",
+    "bytes": 1763,
+    "sha256": "4174a03397ca2ddc98a0dd48b4c2f786ba0281b3882aa367cfc7926d9df7e9b8"
+  },
+  {
+    "path": "active-migration-store-independent-probes.xml",
+    "bytes": 1448,
+    "sha256": "59400d413a8754c9c2ed3c2eda291a58bda90a109ad8be4857840e6825a59d5e"
+  },
+  {
+    "path": "active-migration-store-independent-interruption.xml",
+    "bytes": 1142,
+    "sha256": "dccf4beff2626cdef1577926ee3d141dae94f4f919cf30e4b7bd6dafc6376378"
+  },
+  {
+    "path": "ubuntu-combined-backup-capacity-public.json",
+    "bytes": 459,
+    "sha256": "a51bdbf894542ff2ade7a31b35e244eef89a82a17938baac6759de0a47aae217"
+  },
+  {
+    "path": "ubuntu-partition-supported-size.json",
+    "bytes": 487,
+    "sha256": "acfe2fa81153950fe89319ff3cf7609731f6d339ba3732f9de40ff052aebc157"
+  },
+  {
+    "path": "inventory-ubuntu-flash-preservation.py",
+    "bytes": 2876,
+    "sha256": "d34ae3080fa16babb68f29fcafc1a81e9c83cbb86dd722bb33cd1c281ccad9f9"
+  },
+  {
+    "path": "verify-existing-model-backup.py",
+    "bytes": 3302,
+    "sha256": "b577c12125633e5cec2831f82e7adad72a56f3c421623d4069eebbf70b8a65e1"
+  },
+  {
+    "path": "ubuntu-existing-model-backup-public.json",
+    "bytes": 1937,
+    "sha256": "88f512d29b3e363f82318ca01073750d79ff9911617388821856079764762555"
+  }
+]

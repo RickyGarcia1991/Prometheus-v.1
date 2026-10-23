@@ -1,0 +1,22 @@
+[
+  {
+    "path": "flash-cleanup-result.json",
+    "sha256": "806a04a854825213c4933054e8d22002d2737527b0d55779eddc6ec1cccba0df"
+  },
+  {
+    "path": "flash-retained-release-hashes.json",
+    "sha256": "e2ab6abad1902d47234b7af4d91b9b08696f25fa773e388d144e3e1be89fa7b0"
+  },
+  {
+    "path": "archive-flash-model.ps1",
+    "sha256": "7ba3ee84acf46748ff9d4b3a455106a3f23bb7bb35146dc3aa0c8181b8929c75"
+  },
+  {
+    "path": "finish-flash-cleanup.ps1",
+    "sha256": "ffc432581ca56adc262cd35b7aea8154651dfbf0b066262f1a32036b3ebfdafa"
+  },
+  {
+    "path": "README.md",
+    "sha256": "01f998b27bf966179c90c944c8afb430cafe3f4215674858b13c0b360e476c03"
+  }
+]
