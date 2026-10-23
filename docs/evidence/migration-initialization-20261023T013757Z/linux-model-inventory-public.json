@@ -1,0 +1,13 @@
+{
+  "scope": "Read-only Surface Ubuntu inventory; not model acceptance",
+  "architecture": "x86_64",
+  "ollama_executable": "/snap/bin/ollama",
+  "ollama_local_version": "0.34.0",
+  "resident_models": 0,
+  "installed_models": ["hermes3:3b", "qwen2.5-coder:1.5b", "all-minilm:l6-v2", "qwen3:1.7b"],
+  "llama_server_on_path": false,
+  "ffmpeg_on_path": false,
+  "model_loaded_by_probe": false,
+  "inference_tested": false,
+  "production_worker_changed": false
+}

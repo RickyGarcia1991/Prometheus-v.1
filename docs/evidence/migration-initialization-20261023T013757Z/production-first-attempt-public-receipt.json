@@ -1,0 +1,17 @@
+{
+  "status": "initialization_stopped_before_task_migration",
+  "runtime_after": "original_r5",
+  "owned_workers_observed": 2,
+  "temporary_launcher_removed": true,
+  "automatic_retry": false,
+  "cleanup_errors": [],
+  "failure": "Repeated initial preflight rejected its own newly created transaction; authenticated key-only recovery requires correction and review.",
+  "production_migration_complete": false,
+  "full_backup_complete": false,
+  "ubuntu_installed": false,
+  "private_evidence_hashes": {
+    "production-migration-profile-ef8adb8904e841bdba725bf5b1e96c18.private.json": "4be3f862d3dbc4bfc12c988a825256ece4e284cba456e27ab4c1774334b99399",
+    "production-migration-attempt-905bcc62be6bc1700be1693605d5814a.result.private.json": "e67d0c6dd59f18b46c052a833b15664b0d762c82b27b219fda747e6abfc6309d",
+    "active-migration-normal-profile-71d1f32e69be47119eb4ec6c0330819e.private.json": "9ff19dfd2ac1668abaf0288f508c027619a07738d59d374672228b2ca5a169c8"
+  }
+}
