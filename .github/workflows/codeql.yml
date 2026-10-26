@@ -2,27 +2,68 @@ name: CodeQL
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "codex/**", "release/**", "fix/codeql-**"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "codex/**", "release/**"]
+  workflow_dispatch:
   schedule:
     - cron: "18 23 * * 2"
 
+permissions:
+  contents: read
+
 jobs:
+  source:
+    name: Check Python source
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.detect.outputs.python }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Detect tracked Python source
+        id: detect
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+          paths = subprocess.check_output(["git", "ls-files", "-z", "--", "*.py"]).split(b"\0")
+          files = [os.fsdecode(p) for p in paths if p and Path(os.fsdecode(p)).is_file()]
+          app_files = [p for p in files if p.startswith("src/prometheus_assistant/")]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"python={str(bool(files)).lower()}\n")
+          message = (f"Found {len(files)} tracked Python files; {len(app_files)} in src/prometheus_assistant."
+                     if files else "CodeQL Python scanning skipped: this ref contains no tracked Python source. No security analysis was performed.")
+          print(message)
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
+              summary.write(message + "\n")
+          PY
+
   analyze:
-    name: Analyze (python)
+    name: Analyze (${{ matrix.language }})
+    needs: source
+    if: needs.source.outputs.python == 'true'
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
-      packages: read
       contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: python
+          languages: ${{ matrix.language }}
           build-mode: none
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{ matrix.language }}"
+          wait-for-processing: true
