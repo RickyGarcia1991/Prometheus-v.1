@@ -223,3 +223,8 @@
 .folded-home #ownerPanel a:focus-visible{outline:2px solid #9eebbc;outline-offset:3px}
 @media(max-width:650px){.folded-home .primary-nav button{font-size:12px;padding:8px 10px}.folded-home #conversationToggle{font-size:11px;padding:7px 10px}.folded-home .viewbar{gap:4px}.folded-home .conversation-panel{min-height:220px;flex-basis:220px}.folded-home .workbench-head{flex-wrap:wrap}.folded-home .workbench-tabs{width:100%}}
 @media(max-height:600px){.folded-home .conversation-panel{min-height:160px;flex-basis:160px}.folded-home #taskActivity[open]{max-height:150px}}
+
+/* The cue follows confirmed microphone state, never a timer. */
+.voice-prompt{display:block;font-size:16px;line-height:1.4;color:#d6e7dc}
+.voice-prompt[data-listening="true"]{color:#b8ffd1;border-left:4px solid #87e5a6;padding-left:10px}
+@media(max-height:600px){.voice-prompt{font-size:13px}}

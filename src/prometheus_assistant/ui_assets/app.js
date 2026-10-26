@@ -31,6 +31,9 @@ function voiceControls(){
  $('platformConnectionNote').hidden=!connectionUnsupported;$('platformConnectionNote').textContent=connectionUnsupported?'The native connector supports Windows and Ubuntu.':'';
  const engaged=voiceChat||dictationJob!==null||dictationPending;
  $('voiceCapture').hidden=!engaged;
+ const cue=$('voicePrompt');
+ cue.textContent=microphoneOn&&!finishingDictation?'Start speaking now':microphoneOn?'Finishing recording — please wait':voiceActivity==='transcribing'?'Microphone off — transcribing':voiceActivity==='opening'?'Wait — getting the microphone ready':speaking?'Prometheus is speaking — microphone off':'Microphone off';
+ cue.dataset.listening=String(microphoneOn&&!finishingDictation);
  $('dictate').textContent=voiceChat?'End voice chat':engaged?'Cancel recording':spokenMode?'Start voice chat':'◉ Record';
  $('dictate').setAttribute('aria-pressed',String(engaged));
  $('dictate').disabled=!engaged&&(busy||closed||!online||historyPending);
@@ -117,7 +120,7 @@ function trackRecording(id,result){
  if(dictationJob!==id)return;
  microphoneOn=result.recording===true;
  const transcribing=result.stage?.startsWith('Microphone off');
- voiceState(microphoneOn?(finishingDictation?'Finishing recording…':'Listening · take your time, pause to send'):transcribing?'Microphone off · transcribing locally':'Opening microphone…',microphoneOn?(finishingDictation?'finishing':'listening'):transcribing?'transcribing':'opening');
+ voiceState(microphoneOn?(finishingDictation?'Finishing recording…':(voiceChat?'Listening · pause for your reply':'Listening · pause to finish, then review your words')):transcribing?'Microphone off · transcribing locally':'Opening microphone…',microphoneOn?(finishingDictation?'finishing':'listening'):transcribing?'transcribing':'opening');
  const elapsed=Math.max(0,Number(result.elapsed)||0);
  $('voiceElapsed').textContent=Math.floor(elapsed/60)+':'+String(Math.floor(elapsed%60)).padStart(2,'0');
  showLevel(microphoneOn?result.level:0);

@@ -31,6 +31,10 @@ def plain_text(html):
 
 def _bindings():
     try:
+        import sys
+        if sys.platform == 'linux':
+            from .linux_resources import load_zim
+            load_zim()
         from libzim.reader import Archive
         from libzim.search import Query, Searcher
         return Archive, Query, Searcher

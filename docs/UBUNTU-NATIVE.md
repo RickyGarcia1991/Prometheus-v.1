@@ -79,8 +79,10 @@ keys are excluded from the source and runtime checkpoint.
 
 Mocked Windows contract tests can execute on Ubuntu; they do not demonstrate
 native Windows behavior. Real Windows-only checks retain their platform
-requirements. The optional Browser Use worker still requires Windows Python 3.12;
-Ubuntu now reports that prerequisite rather than failing incidentally.
+requirements. The upstream Browser Use worker requires Windows Python 3.12.
+Ubuntu supplies the equivalent bounded public-page reader through OS-managed
+Node and Chromium. This is a separate native adapter, not the upstream Python
+Browser Use package, and does not qualify interactive browser agents.
 
 Check voice against known phrases, including word error rate and input clipping,
 and delete test recordings. Synthetic direct decoding and speaker/microphone
@@ -94,3 +96,42 @@ The flash checkpoint supplements the accepted Windows recovery archives and
 keys. It is not a bootable image, a full HDD clone, or a backup of private owner
 data. Repository publication and passing functional tests do not establish a
 successful CodeQL scan or absence of vulnerabilities.
+
+
+## Native resource adapters (26 October 2026)
+
+Connect the existing mounted HDD library with PROMETHEUS_RESOURCE_ROOT and set
+PROMETHEUS_ZIM_RUNTIME to ROOT/runtime/ubuntu-zim. The ZIM adapter is qualified
+for Ubuntu 26.04 amd64 / Python 3.14; it verifies the three native object hashes
+before loading. Package provenance is in tools/ubuntu/zim-packages.json.
+Windows executables and model files on the shared HDD remain Windows resources;
+Ubuntu advertises its actual running Ollama inventory.
+
+Native document import supports bounded PDF, DOCX, XLSX and PPTX text extraction.
+PDF uses the pinned pypdf wheel from the existing vendor bundle; Office formats
+use validated XML. It does not perform OCR, preserve page layout, execute macros
+or calculate spreadsheet formulas. Password-required PDFs are rejected.
+
+The local qwen3-embedding:0.6b model enables document semantic retrieval; its
+observed digest is ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d.
+Four synthetic synonym-retrieval cases passed. This is not a broad accuracy
+benchmark. Models stored for Windows are not automatically usable on Ubuntu.
+
+The native public-page reader uses fixed OS-owned /usr/bin/node and
+/opt/google/chrome/chrome. Chrome retains its sandbox. A fresh profile, rejecting
+proxy, request interception and parent-side public HTTPS validation limit the
+reader to one host and GET requests; private destinations, redirects, downloads,
+credentials and forms are excluded. These application controls are not a proof
+of isolation against browser vulnerabilities. Cancellation terminates the owned
+process group. Only this reader has been exercised, not interactive agents.
+
+The voice UI says 'Start speaking now' only after the capture state reports an
+open microphone. It distinguishes preparation, recording and transcription.
+Browser state tests use a synthetic microphone status, not a real recording.
+For an owner speech check, choose Text mode, press Record, wait for the cue,
+speak normally, then review the words before sending.
+
+Native health reads NATIVE-CHECKPOINT.json and NATIVE-SOURCE-MANIFEST.json,
+separately from accepted Windows release metadata. Checksums cover listed files;
+this record is not a release signature, a CodeQL scan, or model acceptance.
+See RESOURCE-VALIDATION-2026-10-26.md for evidence and remaining plans.

@@ -119,6 +119,8 @@ def describe(*, query: str = "", role: str = "", limit=12, inspect_host=True) ->
                                 "ctranslate2-cpu" if local_voice_verified else
                                 "ollama" if model else None),
             "decision": item["status"],
+            "decision_scope": "Historical catalog assessment, not current execution evidence.",
+            "execution_verified_this_call": False,
             "use": item["use"],
             "review_caution": item["risk_notes"],
             "auto_download": False,

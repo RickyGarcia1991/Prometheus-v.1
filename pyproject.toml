@@ -23,7 +23,7 @@ prometheusctl = "prometheus_control_center.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-prometheus_assistant = ["offline_collections.json", "source_indexes.json", "public_directory.json", "legal_rules.json", "component_updates.json", "agent_resources.json", "hf_curated_catalog.json", "hardware_814_reference.json", "kali_package_catalog.json", "backtrack_legacy_catalog.json", "ui_assets/*", "vendor/*", "vendor/markitdown/*", "vendor/voice_activity/*"]
+prometheus_assistant = ["*.mjs", "offline_collections.json", "source_indexes.json", "public_directory.json", "legal_rules.json", "component_updates.json", "agent_resources.json", "hf_curated_catalog.json", "hardware_814_reference.json", "kali_package_catalog.json", "backtrack_legacy_catalog.json", "ui_assets/*", "vendor/*", "vendor/markitdown/*", "vendor/voice_activity/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

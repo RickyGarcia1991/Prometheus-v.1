@@ -118,6 +118,7 @@ def test_complete_bundle_and_precancel(tmp_path, monkeypatch):
 
 
 def test_status_does_not_hash_payload_or_claim_payload_verified(tmp_path, monkeypatch):
+    monkeypatch.setattr(browser.sys, 'platform', 'win32')
     bundle(tmp_path, monkeypatch)
     monkeypatch.setattr(browser, '_verify_bundle', lambda *args: pytest.fail('Expensive status verification'))
     result = browser.status(tmp_path)
@@ -160,6 +161,7 @@ def test_windows_profile_cleanup_waits_for_owned_handles(monkeypatch, tmp_path):
 
 
 def test_execute_returns_canonical_provider_identity_without_native_work(monkeypatch, tmp_path):
+    monkeypatch.setattr(browser.sys, 'platform', 'win32')
     from types import SimpleNamespace
     from prometheus_assistant import application_policy, hardware
     monkeypatch.setattr(application_policy, 'require_dispatch', lambda capability: None)
@@ -180,6 +182,7 @@ def test_execute_returns_canonical_provider_identity_without_native_work(monkeyp
 
 
 def test_unsupported_native_runtime_is_rejected_before_execution(monkeypatch, tmp_path):
+    monkeypatch.setattr(browser.sys, 'platform', 'darwin')
     from types import SimpleNamespace
     from prometheus_assistant import application_policy
     monkeypatch.setattr(application_policy, 'require_dispatch', lambda capability: None)

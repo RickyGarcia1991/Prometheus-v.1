@@ -14,6 +14,8 @@ from pathlib import Path
 import queue
 import re
 import shutil
+import signal
+from contextlib import contextmanager
 import socket
 import subprocess
 import sys
@@ -127,11 +129,44 @@ def _verify_bundle(root, cancel_event=None):
     return bundle
 
 
+def _native_chrome():
+    from .linux_resources import system_executable
+    system_executable('/usr/bin/node')
+    return system_executable('/opt/google/chrome/chrome')
+
+
+@contextmanager
+def _reader_process(process):
+    if sys.platform != 'linux':
+        from .autonomous_promotion import _owned_test_process
+        with _owned_test_process(process):
+            yield
+        return
+    # The child starts a new session; its Chrome descendants share this group.
+    try:
+        yield
+    finally:
+        try: os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError: pass
+        try: process.wait(timeout=3)
+        except subprocess.TimeoutExpired: pass
+        try: os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+        process.wait(timeout=5)
+
+
 def status(resource_root):
     result = {'provider': 'browser_use', 'version': VERSION, 'browser_version': BROWSER_VERSION,
               'installed': False, 'available': False, 'integrity': 'missing',
               'operations': ['read'], 'mode': 'public-page-reader', 'agentic_tasks_qualified': False,
               'limitations': list(_LIMITATIONS)}
+    if sys.platform == 'linux':
+        result.update(version='native-chromium', browser_version=None, backend='OS-managed Chromium CDP public-page reader')
+        try:
+            result.update(installed=True, available=bool(_native_chrome()), integrity='OS-managed runtime; application adapter')
+        except (OSError, ValueError):
+            result['integrity']='native-runtime-unavailable'
+        return result
     try:
         bundle, _ = _manifest(resource_root)
         result['installed'] = True
@@ -212,14 +247,16 @@ def _environment(job):
 
 
 def _run_reader(bundle, url, job, cancel_event):
-    from .autonomous_promotion import _owned_test_process
     limit = _Deadline(cancel_event)
     command = [sys.executable, '-I', '-S', '-B', str(Path(__file__).resolve()), '--worker', str(bundle), str(job)]
+    if sys.platform == 'linux':
+        command = ['/usr/bin/node', str(Path(__file__).with_name('native_browser.mjs')), str(_native_chrome()), str(job)]
     counts = {'requests': 0, 'fetched': 0, 'blocked': 0, 'bytes': 0}
     messages = queue.Queue(maxsize=128)
     with (job / 'worker.log').open('wb') as log:
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
-                                   cwd=job, env=_environment(job), creationflags=subprocess.CREATE_NO_WINDOW)
+                                   cwd=job, env=_environment(job), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+                                   start_new_session=sys.platform == 'linux')
         def collect():
             try:
                 while line := process.stdout.readline(200_001):
@@ -232,7 +269,7 @@ def _run_reader(bundle, url, job, cancel_event):
                 messages.put({'type': 'error'})
         thread = threading.Thread(target=collect, name='Prometheus-browser-output', daemon=True)
         try:
-            with _owned_test_process(process):
+            with _reader_process(process):
                 thread.start()
                 # Child cannot launch Chrome until cleanup ownership is established.
                 process.stdin.write((json.dumps({'url': url}) + '\n').encode()); process.stdin.flush()
@@ -282,7 +319,10 @@ def execute(action, arguments, *, data_root, resource_root, cancel_event=None):
     from .application_policy import require_dispatch
     require_dispatch('integrations.browser_use')
     args = canonical_arguments(action, arguments)
-    _require_windows_runtime()
+    if sys.platform == 'linux':
+        _native_chrome()
+    else:
+        _require_windows_runtime()
     from .hardware import detect_hardware
     available = detect_hardware().available_ram_gib
     if available is None or available < 1.0:
@@ -291,18 +331,18 @@ def execute(action, arguments, *, data_root, resource_root, cancel_event=None):
     if not _SLOT.acquire(blocking=False):
         raise RuntimeError('Another browser read is already running; wait or cancel it first.')
     try:
-        bundle = _verify_bundle(resource_root, cancel_event)
+        bundle = None if sys.platform == 'linux' else _verify_bundle(resource_root, cancel_event)
         # Browser profiles and caches are machine-specific. The portable data
         # root is intentionally unused; no browser state is persisted on SSD.
         parent = Path(tempfile.gettempdir()).resolve()
         system_drive = os.environ.get('SystemDrive', 'C:')
-        if parent.drive.casefold() != system_drive.casefold():
+        if sys.platform != 'linux' and parent.drive.casefold() != system_drive.casefold():
             raise ValueError('Browser Use requires a temporary directory on the host system drive.')
         for path in reversed([parent, *parent.parents]): _plain(path)
         job = Path(tempfile.mkdtemp(prefix='prometheus-browser-', dir=parent))
         try:
             result = _run_reader(bundle, args['url'], job, cancel_event)
-            return {'provider': 'browser_use', 'version': VERSION, 'action': action, 'result': result,
+            return {'provider': 'browser_use', 'version': 'native-chromium' if sys.platform == 'linux' else VERSION, 'action': action, 'result': result,
                     'network_used': True, 'generated_answer': False, 'agentic_tasks_qualified': False,
                     'limitations': list(_LIMITATIONS)}
         finally:

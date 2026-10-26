@@ -18,8 +18,8 @@ from prometheus_assistant import markitdown_documents as converter
 
 
 requires_portable_markitdown = pytest.mark.skipif(
-    os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32,
-    reason='Native document converters require bundled Windows x64 Python 3.12',
+    sys.platform != 'linux' and (os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32),
+    reason='Document converters require Ubuntu or bundled Windows x64 Python 3.12',
 )
 
 
@@ -92,7 +92,7 @@ def test_xlsx_keeps_literal_identifiers_na_and_cached_numeric_values(tmp_path):
     library.import_bytes('identifiers.xlsx', xlsx_bytes(extra={'xl/worksheets/sheet1.xml': xml}))
     excerpt = library.search('Evidence', semantic=False)['results'][0]['excerpt']
     for value in ('00123', 'NA', '42', '2'):
-        assert '| '+value+' |' in excerpt
+        assert (': '+value in excerpt) if sys.platform == 'linux' else ('| '+value+' |' in excerpt)
     assert 'NaN' not in excerpt
 
 

@@ -12,6 +12,7 @@ import os
 import re
 import secrets
 import socket
+import sys
 import subprocess
 import tempfile
 import threading
@@ -53,8 +54,9 @@ PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 
 def installed_models():
     root = resource_root()
-    if not root:
-        # Native installations use the running local Ollama inventory.
+    if not root or sys.platform == "linux":
+        # Native installations use the running local Ollama inventory, even
+        # when a shared resource folder also contains Windows model files.
         from .ollama import LocalModelError
         try:
             rows = OllamaClient(timeout=1).local_models()

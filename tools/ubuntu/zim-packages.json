@@ -1,0 +1,25 @@
+{
+  "created": "2026-10-26T01:30:14.438061+00:00",
+  "architecture": "amd64",
+  "python": "3.14",
+  "packages": [
+    {
+      "package": "python3-libzim",
+      "version": "3.6.0-1.2build1",
+      "sha256": "86f71a3c7fc215966245a4908b16ec452411696c497ed0f34a2e41d0d18c5f70",
+      "source": "Ubuntu apt repository metadata"
+    },
+    {
+      "package": "libzim9",
+      "version": "9.2.3-1.1build1",
+      "sha256": "3d680bb49b7775feb4f120a75d79154622b590fcf80fa2436cd3869759fca4a7",
+      "source": "Ubuntu apt repository metadata"
+    },
+    {
+      "package": "libxapian30",
+      "version": "1.4.31-2",
+      "sha256": "10c3b03816eb27b7ef05402ce53cab96e625c0bf78455a95097d582af2e4d31e",
+      "source": "Ubuntu apt repository metadata"
+    }
+  ]
+}

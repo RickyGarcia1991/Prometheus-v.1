@@ -75,7 +75,7 @@ def _metadata(root, resources, version):
                        'Restore valid release metadata from a reviewed build, then rerun this check.')
 
 
-def _code_manifest(root):
+def _code_manifest(root, *, manifest_name="SHA256-MANIFEST.json"):
     identity, title = 'code_manifest', 'Listed code file checksums'
     matched, total, seen, issues = 0, 0, set(), []
     scope = 'Checks listed files only. Unlisted files and signature authenticity were not checked.'
@@ -91,7 +91,7 @@ def _code_manifest(root):
                        scan_complete=False, scope=scope)
 
     try:
-        rows = _json(root / 'SHA256-MANIFEST.json')
+        rows = _json(root / manifest_name)
         if not isinstance(rows, list) or not 1 <= len(rows) <= MAX_CODE_FILES:
             raise ValueError('Invalid manifest list')
         # Validate every entry before following any of its file paths.
@@ -261,8 +261,12 @@ def run_health_check(memory_path, resources_root=None, *, release_root=None, run
     root = Path(release_root or Path(__file__).resolve().parents[2]).absolute()
     resources = Path(resources_root).absolute() if resources_root else None
     hardware = hardware or detect_hardware()
-    checks = [_metadata(root, resources, running_version or __version__), _code_manifest(root),
-              _memory(memory_path), _runtime(resources), _models(resources)]
+    if hardware.system == 'Linux':
+        from .native_health import checks as native_checks
+        checks = native_checks(root, resources, running_version or __version__, memory_path)
+    else:
+        checks = [_metadata(root, resources, running_version or __version__), _code_manifest(root),
+                  _memory(memory_path), _runtime(resources), _models(resources)]
     names = set(checks[-1].get('models', []))
     selected = select_model(names, hardware)
     if not names:
@@ -278,13 +282,16 @@ def run_health_check(memory_path, resources_root=None, *, release_root=None, run
                           scope='Estimate with no resident-model credit. Successful loading, speed and answer quality are untested.'))
     checks.append(_result('physical_acceptance', 'Microphone, speaker and portability acceptance', 'untested',
                           'This passive check does not record audio, play a reply, eject/reconnect the SSD or test another computer. Any separate user-confirmed tests remain separate evidence.',
-                          'Review a spoken transcript, listen to a reply, then explicitly test safe eject/reconnect and startup on another computer.'))
+                          'Review a spoken transcript and listen to a reply. Test portability only after shutdown; never unplug a drive containing the running operating system.'))
     checks.append(_result('model_acceptance', 'Model task acceptance', 'untested',
                           'No model inference or answer-quality test was run by this health check.',
                           'Use Test available helpers for bounded task checks, then review a representative task yourself.'))
+    if hardware.system == 'Linux':
+        from .native_health import resources_check
+        checks.append(resources_check(resources))
     counts = dict(Counter(item['status'] for item in checks))
     return {'checked_utc': datetime.now(timezone.utc).isoformat(), 'checks': checks, 'counts': counts,
-            'network_used': False, 'inference_used': False, 'repairs_performed': False,
+            'network_used': False, 'loopback_inventory_used': hardware.system == 'Linux', 'inference_used': False, 'repairs_performed': False,
             'summary': (f"Health check: {counts.get('pass', 0)} passed, {counts.get('fail', 0)} failed, "
                         f"{counts.get('blocked', 0)} blocked, {counts.get('untested', 0)} untested. "
                         'Review the Maintenance cards for next steps.')}
