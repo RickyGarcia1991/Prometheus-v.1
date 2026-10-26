@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 import re
 import stat
@@ -83,9 +84,13 @@ def _runtime(resource_root):
     for relative, expected in PINS.items():
         if _hash(bundle / relative) != expected:
             raise AgentMemoryError('The AgentMemory package differs from its reviewed runtime pins.')
-    node = _checked_path(Path(resource_root) / NODE_RELATIVE)
-    if _hash(node, 128 * 1024 * 1024) not in NODE_PINS:
-        raise AgentMemoryError('The AgentMemory Node runtime differs from its reviewed pin.')
+    if sys.platform == 'linux':
+        from .linux_resources import system_executable
+        node = system_executable('/usr/bin/node')
+    else:
+        node = _checked_path(Path(resource_root) / NODE_RELATIVE)
+        if _hash(node, 128 * 1024 * 1024) not in NODE_PINS:
+            raise AgentMemoryError('The AgentMemory Node runtime differs from its reviewed pin.')
     return bundle, node
 
 

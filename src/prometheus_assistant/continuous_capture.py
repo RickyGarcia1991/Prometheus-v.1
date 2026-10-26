@@ -32,6 +32,7 @@ class EmptyRecording(GenerationCancelled):
 
 
 class _Format(ctypes.Structure):
+    _layout_ = 'ms'
     _pack_ = 1
     _fields_ = [('tag', ctypes.c_uint16), ('channels', ctypes.c_uint16),
                 ('rate', ctypes.c_uint32), ('bytes_per_second', ctypes.c_uint32),
@@ -149,6 +150,10 @@ class _WaveInput:
 
     def __exit__(self, *args):
         self.close()
+
+
+if sys.platform == 'linux':
+    from .linux_voice import LinuxInput as _WaveInput
 
 
 def record_continuous(destination, *, cancel_event=None, finish_event=None,

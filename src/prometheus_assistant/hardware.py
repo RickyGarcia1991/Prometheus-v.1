@@ -178,7 +178,7 @@ def coding_agents() -> dict[str, str]:
     commands = ("opencode", "qwen", "cline", "claude", "codex", "hermes")
     found = {name: path for name in commands if (path := shutil.which(name))}
     root = resource_root()
-    if root:
+    if root and platform.system() == "Windows":
         for name, relative in PORTABLE_AGENTS.items():
             executable = Path(root) / relative
             if executable.is_file():

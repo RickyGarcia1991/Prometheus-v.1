@@ -16,8 +16,8 @@ from prometheus_assistant.document_library import DocumentLibrary, OllamaEmbeddi
 
 
 requires_portable_markitdown = pytest.mark.skipif(
-    os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32,
-    reason='Native document converters require bundled Windows x64 Python 3.12',
+    sys.platform != 'linux' and (os.name != 'nt' or sys.version_info[:2] != (3, 12) or sys.maxsize <= 2**32),
+    reason='Document converters require Ubuntu or bundled Windows x64 Python 3.12',
 )
 
 

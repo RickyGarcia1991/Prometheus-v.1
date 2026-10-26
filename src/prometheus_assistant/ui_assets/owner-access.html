@@ -1,14 +1,36 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unlock Prometheus</title><link rel="stylesheet" href="/style.css"></head>
-<body><main style="max-width:620px;margin:6vh auto;padding:28px">
+<body style="overflow:auto"><main style="max-width:620px;margin:6vh auto;padding:28px;height:auto;min-height:0">
 <span class="eyebrow">PROMETHEUS · PRIVATE WORKSPACE</span><h1 id="ownerTitle">Unlock Prometheus</h1>
-<p>Use your passkey to open your conversations, documents and controls.</p>
+<p>Use your passkey or an enabled backup PIN to open your conversations, documents and controls.</p>
 <p class="fine">Your device may offer Windows Hello, a fingerprint, a PIN or a security key. A camera is optional. Photos and saved personal details cannot unlock this workspace.</p>
 <button id="ownerUnlock" class="primary" disabled>Unlock with passkey</button>
 <button id="ownerEnroll" class="primary" hidden>Set up owner passkey</button>
 <button id="ownerVerify" class="quiet" hidden>Lock to test a passkey</button>
+<section id="pinUnlockSection" hidden aria-labelledby="pinUnlockTitle">
+<h2 id="pinUnlockTitle">Sign in without your phone</h2>
+<form id="pinUnlockForm">
+<label for="backupPin">Backup PIN</label>
+<input id="backupPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required>
+<button id="pinUnlock" class="primary" type="submit">Unlock with backup PIN</button>
+</form><p id="pinAttempts" role="status" class="fine"></p>
+</section>
+<section id="pinManageSection" hidden aria-labelledby="pinManageTitle">
+<h2 id="pinManageTitle">Four-digit backup PIN</h2>
+<p>Use this PIN on this Ubuntu installation when your phone is unavailable. It opens your Prometheus workspace; administrator commands still require Ubuntu authentication.</p>
+<p class="fine">This is an app PIN, not a hardware security key or Windows Hello. It is weaker than your passkey. Five incorrect attempts lock PIN sign-in until you use your passkey. It does not protect files from someone who can read your drive.</p>
+<form id="pinSetupForm">
+<label for="newBackupPin">Choose four digits</label>
+<input id="newBackupPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+<label for="confirmBackupPin">Enter the same PIN again</label>
+<input id="confirmBackupPin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="new-password" required>
+<button id="pinSave" type="submit" class="primary">Save backup PIN</button>
+<button id="pinRemove" type="button" class="quiet" hidden>Remove backup PIN</button>
+</form><p id="pinManagementStatus" role="status" class="fine"></p>
+</section>
+<p id="pinReverify" class="fine" hidden>Verify with your passkey to set, change or remove a backup PIN, or add another passkey.</p>
 <p><a id="ownerReturn" href="/" hidden>Return to chat</a></p>
 <p id="ownerStatus" role="status" aria-live="polite">Checking owner access…</p>
-<p class="fine">Passkey enrollment is completed in your device's sign-in window. Prometheus stores the public credential, never your PIN or biometric template. After setup, verify the new passkey to unlock.</p>
-<p class="fine">This lock protects the Prometheus web interface. It does not encrypt the SSD or prevent another Windows account with disk access from reading its files. Keep your operating-system account and drive protected.</p>
+<p class="fine">Passkey enrollment is completed in your device's sign-in window. Prometheus stores the public credential, never the device's PIN or biometric template. If you enable a backup app PIN, only a salted verifier is saved locally; the PIN is not stored as text. Backup PINs are excluded from supported app backups and must be set up again after restoring elsewhere.</p>
+<p class="fine">This lock protects the Prometheus web interface. It does not encrypt the drive or prevent an operating-system account with disk access from reading its files. Keep your operating-system account and drive protected.</p>
 </main><script src="/owner-access.js"></script></body></html>

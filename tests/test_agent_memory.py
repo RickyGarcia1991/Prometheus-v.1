@@ -190,6 +190,8 @@ def test_policy_denial_and_early_cancel_create_no_data(tmp_path, monkeypatch):
 
 
 def test_runtime_pin_failure_and_missing_are_honest(tmp_path, monkeypatch):
+    # This fixture exercises the portable Windows Node pin specifically.
+    monkeypatch.setattr(memory.sys, 'platform', 'win32')
     assert memory.status(tmp_path)['installed'] is False
     bundle = tmp_path / memory.BUNDLE
     (bundle / 'dist').mkdir(parents=True)

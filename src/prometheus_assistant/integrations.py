@@ -2,12 +2,21 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 from .hardware import coding_agents, resource_root
 
 
 def ollama_executable() -> str | None:
+    if sys.platform == "linux":
+        from .linux_resources import system_executable
+        for path in ("/usr/local/bin/ollama", "/usr/bin/ollama"):
+            try:
+                return str(system_executable(path))
+            except (OSError, ValueError):
+                continue
+        return None
     root = resource_root()
     if not root:
         return None

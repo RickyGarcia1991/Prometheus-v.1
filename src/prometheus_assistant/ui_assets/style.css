@@ -190,3 +190,41 @@
 .folded-home main:has(.workbench:not([hidden])) .viewbar{display:none}
 @media(max-width:650px){.folded-home .viewbar{padding-top:9px;font-size:8px;letter-spacing:.1em}.folded-home .presence-caption{font-size:21px}.folded-home .conversation-panel{max-height:360px}.folded-home footer{line-height:1.45}}
 @media(max-height:600px){.folded-home .viewbar{padding-top:5px;padding-bottom:2px}.folded-home #conversationToggle{min-height:30px;padding:4px 12px}.folded-home .orb,.folded-home .presence:has(.voice-capture:not([hidden])) .orb{flex-basis:90px;height:90px;min-height:15px}.folded-home .presence-caption,.folded-home .presence:has(.voice-capture:not([hidden])) .presence-caption{font-size:15px;gap:2px}.folded-home #activityNote{font-size:10px}.folded-home .presence-identity{gap:3px}.folded-home .voice-capture{gap:2px}.folded-home .voice-wave{height:18px}.folded-home .conversation-panel{max-height:240px}}
+
+/* Keep conversation readable when health panels exceed the screen height. */
+.folded-home main{overflow-y:auto;overscroll-behavior-y:contain;scrollbar-width:thin}
+.folded-home .conversation-panel{flex:0 0 auto;height:clamp(180px,40dvh,320px);min-height:180px;margin:6px auto}
+.folded-home main[data-view=waveform] .presence{flex:0 0 auto;min-height:180px}
+
+
+/* Conversation first; detailed decisions live in the Review workspace. */
+.folded-home .viewbar,.folded-home main:has(.workbench:not([hidden])) .viewbar{display:flex;letter-spacing:0;padding:10px 0 6px}
+.primary-nav{display:flex;gap:4px;align-items:center;min-width:0}
+.primary-nav button{background:transparent;border-color:transparent;border-radius:12px;padding:9px 14px;font-size:13px;min-height:40px}
+.primary-nav button[aria-current=page]{background:#193a2a;border-color:#567964;color:#edf8f1}
+#reviewCount{display:inline-block;margin-left:5px;color:#ffe0a1;font-variant-numeric:tabular-nums}
+.folded-home .conversation-panel{flex:1 0 240px;height:auto;max-height:none;min-height:240px;margin:6px auto}
+.folded-home #modeShortcut{font-size:12px;padding:4px 8px;min-height:30px;background:transparent;border-color:transparent}
+.folded-home .conversation-heading{min-height:42px}
+.folded-home #taskActivity{margin:0 0 8px;background:#0c2118;border-color:#304c3d}
+.folded-home #taskActivity[open]{max-height:220px;overflow:auto}
+.folded-home #taskActivity>summary{min-height:38px;padding:9px 12px}
+.folded-home #taskActivity:not([open])>summary{color:#a6bfb0}
+.folded-home #panelReview .task-activity{background:#0d2118;border-color:#355140;margin:12px 0;padding:0 12px 10px}
+.folded-home #panelReview .task-activity:not([open]){padding-bottom:0}
+.folded-home #panelReview .task-activity>summary{padding:13px 0;font-size:13px}
+.folded-home .workbench{flex:1 0 300px;min-height:300px}
+.folded-home .workbench-tabs{flex-wrap:wrap}
+.folded-home .settings-detail{margin:8px 0;border-top:1px solid #355140;padding-top:12px}
+.folded-home .settings-detail>summary{cursor:pointer;line-height:1.6;font-size:13px;padding:5px 0}
+.folded-home .settings-detail[open]>summary{margin-bottom:8px}
+.folded-home #voiceAvailability{font-size:11px;color:#9bb2a6;margin:2px 0}
+.folded-home #ownerPanel a{color:#bce7d0;text-decoration:underline;text-underline-offset:3px;padding:8px 0}
+.folded-home #ownerPanel a:focus-visible{outline:2px solid #9eebbc;outline-offset:3px}
+@media(max-width:650px){.folded-home .primary-nav button{font-size:12px;padding:8px 10px}.folded-home #conversationToggle{font-size:11px;padding:7px 10px}.folded-home .viewbar{gap:4px}.folded-home .conversation-panel{min-height:220px;flex-basis:220px}.folded-home .workbench-head{flex-wrap:wrap}.folded-home .workbench-tabs{width:100%}}
+@media(max-height:600px){.folded-home .conversation-panel{min-height:160px;flex-basis:160px}.folded-home #taskActivity[open]{max-height:150px}}
+
+/* The cue follows confirmed microphone state, never a timer. */
+.voice-prompt{display:block;font-size:16px;line-height:1.4;color:#d6e7dc}
+.voice-prompt[data-listening="true"]{color:#b8ffd1;border-left:4px solid #87e5a6;padding-left:10px}
+@media(max-height:600px){.voice-prompt{font-size:13px}}

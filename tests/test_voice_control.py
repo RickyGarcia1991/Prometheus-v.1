@@ -43,8 +43,10 @@ def test_missing_runtime_checked_before_microphone(tmp_path,monkeypatch):
     with pytest.raises(ValueError,match='missing'):voice.capture_prompt()
 
 
-@pytest.mark.skipif(sys.platform!='win32',reason='Windows MCI contract')
 def test_record_cancel_closes_device_without_saving(tmp_path,monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(voice, 'sys', SimpleNamespace(platform='win32'))
+    monkeypatch.setattr(voice, 'os', SimpleNamespace(name='nt'))
     event=threading.Event();calls=[]
     class Command:
         def __call__(self,text,*args):
@@ -52,7 +54,7 @@ def test_record_cancel_closes_device_without_saving(tmp_path,monkeypatch):
             if text.startswith('record '):event.set()
             return 0
     class WinMM:mciSendStringW=Command()
-    monkeypatch.setattr(ctypes,'WinDLL',lambda name:WinMM())
+    monkeypatch.setattr(ctypes,'WinDLL',lambda name:WinMM(),raising=False)
     with pytest.raises(GenerationCancelled):
         voice.record_windows(tmp_path/'unused.wav',cancel_event=event)
     assert calls[-1]=='close prometheus_voice'

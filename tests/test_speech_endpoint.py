@@ -142,10 +142,15 @@ def test_missing_detector_fails_before_opening_device(tmp_path, monkeypatch):
     from prometheus_assistant import speech_activity
     def missing(*args, **kwargs):
         raise OSError('missing test binary')
-    monkeypatch.setattr(speech_activity, '_runtime', None)
+    import sys
+    if sys.platform == 'linux':
+        from prometheus_assistant import linux_speech_activity as native
+    else:
+        native = speech_activity
+    monkeypatch.setattr(native, '_runtime', None)
     monkeypatch.setattr(speech_activity.ctypes, 'CDLL', missing)
     monkeypatch.setattr(capture, '_WaveInput', lambda: pytest.fail('device must stay closed'))
-    with pytest.raises(ValueError, match='speech detector could not load'):
+    with pytest.raises(ValueError, match='speech detector.*(load|unavailable)'):
         capture.record_continuous(tmp_path/'missing.wav')
     assert not (tmp_path/'missing.wav').exists()
 
@@ -164,6 +169,12 @@ def test_each_turn_starts_with_fresh_recurrent_state():
 def test_detector_bundle_is_verified_without_loading_or_recording(monkeypatch):
     from prometheus_assistant import speech_activity
     monkeypatch.setattr(speech_activity, '_native_detector', lambda: pytest.fail('No native load during status'))
-    assert speech_activity.detector_status() == {
-        'engine': 'Silero v6.2.0 via whisper.cpp b5454, local CPU',
-        'bundle_verified': True, 'device_tested': False}
+    import sys
+    status = speech_activity.detector_status()
+    assert status['device_tested'] is False
+    assert 'Silero v6.2.0' in status['engine']
+    if sys.platform == 'linux':
+        assert status['model_bundle_verified'] and status['native_runtime_present']
+        assert 'Ubuntu' in status['engine']
+    else:
+        assert status['bundle_verified'] is True

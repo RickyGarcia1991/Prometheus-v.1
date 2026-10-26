@@ -141,14 +141,17 @@ def _offline_audit(event, args):
 
 
 def _install_vendor(suffix, target):
-    if sys.version_info[:2] != (3, 12) or os.name != 'nt' or sys.maxsize <= 2**32:
-        raise ValueError('Portable MarkItDown requires the bundled Windows x64 Python 3.12 runtime.')
+    native = sys.platform == 'linux'
+    if not native and (sys.version_info[:2] != (3, 12) or os.name != 'nt' or sys.maxsize <= 2**32):
+        raise ValueError('Portable MarkItDown requires Windows x64 Python 3.12; Ubuntu uses its native text reader.')
     vendor = Path(__file__).with_name('vendor') / 'markitdown'
     lock_bytes = (vendor/'LOCK.json').read_bytes()
     if hashlib.sha256(lock_bytes).hexdigest() != LOCK_SHA256:
         raise ValueError('The bundled MarkItDown dependency lock failed verification.')
     lock = json.loads(lock_bytes)
     for row in lock['wheels']:
+        if native and (suffix != '.pdf' or not row['filename'].startswith('pypdf-')):
+            continue
         if suffix not in row['formats']:
             continue
         wheel = vendor/row['filename']
@@ -167,6 +170,10 @@ def _install_vendor(suffix, target):
                         raise ValueError('Invalid bundled dependency path.')
                 archive.extractall(target)
     sys.path.insert(0, str(target))
+    if native:
+        # Native cryptography comes from Ubuntu, never the bundled Windows wheels.
+        sys.path.append('/usr/lib/python3/dist-packages')
+        return
     # Importing markitdown.__init__ eagerly imports all converters and Magika.
     # Namespace packages let us use the untouched selected converter modules
     # without enabling that unrelated generic dispatcher or plugin discovery.
@@ -333,7 +340,15 @@ def _worker(source, output):
         target = source.parent/'runtime'
         target.mkdir()
         _install_vendor(suffix, target)
-        result = {'sections': _convert(source, suffix), 'converter': 'Microsoft MarkItDown 0.1.8'}
+        if sys.platform == 'linux':
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('linux_documents', Path(__file__).with_name('linux_documents.py'))
+            native = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(native)
+            sections = native.pdf(source) if suffix == '.pdf' else native.office(source, suffix)
+            result = {'sections': sections, 'converter': 'Ubuntu native text reader; pinned pypdf for PDF'}
+        else:
+            result = {'sections': _convert(source, suffix), 'converter': 'Microsoft MarkItDown 0.1.8'}
     except Exception as error:
         result = {'error': ('MarkItDown conversion failed: '+str(error))[:500]}
         status = 1

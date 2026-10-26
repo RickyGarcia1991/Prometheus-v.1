@@ -7,7 +7,7 @@ const destinations={project:'Code',scheduled:'Code',remote:'Remote',self_improve
 let state={online:false,busy:false,closed:false},generation=0,reading=false,refreshPending=false,timer=null,expiry=null,lastAttempt=-Infinity,generated=null;
 const ready=()=>state.online && !state.busy && !state.closed && !document.hidden;
 const text=value=>typeof value==='string'?value.slice(0,240):'';
-function clear(message){if(expiry!==null)clearTimeout(expiry);expiry=null;list.replaceChildren();list.hidden=true;generated=null;status.textContent=message;}
+function clear(message){const badge=el('reviewCount');if(badge){badge.hidden=true;badge.textContent='';}if(expiry!==null)clearTimeout(expiry);expiry=null;list.replaceChildren();list.hidden=true;generated=null;status.textContent=message;}
 function stop(){if(timer!==null)clearTimeout(timer);timer=null;}
 function controls(){refresh.disabled=!ready() || reading;}
 function age(){return generated===null?null:Math.max(0,Math.floor(Date.now()/1000-generated));}
@@ -27,6 +27,8 @@ function validate(data){
  return data;
 }
 function render(data){
+ const badge=el('reviewCount'),count=data.counts.critical+data.counts.warning;
+ if(badge){badge.hidden=!count;badge.textContent=' '+count;badge.setAttribute('aria-label',count+' items need attention');}
  generated=data.generated_at;
  const devices=data.sources.devices,expiresAt=Math.min(data.generated_at+60,devices.freshness==='current'?devices.expires_at:Infinity);
  if(Date.now()/1000>=expiresAt){clear('Decision snapshot or device observation is stale. Refresh for current information.');return;}

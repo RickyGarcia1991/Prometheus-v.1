@@ -22,8 +22,7 @@ def test_second_server_cannot_share_active_preview_port(tmp_path):
         first.server_close()
 
 
-@pytest.mark.skipif(not hasattr(socket, 'SO_EXCLUSIVEADDRUSE'), reason='Windows socket exclusivity')
-def test_reuse_address_cannot_displace_windows_preview(tmp_path):
+def test_reuse_address_cannot_displace_active_preview(tmp_path):
     app = SimpleNamespace(memory_path=tmp_path / 'memory.sqlite3')
     first = Server(('127.0.0.1', 0), app)
     try:

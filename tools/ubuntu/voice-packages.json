@@ -1,0 +1,26 @@
+[
+  {
+    "package": "whisper.cpp",
+    "version": "1.8.3+dfsg-2",
+    "sha256": "17651530999cff706d08921729b53631cd1a668d5c8fd1b1f21b46e0ac6e6997",
+    "source": "pool/universe/w/whisper.cpp/whisper.cpp_1.8.3+dfsg-2_amd64.deb"
+  },
+  {
+    "package": "libwhisper1",
+    "version": "1.8.3+dfsg-2",
+    "sha256": "31223498b404a747b81840e35f1e252c8c704946419dab0c910658bf37da28f0",
+    "source": "pool/universe/w/whisper.cpp/libwhisper1_1.8.3+dfsg-2_amd64.deb"
+  },
+  {
+    "package": "libggml0",
+    "version": "0.9.11-1",
+    "sha256": "871c666330f0597aff3a23eb60e1f29cb8aa6ea70c35f0683f30c7405cf82c9f",
+    "source": "pool/universe/g/ggml/libggml0_0.9.11-1_amd64.deb"
+  },
+  {
+    "package": "espeak-ng",
+    "version": "1.52.0+dfsg-5build1",
+    "sha256": "01ed5ada622dd0f3eef34f6cd545a6be9ece8a8a6b58b70a552dc12b4852454c",
+    "source": "pool/universe/e/espeak-ng/espeak-ng_1.52.0+dfsg-5build1_amd64.deb"
+  }
+]

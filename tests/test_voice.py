@@ -18,7 +18,10 @@ def test_silence_is_not_sent_to_whisper(monkeypatch,tmp_path):
         voice.transcribe(audio)
 
 
-def test_speak_treats_text_as_data_and_uses_no_network(monkeypatch):
+def test_windows_speak_treats_text_as_data_and_uses_no_network(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(voice, 'sys', SimpleNamespace(platform='win32'))
+    monkeypatch.setattr(voice, 'os', SimpleNamespace(name='nt'))
     calls=[]
     class Result:returncode=0
     monkeypatch.setattr(voice.subprocess,'run',lambda *a,**k:calls.append((a,k)) or Result())
@@ -34,3 +37,38 @@ def test_voice_status_does_not_access_microphone(monkeypatch,tmp_path):
     monkeypatch.setattr(voice,'voice_paths',lambda:(tmp_path/'absent.exe',tmp_path))
     monkeypatch.setattr(voice,'record_windows',lambda *a:pytest.fail('Read-only status must not record'))
     assert voice.voice_status()['microphone'].startswith('off')
+
+
+
+def test_linux_playback_receives_pcm_and_literal_text_stays_data(monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(voice, 'sys', SimpleNamespace(platform='linux'))
+    calls=[]
+    text='$(touch unwanted) "literal"'
+    def render(value):
+        assert value==text
+        return b'RIFF test PCM'
+    monkeypatch.setattr(voice, 'synthesize_wav', render)
+    monkeypatch.setattr(voice.subprocess, 'run', lambda *a, **k: calls.append((a,k)) or SimpleNamespace(returncode=0))
+    voice.speak(text)
+    args,kwargs=calls[0]
+    assert args[0]==['/usr/bin/aplay','-q']
+    assert kwargs['input']==b'RIFF test PCM'
+    assert 'shell' not in kwargs
+
+
+@pytest.mark.parametrize('channels', [1, 2])
+def test_clipped_linux_audio_is_rejected_before_decoder(tmp_path, monkeypatch, channels):
+    import array, sys
+    from types import SimpleNamespace
+    monkeypatch.setattr(voice, 'sys', SimpleNamespace(platform='linux', byteorder=sys.byteorder))
+    monkeypatch.setattr(voice, '_transcriber', lambda model: (tmp_path/'decoder', tmp_path/'weights', 'base.en', SimpleNamespace(cpu_threads=4)))
+    monkeypatch.setattr(voice.subprocess, 'Popen', lambda *a, **k: pytest.fail('Distorted input must not be transcribed'))
+    audio=tmp_path/'clipped.wav'
+    samples=array.array('h', [32767, -32768]*16000*channels)
+    if sys.byteorder != 'little': samples.byteswap()
+    with wave.open(str(audio), 'wb') as stream:
+        stream.setparams((channels, 2, 16000, 0, 'NONE', ''))
+        stream.writeframes(samples.tobytes())
+    with pytest.raises(ValueError, match='clipping'):
+        voice.transcribe(audio)

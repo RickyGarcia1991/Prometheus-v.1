@@ -263,6 +263,8 @@ def test_invalid_action_fields(connection):
 
 
 def test_bridge_uses_pinned_small_client_and_filters_inherited_environment(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    monkeypatch.setattr(remote_access, 'sys', SimpleNamespace(platform='win32'))
     local = tmp_path/'host'
     local.mkdir()
     resources = tmp_path/'resources'
