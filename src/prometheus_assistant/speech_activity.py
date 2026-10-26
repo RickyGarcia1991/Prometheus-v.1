@@ -156,5 +156,20 @@ def detector_status():
             for row in rows)
     except (OSError, ValueError, KeyError, TypeError):
         verified = False
+    if sys.platform == 'linux':
+        from .linux_voice import runtime_root
+        try:
+            present = (runtime_root()/'usr/lib/x86_64-linux-gnu/libwhisper.so.1').is_file()
+        except ValueError:
+            present = False
+        return {'engine': 'Silero v6.2.0 via Ubuntu whisper.cpp 1.8.3, local CPU',
+                'model_bundle_verified': verified, 'native_runtime_present': present,
+                'device_tested': False}
     return {'engine': 'Silero v6.2.0 via whisper.cpp b5454, local CPU',
             'bundle_verified': verified, 'device_tested': False}
+
+
+
+WindowsSpeechDetector = SpeechDetector
+if sys.platform == 'linux':
+    from .linux_speech_activity import LinuxSpeechDetector as SpeechDetector

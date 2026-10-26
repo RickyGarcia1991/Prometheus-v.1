@@ -1,0 +1,1 @@
+{"name": "prometheus-remote-linux", "private": true, "version": "1.0.0", "dependencies": {"mcp-remote": "0.15.2"}}

@@ -81,7 +81,12 @@ def infer_role(prompt, task='general', *, image=False):
 def choose_helper(installed, hardware, role, resident_model_gib=0):
     if role not in ROLE_MODELS:
         raise ValueError('Unknown helper role.')
-    for name in ROLE_MODELS[role]:
+    names = ROLE_MODELS[role]
+    # A 7 GiB Surface must retain the UI's 2 GiB system reserve while decoding
+    # image tokens. Prefer the compact native vision helper on sub-8 GiB hosts.
+    if role == 'vision' and hardware.ram_gib < 8:
+        names = ('qwen3.5:0.8b', 'qwen3-vl:2b')
+    for name in names:
         if name not in installed:
             continue
         task = 'vision' if role == 'vision' else 'coding' if name.startswith('qwen2.5-coder:') else 'general'

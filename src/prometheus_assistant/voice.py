@@ -2,6 +2,7 @@
 from __future__ import annotations
 import ctypes
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -13,6 +14,10 @@ from .ollama import GenerationCancelled
 
 
 def voice_paths():
+    if sys.platform == 'linux':
+        from .linux_voice import runtime_root
+        root = runtime_root()
+        return root/'usr/bin/whisper-cli', root/'models'
     root = resource_root()
     if not root:
         raise ValueError('Portable resources are not configured.')
@@ -28,7 +33,7 @@ def voice_status():
             'models': {name:(models/f'ggml-{name}.bin').is_file() for name in ('tiny.en','base.en')},
             'speech_recognition':'OpenAI Whisper via whisper.cpp, local English models',
             'microphone':'off; starts only when requested in voice-chat',
-            'speech_output':'Windows installed SAPI voices; no online voice service',
+            'speech_output': ('eSpeak NG, local Ubuntu voice' if sys.platform == 'linux' else 'Windows installed SAPI voices; no online voice service'),
             'device_tested':False}
 
 
@@ -71,22 +76,31 @@ def transcribe(audio, *, model='auto', cancel_event=None, on_stage=None, on_diag
             if src.getsampwidth()==2 and src.getnchannels() in (1,2):
                 import array
                 audible=False
+                clipped=sample_count=0
                 while frames:=src.readframes(16000):
                     _cancelled(cancel_event)
                     samples=array.array('h',frames)
-                    if any(abs(sample)>120 for sample in samples):
-                        audible=True;break
+                    if sys.byteorder != 'little':
+                        samples.byteswap()
+                    audible = audible or any(abs(sample)>120 for sample in samples)
+                    if sys.platform == 'linux':
+                        sample_count += len(samples)
+                        clipped += sum(abs(sample)>=32760 for sample in samples)
                 if not audible:raise ValueError('No audible speech detected; nothing was submitted.')
+                if sample_count and clipped > max(160, sample_count * .01):
+                    raise ValueError('Microphone audio is clipping. Lower Ubuntu Sound input volume and record again; nothing was submitted.')
     threads=max(1,min(8,hardware.cpu_threads-2))
     with tempfile.TemporaryDirectory(prefix='prometheus-voice-') as temp:
         output=Path(temp)/'transcript'
         _cancelled(cancel_event)
         if on_stage: on_stage('Microphone off · transcribing locally')
+        from .linux_voice import native_environment
+        native_options = {'env': native_environment()} if sys.platform == 'linux' else {}
         with tempfile.TemporaryFile() as errors:
             process=subprocess.Popen([str(executable),'-m',str(weights),'-f',str(audio),'-t',str(threads),
                                       '-ng','-l','en','-nt','-otxt','-of',str(output),'-bo','1','-bs','1'],
                                      stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=errors,
-                                     creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
+                                     creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0), **native_options)
             deadline=time.monotonic()+300
             next_memory_check=0
             try:
@@ -144,11 +158,15 @@ def record_windows(destination, seconds=8, *, cancel_event=None):
     require_dispatch('voice.record')
     cancel_event = cancel_event if cancel_event is not None else threading.Event()
     _cancelled(cancel_event)
-    if os.name!='nt':raise ValueError('Microphone capture currently supports Windows.')
     if not 1<=seconds<=30:raise ValueError('Recording duration must be 1–30 seconds.')
     destination=Path(destination).resolve()
     if destination.exists():raise ValueError('Recording destination already exists.')
     if '"' in str(destination):raise ValueError('Invalid recording path.')
+    if sys.platform == 'linux':
+        from .linux_voice import record
+        return record(destination, seconds, cancel_event)
+    if os.name != 'nt':
+        raise ValueError('Microphone capture supports Windows and Ubuntu.')
     winmm=ctypes.WinDLL('winmm')
     winmm.mciSendStringW.argtypes=[ctypes.c_wchar_p,ctypes.c_wchar_p,ctypes.c_uint,ctypes.c_void_p]
     winmm.mciSendStringW.restype=ctypes.c_uint
@@ -220,7 +238,13 @@ def capture_prompt_continuous(*, cancel_event=None, finish_event=None, on_stage=
 def speak(text):
     from .application_policy import require_dispatch
     require_dispatch('voice.speak')
-    if os.name!='nt':raise ValueError('Speech output currently supports Windows SAPI.')
+    if sys.platform == 'linux':
+        data = synthesize_wav(text[:4000])
+        result = subprocess.run(['/usr/bin/aplay', '-q'], input=data, capture_output=True, timeout=180)
+        if result.returncode:
+            raise ValueError('Ubuntu audio playback failed; the answer remains in text.')
+        return
+    if os.name!='nt':raise ValueError('Speech output supports Windows and Ubuntu.')
     script="$ErrorActionPreference='Stop'; $voice=New-Object -ComObject SAPI.SpVoice; $utterance=[Console]::In.ReadToEnd(); [void]$voice.Speak($utterance)"
     result=subprocess.run(['powershell.exe','-NoProfile','-Command',script],input=text[:4000],text=True,
                           capture_output=True,timeout=180,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
@@ -233,10 +257,13 @@ def synthesize_wav(text, *, cancelled=lambda: False):
     require_dispatch('voice.speak')
     if not isinstance(text, str) or not text.strip() or len(text) > 4000 or '\x00' in text:
         raise ValueError('Speech requires 1–4000 characters of answer text.')
-    if os.name != 'nt':
-        raise ValueError('Local speech output requires Windows. The answer remains in text.')
     if cancelled():
         raise ValueError('Voice preparation stopped.')
+    if sys.platform == 'linux':
+        from .linux_voice import synthesize
+        return synthesize(text, cancelled)
+    if os.name != 'nt':
+        raise ValueError('Local speech output supports Windows and Ubuntu.')
     # Text travels through stdin; neither answer text nor a request path becomes code.
     script = """$ErrorActionPreference='Stop'
 [Console]::InputEncoding = New-Object System.Text.UTF8Encoding($false)

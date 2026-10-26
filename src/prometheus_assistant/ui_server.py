@@ -54,7 +54,16 @@ PROFILES = {'public', 'medical', 'math', 'engineering', 'openai', 'general'}
 def installed_models():
     root = resource_root()
     if not root:
-        return set()
+        # Native installations use the running local Ollama inventory.
+        from .ollama import LocalModelError
+        try:
+            rows = OllamaClient(timeout=1).local_models()
+        except LocalModelError:
+            return set()
+        return {row['name'] for row in rows
+                if isinstance(row, dict) and isinstance(row.get('name'), str)
+                and row['name'].strip() and 'cloud' not in row['name'].lower()
+                and not (row.get('remote_host') or row.get('remote_model') or row.get('cloud'))}
     library = Path(root) / 'Ollama/.ollama/models/manifests/registry.ollama.ai/library'
     if not library.is_dir():
         return set()
@@ -65,7 +74,9 @@ def installed_models():
 def hardware_status():
     hardware = detect_hardware()
     profile = select_model(installed_models(), hardware, OllamaClient(timeout=.5).resident_memory_gib())
-    return {**asdict(hardware), 'chat_ready': profile is not None,
+    from .linux_voice import readiness
+    voice_available = hardware.system == 'Windows' or (hardware.system == 'Linux' and readiness())
+    return {**asdict(hardware), 'voice_available': voice_available, 'chat_ready': profile is not None,
             'suggested_model': profile.model if profile else None,
             'fallback': 'Offline references and exact calculation remain available.'}
 
@@ -996,7 +1007,7 @@ class Handler(BaseHTTPRequestHandler):
             self.redirect_to_owner = True
             self.respond(302, b''); return
         if self.path.startswith('/api/') and self.path not in {'/api/bootstrap', '/api/owner/state'} and not self.owner_unlocked():
-            self.respond(401, {'error': 'Unlock Prometheus with your passkey.'}); return
+            self.respond(401, {'error': 'Unlock Prometheus with your passkey or backup PIN.'}); return
         if self.path == '/' and not self.owner_unlocked():
             app.last_seen = time.monotonic()
             self.respond(200, (ASSETS/'owner-access.html').read_bytes(), 'text/html; charset=utf-8'); return
@@ -1122,7 +1133,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed(token=True, post=True):
             self.reject(403, {'error': 'This action requires your local interface session.'}); return
         if not self.path.startswith('/api/owner/') and not self.owner_unlocked():
-            self.reject(401, {'error': 'Unlock Prometheus with your passkey.'}); return
+            self.reject(401, {'error': 'Unlock Prometheus with your passkey or backup PIN.'}); return
         if self.headers.get('Content-Type') != 'application/json' or self.headers.get('Transfer-Encoding'):
             self.reject(415, {'error': 'Use a JSON request.'}); return
         try:
@@ -1155,6 +1166,14 @@ class Handler(BaseHTTPRequestHandler):
                     if session:
                         self.owner_cookie = session
                     self.respond(200, result)
+                elif self.path == '/api/owner/pin/setup' and set(body) == {'pin', 'confirmation'}:
+                    self.respond(200, access.configure_pin(body['pin'], body['confirmation'], self.owner_session()))
+                elif self.path == '/api/owner/pin/unlock' and set(body) == {'pin'}:
+                    result, session = access.unlock_pin(body['pin'])
+                    self.owner_cookie = session
+                    self.respond(200, result)
+                elif self.path == '/api/owner/pin/disable' and body == {}:
+                    self.respond(200, access.disable_pin(self.owner_session()))
                 elif self.path == '/api/owner/lock' and body == {}:
                     binding = hashlib.sha256((self.owner_session() or '').encode()).hexdigest()
                     self.server.app.action_approvals.revoke_binding(binding)
@@ -1261,7 +1280,7 @@ class Handler(BaseHTTPRequestHandler):
                     app.speech_lock.release()
                 # The client may request its next chunk as soon as this response arrives.
                 if not self.owner_unlocked():
-                    self.respond(401, {'error': 'Unlock Prometheus with your passkey.'})
+                    self.respond(401, {'error': 'Unlock Prometheus with your passkey or backup PIN.'})
                 elif app.closing:
                     raise RuntimeError('Prometheus is closing.')
                 elif cancelled():
@@ -1348,7 +1367,7 @@ def serve(memory_path, *, port=54555, open_browser=True, shutdown_request=None):
             app.idle_maintenance()
             if shutdown_request and Path(shutdown_request).exists():
                 app.closing = True
-            if time.monotonic() - app.last_seen > 300 and not app.idle_research_enabled():
+            if os.environ.get('PROMETHEUS_KEEP_OPEN') != '1' and time.monotonic() - app.last_seen > 300 and not app.idle_research_enabled():
                 app.closing = True
             if app.closing:
                 app.stop_dictation()

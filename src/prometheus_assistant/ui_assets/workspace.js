@@ -51,6 +51,8 @@ function controls() {
 function showWorkbench(show) {
   panel.hidden = !show; main.classList.toggle('workspace-open', show);
   element('openWorkbench').setAttribute('aria-expanded', String(show));
+  const current=!show?'navChat':!element('panelReview').hidden?'navReview':'navWorkspace';
+  for(const id of ['navChat','navWorkspace','navReview']){if(id===current)element(id).setAttribute('aria-current','page');else element(id).removeAttribute('aria-current');}
   element('ownerPanel').hidden = true;
   element('ownerPanelToggle').setAttribute('aria-expanded', 'false');
   if (show) element('workbench').querySelector('[role=tab][aria-selected=true]').focus();
@@ -58,7 +60,9 @@ function showWorkbench(show) {
 }
 window.addEventListener('prometheus-show-conversation', () => showWorkbench(false));
 function switchPanel(name, focus = false) {
-  ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'].forEach(item => {
+  element('workspaceStatus').hidden=!['Documents','Code','Maintenance'].includes(name);
+  panel.querySelector('.workbench-body').scrollTop=0;
+  ['Review', 'Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'].forEach(item => {
     const selected = item === name, tab = element('tab' + item);
     tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
     element('panel' + item).hidden = !selected;
@@ -241,12 +245,14 @@ function renderHealth(data) {
 }
 
 element('openWorkbench').onclick = () => showWorkbench(panel.hidden);
-element('closeWorkbench').onclick = () => showWorkbench(false);
+element('closeWorkbench').onclick = () => setConversationView(true);
+element('navWorkspace').onclick = () => switchPanel('Documents');
+element('navReview').onclick = () => switchPanel('Review');
 panel.querySelectorAll('[data-panel]').forEach(button => {
   button.onclick = () => switchPanel(button.dataset.panel);
   button.onkeydown = event => {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault(); const names = ['Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'];
+    event.preventDefault(); const names = ['Review', 'Documents', 'Code', 'Maintenance', 'Integrations', 'Remote', 'Permissions'];
     let index = names.indexOf(button.dataset.panel);
     index = event.key === 'Home' ? 0 : event.key === 'End' ? names.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : names.length - 1)) % names.length;
     switchPanel(names[index], true);

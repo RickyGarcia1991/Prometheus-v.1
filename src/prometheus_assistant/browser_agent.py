@@ -81,6 +81,8 @@ def _plain(path):
 
 
 def _manifest(root):
+    if root is None:
+        raise ValueError('Portable browser resources are not configured on this computer.')
     bundle = Path(root) / BUNDLE_RELATIVE
     for path in reversed([bundle, *bundle.parents]):
         _plain(path)
@@ -271,12 +273,16 @@ def _run_reader(bundle, url, job, cancel_event):
             if thread.ident is not None: thread.join(timeout=1)
 
 
+def _require_windows_runtime():
+    if os.name != 'nt' or sys.version_info[:2] != (3, 12):
+        raise ValueError('Browser Use currently requires the portable Windows Python 3.12 runtime.')
+
+
 def execute(action, arguments, *, data_root, resource_root, cancel_event=None):
     from .application_policy import require_dispatch
     require_dispatch('integrations.browser_use')
     args = canonical_arguments(action, arguments)
-    if os.name != 'nt' or sys.version_info[:2] != (3, 12):
-        raise ValueError('Browser Use currently requires the portable Windows Python 3.12 runtime.')
+    _require_windows_runtime()
     from .hardware import detect_hardware
     available = detect_hardware().available_ram_gib
     if available is None or available < 1.0:

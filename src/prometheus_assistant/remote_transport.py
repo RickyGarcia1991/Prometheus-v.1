@@ -84,6 +84,8 @@ class MCPBridge:
                    'env': dict(env), 'bufsize': 0}
         if os.name == 'nt':
             options['creationflags'] = subprocess.CREATE_NO_WINDOW
+        else:
+            options['umask'] = 0o077
         from .application_policy import require_dispatch
         require_dispatch('remote.transport')
         try:

@@ -166,6 +166,10 @@ def test_execute_returns_canonical_provider_identity_without_native_work(monkeyp
     monkeypatch.setattr(hardware, 'detect_hardware', lambda: SimpleNamespace(available_ram_gib=2))
     monkeypatch.setattr(browser, '_verify_bundle', lambda *args: tmp_path)
     monkeypatch.setattr(browser, '_run_reader', lambda *args: {'text': 'fixture content'})
+    # This contract test does not launch the Windows-only worker. Isolate its
+    # host prerequisite, while separate tests keep the native gate fail-closed.
+    monkeypatch.setattr(browser, '_require_windows_runtime', lambda: None)
+    monkeypatch.setenv('SystemDrive', tmp_path.drive)
     monkeypatch.setattr(browser.tempfile, 'gettempdir', lambda: str(tmp_path))
     result = browser.execute('read', {'url': 'https://example.com'},
                              data_root=tmp_path/'unused-portable-data', resource_root=tmp_path)
@@ -173,3 +177,16 @@ def test_execute_returns_canonical_provider_identity_without_native_work(monkeyp
     assert result['result'] == {'text': 'fixture content'}
     assert result['generated_answer'] is False
     assert not (tmp_path/'unused-portable-data').exists()
+
+
+def test_unsupported_native_runtime_is_rejected_before_execution(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+    from prometheus_assistant import application_policy
+    monkeypatch.setattr(application_policy, 'require_dispatch', lambda capability: None)
+    monkeypatch.setattr(browser, 'os', SimpleNamespace(name='posix'))
+    def unexpected(*args):
+        pytest.fail('An unsupported host must not inspect or execute the native bundle')
+    monkeypatch.setattr(browser, '_verify_bundle', unexpected)
+    monkeypatch.setattr(browser, '_run_reader', unexpected)
+    with pytest.raises(ValueError, match='Windows Python 3.12'):
+        browser.execute('read', {'url': 'https://example.com'}, data_root=tmp_path, resource_root=tmp_path)

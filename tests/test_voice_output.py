@@ -69,7 +69,7 @@ def test_speech_http_boundaries_and_cleanup(tmp_path, monkeypatch):
         app.close()
 
 
-@pytest.mark.skipif(voice.os.name != 'nt', reason='Windows speech subprocess lifecycle')
+@pytest.mark.skipif(voice.sys.platform not in {'win32', 'linux'}, reason='Supported native speech runtime required')
 def test_cancel_reaches_stalled_engine_without_blocking_input(monkeypatch):
     import subprocess
     import sys

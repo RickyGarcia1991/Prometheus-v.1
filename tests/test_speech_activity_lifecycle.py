@@ -69,6 +69,8 @@ class API:
 @pytest.fixture
 def api(monkeypatch):
     instance = API()
+    monkeypatch.setattr(activity, 'SpeechDetector', activity.WindowsSpeechDetector)
+    monkeypatch.setattr(capture, 'SpeechDetector', activity.WindowsSpeechDetector)
     monkeypatch.setattr(activity, '_errors', deque(maxlen=8))
     monkeypatch.setattr(activity, '_native_detector', lambda: (instance, Path('model-fixture'), None))
     return instance

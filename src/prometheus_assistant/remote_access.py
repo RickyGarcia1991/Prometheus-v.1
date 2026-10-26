@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import sys
 import threading
 import time
 
@@ -22,6 +23,7 @@ from .remote_transport import MCPBridge
 ENDPOINT = 'https://mcp.desktopcommander.app/mcp'
 RUNTIME_SHA256 = '56ac063b006b9569957a30eee2df510eac006a7cde4625e0eaa7a58775ec55d1'
 CLIENT_SHA256 = '29c668867838b2b3b56b45676ce967d42ca8e65a68d8c17a775fecd9a2eacfc3'
+LINUX_CLIENT_SHA256 = 'af6d735fb1ae5f3ac041212946d19e7c567dafa95196e4501f9bd5a6e36688f6'
 MAX_ARGUMENTS = 128_000
 DEVICE_ID = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$')
 TOOL_NAME = re.compile(r'^[A-Za-z0-9_.-]{1,160}$')
@@ -38,13 +40,18 @@ def plain(path):
 
 
 def host_root():
+    if sys.platform == 'linux':
+        profile = Path(os.environ.get('XDG_STATE_HOME') or Path.home()/'.local/state')
+        if not profile.is_absolute():
+            raise ValueError('The Linux state directory must be absolute.')
+        return plain(profile/'PrometheusRemote')
     profile = os.environ.get('LOCALAPPDATA')
     if os.name != 'nt' or not profile or not Path(profile).is_absolute():
         raise ValueError('Remote access requires a Windows user profile on this computer.')
     return plain(Path(profile)/'PrometheusRemote')
 
 
-def verify_runtime(runtime, manifest, *, expected=RUNTIME_SHA256):
+def verify_runtime(runtime, manifest, *, expected=RUNTIME_SHA256, system_node=None):
     runtime, manifest = plain(runtime), plain(manifest)
     raw = manifest.read_bytes()
     if len(raw) > 16_000_000 or hashlib.sha256(raw).hexdigest() != expected:
@@ -96,13 +103,21 @@ def verify_runtime(runtime, manifest, *, expected=RUNTIME_SHA256):
     if set(found) != seen:
         raise ValueError('Remote runtime contains unlisted files.')
     proxy = runtime/'node_modules/mcp-remote/dist/proxy.js'
-    node = runtime/'node.exe'
+    node = runtime/'node.exe' if system_node is None else Path(system_node).resolve(strict=True)
+    if system_node is not None:
+        # Use the OS-managed Node binary, never a writable PATH candidate.
+        for path in (node, *node.parents):
+            info = path.stat()
+            if info.st_uid != 0 or info.st_mode & 0o022:
+                raise ValueError('Native Node must be owned and writable only by the operating system.')
     if not node.is_file() or not proxy.is_file():
         raise ValueError('Remote connection components are missing.')
     return node, proxy
 
 
 def launch_bridge():
+    if sys.platform == 'linux':
+        return _launch_linux_bridge()
     local = host_root()
     # The pointer is only a locator. The core's pinned digest supplies trust.
     pointer = local/'active-runtime.json'
@@ -130,6 +145,31 @@ def launch_bridge():
     env = {k: v for k, v in os.environ.items() if k.upper() in permitted}
     system = os.environ.get('SYSTEMROOT', r'C:\Windows')
     env['PATH'] = str(node.parent)+os.pathsep+str(Path(system)/'System32')+os.pathsep+system
+    env['MCP_REMOTE_CONFIG_DIR'] = str(auth)
+    command = [str(node), str(proxy), ENDPOINT, '--transport', 'http-only',
+               '--static-oauth-client-metadata', '{"client_name":"Prometheus Remote Access"}']
+    return MCPBridge(command, env=env, cwd=local, timeout=30)
+
+
+def _launch_linux_bridge():
+    local = host_root()
+    local.mkdir(mode=0o700, parents=True, exist_ok=True)
+    local.chmod(0o700)
+    runtime = next((parent/'runtime/remote-linux' for parent in Path(__file__).resolve().parents
+                    if (parent/'runtime/remote-linux').is_dir()), None)
+    if runtime is None:
+        raise ValueError('The native remote connector is missing. Run remote setup.')
+    runtime = plain(runtime)
+    node, proxy = verify_runtime(runtime/'client', runtime/'CLIENT-MANIFEST.json',
+                                expected=LINUX_CLIENT_SHA256, system_node='/usr/bin/node')
+    auth = plain(local/'ClientAuth')
+    auth.mkdir(mode=0o700, exist_ok=True)
+    auth.chmod(0o700)
+    permitted = {'HOME', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY',
+                 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR', 'XDG_CURRENT_DESKTOP',
+                 'XAUTHORITY'}
+    env = {key: value for key, value in os.environ.items() if key in permitted}
+    env['PATH'] = '/usr/bin:/bin'
     env['MCP_REMOTE_CONFIG_DIR'] = str(auth)
     command = [str(node), str(proxy), ENDPOINT, '--transport', 'http-only',
                '--static-oauth-client-metadata', '{"client_name":"Prometheus Remote Access"}']
