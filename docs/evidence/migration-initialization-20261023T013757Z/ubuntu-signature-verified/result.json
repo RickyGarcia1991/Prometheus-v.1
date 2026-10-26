@@ -1,0 +1,13 @@
+{
+  "signature_verified": true,
+  "signer": "843938DF228D22F7B3742BC0D94AA3F0EFE21092",
+  "selected_checksum_line": "601e30fbf5d97759367c632e2c33630665039b7e2158fd068403da3ccf1bda1f *ubuntu-26.04.1-desktop-amd64.iso",
+  "iso_downloaded": false,
+  "media_written": false,
+  "hashes": {
+    "signing-key.asc": "337fa0013bb263aebcef98fa7b7af18e186d89565a5019f7295beb42ebee5290",
+    "signature.log": "7c85b376339389b5b7e05765d788c3dfd1af56d5fc0695c78eae7371db920433",
+    "SHA256SUMS": "4adde9f7e7760a624db5821ad75679a76b9cde1e0d3e9cb2117cfe7d8043fa43",
+    "SHA256SUMS.gpg": "055292b53dffbc5387c1691e8c2357df0b4db88e7d7fd4c1b36fadf068479c5d"
+  }
+}

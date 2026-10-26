@@ -1,0 +1,8 @@
+{
+ "status":"no_actionable_findings_in_focused_fix",
+ "source_sha256":"26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5",
+ "test_sha256":"a12e3ee36f7210889ecf1b69f47c0b9e2ac48cba362b712a6ee5fddd421e113f",
+ "review":"Sync-Controller now verifies staged certificate trust and RSA signature before parsing the same verified manifest bytes. Signed provenance binds the expected release name before payload verification and cache/floor publication. The test invokes extracted actual functions, uses ephemeral test signing material, and checks clean success plus coherent unsigned manifest/payload substitution, signature mutation and payload mutation refusal without floor advancement or destination publication.",
+ "limits":"Focused staging correction only. Does not establish an immutable whole transaction against concurrent file mutation after verification; activation wrapper must pin/lock the closure and serialize pointer/cache/floor changes. Not deployed or live activated by reviewer.",
+ "live_actions":false
+}

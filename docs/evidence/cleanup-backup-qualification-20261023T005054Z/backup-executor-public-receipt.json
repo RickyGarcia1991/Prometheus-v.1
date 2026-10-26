@@ -1,0 +1,42 @@
+{
+  "status": "prepare_and_generated_fixture_milestone",
+  "hashes": {
+    "backup_executor.py": "71dba8c835173c43b1103c8cd035eb7c66e114a0a86d7c2b10a7fb9616bd0a81",
+    "test_backup_executor.py": "b274562f5fa1285d6146105053f99d2892e225a3499bc8de1ecf56958f38d613",
+    "full-backup-plan.md": "4322749af1c41b65c92bcceb0be5e48a96ccd3bb78d97e5a9d97f28b4adf0417",
+    "ubuntu-target-identities.private.json": "f8cde03143494f06692328846162b085edace2858dbadcc563de81d2bb9d49d9",
+    "full-backup-prepare.private.json": "cb2ac71fa40171224297522e3f4f8fbb4efa2cbfac58a6c87b69c9c6827d0626",
+    "backup-executor-final-fixture-tests.private.xml": "bf51d098172633f162d6f8dfd175d63cb94d2f435a93b4bca684d7b397370e04",
+    "backup-executor-root-tests.private.xml": "1ad13907b39868700b2d19937235b7f85cf090121d9baa551d50b499a661981b"
+  },
+  "tests": {
+    "agent_seconds": 2.12,
+    "agent_passed": 14,
+    "root_seconds": 2.17,
+    "root_passed": 14
+  },
+  "reserve_bytes": 34359738368,
+  "real_identity_prepare_passed": true,
+  "execution_allowed": false,
+  "production_backup_complete": false,
+  "production_copy_available": false,
+  "source_content_copied": "Generated temporary fixture content only",
+  "qualified": [
+    "Exact path archive reference exclusion with duplicate basename preserved",
+    "Native file and directory ADS, DACL/owner-group evidence, creation/modified times and attributes readback",
+    "Same-size corrupt destination repair and invalidated prior completion receipt",
+    "Durable intent and interrupted resume including actual process exit after copy",
+    "Inaccessible traversal fails rather than silent omission",
+    "Foreign destination and source drift refuse",
+    "Native allocation-based remaining-byte budget and minimum reserve",
+    "Pinned exact three-volume identity draft; no maintenance authority inferred"
+  ],
+  "limits": [
+    "Full copy intentionally unavailable until reviewed authenticated production maintenance and fresh live identity validation are integrated",
+    "Real flash is FAT32; fixture stream/security qualification is NTFS only and metadata policy remains per filesystem",
+    "Current journal/copy engine is generated-fixture scope, not a production-ready backup engine",
+    "File-level closure excludes SACL and sector/boot image claims",
+    "No production writer was stopped and no full source copy was run"
+  ],
+  "raw_evidence_private": true
+}

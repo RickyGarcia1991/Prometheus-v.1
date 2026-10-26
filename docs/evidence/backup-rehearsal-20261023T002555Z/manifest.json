@@ -1,0 +1,47 @@
+[
+  {
+    "path": "inventory-backup-streams.py",
+    "bytes": 4454,
+    "sha256": "da25f33c80e60612dc782ae2260f2dc012c7a2ef05a5b230dde7415c7ed4ef97"
+  },
+  {
+    "path": "test-backup-copy-native.ps1",
+    "bytes": 2549,
+    "sha256": "05479b4bb3510ca59aa2f91db91868efbb39cd6dd72dffd6bdf8efccf315a12c"
+  },
+  {
+    "path": "ubuntu-backup-copy-native-public.json",
+    "bytes": 194,
+    "sha256": "b9dfa71e75ce693700fb5a3176ce8393a4c3a7ba71f2eaaf527d9672fd1f0b36"
+  },
+  {
+    "path": "qualify-model-archive-restore.py",
+    "bytes": 2563,
+    "sha256": "3cff4b7a3dea1a65a68ebd89d96a8c64afce9b6889707474f260b819d6907774"
+  },
+  {
+    "path": "ubuntu-model-restore-public.json",
+    "bytes": 1580,
+    "sha256": "dc8b984e68e55e9daf3cb673195301c50bda4352493a38ba35d392ce61262b34"
+  },
+  {
+    "path": "ubuntu-model-restore-cleanup-public.json",
+    "bytes": 345,
+    "sha256": "2ec14233cae1e47fbfdc9e224b7241937e4ccab311074cb5cd8ecd3a7a2e6e48"
+  },
+  {
+    "path": "Prometheus-backup-rehearsal-20261022.md",
+    "bytes": 2390,
+    "sha256": "4b6662a07794642eb503e617057f1ecc5204c717f1d391cbb781c82afb3ec067"
+  },
+  {
+    "path": "Prometheus-Ubuntu-backup-boot-draft-20261022.md",
+    "bytes": 8786,
+    "sha256": "ccc733ab8bb7613514247ab1fe0df749e1894ad929856c26a9e4ac263ae897b8"
+  },
+  {
+    "path": "ubuntu-backup-streams-public.json",
+    "bytes": 383,
+    "sha256": "0e8123681fec2b49bfb82c24a57a3e449c1e253e9ccd62ade84203c94c16aa1c"
+  }
+]

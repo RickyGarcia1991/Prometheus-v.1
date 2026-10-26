@@ -36,17 +36,61 @@ function Assert-ControllerProvenance([string]$Source,$Entries,[string]$Name){
   if($modern.Value -isnot [string] -or $modern.Value -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$' -or ('Prometheus-Controller-v'+$modern.Value) -cne $Name){throw 'Signed controller version does not match package name'}
  }
 }
-function Get-SecurityState {$candidates=@($SecurityState,$SecurityState+'.bak1',$SecurityState+'.bak2');$valid=@();foreach($p in $candidates){if(Test-ProtectedFile $p){try{$x=Get-Content $p -Raw|ConvertFrom-Json;$valid+=[pscustomobject]@{path=$p;version=[version]([string]$x.highest_controller_version);data=$x}}catch{}}};if(!$valid.Count){if(!(Test-Path $SecurityState)){return [pscustomobject]@{highest_controller_version='0.0.0'}};throw 'Security state is malformed or failed integrity verification'};$best=$valid|Sort-Object version -Descending|Select-Object -First 1;if($best.path -ne $SecurityState){Copy-Item $best.path $SecurityState -Force;Copy-Item ($best.path+'.sha256') ($SecurityState+'.sha256') -Force;Write-Audit 'security-state-recovery' 'pass' $best.version.ToString()};return $best.data}
-function Set-SecurityState([version]$Version){if(Test-ProtectedFile $SecurityState){if(Test-ProtectedFile ($SecurityState+'.bak1')){Copy-Item ($SecurityState+'.bak1') ($SecurityState+'.bak2') -Force;Copy-Item ($SecurityState+'.bak1.sha256') ($SecurityState+'.bak2.sha256') -Force};Copy-Item $SecurityState ($SecurityState+'.bak1') -Force;Copy-Item ($SecurityState+'.sha256') ($SecurityState+'.bak1.sha256') -Force};[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json|Set-Content $SecurityState -Encoding UTF8;Protect-File $SecurityState}
-function Get-Package($root){
+function Get-SecurityState {$candidates=@($SecurityState,($SecurityState+'.bak1'),($SecurityState+'.bak2'));$valid=@();foreach($p in $candidates){if(Test-ProtectedFile $p){try{$x=Get-Content $p -Raw|ConvertFrom-Json;$valid+=[pscustomobject]@{path=$p;version=[version]([string]$x.highest_controller_version);data=$x}}catch{}}};if(!$valid.Count){$historyExists=$false;foreach($p in $candidates){if((Test-Path -LiteralPath $p -ErrorAction Stop) -or (Test-Path -LiteralPath ($p+'.sha256') -ErrorAction Stop)){$historyExists=$true}};if(!$historyExists){return [pscustomobject]@{highest_controller_version='0.0.0'}};throw 'Security state is malformed or failed integrity verification'};$best=$valid|Sort-Object version -Descending|Select-Object -First 1;if($best.path -ne $SecurityState){Copy-Item $best.path $SecurityState -Force;Copy-Item ($best.path+'.sha256') ($SecurityState+'.sha256') -Force;Write-Audit 'security-state-recovery' 'pass' $best.version.ToString()};return $best.data}
+function Set-SecurityState([version]$Version){
+ # Run is serialized by the HostAgent mutex. Never discard the highest valid floor.
+ $current=Get-SecurityState
+ if($Version -lt [version]$current.highest_controller_version){throw 'Refusing to lower protected controller version'}
+ $body=[ordered]@{highest_controller_version=$Version.ToString();updated=(Get-Date -Format o)}|ConvertTo-Json
+ $bytes=[Text.UTF8Encoding]::new($false).GetBytes($body)
+ $publish={param([string]$Path,[byte[]]$Bytes)
+  $temp=$Path+'.pending-'+[guid]::NewGuid().ToString('N');$side=$temp+'.sha256'
+  try{
+   $stream=[IO.File]::Open($temp,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+   try{$stream.Write($Bytes,0,$Bytes.Length);$stream.Flush($true)}finally{$stream.Dispose()}
+   Protect-File $temp
+   $stream=[IO.File]::Open($side,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+   try{$stream.Flush($true)}finally{$stream.Dispose()}
+   if([IO.File]::Exists($Path)){[IO.File]::Replace($temp,$Path,[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move($temp,$Path)}
+   if([IO.File]::Exists($Path+'.sha256')){[IO.File]::Replace($side,$Path+'.sha256',[System.Management.Automation.Language.NullString]::Value)}else{[IO.File]::Move($side,$Path+'.sha256')}
+   if(!(Test-ProtectedFile $Path)){throw 'Protected state readback failed'}
+  }finally{foreach($pending in @($temp,$side)){if([IO.File]::Exists($pending)){[IO.File]::Delete($pending)}}}
+ }
+ if(Test-ProtectedFile $SecurityState){
+  & $publish ($SecurityState+'.bak1') ([IO.File]::ReadAllBytes($SecurityState))
+ }
+ # Publish the new floor to a recovery slot first. The primary stays valid until
+ # this pair verifies, and the verified recovery slot survives a primary fault.
+ & $publish ($SecurityState+'.bak2') $bytes
+ & $publish $SecurityState $bytes
+}
+
+function Get-VerifiedControllerPackage($root){
  $metaPath=Join-Path $root 'PROMETHEUS-SSD-STATUS.json';if(!(Test-Path $metaPath)){throw 'SSD metadata missing'};$meta=Get-Content $metaPath -Raw|ConvertFrom-Json;$name=Split-Path ([string]$meta.controller_release) -Leaf;$version=Convert-Version $name
- $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version);if($version -lt $highest){throw ('Anti-rollback blocked controller '+$version+'; highest trusted is '+$highest)}
+ # Identity verification only: this helper does not authorize admission or launch.
  $src=Join-Path $root $name;$manifest=Join-Path $src 'SHA256-MANIFEST.json';if(!(Test-Path $manifest)){throw 'Controller manifest missing'};$sigPath=Join-Path $src 'SHA256-MANIFEST.sig';$certPath=Join-Path $src 'MANIFEST-PUBLIC.cer';if(!(Test-Path $sigPath) -or !(Test-Path $certPath)){throw 'Signed controller manifest required'}
  $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2($certPath);if($TrustedThumbprint -notcontains $cert.Thumbprint){throw 'Controller signing certificate is not trusted'};$rsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($cert);try{$ok=$rsa.VerifyData([IO.File]::ReadAllBytes($manifest),[IO.File]::ReadAllBytes($sigPath),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)}finally{$rsa.Dispose();$cert.Dispose()};if(!$ok){throw 'Controller manifest signature invalid'}
  $entries=Get-Content $manifest -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $src ([string]$e.path);if(!(Test-Path $f)){throw ('Integrity failure: '+$e.path)};if((Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Integrity failure: '+$e.path)}};Assert-ControllerProvenance $src $entries $name;[pscustomobject]@{Meta=$meta;Name=$name;Version=$version;Source=$src}
 }
+function Get-Package($root){
+ $pkg=Get-VerifiedControllerPackage $root
+ $state=Get-SecurityState;$highest=[version]([string]$state.highest_controller_version)
+ if($pkg.Version -lt $highest){throw ('Anti-rollback blocked controller '+$pkg.Version+'; highest trusted is '+$highest)}
+ return $pkg
+}
 function Sync-Controller($pkg){$resolvedRoot=[IO.Path]::GetFullPath($ControllerRoot).TrimEnd('\');$resolvedTarget=[IO.Path]::GetFullPath((Join-Path $ControllerRoot $pkg.Name));if(!$resolvedTarget.StartsWith($resolvedRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Unsafe controller cache path'};New-Item -ItemType Directory -Force $ControllerRoot|Out-Null;$dst=Join-Path $ControllerRoot $pkg.Name;$stage=$dst+'.staging-'+[guid]::NewGuid().ToString('N');$backup=$dst+'.previous';$r1=$dst+'.recovery-1';$r2=$dst+'.recovery-2';$r3=$dst+'.recovery-3';Copy-Item $pkg.Source $stage -Recurse -Force
- try{$entries=Get-Content (Join-Path $stage 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json;foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Staged integrity failure: '+$e.path)}};if(Test-Path $r3){Remove-Item $r3 -Recurse -Force};if(Test-Path $r2){Move-Item $r2 $r3};if(Test-Path $r1){Move-Item $r1 $r2};if(Test-Path $dst){Copy-Item $dst $r1 -Recurse -Force};if(Test-Path $backup){Remove-Item $backup -Recurse -Force};if(Test-Path $dst){Move-Item $dst $backup};Move-Item $stage $dst;Set-SecurityState $pkg.Version;Write-Audit 'controller-activation' 'pass' $pkg.Name;return $dst}catch{Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;if(!(Test-Path $dst) -and (Test-Path $backup)){Move-Item $backup $dst;Write-Audit 'controller-rollback' 'pass' $pkg.Name};throw}
+ try{
+ # Verify the staged signed bytes before trusting their payload hashes.
+ $stagedManifest=[IO.File]::ReadAllBytes((Join-Path $stage 'SHA256-MANIFEST.json'))
+ $stagedCert=[Security.Cryptography.X509Certificates.X509Certificate2]::new((Join-Path $stage 'MANIFEST-PUBLIC.cer'))
+ try {
+  if($TrustedThumbprint -notcontains $stagedCert.Thumbprint){throw 'Staged signing certificate is not trusted'}
+  $stagedRsa=[Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPublicKey($stagedCert)
+  try {if(!$stagedRsa.VerifyData($stagedManifest,[IO.File]::ReadAllBytes((Join-Path $stage 'SHA256-MANIFEST.sig')),[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)){throw 'Staged manifest signature invalid'}}finally{$stagedRsa.Dispose()}
+ }finally{$stagedCert.Dispose()}
+ $entries=([Text.UTF8Encoding]::new($false,$true)).GetString($stagedManifest).TrimStart([char]0xFEFF)|ConvertFrom-Json
+ Assert-ControllerProvenance $stage $entries $pkg.Name
+ foreach($e in $entries){$f=Join-Path $stage ([string]$e.path);if(!(Test-Path $f) -or (Get-FileHash $f -Algorithm SHA256).Hash -ne ([string]$e.sha256)){throw ('Staged integrity failure: '+$e.path)}};if(Test-Path $r3){Remove-Item $r3 -Recurse -Force};if(Test-Path $r2){Move-Item $r2 $r3};if(Test-Path $r1){Move-Item $r1 $r2};if(Test-Path $dst){Copy-Item $dst $r1 -Recurse -Force};if(Test-Path $backup){Remove-Item $backup -Recurse -Force};if(Test-Path $dst){Move-Item $dst $backup};Move-Item $stage $dst;Set-SecurityState $pkg.Version;Write-Audit 'controller-activation' 'pass' $pkg.Name;return $dst}catch{Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue;if(!(Test-Path $dst) -and (Test-Path $backup)){Move-Item $backup $dst;Write-Audit 'controller-rollback' 'pass' $pkg.Name};throw}
 }
 function Test-CachedController($pkg,[string]$dst){
  $entries=Get-Content (Join-Path $pkg.Source 'SHA256-MANIFEST.json') -Raw|ConvertFrom-Json

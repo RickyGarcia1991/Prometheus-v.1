@@ -1,0 +1,33 @@
+{
+  "status": "corrected-authenticated-recovery-tested",
+  "production_changes": false,
+  "tests": {
+    "focused": 54,
+    "failed": 0,
+    "log": "sealed-recovery-completed-tests.log",
+    "sha256": "4acd7a0881b3505a2a7a95291e4263ffbe8d5e2859bb48d509398fb8330ed153"
+  },
+  "prior_evidence_retained": true,
+  "remaining": [
+    "Independent review",
+    "Actual signed-bundle native verification",
+    "User Windows elevation and controlled enrollment acceptance before activation"
+  ],
+  "files": [
+    {
+      "path": "tools/Prometheus.HostAgent/ReconnectEnrollment.psm1",
+      "sha256": "d373d6d9a3d888ac33da933de52b9d0755accc379b906e8476be5c1d2f5444e0",
+      "bytes": 30703
+    },
+    {
+      "path": "tools/Prometheus.HostAgent/RECONNECT-ENROLLMENT.md",
+      "sha256": "33420a2731003436334e5619cbc859982dfa9d4bc289bef49c78660980b403b2",
+      "bytes": 7359
+    },
+    {
+      "path": "tests/test_reconnect_enrollment.py",
+      "sha256": "210242425ee9e21e6ddf9ba42f1b0f21b3f5895c7dd04c7d2f85990751623780",
+      "bytes": 21097
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "status": "explicit_key_only_initialization_recovery_reviewed",
+  "hashes": {
+    "production-execution-recovery-final-pins.json": "8aa704be66f1075bda310d41110dbd4dd53117b417d8ff7e0fc02183590dc642",
+    "production-migration-execution-contract.draft-v3.private.json": "50b5b2e89039f9a41f9805ce9d6d324bd5da4afda9109ccd07c60abd47dd216b",
+    "execute_active_host_migration.py": "e1236d70d83b3b1b6bf200d59d77aa5c2bed8c40543853ba6d4e5926faaa52a0",
+    "run-active-migration-execution.ps1": "4170a8ae5cd5e0ea85be9b18ed2e9b12655329eb212e8c918147d596e08cf3d2",
+    "invoke-active-migration-execution.ps1": "2b34e3be597f9457517b9fce4b7805abaa8c5fffcead2a99ef5dc3db22507b09",
+    "active_host_migration_windows_store.py": "cdbde02a4c75ecb7818c8c6b074df9c15c6ee6f32781501c504cd2584f99e7be",
+    "active_host_migration_windows_provider.py": "c19b2d24233f6c8050c8990bbf02cf6a1ecf53f7d45d59da4c1e1c282f7dd806",
+    "production-initialization-recovery-independent.private.xml": "32556440b772b4ddb9c8e2dd75978716de628f43c4b229b16833c413da86e228",
+    "production-migration-attempt-905bcc62be6bc1700be1693605d5814a.result.private.json": "e67d0c6dd59f18b46c052a833b15664b0d762c82b27b219fda747e6abfc6309d"
+  },
+  "independent_tests": 26,
+  "full_frozen_tests": 114,
+  "final_pin_mismatches": 0,
+  "same_plan_and_transaction": true,
+  "live_action_by_reviewer": false,
+  "scope": "One explicit resume-initialization subject to authenticated exact key-only state and fresh original authority/task/pair/session/R5 checks; no deletion or key rewrite",
+  "initial_failure": "Repeated initial-only preflight rejected own newly-created transaction before journal or preservation baseline; constructor sequence corrected",
+  "ordinary_resume_missing_baseline": "still refused",
+  "production_migration_complete": false
+}

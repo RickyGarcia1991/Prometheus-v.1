@@ -1,0 +1,58 @@
+[
+  {
+    "source_sha256": "D24565384CB3D3A29A023684986782F8D7EB0834B44913FA5F43EA2484C736BA",
+    "host_version": "7.6.5",
+    "passed": true,
+    "reload_only": false,
+    "scope": "Isolated real file persistence with signed packages; no live state, task, controller activation or physical lifecycle mutation",
+    "checks": [
+      "signed-recovery-with-real-floor",
+      "interrupted-publication-reached",
+      "old-candidate-blocked-by-persisted-floor",
+      "persisted-floor-and-checksum-valid",
+      "signed-recovery-accepted-after-interruption",
+      "downgrade-write-refused-without-state-change"
+    ]
+  },
+  {
+    "reload_only": true,
+    "scope": "Isolated real file persistence with signed packages; no live state, task, controller activation or physical lifecycle mutation",
+    "passed": true,
+    "host_version": "7.6.5",
+    "checks": [
+      "old-candidate-blocked-by-persisted-floor",
+      "persisted-floor-and-checksum-valid",
+      "signed-recovery-accepted-after-interruption",
+      "downgrade-write-refused-without-state-change"
+    ],
+    "source_sha256": "D24565384CB3D3A29A023684986782F8D7EB0834B44913FA5F43EA2484C736BA"
+  },
+  {
+    "passed": true,
+    "scope": "Isolated real file persistence with signed packages; no live state, task, controller activation or physical lifecycle mutation",
+    "host_version": "5.1.26100.9711",
+    "reload_only": false,
+    "checks": [
+      "signed-recovery-with-real-floor",
+      "interrupted-publication-reached",
+      "old-candidate-blocked-by-persisted-floor",
+      "persisted-floor-and-checksum-valid",
+      "signed-recovery-accepted-after-interruption",
+      "downgrade-write-refused-without-state-change"
+    ],
+    "source_sha256": "D24565384CB3D3A29A023684986782F8D7EB0834B44913FA5F43EA2484C736BA"
+  },
+  {
+    "passed": true,
+    "scope": "Isolated real file persistence with signed packages; no live state, task, controller activation or physical lifecycle mutation",
+    "host_version": "5.1.26100.9711",
+    "reload_only": true,
+    "checks": [
+      "old-candidate-blocked-by-persisted-floor",
+      "persisted-floor-and-checksum-valid",
+      "signed-recovery-accepted-after-interruption",
+      "downgrade-write-refused-without-state-change"
+    ],
+    "source_sha256": "D24565384CB3D3A29A023684986782F8D7EB0834B44913FA5F43EA2484C736BA"
+  }
+]

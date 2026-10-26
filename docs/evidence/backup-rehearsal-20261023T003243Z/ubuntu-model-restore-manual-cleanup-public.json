@@ -1,0 +1,14 @@
+{
+  "observed_utc": "2026-10-23T00:29:08.377868+00:00",
+  "temporary_copy_removed": true,
+  "actor": "User manual cleanup, confirmed by filesystem readback",
+  "original_plan_hash_verified": true,
+  "archive_parts_present_with_expected_sizes": 23,
+  "archive_content_rehash_repeated": false,
+  "earlier_full_archive_and_restore_hash_proofs_retained": true,
+  "internal_free_bytes": 233663389696,
+  "estimated_new_backup_bytes": 191434736603,
+  "working_reserve_bytes": 34359738368,
+  "estimated_margin_before_overhead": 7868914725,
+  "full_backup_complete": false
+}

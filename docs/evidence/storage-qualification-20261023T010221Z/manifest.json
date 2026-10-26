@@ -1,0 +1,57 @@
+[
+  {
+    "path": "backup_executor.py",
+    "sha256": "08b40b50581610046dac006536412b99c9298a1dc987685ea7a0afc384a660eb",
+    "bytes": 21279
+  },
+  {
+    "path": "test_backup_executor.py",
+    "sha256": "435d499469837df461e7d4aa7f4207121c09696151d2a72f16ee869f56410e8e",
+    "bytes": 9839
+  },
+  {
+    "path": "backup-executor-fat32-public-receipt.json",
+    "sha256": "173b54ff3cad66531a409bb28a693d0377acfe3a9ce15c0dc08813061640df81",
+    "bytes": 1495
+  },
+  {
+    "path": "flash-file-revised-probe-public.json",
+    "sha256": "c396a95c04ce3bc9a2c7212566145c0fb7b1231964e761905ab6455532c296fd",
+    "bytes": 210
+  },
+  {
+    "path": "full-backup-plan.md",
+    "sha256": "4322749af1c41b65c92bcceb0be5e48a96ccd3bb78d97e5a9d97f28b4adf0417",
+    "bytes": 11303
+  },
+  {
+    "path": "active_host_migration_core.py",
+    "sha256": "7ed7bd60794864ed406c05720f170c0e80d4327daf12167e00bdc3e7eb8d24e6",
+    "bytes": 5985
+  },
+  {
+    "path": "active_host_migration_windows.py",
+    "sha256": "b224eccebac2a61d19e0634030fffab2885255231b7ed3c96fecd70f05bde468",
+    "bytes": 8583
+  },
+  {
+    "path": "active_host_migration_windows_io.py",
+    "sha256": "ac65282e7c138637c7dd65863b26d23d076af17f14886074caa9bd68f9c7b1b0",
+    "bytes": 8411
+  },
+  {
+    "path": "active_host_migration_windows_locks.py",
+    "sha256": "d3f9f03d65e23d6a0ce025def70cd1d94d1f674d1d2eba911a6aeeaac553ae1e",
+    "bytes": 3414
+  },
+  {
+    "path": "active_host_migration_windows_store.py",
+    "sha256": "c87e5090571b696986850b909474f758d62d22898e7ea0b9d26ff9cf4e194ce8",
+    "bytes": 17027
+  },
+  {
+    "path": "test_active_host_migration_store_integration.py",
+    "sha256": "eb6ffefff1e50f39cb52868238a0b41e5a76836426fa06ef4bd978414eea6333",
+    "bytes": 6406
+  }
+]

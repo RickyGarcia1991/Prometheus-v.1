@@ -1,0 +1,18 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "size": 1950372327424,
+    "path": "E:\\Prometheus-Repository-Checkpoints\\controller-r7-20261022T023929Z",
+    "verified_files": 36,
+    "mismatches": 0,
+    "activated": false
+  },
+  {
+    "label": "PROMETHEUS",
+    "size": 32076988416,
+    "path": "D:\\Prometheus-Repository-Checkpoints\\controller-r7-20261022T023929Z",
+    "verified_files": 36,
+    "mismatches": 0,
+    "activated": false
+  }
+]

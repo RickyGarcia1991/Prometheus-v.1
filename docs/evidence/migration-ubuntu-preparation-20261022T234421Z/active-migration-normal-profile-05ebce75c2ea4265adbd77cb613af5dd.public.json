@@ -1,0 +1,15 @@
+{
+  "private_report_sha256": "94c8d933b210923ba60e3eb4e3405093b37d6e5ad21472c11bb995036d8de326",
+  "runtime_phase": "unobserved",
+  "observed_worker_count": 0,
+  "production_ready": false,
+  "inspection_only": true,
+  "run_id": "05ebce75c2ea4265adbd77cb613af5dd",
+  "error_count": 0,
+  "status": "incomplete_context",
+  "task_removed": true,
+  "worker_sha256": "a2e24f1aa9cec5a1ae083bcc3f808edd2ea27bf7b3f7b461be6af5cfd6c0e4be",
+  "collector_sha256": "f572d1a175af1edf1e6388fd839d9b78e70055593d178cd6b4d935c5a33f2b49",
+  "cross_session_exclusion_proven": false,
+  "mutation_ready": false
+}

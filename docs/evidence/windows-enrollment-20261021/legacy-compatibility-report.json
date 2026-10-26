@@ -1,0 +1,27 @@
+{
+  "status": "legacy-compatibility-isolated-qualified",
+  "production_changes": false,
+  "tests": {
+    "sha256": "6ab88c9d95440591b18196d4c71b8d28c94e3ef54fa0c84935240d17b4144a3d",
+    "log": "legacy-compatibility-tests.log",
+    "failed": 0,
+    "focused": 59
+  },
+  "files": [
+    {
+      "path": "tools/Prometheus.HostAgent/ReconnectEnrollment.psm1",
+      "sha256": "8628c58f9089d66e8d1fcb4f6ab2337d5bc059ef7eecd9c3c6eb1ef86cd5c78e",
+      "bytes": 32124
+    },
+    {
+      "path": "tools/Prometheus.HostAgent/RECONNECT-ENROLLMENT.md",
+      "sha256": "adc4bb24078552690f8eac9a94da1160c2ee9f610e3bb55b173dd811f08c511a",
+      "bytes": 8375
+    },
+    {
+      "path": "tests/test_reconnect_enrollment.py",
+      "sha256": "9c8d9f7dbfbf46df2126833f9f7fd0908014d5d38d35f6bcc6fcc77c7ea7a2d2",
+      "bytes": 24139
+    }
+  ]
+}

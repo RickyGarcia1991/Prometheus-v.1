@@ -1,0 +1,23 @@
+{
+  "observed_utc": "2026-10-22T23:42:22.403979+00:00",
+  "file_count": 409545,
+  "logical_file_bytes": 197759035853,
+  "internal_free_bytes": 234059898880,
+  "backup_created": false,
+  "snapshot_consistency": false,
+  "content_hashes_verified": false,
+  "volume_label": "Prometheus-2TB",
+  "volume_size": 1950372327424,
+  "read_error_count": 0,
+  "reparse_count": 0,
+  "efs_encrypted_count": 0,
+  "excluded_system_directories": [
+    "$RECYCLE.BIN",
+    "System Volume Information"
+  ],
+  "working_reserve_bytes": 34359738368,
+  "margin_after_logical_copy_and_reserve": 1941124659,
+  "alternate_streams_measured": false,
+  "full_flash_backup_included": false,
+  "capacity_qualified": false
+}

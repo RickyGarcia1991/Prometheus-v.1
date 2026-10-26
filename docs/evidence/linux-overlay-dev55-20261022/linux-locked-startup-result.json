@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": [
+    {
+      "attempt": 1,
+      "locked_page": true,
+      "no_jobs": true
+    },
+    {
+      "attempt": 2,
+      "locked_page": true,
+      "no_jobs": true
+    }
+  ],
+  "actual_owner_enrollment": false,
+  "full_application_qualified": false,
+  "production_changed": false
+}

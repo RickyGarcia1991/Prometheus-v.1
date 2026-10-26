@@ -1,0 +1,102 @@
+[
+  {
+    "path": "migration/active_host_migration_core.py",
+    "sha256": "7ed7bd60794864ed406c05720f170c0e80d4327daf12167e00bdc3e7eb8d24e6"
+  },
+  {
+    "path": "migration/test_active_host_migration_core.py",
+    "sha256": "7ec617da791696d8441fb356b3bd996120971be65aea1c154e7bd549db313f0e"
+  },
+  {
+    "path": "migration/active-host-migration-design.md",
+    "sha256": "bae289173e44cb1fb67302937680c622794b3fb287259efde1121813d638aee1"
+  },
+  {
+    "path": "migration/active-host-migration-expanded-tests.log",
+    "sha256": "18399b5873e98bb323ad97950604cf174b87476d9be6359d6178c9ce150dc528"
+  },
+  {
+    "path": "migration/active-host-migration-tests.log",
+    "sha256": "cff486517a119d64e0fc22edff813851255b7a6a120b5e5e1cb56060afe853d2"
+  },
+  {
+    "path": "migration/active-host-migration-initial-independent-review.md",
+    "sha256": "a559409ebd47746170be752dc0bb12dfca1b362148a61b1c785cf70ea5b6d8db"
+  },
+  {
+    "path": "migration/controller-production-adapter-contract.md",
+    "sha256": "57fc4dd735768105b3032c235e5d2a61b7817ab9fceebe5c9ca2354862ec0601"
+  },
+  {
+    "path": "migration/check-active-migration-native-primitives.ps1",
+    "sha256": "1d52937667de78eea278eb29818c8d48eecc1a63ae1b4f53e10b5027e16746ac"
+  },
+  {
+    "path": "migration/check-active-migration-native-primitives-initial.ps1",
+    "sha256": "4dcad9593fd25599931cb884ca1b804bcc50a819184a0b5885fd58ec60e0f19a"
+  },
+  {
+    "path": "migration/run-active-migration-native-primitives.py",
+    "sha256": "c5a004bb97afc924be0809c5cdb7907d17b9739ba6cdc399014f141c353a51b1"
+  },
+  {
+    "path": "migration/active-migration-shim-failure-cleanup.json",
+    "sha256": "210912486221d945f4b8e2091df27172d3d9b85480eb0894c22d52f54af8fdec"
+  },
+  {
+    "path": "migration/active-migration-final-fixture-inventory.json",
+    "sha256": "f3a5fc26f7e8233a7f9fb7966fbd29ace4142c5748eb425f1c246d0cdaeaeaaa"
+  },
+  {
+    "path": "migration/active-migration-timeout-initial-recovery.log",
+    "sha256": "023f50ad096e75a54e8b8f6392119ea787d7373fd91095d8d996e9cefe2fd874"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-2d63bebbba4b4aeb836851fd082db72b.json",
+    "sha256": "9c156e0120b6988860d64b6303f1f79caef2df04824d79635f272622d80db77d"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-6e70077f2bb44996afe03691b9ed9b59.json",
+    "sha256": "be178d830d97b49ba0075e95b73c001f4d01bbd32b95136289e9034eac94c706"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-736661a45b564ed99fe70591b936b656.json",
+    "sha256": "751b7649e98873e4e8801616cffdf4c5c443dd356eba07790d1ce4ad4d4c9fea"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-8b6f3b21595044f2bb4e6aaee4854e06.json",
+    "sha256": "814978e0d80b8ae8a463343d111266d26a13cc2524b94564f49637873a13319f"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-f0b1d2b5b0ed4580a52fb74ae94ea1da.json",
+    "sha256": "b5b01c94bd96c95cb061d023a4fde3670efb29de1b7262bbc6b53356c5a26eda"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-initial-results.json",
+    "sha256": "b2fe51a52c4d3d4da72c2b2741ee0f28c1533e080977c12ddc5b1304d50b96e2"
+  },
+  {
+    "path": "migration/active-migration-native-primitives-results.json",
+    "sha256": "b5b01c94bd96c95cb061d023a4fde3670efb29de1b7262bbc6b53356c5a26eda"
+  },
+  {
+    "path": "planning/Prometheus-plan-candidate-audit-20261022.md",
+    "sha256": "2f0ac5264f75ab81e464d2fffb5b8d1a6ee01ea858c1237a316b615fba51e5a6"
+  },
+  {
+    "path": "planning/Prometheus-plan-audit-catalog.json",
+    "sha256": "e581a1465174a412d3d29bc501d248c952ade08787e8a4df69e9789059beb68d"
+  },
+  {
+    "path": "planning/Prometheus-plan-audit-file-inventory.txt",
+    "sha256": "9b988669e01f223153b1f9c8df5b815b9ad7df8835c1a9f4f3760709aa47a953"
+  },
+  {
+    "path": "planning/Prometheus-Ubuntu-target-20261022.md",
+    "sha256": "cb608c4dad6b75ab9dcfd475b83736caaa034236ecf82fba273831471abc4de6"
+  },
+  {
+    "path": "README.md",
+    "sha256": "a955c0cfdc437a7c4fa4ac3d799460daa8ac280f4f6a1e63627dff8ae652d115"
+  }
+]

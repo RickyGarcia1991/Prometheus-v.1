@@ -1,0 +1,8 @@
+{
+ "status":"no_remaining_actionable_findings_for_read_only_preflight",
+ "helper_sha256":"1f97db2f81af3bbb935a47adfc30463a8a258c6502448339999e6d73d2773106",
+ "tests_sha256":"790763adc5ec6535166e1689bae4f87bf9a784f09d366e02ede81b888206211e",
+ "validation":"FileInfo.Directory correction inspected; native StrictMode file and junction-ancestor regression inspected; all frozen hashes match. Recorded 15 tests passed. Initial review retained.",
+ "scope":"Read-only current-user profile/host/SSD/process observation. Sanitized output and activation_ready=false. Parent may invoke reviewed bytes with pinned inputs from normal profile; transient task wrapper is separately managed. No migration or activation authorized by a successful observation.",
+ "reviewer_live_actions":false
+}

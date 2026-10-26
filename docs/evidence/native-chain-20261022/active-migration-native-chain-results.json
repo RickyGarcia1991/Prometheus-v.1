@@ -1,0 +1,77 @@
+{
+  "observed_utc": "2026-10-22T22:16:14.984473+00:00",
+  "passed": true,
+  "tests": 16,
+  "failures": 0,
+  "errors": 0,
+  "test_duration_seconds": "26.810",
+  "cases": [
+    "test_native_signed_chain_accepts_and_preserves_every_fixture_byte",
+    "test_native_chain_rejects_changed_authority_and_bytes[corrupt-dpapi-receipt]",
+    "test_native_chain_rejects_changed_authority_and_bytes[wrong-old-receipt]",
+    "test_native_chain_rejects_changed_authority_and_bytes[receipt-as-r7]",
+    "test_native_chain_rejects_changed_authority_and_bytes[incomplete-journal]",
+    "test_native_chain_rejects_changed_authority_and_bytes[tampered-journal]",
+    "test_native_chain_rejects_changed_authority_and_bytes[wrong-key]",
+    "test_native_chain_rejects_changed_authority_and_bytes[modified-runtime]",
+    "test_native_chain_rejects_changed_authority_and_bytes[modified-other-runtime]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-auth]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-task-xml]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-task-identity]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-host]",
+    "test_native_chain_rejects_changed_authority_and_bytes[wrong-package]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-other-bundle-entry]",
+    "test_native_chain_rejects_changed_authority_and_bytes[changed-signed-manifest]"
+  ],
+  "native_evidence": {
+    "unchanged_entries": 6,
+    "existing_activation_guard_rejects_r7": true,
+    "installed_authorization_authenticated": false,
+    "receipt_sha256": "5364c58cff2c3bfd0dc9475938e438c9a13adf4bb50c77c312ab57fbcf01c0e5",
+    "receipt_as_r7_refused": true,
+    "new_manifest": "6e26224389829b4f9cfb3288b8f9495d0e285e9fc96a322f3db25e82ecddc01e",
+    "fixture_original_receipt": true,
+    "old_manifest": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+    "legacy_r5_runtime_refused": true,
+    "activated": false,
+    "native_verified": true,
+    "bundle_entries": 7,
+    "plan_sha256": "e639fac094179cd61521092e231f0866bcb63ffca0379ba7a316cd6704e3bb3f",
+    "runtime_payloads": 5
+  },
+  "authenticated_completed_chain": {
+    "enrollment_sha256": "5364c58cff2c3bfd0dc9475938e438c9a13adf4bb50c77c312ab57fbcf01c0e5",
+    "old_manifest": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+    "new_manifest": "6e26224389829b4f9cfb3288b8f9495d0e285e9fc96a322f3db25e82ecddc01e",
+    "task_identity": "synthetic-task-0657956a46a145dcfc2f29008ece2ab6",
+    "migration_transaction": "f2f04248df117a0d130040a5ff041dd6"
+  },
+  "fixture_root": "C:\\Users\\rolon\\AppData\\Local\\Temp\\prometheus-active-chain-7cbp7j0h",
+  "fixture_bytes_preserved": true,
+  "fixture_receipt_sha256": "5364c58cff2c3bfd0dc9475938e438c9a13adf4bb50c77c312ab57fbcf01c0e5",
+  "source_and_evidence_sha256": {
+    "active-migration-native-chain.ps1": "df0ac6c102024e1e8a6f0dd13dc3ec3b84329cdcc6b8b46bc83eb06562cc0288",
+    "active_migration_native_chain.py": "0fad1fd733cfae489966e6637fcd236ed2c0ba2e8cf9d69cd58b154477bbd3d1",
+    "test_active_migration_native_chain.py": "a1df461b2a65586a95d3ff2af9eb95feee5a7b6559cf562025b18c7a11b4aefb",
+    "active_host_migration_core.py": "7ed7bd60794864ed406c05720f170c0e80d4327daf12167e00bdc3e7eb8d24e6",
+    "qualify-reconnect-enrollment-v2.ps1": "9e46ac586172efcf43e82ce0dab9b56c888cf967c614e27ba5214210b2daa0fe",
+    "activate-enrolled-reconnect.ps1": "5bd020db3ca7ded6c8ab4a52eb168cc904ba28b1f050076a17e34e642dda9a97",
+    "controller_pointer_windows_fixture.py": "661b0606757ef6080ef4e3b564ee0f835b248272b76225ed3d818079d307d03a",
+    "active-migration-native-chain-tests.xml": "6f3c728e07dfb20c6c6ea21842c3764c03b68a64021d2cbc8f462528ccb78745",
+    "active-migration-native-chain-tests.log": "a066b7250b7072a2473c13b33294b6e9b995fd8c26ec150b416287fa80f13c8d"
+  },
+  "real_package_manifest_pins": {
+    "R5": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+    "R7": "6e26224389829b4f9cfb3288b8f9495d0e285e9fc96a322f3db25e82ecddc01e"
+  },
+  "generated_package_copy_leftovers": [],
+  "installed_changes": false,
+  "installed_authorization_authenticated": false,
+  "production_ready": false,
+  "limitations": [
+    "Original receipt/auth/task/host are generated synthetic fixtures; this does not authenticate installed enrollment.",
+    "Original R5 receipt schema binds package/id/file history, not host/auth/task XML. Those exact fixture observations are separately bound by authenticated migration plan.",
+    "No live provider, activation command, production session mutex proof, concurrent hostile-writer qualification, or durable migration publication qualification.",
+    "Native bridge locks inspected files while reading, but Python fixture adapter makes no production-wide lock/TOCTOU guarantee."
+  ]
+}

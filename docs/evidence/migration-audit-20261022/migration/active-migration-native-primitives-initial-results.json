@@ -1,0 +1,6 @@
+{
+  "exit": 1,
+  "stdout": "",
+  "stderr": "Exception: C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\check-active-migration-native-primitives.ps1:45\nLine |\n  45 |  \u00e2\u20ac\u00a6 -cne $baseline){throw 'Disable altered unrelated task configuration'}\n     |                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n     | Disable altered unrelated task configuration\n",
+  "live_prometheus_mutation": false
+}

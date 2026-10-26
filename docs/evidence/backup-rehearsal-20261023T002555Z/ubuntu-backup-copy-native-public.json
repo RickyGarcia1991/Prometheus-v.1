@@ -1,0 +1,11 @@
+{
+  "scope": "Generated temporary files only",
+  "source_changed": false,
+  "full_backup_complete": false,
+  "passed": true,
+  "errors": [],
+  "copy_exit_codes": [
+    1,
+    1
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "collector_sha256": "399606ea06f58a85c65c8d6c53a831c58bcfc893e35cbbb9ddeceafbff8fefcd",
+  "cross_session_exclusion_proven": false,
+  "run_id": "1ac2c567f50e42a1b191f649bbc7a38c",
+  "worker_sha256": "5eff42f3f490d1d9a13bfa1c9778a40f633a05cb2a8e0785cf13543e17680711",
+  "status": "preflight_observations_valid",
+  "error_count": 0,
+  "observed_worker_count": 2,
+  "private_report_sha256": "2345448d3f7abae6751e57ddccd3aeac35feb6efbb22a23c4c46dca1df0a27c2",
+  "task_removed": true,
+  "inspection_only": true,
+  "mutation_ready": false,
+  "runtime_phase": "original_r5",
+  "production_ready": false
+}

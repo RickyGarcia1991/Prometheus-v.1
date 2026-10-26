@@ -1,0 +1,11 @@
+# Backup rehearsal checkpoint
+
+The existing archived model was restored into a fresh, isolated directory on the Dell. All seven restored blobs (18,731,025,629 bytes) and the manifest passed independent readback against their expected hashes. No model was started and the active model directory was not changed. The tested restore helper hash and archive-plan hash are recorded in ubuntu-model-restore-public.json.
+
+The isolated restored copy remains present: automatic approval review rejected its cleanup command with “blocked by policy” and provided no more specific reason. No deletion ran. The original archive remains intact. Capacity must include the retained 18.7 GB test copy until it is removed through an authorized supported action. The earlier estimated 8.15 GB margin cannot be used as current free space. The latest observed internal free space is 214,941,110,272 bytes; estimated new SSD+flash backup data after verified archive reuse is 191,434,736,603 bytes, leaving less than the 32 GiB working reserve before overhead. Full-backup capacity is not yet qualified.
+
+A separate generated-file copy/restore test passed using Windows robocopy with data, attributes, timestamps and security metadata options. File bytes, file and directory alternate streams, last-write time, file ACL and an empty directory matched after backup and restore. Source state was unchanged. This small native rehearsal does not qualify all real-data metadata, consistency or recovery requirements.
+
+The complete SSD named-stream scan is still running read-only. Its generated native self-check passed and independent review found no blocking API defect. Any enumeration errors invalidate complete coverage; hard links can overcount stream storage. Live inventory is not a consistent snapshot.
+
+Before a complete backup: finish the migration milestone; establish a verified stopped-writer boundary; recheck drive identity, space and source inventory; preserve named streams and required metadata; bind retained archived models into the restoration manifest; copy and hash-read back; restore application state and representative native files. No partitioning, formatting, boot, encryption or firmware changes have occurred. Routine display updates remain off.

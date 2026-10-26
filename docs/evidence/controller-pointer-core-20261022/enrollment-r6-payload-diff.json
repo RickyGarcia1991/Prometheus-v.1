@@ -1,0 +1,16 @@
+{
+  "changed_payloads": [
+    "Prometheus-Host-Agent.ps1"
+  ],
+  "unchanged_payloads": [
+    "Prometheus-Arrival.ps1",
+    "Prometheus-Lifecycle.ps1",
+    "Prometheus-QuietHost-v3.exe",
+    "Prometheus-USB-Reconnect-Supervisor.ps1",
+    "RECONNECT-ENROLLMENT.json",
+    "ReconnectEnrollment.psm1"
+  ],
+  "installed_changed": false,
+  "new_host_sha256": "26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5",
+  "old_host_sha256": "d24565384cb3d3a29a023684986782f8d7eb0834b44913fa5f43ea2484c736ba"
+}

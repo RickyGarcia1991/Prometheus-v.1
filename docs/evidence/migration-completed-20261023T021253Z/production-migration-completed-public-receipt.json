@@ -1,0 +1,19 @@
+{
+  "status": "production_provider_migration_completed",
+  "attempt": "9359841a9d6d92784fda0a26aaa647c4",
+  "private_result_sha256": "da0f803afcab16a7d1bae58c54cdc2250fbe7e5a2127f5a729afadeef795024c",
+  "contract_sha256": "50b5b2e89039f9a41f9805ce9d6d324bd5da4afda9109ccd07c60abd47dd216b",
+  "task_recreated": false,
+  "cleanup_errors": [],
+  "temporary_execution_task_removed": true,
+  "original_failures_preserved": true,
+  "core_live_adapter_field": "Legacy core result reports false; execution occurred through the explicitly reviewed ProductionProvider and real Windows callbacks. Retained raw result is unchanged.",
+  "independent_completed_chain_readback_pending": false,
+  "full_backup_complete": false,
+  "ubuntu_installed": false,
+  "authenticated_readback_passed": true,
+  "readback_run": "34d81e2d506b4e2980e96d2cc0535e1b",
+  "readback_report_sha256": "792794e7e1be04c587ef7822272ed3c41a7231c5168fb06db7343a3c9efaa91d",
+  "comparison_correction": "Only native Windows image-path case is normalized; other identity fields remain exact. Original failed captures retained.",
+  "physical_reboot_test_passed": false
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "path": "source/tools/Prometheus.HostAgent/Prometheus-Host-Agent.ps1",
+    "sha256": "aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d"
+  },
+  {
+    "path": "source/tests/test_controller_signed_version.py",
+    "sha256": "d5421563cdb114b464451d336fb943e235cf10202393908814548b228ea2bdbb"
+  },
+  {
+    "path": "source/tests/test_controller_staged_signature.py",
+    "sha256": "676858bbc69d6139098a9dd576a1f942b04b04dacfc119de6d37b96e0fa5f740"
+  },
+  {
+    "path": "controller_pointer_real_signed_fixture.py",
+    "sha256": "ba077ae92914d7139f6696cc34491a44a8c892f466ea5be0e38cf82f55773689"
+  },
+  {
+    "path": "controller_pointer_windows_fixture.py",
+    "sha256": "661b0606757ef6080ef4e3b564ee0f835b248272b76225ed3d818079d307d03a"
+  },
+  {
+    "path": "test_controller_real_signed_source.py",
+    "sha256": "cd793b03a898a489e79215c967653a32547f289c488ed55fe2d962361d850ac3"
+  },
+  {
+    "path": "controller-real-provider-bridge.ps1",
+    "sha256": "09b2f1a7bf9a18505fdab3e58db70f47ed21ef150c090de553dd7cf0d745a360"
+  },
+  {
+    "path": "run-controller-full-signed-integration.py",
+    "sha256": "9f1b16b7d20d71a9330022cd0467679b7032c1759fac765909f0fbf304a0327d"
+  },
+  {
+    "path": "controller-full-signed-baseline-erratum.md",
+    "sha256": "62b98ee7f675710d5a8393db80464a6c0efc07a4fc14e6d39880891cddb38f36"
+  },
+  {
+    "path": "controller-full-signed-corrected-report.json",
+    "sha256": "4efd49a6d7ebd67fa62d4b7f60c1be4d4569d0308ef13ead2a43daf31c36023c"
+  },
+  {
+    "path": "controller-full-signed-corrected.log",
+    "sha256": "23540294f6bb16f6396ee534b22a0201c10d932cf1dd09cb9f02db3edd0b8b5a"
+  },
+  {
+    "path": "controller-full-signed-final-review.json",
+    "sha256": "d37f835c0bb21c39ef7eeeae2891c2650c666f066f11c4f56360a5937a1a2da2"
+  },
+  {
+    "path": "controller-full-signed-initial-review.json",
+    "sha256": "c728f4ca9278a5514b6974e904277582d50d47d52d8c88491a4d7bfac1672918"
+  },
+  {
+    "path": "controller-full-signed-integration-initial-results.json",
+    "sha256": "e70317918ee6635c8f7ed18207b2be1676f908cf8096dc82c16ae828a29c08dc"
+  },
+  {
+    "path": "controller-full-signed-integration-report.json",
+    "sha256": "4478f64b3d059648151a2ea93942fbdff12d57e608414390ca3e715ff9566d41"
+  },
+  {
+    "path": "controller-full-signed-integration-results.json",
+    "sha256": "729d6a3234515b36cf1ee3c680918ceae327a45c1f5062e00bff0a556d5a72f1"
+  },
+  {
+    "path": "controller-full-signed-integration.log",
+    "sha256": "23540294f6bb16f6396ee534b22a0201c10d932cf1dd09cb9f02db3edd0b8b5a"
+  },
+  {
+    "path": "controller-pure-verifier-tests.log",
+    "sha256": "95baf2bf855b7a423f3f6e5c37039923c4e4aea5b57e0e7c0513a9f38c9fab83"
+  },
+  {
+    "path": "controller-real-missing-source-tests.log",
+    "sha256": "0457433a9b943c9b770f121f5dfc2ac8df67acfd30d31350bf7c4f4137bcec34"
+  },
+  {
+    "path": "controller-identity-integrated-tests.xml",
+    "sha256": "2490a4cacb8fc59305fd95dc4957e8eb1856e609b566a5716e9ae5fbd9e413c9"
+  },
+  {
+    "path": "prepare-enrollment-bundle-r7.py",
+    "sha256": "c7afd5b06a2e05e62f7bb1b30569ab91c51581096dbb18484888980900e9aba6"
+  },
+  {
+    "path": "enrollment-candidate-r7-index.json",
+    "sha256": "a4aae12757112c7643f4f862f2f4db1255dd179732b54a42570a8262fa919c94"
+  },
+  {
+    "path": "enrollment-r7-signing.json",
+    "sha256": "432dd5b542835db4a0445039e70273d6c0f48555b89b0faf291d8053a02b6b93"
+  },
+  {
+    "path": "enrollment-r7-verification.json",
+    "sha256": "43cf281654025a7356b936fdd2d98a3eac8abece34fdc97ea60d3c789f312e48"
+  },
+  {
+    "path": "README.md",
+    "sha256": "bd3d54602b0b9a1faee12fda6b3be296bbfb614985d60ffda7619326e0798279"
+  },
+  {
+    "path": "bundle/MANIFEST-PUBLIC.cer",
+    "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+  },
+  {
+    "path": "bundle/Prometheus-Arrival.ps1",
+    "sha256": "686b6925ff9cc47ac2bbc6faccbe9d2e63ad8c4f3482ae04b324a80238fd938f"
+  },
+  {
+    "path": "bundle/Prometheus-Host-Agent.ps1",
+    "sha256": "aac3f3ca83ec340ba6a4764e313a4a6c3fd12be80cbe25bb45126cd9ce42e38d"
+  },
+  {
+    "path": "bundle/Prometheus-Lifecycle.ps1",
+    "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad"
+  },
+  {
+    "path": "bundle/Prometheus-QuietHost-v3.exe",
+    "sha256": "ac3765079a3b0e1e54428b30d2a1b75415661f7dc6a016ab2c6d9bd46e042e7c"
+  },
+  {
+    "path": "bundle/Prometheus-USB-Reconnect-Supervisor.ps1",
+    "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412"
+  },
+  {
+    "path": "bundle/RECONNECT-ENROLLMENT.json",
+    "sha256": "2cfe0e19e6ebf8630fad9460a4849f9bcf5bc9c0e70e787c832d433d9cfc72df"
+  },
+  {
+    "path": "bundle/ReconnectEnrollment.psm1",
+    "sha256": "3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509"
+  },
+  {
+    "path": "bundle/SHA256-MANIFEST.json",
+    "sha256": "6e26224389829b4f9cfb3288b8f9495d0e285e9fc96a322f3db25e82ecddc01e"
+  },
+  {
+    "path": "bundle/SHA256-MANIFEST.sig",
+    "sha256": "2aa2e88bbe3859f0ee88a6feb5e2f6b2af14405835b3bf59949f2f29c7df1683"
+  }
+]

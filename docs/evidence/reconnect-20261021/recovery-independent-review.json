@@ -1,0 +1,18 @@
+{
+  "status": "staged_forward_recovery_package_qualified_with_bounded_scope",
+  "actionable_findings": [],
+  "reviewed": ["qualify-controller-recovery.ps1", "test_controller_recovery_profile.py", "controller-recovery-candidate-0.5.12", "check-real-recovery.ps1", "real-recovery-results.json"],
+  "confirmed": [
+    "Strict profile pins all 15 preserved baseline payload hashes, including original provenance, and requires exactly the new provenance plus that baseline closure.",
+    "New signed identity is 0.5.12 recovering 0.5.10 and replacing 0.5.11; original manifest/provenance hashes are fixed. Qualification hash matches recovery-qualification.json.",
+    "Read-only independent Verify passed payload, pinned manifest and accepted public signature checks; see recovery-independent-verify.json.",
+    "Actual Get-Package functions are extracted without executing HostAgent top-level code. Five recorded cases cover forward acceptance, older candidate rejection after raised floor, old baseline rejection, changed payload and bad signature.",
+    "Boundary checks mock protected-state reads, forbid state/audit/process mutations and verify fixture hashes unchanged."
+  ],
+  "limits": [
+    "This qualifies staged signed payload and version-selection behavior only. Protected high-water writes, backup recovery, interrupted activation, enrollment rollback and physical lifecycle were not exercised.",
+    "Do not claim installed rollback or physical acceptance from the five cases; their floors are mocked.",
+    "Historical runtime bytes and their limitations are deliberately preserved; new package version does not imply new controller UI behavior.",
+    "No full-suite rerun, signing, enrollment or activation was performed by this review."
+  ]
+}

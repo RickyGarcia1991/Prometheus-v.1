@@ -1,0 +1,19 @@
+{
+  "run_id": "6e70077f2bb44996afe03691b9ed9b59",
+  "started": "2026-10-22T22:09:20.842472+00:00",
+  "scratch": "C:\\Users\\rolon\\AppData\\Local\\Temp\\prometheus-active-fixture-sjb60jee",
+  "live_prometheus_mutation": false,
+  "exit": 1,
+  "fault": "after-task-start-wait",
+  "timeout_seconds": 15.0,
+  "stdout": "",
+  "stderr": "",
+  "timed_out": true,
+  "failure": "Native fixture exceeded 15.0 seconds",
+  "recovery": {
+    "exit": 0,
+    "stdout": "{\n  \"errors\": [],\n  \"remaining_processes\": [],\n  \"passed\": true,\n  \"task\": \"Codex-Prometheus-Fixture-feddc772e68148d09821c9344e0bc64c\",\n  \"task_removed\": true\n}\n",
+    "stderr": ""
+  },
+  "finished": "2026-10-22T22:09:40.380078+00:00"
+}

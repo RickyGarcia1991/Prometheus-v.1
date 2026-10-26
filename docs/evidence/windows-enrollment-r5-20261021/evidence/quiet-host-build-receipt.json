@@ -1,0 +1,72 @@
+{
+  "identity": "Prometheus-QuietHost-v3.exe",
+  "version": "3.0.0.0",
+  "signed": false,
+  "installed": false,
+  "source": {
+    "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-QuietHost-v3.cs",
+    "sha256": "38e71ea9792661bf0abdd5c0e523c199323da0f079baa94beadaa90df999e81f"
+  },
+  "inputs": {
+    "C:\\Program Files\\dotnet\\dotnet.exe": "abce6623a6729059cf39bb0f728c4a7804f625895099c88c17e6e704661e09eb",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.dll": "db6584e0d66af6b5c7bbc7cc7c1d75eb47f9b50c8d629c6e537b710badc172d4",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll": "94715f6991e2b9dc7481532c05aa99e74a5fff4ee147be541bca27f99e003fc7",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll": "09787b4f38f4f020c6b8a3894146085d4df7b8ae337577ed42d9acf1419660e8",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll": "d1bafee1a4dd7e7bd9adf6859e7b1b654d1b4e0d031a38795e33ba040508c09d"
+  },
+  "verified_input_snapshot": {
+    "C:\\Program Files\\dotnet\\dotnet.exe": "abce6623a6729059cf39bb0f728c4a7804f625895099c88c17e6e704661e09eb",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.deps.json": "ab5bb6540e4a797535be72ff52d90975c07ffd804c380a48d6bce6505a836b7f",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.dll": "db6584e0d66af6b5c7bbc7cc7c1d75eb47f9b50c8d629c6e537b710badc172d4",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.CSharp.dll": "810750a066e378719c1fad060e2ab9b89e41cfe62fef5707d78e6e0b2a737616",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.dll": "a7cfc9f7e4fba046e2a7c7b08e51193ea7dd3526889eba8a809323d474cbb51d",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.VisualBasic.dll": "4b991ff87b29c0d77e803838de42ea297375976f9a6cee8a23e50b0cde17c456",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.deps.json": "391addcfdb9145508a39ba257f4d219d7939d7b7973947d785a7d6c77ab113a9",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.dll": "bd19da39784fad8a2f0c1040554a2ffddd41aaabbc9dd9d8cb3d62804348202f",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.deps.json": "3001b8f7e0e2f7ff08681a84c37256f5789f837f56964d226f4ba5786ff0e771",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.dll": "10ff5b3f1c01c0868450dbebdd3f6c96b96b25ced3c0b242b409aee1d6d033f5",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535",
+    "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\build-quiet-host.py": "2775e98f59d94cc40fe9428e4584a32c01acd9f84ea394a6669e12f19e36fe88",
+    "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-QuietHost-v3.cs": "38e71ea9792661bf0abdd5c0e523c199323da0f079baa94beadaa90df999e81f",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll": "94715f6991e2b9dc7481532c05aa99e74a5fff4ee147be541bca27f99e003fc7",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll": "d1bafee1a4dd7e7bd9adf6859e7b1b654d1b4e0d031a38795e33ba040508c09d",
+    "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll": "09787b4f38f4f020c6b8a3894146085d4df7b8ae337577ed42d9acf1419660e8"
+  },
+  "pre_post_inputs_match": true,
+  "command": [
+    "C:\\Program Files\\dotnet\\dotnet.exe",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.dll",
+    "/nologo",
+    "/noconfig",
+    "/nostdlib+",
+    "/deterministic+",
+    "/target:winexe",
+    "/optimize+",
+    "/debug-",
+    "/platform:anycpu",
+    "/out:C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-quiet-build-r4\\Prometheus-QuietHost-v3.exe",
+    "/reference:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll",
+    "/reference:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.dll",
+    "/reference:C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\System.Core.dll",
+    "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-QuietHost-v3.cs"
+  ],
+  "output_sha256": "ac3765079a3b0e1e54428b30d2a1b75415661f7dc6a016ab2c6d9bd46e042e7c",
+  "builder_sha256": "2775e98f59d94cc40fe9428e4584a32c01acd9f84ea394a6669e12f19e36fe88",
+  "compiler_dependencies": {
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.deps.json": "ab5bb6540e4a797535be72ff52d90975c07ffd804c380a48d6bce6505a836b7f",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.dll": "db6584e0d66af6b5c7bbc7cc7c1d75eb47f9b50c8d629c6e537b710badc172d4",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\csc.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.CSharp.dll": "810750a066e378719c1fad060e2ab9b89e41cfe62fef5707d78e6e0b2a737616",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.dll": "a7cfc9f7e4fba046e2a7c7b08e51193ea7dd3526889eba8a809323d474cbb51d",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\Microsoft.CodeAnalysis.VisualBasic.dll": "4b991ff87b29c0d77e803838de42ea297375976f9a6cee8a23e50b0cde17c456",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.deps.json": "391addcfdb9145508a39ba257f4d219d7939d7b7973947d785a7d6c77ab113a9",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.dll": "bd19da39784fad8a2f0c1040554a2ffddd41aaabbc9dd9d8cb3d62804348202f",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\vbc.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.deps.json": "3001b8f7e0e2f7ff08681a84c37256f5789f837f56964d226f4ba5786ff0e771",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.dll": "10ff5b3f1c01c0868450dbebdd3f6c96b96b25ced3c0b242b409aee1d6d033f5",
+    "C:\\Program Files\\dotnet\\sdk\\10.0.301\\Roslyn\\bincore\\VBCSCompiler.runtimeconfig.json": "d431c1b207120dd4b6d1604927af512f1066ec71d6b184409d975a35386be535"
+  },
+  "provenance": "New v3 source build; no claim that historical source reproduced v2."
+}

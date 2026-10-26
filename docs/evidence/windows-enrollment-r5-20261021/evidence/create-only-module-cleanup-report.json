@@ -1,0 +1,11 @@
+{
+  "test_sha256": "d9476be372b301cccc1345cf929ee4f7423e1e4769890b7a9e12ed0aa62e7425",
+  "original_executed_helper": "upgrade-quiet-host-create-only-executed-r5.ps1",
+  "status": "module-instance-cleanup-corrected",
+  "original_sha256": "a3915d6335debdc67abc0db8504264e7bf2e998ee628397b4f81e4c1981e0c35",
+  "log": "create-only-module-cleanup-tests.log",
+  "tests_passed": 21,
+  "scope": "Unload existing ReconnectEnrollment instances before activation helper imports its single package module; native temporary module regression",
+  "corrected_sha256": "dde54dc7dc5509bbc20b891a898d6e173957cfba0829204f97d3a97c3145435b",
+  "live_rerun": false
+}

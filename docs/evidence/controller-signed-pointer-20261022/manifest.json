@@ -1,0 +1,30 @@
+[
+  {
+    "path": "check-controller-signed-pointer-isolated.ps1",
+    "sha256": "801be248679f2aa7b94690410da9f745b359a4e5f8c2dfdc8126ca70194732d9"
+  },
+  {
+    "path": "controller-signed-pointer-failure.log",
+    "sha256": "f87cc7d0d7264e47d62be0aff57e4abbdcc929ab0fd461fb9e520b35839521e9"
+  },
+  {
+    "path": "controller-signed-pointer-independent-review.json",
+    "sha256": "ec2c6003b26568869cba4165fa6b0d7589afa483c4c2c4e677412bcf6e03bdbf"
+  },
+  {
+    "path": "controller-signed-pointer-isolated-report.md",
+    "sha256": "ac941c08c95cf54718abdab8c3ff045b2d5fb62d7681706c61fef6c5bcb2370d"
+  },
+  {
+    "path": "controller-signed-pointer-isolated-results.json",
+    "sha256": "3bd8cb0f615838be929bac938ead8ae29703925d3f625c21a1bed6a350d23a90"
+  },
+  {
+    "path": "run-controller-signed-pointer-isolated.py",
+    "sha256": "098b941083c1f9a7b896c275148a96cae24c63419e81abee6556982420ea0d00"
+  },
+  {
+    "path": "host-source-used.ps1",
+    "sha256": "26f47da1f529f7d7b2b469cbc30b4376ee8b82be3f624bf2a3247e69bfc896a5"
+  }
+]

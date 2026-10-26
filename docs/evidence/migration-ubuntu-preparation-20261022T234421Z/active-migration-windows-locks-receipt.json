@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-22T23:42:33.823148+00:00",
+  "passed": 49,
+  "production_activation_available": false,
+  "generated_namespace_only": true,
+  "files": [
+    {
+      "file": "active_migration_windows_locks.py",
+      "sha256": "50f178ce72f162b7760470209fc27bb3fc3748184574b30e81abc92ef8bcba45",
+      "bytes": 9111
+    },
+    {
+      "file": "test_active_migration_windows_locks.py",
+      "sha256": "6bf165c022ef2fd8aaced3f8d990024c45ed64e9a9b8aa2dece773215a3a8822",
+      "bytes": 7930
+    },
+    {
+      "file": "active-migration-windows-locks-tests.xml",
+      "sha256": "6410d4e07be3abcb90dd37da853b577c2e3a6705ef73cb1f46ccfbb23098bd32",
+      "bytes": 8072
+    },
+    {
+      "file": "active-migration-windows-locks-tests.initial44.xml",
+      "sha256": "6eff30cadab46e9c8eaf4db6b30739b5a23455d6dcfe34a77fbfecede508aa85",
+      "bytes": 7238
+    },
+    {
+      "file": "active-migration-windows-locks-qualification.md",
+      "sha256": "acd2697af4301b845303652f8e133dec1c4a83a7f98cbcb9963d7a324d988428",
+      "bytes": 2530
+    }
+  ]
+}

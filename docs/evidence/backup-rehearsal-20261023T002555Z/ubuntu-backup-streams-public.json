@@ -1,0 +1,16 @@
+{
+  "observed_utc": "2026-10-23T00:24:45.306190+00:00",
+  "entries_checked": 449726,
+  "named_stream_count": 4,
+  "named_stream_bytes": 356,
+  "errors": 0,
+  "reparses": 0,
+  "native_selfcheck_passed": true,
+  "read_only_source": true,
+  "consistent_snapshot": false,
+  "backup_created": false,
+  "excluded": [
+    "$RECYCLE.BIN",
+    "System Volume Information"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "status": "directory_reconciliation_and_isolated_restore_callbacks_qualified",
+  "tests_passed": 19,
+  "seconds": 2.96,
+  "hashes": {
+    "backup_final_closure.py": "8b81ddba3345135a7fe15b6fad2a428af0a197c39b9c9a34b322f1e9085d7340",
+    "test_backup_final_closure.py": "77a17bcb7fb2c43aa3763ad45cac531aaa5ede3a45aade4313455e5467bd22cb",
+    "backup-components-closure-frozen-tests.private.xml": "1ac8ac18286352a4ff9997ca10672a0efda5bdacdd58bb5b8507beb0d6b34ad2",
+    "backup_transaction.binding12-frozen.py": "90901febbb1eaa27ae1805c00d1aa398872faa05adbeb517fa6cda9eacbddd95",
+    "test_backup_transaction.binding12-frozen.py": "b8004fc036204d7ee0aff44ebf24e1c36e6b45d4dc2cceedb261aa18bb2425f5"
+  },
+  "production_backup_complete": false,
+  "production_entry_available": false,
+  "production_mutations": false,
+  "qualified": [
+    "Whole-source inventory equality including root/directory metadata and file/directory ADS; inaccessible paths refuse",
+    "Exact plan file metadata equality to complete source inventory before archive exclusions",
+    "Directory-only native Robocopy metadata pass with file wildcard exclusion; no destructive flags",
+    "Exact final destination inventory equality except seven verified archive references",
+    "Full chunk reconstruction revalidation for every final archive dependency",
+    "Isolated ordinary-file metadata/ADS restore plus smallest archive-blob restore and independent disk readback",
+    "Restore sample preserves32GiB reserve and stays in unique generated directory",
+    "Foreign destination/source drift/false maintenance authority refuse"
+  ],
+  "remaining": [
+    "Actual retained backup maintenance owner and native perbatch volume identity collector remain unconnected",
+    "No fullcopy CLI or production activation",
+    "Archive sample verifies content; full restore metadata remains in private baseline manifest",
+    "Only generated fixtures executed; retained sample fixtures not deleted"
+  ]
+}

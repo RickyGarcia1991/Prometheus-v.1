@@ -49,7 +49,7 @@ function Resume-Lifecycle($State,[string]$Reason) {
  Write-LifecycleJson (Join-Path $local 'last-eject.json') @{id=$State.id;drive=$State.drive;usb_instance=$State.usb_instance;result=$State.phase;resumed_because=$Reason;updated=(Get-Date).ToString('o')}
  Remove-Item -LiteralPath (Join-Path $local 'eject-mode.json') -ErrorAction Stop
  # Use the existing console-free host. Its runner mutex prevents duplicates.
- $quiet=Join-Path $local 'QuietBackground\Prometheus-QuietHost-v2.exe'
+ $quiet=Join-Path $local 'Prometheus-QuietHost-v3.exe'
  if(Test-Path -LiteralPath $quiet){Start-Process -FilePath $quiet -ArgumentList 'desktop-commander' -WorkingDirectory (Split-Path $quiet) -WindowStyle Hidden|Out-Null}
  else{$runner=Join-Path $dc 'Run-DesktopCommander.ps1';if(Test-Path -LiteralPath $runner){$child=Start-LifecycleScript $runner;$child.Dispose()}}
 }

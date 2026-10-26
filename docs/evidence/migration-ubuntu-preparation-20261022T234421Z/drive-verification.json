@@ -1,0 +1,16 @@
+[
+  {
+    "label": "Prometheus-2TB",
+    "checkpoint": "migration-ubuntu-preparation-20261022T234421Z",
+    "verified_public_files": 31,
+    "verified_private_files": 9,
+    "mismatches": 0
+  },
+  {
+    "label": "PROMETHEUS",
+    "checkpoint": "migration-ubuntu-preparation-20261022T234421Z",
+    "verified_public_files": 31,
+    "verified_private_files": 9,
+    "mismatches": 0
+  }
+]

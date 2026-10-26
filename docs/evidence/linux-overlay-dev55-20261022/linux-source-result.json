@@ -1,0 +1,7 @@
+{
+  "returncode": 0,
+  "stdout": "{\"compiled_files\": 175, \"imports\": [{\"module\": \"prometheus_assistant.cli\", \"passed\": true}, {\"module\": \"prometheus_assistant.owner_access\", \"passed\": true}, {\"module\": \"prometheus_assistant.approvals\", \"passed\": true}, {\"module\": \"prometheus_assistant.memory\", \"passed\": true}], \"required_owner_gate_locked\": true, \"actual_owner_enrollment\": false, \"full_application_qualified\": false, \"production_changed\": false}\n",
+  "stderr": "",
+  "archive_sha256": "d42304c98442d80ebefad32592fa2969341937eec9767a0c1b4495952a7d9f42",
+  "verified_source_files": 213
+}

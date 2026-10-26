@@ -1,0 +1,18 @@
+{
+  "run_id": "2d63bebbba4b4aeb836851fd082db72b",
+  "started": "2026-10-22T22:08:25.067157+00:00",
+  "scratch": "C:\\Users\\rolon\\AppData\\Local\\Temp\\prometheus-active-fixture-qomjhzf8",
+  "live_prometheus_mutation": false,
+  "exit": 1,
+  "fault": "after-other-launch",
+  "timeout_seconds": 120,
+  "stdout": "{\n  \"scope\": \"Unique generated temporary task and generated processes only\",\n  \"failure\": \"Injected failure before other-process identity capture\",\n  \"checks\": [],\n  \"passed\": false,\n  \"cleanup\": {\n    \"passed\": true,\n    \"errors\": [],\n    \"remaining_processes\": [],\n    \"task\": \"Codex-Prometheus-Fixture-57f7f2b1ed10455a830fe23e016f5a06\",\n    \"task_removed\": true\n  }\n}\n",
+  "stderr": "",
+  "timed_out": false,
+  "recovery": {
+    "exit": 0,
+    "stdout": "{\n  \"task_removed\": true,\n  \"errors\": [],\n  \"task\": \"Codex-Prometheus-Fixture-57f7f2b1ed10455a830fe23e016f5a06\",\n  \"passed\": true,\n  \"remaining_processes\": []\n}\n",
+    "stderr": ""
+  },
+  "finished": "2026-10-22T22:08:29.883096+00:00"
+}

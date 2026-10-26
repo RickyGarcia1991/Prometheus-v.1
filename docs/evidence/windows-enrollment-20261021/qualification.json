@@ -1,0 +1,183 @@
+{
+  "qualified": true,
+  "qualification_scope": "signed r3 bundle; live enrollment recovery and acceptance pending",
+  "activated": false,
+  "source_commit": "3fb0d4ef3b4bc56f1748a55e5f03952e8fd888a4",
+  "files": [
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\MANIFEST-PUBLIC.cer",
+      "checkpoint_path": "bundle-r3/MANIFEST-PUBLIC.cer",
+      "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\Prometheus-Arrival.ps1",
+      "checkpoint_path": "bundle-r3/Prometheus-Arrival.ps1",
+      "sha256": "82cac74e571f81986d2595adc7f4897508eafa85f0f21f580a612a5aa6de781c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\Prometheus-Host-Agent.ps1",
+      "checkpoint_path": "bundle-r3/Prometheus-Host-Agent.ps1",
+      "sha256": "d24565384cb3d3a29a023684986782f8d7eb0834b44913fa5f43ea2484c736ba"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\Prometheus-Lifecycle.ps1",
+      "checkpoint_path": "bundle-r3/Prometheus-Lifecycle.ps1",
+      "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\Prometheus-QuietHost-v3.exe",
+      "checkpoint_path": "bundle-r3/Prometheus-QuietHost-v3.exe",
+      "sha256": "f631b42b500c6319d025e9def47307158f0a58f08016c79d234c7770925425ae"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\Prometheus-USB-Reconnect-Supervisor.ps1",
+      "checkpoint_path": "bundle-r3/Prometheus-USB-Reconnect-Supervisor.ps1",
+      "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\RECONNECT-ENROLLMENT.json",
+      "checkpoint_path": "bundle-r3/RECONNECT-ENROLLMENT.json",
+      "sha256": "2cfe0e19e6ebf8630fad9460a4849f9bcf5bc9c0e70e787c832d433d9cfc72df"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\ReconnectEnrollment.psm1",
+      "checkpoint_path": "bundle-r3/ReconnectEnrollment.psm1",
+      "sha256": "3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\SHA256-MANIFEST.json",
+      "checkpoint_path": "bundle-r3/SHA256-MANIFEST.json",
+      "sha256": "a0461287d0984894d3549c22d4e16a5bff5db55f4a1925729479eed7f48ea3b8"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r3\\SHA256-MANIFEST.sig",
+      "checkpoint_path": "bundle-r3/SHA256-MANIFEST.sig",
+      "sha256": "3a494e59beab93cb14c0fb6736c8ee102dec5a5f8c096a3f4cd2d8615c2022e5"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-r2-qualified-tests.xml",
+      "checkpoint_path": "evidence/enrollment-r2-qualified-tests.xml",
+      "sha256": "1b40a563c629509b6fc6df256ead4a15b83038c33957ff64fd91e7e0c605ce2c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-r3-qualified-tests.xml",
+      "checkpoint_path": "evidence/enrollment-r3-qualified-tests.xml",
+      "sha256": "29bcb36392296bb9773d73a52141ef608f874bdc41ef6414ff9c307adeb3d37b"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-profile-v2-tests.xml",
+      "checkpoint_path": "evidence/enrollment-profile-v2-tests.xml",
+      "sha256": "e8f88a323394c8274b949c8aa965bba1da03cbfd037915e286f1ded8ae911199"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-r2-signature-result.json",
+      "checkpoint_path": "evidence/enrollment-r2-signature-result.json",
+      "sha256": "c3a7e794f1558dd03674399c3dedf2335d669aeac75ab7e5111962effef1913c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-r3-signature-result.json",
+      "checkpoint_path": "evidence/enrollment-r3-signature-result.json",
+      "sha256": "a9a7db1db87b203a9b4b318c879d1dd503a014498be00fc50e6e05237617929f"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-r2-live-preflight.json",
+      "checkpoint_path": "evidence/enrollment-r2-live-preflight.json",
+      "sha256": "22e9f2267e665df44c9756f2fccfa21934963aea61e39a82e56e2a95562dcc93"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\windows-enrollment-baseline.json",
+      "checkpoint_path": "evidence/windows-enrollment-baseline.json",
+      "sha256": "5f22805a01bec504b6bb932f34b030afef0c4d388a6bf6ddb2fde65fe593a8cf"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\windows-authorization-result.json",
+      "checkpoint_path": "evidence/windows-authorization-result.json",
+      "sha256": "abf25cbdc630514c0141acbe712965f7e7471f37770e4cba8ea0008da4fe55ae"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\windows-enrollment-r2-failure.json",
+      "checkpoint_path": "evidence/windows-enrollment-r2-failure.json",
+      "sha256": "a5d9e37f63fbb024b911cf1cc32442d6cd594e15ac37bc2f5c4811001077703d"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\windows-enrollment-r2-task-recovery.json",
+      "checkpoint_path": "evidence/windows-enrollment-r2-task-recovery.json",
+      "sha256": "2baf52d2781feece922b2742ad40b10205a60c999899a05cc3b846d34d1080ac"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-legacy-compatibility-independent-review.json",
+      "checkpoint_path": "evidence/enrollment-legacy-compatibility-independent-review.json",
+      "sha256": "19555732692767438211fa54efb5e70cb7ea5b18e16199c9e4a75e93d5a80aa9"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\task-canonicalization-independent-review.json",
+      "checkpoint_path": "evidence/task-canonicalization-independent-review.json",
+      "sha256": "a290e02d6a9e46228ecf088803d494485c4ab89d312b2801e147e6cd3133d829"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\qualify-reconnect-enrollment-v2.ps1",
+      "checkpoint_path": "evidence/qualify-reconnect-enrollment-v2.ps1",
+      "sha256": "9e46ac586172efcf43e82ce0dab9b56c888cf967c614e27ba5214210b2daa0fe"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\authorize-windows-enrollment.ps1",
+      "checkpoint_path": "evidence/authorize-windows-enrollment.ps1",
+      "sha256": "71645b3f180b598320c36cb0274988a754bf954bf3e5214dc1340f444c1d1090"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\repair-windows-enrollment.ps1",
+      "checkpoint_path": "evidence/repair-windows-enrollment.ps1",
+      "sha256": "200d15f932bbc92833bb6213db7306db1a60646e41891de0736535151d5d6020"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\remove-exact-disabled-enrollment-task.ps1",
+      "checkpoint_path": "evidence/remove-exact-disabled-enrollment-task.ps1",
+      "sha256": "e27324ca8fd4069025e30838be0f21c3644995d9ad8f84a1c8d3588bac967a35"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\test_reconnect_signing_profile_v2.py",
+      "checkpoint_path": "evidence/test_reconnect_signing_profile_v2.py",
+      "sha256": "01853ee32611140ec27b27e16943ace473f0b6f7d186ff6673051f9c73148156"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\account-canonicalization-report.json",
+      "checkpoint_path": "evidence/account-canonicalization-report.json",
+      "sha256": "88bff3930d6880df686a77a4970c833892cf805eb3043c5c04266903b6a238bd"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\account-canonicalization-tests.log",
+      "checkpoint_path": "evidence/account-canonicalization-tests.log",
+      "sha256": "a841bb499ba16974bffd18de9c48e05539b46b8ced0fd411dfd4e4b7e421fd41"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\legacy-compatibility-report.json",
+      "checkpoint_path": "evidence/legacy-compatibility-report.json",
+      "sha256": "c85d57d1722b45035a46e1d6830f09c4ab9bc3023ab37326a0cc276d95f1067a"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\legacy-compatibility-tests.log",
+      "checkpoint_path": "evidence/legacy-compatibility-tests.log",
+      "sha256": "6ab88c9d95440591b18196d4c71b8d28c94e3ef54fa0c84935240d17b4144a3d"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\dev46-release-sync\\tools\\Prometheus.HostAgent\\ReconnectEnrollment.psm1",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/ReconnectEnrollment.psm1",
+      "sha256": "3df45e228e82e6a72509c2c2f4fb4301836c1a3b2a70bbc497feda2406ba1509"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\dev46-release-sync\\tools\\Prometheus.HostAgent\\RECONNECT-ENROLLMENT.md",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/RECONNECT-ENROLLMENT.md",
+      "sha256": "f531eea353a8de87995b728581b74686d4e5176d072640554b732368acfd10c8"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\dev46-release-sync\\tests\\test_reconnect_enrollment.py",
+      "checkpoint_path": "source/tests/test_reconnect_enrollment.py",
+      "sha256": "bd1be0fcffb752620464ad9c19021af3f389f5f3a08eb3fc83a1d2b743b43e61"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\dev46-release-sync\\docs\\evidence\\windows-enrollment-20261021\\README.md",
+      "checkpoint_path": "README.md",
+      "sha256": "71e89bcdc64bfe39ac3a9718b90ca1dc5843eab921209edca1738707cde250f9"
+    }
+  ]
+}

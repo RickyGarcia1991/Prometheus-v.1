@@ -1,0 +1,82 @@
+[
+  {
+    "path": "read-controller-production-preflight.ps1",
+    "sha256": "1a4d7171fd05bb4bb4e33fb48d5d66a5a99c0877d2ed908dc4d099206ff55d57"
+  },
+  {
+    "path": "test_controller_production_preflight.py",
+    "sha256": "18513c367c98cf9ef75adadbe1dde39efc8e0cfa13e068f681fa0f74ea44f80f"
+  },
+  {
+    "path": "run-controller-production-readonly.ps1",
+    "sha256": "59afde4ce39b3c525b78c3efde28f68b7c843100cddae535ec52888b998b95b4"
+  },
+  {
+    "path": "run-controller-production-readonly-initial.ps1",
+    "sha256": "408b8374c4b58db15b87b54b766e42fd9fa8d039ffa28e312ae62d591f7c3aeb"
+  },
+  {
+    "path": "controller-production-live-preflight-initial.json",
+    "sha256": "b634f3caac09ccf50120303ae4bf18533c3552b6172936864d21953ab9d89271"
+  },
+  {
+    "path": "controller-production-live-preflight.json",
+    "sha256": "3a2fb6fb8613cd2db19f19a2146481bc3b4c0ea8925559cf05d771f8fc47493e"
+  },
+  {
+    "path": "controller-production-preflight-report.json",
+    "sha256": "a39205cd0c0b68054633c01b789f1eecc125e4c0d5630c75c2b65e93379c5668"
+  },
+  {
+    "path": "controller-production-preflight-corrected-report.json",
+    "sha256": "0a59028a63892440f9efbfae08112aaec5865b095b2c5f4748804c8ae8b9ed1e"
+  },
+  {
+    "path": "controller-production-preflight-legacy-report.json",
+    "sha256": "d5bee231bcb8af240a3e34d2c7c4ee07488094f790848af53220529d2b635870"
+  },
+  {
+    "path": "controller-production-preflight-exact-report.json",
+    "sha256": "3e5e9bafd10b5b47db8f158177fe004d444935653be00f5b2af111aea2d3a550"
+  },
+  {
+    "path": "controller-production-preflight-tests.log",
+    "sha256": "d5a8a03c2dab89a358ea6e8dee374f3a4ee2def6656cb96cec10b5b90c934c36"
+  },
+  {
+    "path": "controller-production-preflight-corrected-tests.log",
+    "sha256": "9c05c1b2efbf5cfb5f6ee51a2649814eaa2020ec0c3997808fb6df560eea87fa"
+  },
+  {
+    "path": "controller-production-preflight-legacy-tests.log",
+    "sha256": "30e4c63ccb4cd7635f7f510ff38cea094ca1ac582e08fc8ef7bb6dc65f35992f"
+  },
+  {
+    "path": "controller-production-preflight-exact-tests.log",
+    "sha256": "2b222a6678c92e16b3aa1883601b87616d54ca1b5d1bc433e9127e3d48c51c6e"
+  },
+  {
+    "path": "controller-production-preflight-initial-review.json",
+    "sha256": "a9586f59797bf72312dc8fea0d54ba54e28fa71dc516308bc14f5db03a91617c"
+  },
+  {
+    "path": "controller-production-preflight-final-review.json",
+    "sha256": "185160fdc7589f5d0861a2f9077091f538dd26c5f3da4d0e82f7b0f9b57307e6"
+  },
+  {
+    "path": "controller-production-preflight-exact-independent-review.json",
+    "sha256": "83fe51e55f9857f656959c5b9f73cf132cbb7c8ae2bbe997471a25c3828485e9"
+  },
+  {
+    "path": "controller-readonly-task-cleanup.json",
+    "sha256": "ca659c233dc3bcedd79de10ea44037b5db6c329c8a7a899b7769869f19ba0aa2"
+  },
+  {
+    "path": "controller-readonly-task-final-cleanup.json",
+    "sha256": "a7ffcee8b1f3ffd17d0727918e04c5c4b49e2e9ff442a66c933963e13d585d98"
+  },
+  {
+    "path": "README.md",
+    "sha256": "04ddf73b601fd11b2f82cc10a90f35b59ff5c3517fd6659c596c007ef8c800d5"
+  }
+]

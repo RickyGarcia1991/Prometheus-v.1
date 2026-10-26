@@ -1,0 +1,17 @@
+{
+  "utc": "2026-10-22T22:24:58.1878528Z",
+  "label": "PROMETHEUS",
+  "volume_bytes": 32076988416,
+  "removed_directory": "D:\\Prometheus-Recovery\\Gemma4-26b",
+  "archived_to": "C:\\Users\\rolon\\Documents\\Codex\\Recovery-Archives\\Flash-Gemma4-26b-20261022",
+  "verified_files": 29,
+  "archived_bytes": 18731047925.0,
+  "free_before": 810844160,
+  "free_after": 19542179840,
+  "freed_bytes": 18731335680,
+  "keys_and_private_backups_preserved": true,
+  "current": "dev55",
+  "rollback": "dev54r2",
+  "formatted": false,
+  "ubuntu_installer_created": false
+}

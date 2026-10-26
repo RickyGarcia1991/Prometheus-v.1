@@ -1,0 +1,8 @@
+{
+  "included_files": 213,
+  "omitted_files": 826,
+  "archive_bytes": 683136,
+  "archive_sha256": "d42304c98442d80ebefad32592fa2969341937eec9767a0c1b4495952a7d9f42",
+  "baseline_manifest_sha256": "f093dcd0d45ee0efeb2d9135596f6a255e1c488f48818e69c6a49a0e6ba0fffa",
+  "full_application_qualified": false
+}

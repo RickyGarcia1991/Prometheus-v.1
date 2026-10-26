@@ -1,0 +1,12 @@
+{
+  "observed_utc": "2026-10-22T23:45:33.381302Z",
+  "label": "Prometheus-2TB",
+  "disk_bytes": 1950389231104,
+  "current_partition_bytes": 1950372331520,
+  "minimum_supported_bytes": null,
+  "maximum_supported_bytes": null,
+  "readonly_query": true,
+  "partition_changed": false,
+  "status": "unavailable_access_denied",
+  "limitation": "Windows denied the read-only storage CIM query; exact shrink limits remain unverified. No elevation or partition mutation attempted."
+}

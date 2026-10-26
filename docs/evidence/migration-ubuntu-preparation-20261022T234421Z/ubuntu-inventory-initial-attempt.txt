@@ -1,0 +1,1 @@
+Initial metadata scan stopped after approximately 15 minutes to use cached directory metadata. Child identity matched and was stopped; its parent exited before the second guard, which refused rather than selecting another process. Follow-up confirmed both original PIDs absent. No source data changed.

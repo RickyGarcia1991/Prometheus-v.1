@@ -1,0 +1,185 @@
+{
+  "qualified": true,
+  "qualification_scope": "signed bundle and isolated integration; live enrollment pending",
+  "activated": false,
+  "source_commit": "0411e85ae8d4c6741ba6e42f193590cffe5bd7bf",
+  "integration_passed": 166,
+  "manifest_sha256": "99d435febea8292ab3fbb7d54761a05dcfbe9fe1a9775ac3f01a5b9b98a2c83b",
+  "files": [
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\MANIFEST-PUBLIC.cer",
+      "checkpoint_path": "bundle/MANIFEST-PUBLIC.cer",
+      "sha256": "f8526536ab8526c57c68f4cc5b65cc1aba814b99734ee24ad2fd15bb3450967c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\Prometheus-Arrival.ps1",
+      "checkpoint_path": "bundle/Prometheus-Arrival.ps1",
+      "sha256": "82cac74e571f81986d2595adc7f4897508eafa85f0f21f580a612a5aa6de781c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\Prometheus-Host-Agent.ps1",
+      "checkpoint_path": "bundle/Prometheus-Host-Agent.ps1",
+      "sha256": "d24565384cb3d3a29a023684986782f8d7eb0834b44913fa5f43ea2484c736ba"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\Prometheus-Lifecycle.ps1",
+      "checkpoint_path": "bundle/Prometheus-Lifecycle.ps1",
+      "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\Prometheus-QuietHost-v3.exe",
+      "checkpoint_path": "bundle/Prometheus-QuietHost-v3.exe",
+      "sha256": "f631b42b500c6319d025e9def47307158f0a58f08016c79d234c7770925425ae"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\Prometheus-USB-Reconnect-Supervisor.ps1",
+      "checkpoint_path": "bundle/Prometheus-USB-Reconnect-Supervisor.ps1",
+      "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\RECONNECT-ENROLLMENT.json",
+      "checkpoint_path": "bundle/RECONNECT-ENROLLMENT.json",
+      "sha256": "2cfe0e19e6ebf8630fad9460a4849f9bcf5bc9c0e70e787c832d433d9cfc72df"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\ReconnectEnrollment.psm1",
+      "checkpoint_path": "bundle/ReconnectEnrollment.psm1",
+      "sha256": "d373d6d9a3d888ac33da933de52b9d0755accc379b906e8476be5c1d2f5444e0"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\SHA256-MANIFEST.json",
+      "checkpoint_path": "bundle/SHA256-MANIFEST.json",
+      "sha256": "99d435febea8292ab3fbb7d54761a05dcfbe9fe1a9775ac3f01a5b9b98a2c83b"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-enrollment-candidate-r1\\SHA256-MANIFEST.sig",
+      "checkpoint_path": "bundle/SHA256-MANIFEST.sig",
+      "sha256": "c4733acb6fb6474ea0eaba821a62dde54dc27ce603c2e017853af40420e5344b"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-qualified-tests.xml",
+      "checkpoint_path": "evidence/enrollment-qualified-tests.xml",
+      "sha256": "5aa6f2602532b91e7cd8f196c8b7b11d02e479464a61ff671effb885d36d6bf6"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-final-integrated-tests.xml",
+      "checkpoint_path": "evidence/enrollment-final-integrated-tests.xml",
+      "sha256": "7a2825efd1596d2831688f06b0e02d0d476560349bdfab640fb06a8120e28c5d"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-signing-profile-tests.xml",
+      "checkpoint_path": "evidence/reconnect-signing-profile-tests.xml",
+      "sha256": "cdbbc1c835327830b14a4374cc9999b5608496830f12d3416f26d7e8234334e1"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-recovery-independent-initial-review.json",
+      "checkpoint_path": "evidence/enrollment-recovery-independent-initial-review.json",
+      "sha256": "44790c91a5057201bda5e55f0e404642d5602b4aaab0f8293e69b4c67ecf5555"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-recovery-independent-final-review.json",
+      "checkpoint_path": "evidence/enrollment-recovery-independent-final-review.json",
+      "sha256": "cd28756f83131d558083ab11753ef335ae2098b3d24ab6382638620edaae7dcd"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\quiet-runner-fallback-independent-review.json",
+      "checkpoint_path": "evidence/quiet-runner-fallback-independent-review.json",
+      "sha256": "b0806b171461cf404a7741c1ba1e07d93a2d3ef00a9bcc8134f3183f7d86874d"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-profile-independent-review.json",
+      "checkpoint_path": "evidence/reconnect-profile-independent-review.json",
+      "sha256": "8821629258cc119e0cbed970eff159fbf4171f6de4f0de72d9e2af8e3a793ccc"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-signature-result.json",
+      "checkpoint_path": "evidence/enrollment-signature-result.json",
+      "sha256": "540ef57908d1b8a515a8e5d9f5897b8e211ab956404e4c8eed4ea2bc6c83962e"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-native-bundle-verify.json",
+      "checkpoint_path": "evidence/enrollment-native-bundle-verify.json",
+      "sha256": "481725e55b2de99adc5c26db34a5cb990c6dcc3c8d58bc4e5532478b123b1d5c"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\enrollment-signed-rejection-tests.json",
+      "checkpoint_path": "evidence/enrollment-signed-rejection-tests.json",
+      "sha256": "ce714f15e5c3bc22d5ff266c5f2c7a2feba18724156285cd6c3f48dc3fd82da9"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\qualify-reconnect-enrollment.ps1",
+      "checkpoint_path": "evidence/qualify-reconnect-enrollment.ps1",
+      "sha256": "d38b175e0b3ef0f54270609078adecbbe61c64f934b790136ab12efcbedfc3c0"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\prepare-enrollment-bundle.py",
+      "checkpoint_path": "evidence/prepare-enrollment-bundle.py",
+      "sha256": "d8207d00ba2c561a9739724240b2f500d94e9ac51b954c3d648514153b7c0de6"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\save-enrollment-checkpoint.py",
+      "checkpoint_path": "evidence/save-enrollment-checkpoint.py",
+      "sha256": "44f967f370ebee2ddaa1b8f70626d4221e0dc8435f2036dd3003210635b614ac"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\test_reconnect_signing_profile.py",
+      "checkpoint_path": "evidence/test_reconnect_signing_profile.py",
+      "sha256": "f0d59c7c6b384bf7487139d5998732a2ae27342991658ef7f0793d4998716be7"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-release\\reconnect-quiet-build\\quiet-host-build-receipt.json",
+      "checkpoint_path": "evidence/quiet-host-build-receipt.json",
+      "sha256": "7483ca4e8668ecb7436c77bbb14eb606fd4703cc6a455b5c27fe15f11e6f8fee"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\sealed-recovery-report.json",
+      "checkpoint_path": "evidence/sealed-recovery-report.json",
+      "sha256": "341e9a8b784e81a71223bce134c534d04d4541e662c8160f85a82950c4df9ede"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\work\\companion-enrollment\\sealed-recovery-completed-tests.log",
+      "checkpoint_path": "evidence/sealed-recovery-completed-tests.log",
+      "sha256": "4acd7a0881b3505a2a7a95291e4263ffbe8d5e2859bb48d509398fb8330ed153"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\ReconnectEnrollment.psm1",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/ReconnectEnrollment.psm1",
+      "sha256": "d373d6d9a3d888ac33da933de52b9d0755accc379b906e8476be5c1d2f5444e0"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\RECONNECT-ENROLLMENT.md",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/RECONNECT-ENROLLMENT.md",
+      "sha256": "33420a2731003436334e5619cbc859982dfa9d4bc289bef49c78660980b403b2"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-Lifecycle.ps1",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/Prometheus-Lifecycle.ps1",
+      "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tools\\Prometheus.HostAgent\\Prometheus-QuietHost-v3.cs",
+      "checkpoint_path": "source/tools/Prometheus.HostAgent/Prometheus-QuietHost-v3.cs",
+      "sha256": "fd73418bb268ff07fae622156f2a62b0b58cbf4d9c6a6adefdc475865038ed51"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tests\\test_reconnect_enrollment.py",
+      "checkpoint_path": "source/tests/test_reconnect_enrollment.py",
+      "sha256": "210242425ee9e21e6ddf9ba42f1b0f21b3f5895c7dd04c7d2f85990751623780"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tests\\test_quiet_host_v3.py",
+      "checkpoint_path": "source/tests/test_quiet_host_v3.py",
+      "sha256": "3ae877a7104130c3f44c57b0bda144e14627c3fea909a965b35938f3f603c78b"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\Workstation\\Local\\AgentReach-20261012\\source\\tests\\test_lifecycle_v3_resume.py",
+      "checkpoint_path": "source/tests/test_lifecycle_v3_resume.py",
+      "sha256": "21381b87e5a8f6fbe62a4980cce795db87e26d2a6046659eec5e9249c72f6407"
+    },
+    {
+      "path": "C:\\Users\\rolon\\Documents\\Codex\\2026-10-13\\i\\outputs\\Prometheus-enrollment-checkpoint.md",
+      "checkpoint_path": "README.md",
+      "sha256": "4be9fc2ac82da1d34d2f2bfece9658794f43762c1a4b71af7d5b4a51ae2e6e0a"
+    }
+  ]
+}

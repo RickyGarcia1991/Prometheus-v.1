@@ -1,0 +1,31 @@
+{
+  "fresh_journal_phase": "enrolled-disabled",
+  "authorization_sha": "164A2EEE0034C6AF8FBDA2FDB7B9DD0C4AFA49BB3A52C9467CDFC610B91CC3A0",
+  "memory_present": true,
+  "manifest": "b93d865e8560fad4ba2f5e7d91e5758400d2d864ae8f07fd0438c00f56ccd77e",
+  "files": [
+    {
+      "sha256": "ac3765079a3b0e1e54428b30d2a1b75415661f7dc6a016ab2c6d9bd46e042e7c",
+      "name": "Prometheus-QuietHost-v3.exe"
+    },
+    {
+      "sha256": "cea9c80cb07c70ccc44c64098c1c149f1317855c2044356f5da69ad640597412",
+      "name": "Prometheus-USB-Reconnect-Supervisor.ps1"
+    },
+    {
+      "sha256": "0b5702cc70423ea87df72cb61fa7d78331bf3570a6838caf0bcd3dc62de81bad",
+      "name": "Prometheus-Lifecycle.ps1"
+    },
+    {
+      "sha256": "686b6925ff9cc47ac2bbc6faccbe9d2e63ad8c4f3482ae04b324a80238fd938f",
+      "name": "Prometheus-Arrival.ps1"
+    },
+    {
+      "sha256": "d24565384cb3d3a29a023684986782f8d7eb0834b44913fa5f43ea2484c736ba",
+      "name": "Prometheus-Host-Agent.ps1"
+    }
+  ],
+  "passed": true,
+  "activation_record_separate": true,
+  "captured": "2026-10-22T01:30:11.0591864Z"
+}

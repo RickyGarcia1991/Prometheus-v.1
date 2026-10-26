@@ -1,0 +1,7 @@
+{
+  "initial_cleanup_refused_venv_shim": true,
+  "production_untouched": true,
+  "remaining_processes": 0,
+  "remaining_fixture_tasks": 0,
+  "subsequent_cleanup_observed_process_exit": true
+}

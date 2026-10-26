@@ -1,0 +1,24 @@
+{
+  "observed_utc": "2026-10-22T23:33:31.6528385Z",
+  "label": "Prometheus-2TB",
+  "disk_size": 1950389231104,
+  "partition_style": "GPT",
+  "partitions": [
+    {
+      "PartitionNumber": 1,
+      "Type": "Reserved",
+      "Offset": 17408,
+      "Size": 16759808,
+      "GptType": "{e3c9e316-0b5c-4db8-817d-f92df00215ae}"
+    },
+    {
+      "PartitionNumber": 2,
+      "Type": "Basic",
+      "Offset": 16777216,
+      "Size": 1950372331520,
+      "GptType": "{ebd0a0a2-b9e5-4433-87c0-68b6b72699c7}"
+    }
+  ],
+  "read_only": true,
+  "changed": false
+}

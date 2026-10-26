@@ -1,0 +1,8 @@
+{
+ "status":"no_remaining_actionable_findings_read_only_scope",
+ "helper_sha256":"1a4d7171fd05bb4bb4e33fb48d5d66a5a99c0877d2ed908dc4d099206ff55d57",
+ "tests_sha256":"18513c367c98cf9ef75adadbe1dde39efc8e0cfa13e068f681fa0f74ea44f80f",
+ "validation":"Inspected absolute regex anchors and exact leaf capture; independently verified hashes and 26-pass log. Legacy drive prefix is only a hint: all constructed paths use independently detected drive/host root. Raw metadata hash retained, ignored-prefix flag explicit, activation_ready remains false. FileInfo ancestor correction retained. Initial refusal and review evidence preserved.",
+ "scope":"Read-only normal-profile observation with pinned host/volume identities. No pointer rewrite, migration, process control, or activation acceptance.",
+ "live_actions":false
+}

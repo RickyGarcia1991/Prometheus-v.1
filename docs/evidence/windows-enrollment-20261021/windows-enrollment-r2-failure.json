@@ -1,0 +1,1 @@
+{"stage":"disabled-task-enrollment","passed":false,"reason":"Windows returned canonical account names rather than SID strings; exact string ownership check refused","transaction":"1b06096c52914b72afdb4663c468ff0b","task_enabled":false,"task_started":false,"rollback":"preserved because ownership comparison refused","authorization_preserved":true}
